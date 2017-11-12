@@ -107,14 +107,32 @@ $| = 1;
 # rs485 adapter and put its ttyUSB# value in the parameter below.
 my $rs485Adapter = '/dev/ttyUSB0';
 
+# Set this to the maximum number of amps your charger wiring can handle.
+# I default this to a low 12A which is the minimum rated wiring in US
+# households.  Most chargers will be wired to handle at least 40A and
+# sometimes 80A.
+# Setting this too high will trip the circuit breaker on your charger
+# if the car draws max power or will START A FIRE if the circuit breaker
+# malfunctions.
+# Keep in mind that circuit breakers are designed to handle only 80% of
+# their max power rating continuously.  If your charger has a 50A circuit
+# breaker, put 50 * 0.8 = 40 here.
+# 40 amp breaker * 0.8 = 32 here.
+# 30 amp breaker * 0.8 = 24 here.
+# 100 amp breaker * 0.8 = 80 here.
+# IF YOU'RE NOT SURE WHAT TO PUT HERE, ASK THE ELECTRICIAN WHO INSTALLED
+# YOUR CHARGER.
+my $maxAmpsWiringCanHandle = 12;
+
 # Choose how much debugging info to output.
 # 0 is no output other than errors.
 # 1 is just the most useful info.
 # 10 is all info.
 my $debugLevel = 1;
 
-# Normally we fake being a TWC Master.  Set $fakeMaster = 0 to fake a
-# slave instead (only useful for debugging and protocol reversing).
+# Normally we fake being a TWC Master.  Set $fakeMaster = 0 to fake
+# being a TWC Slave instead (only useful for debugging and protocol
+# reversing).
 my $fakeMaster = 1;
 
 # TWC's rs485 port runs at 9600 baud which has been verified with an
@@ -122,9 +140,13 @@ my $fakeMaster = 1;
 # hardware.
 my $baud = 9600;
 
-# Original fakeTWCID was "\x0a\x51" which got generated randomly by an
-# actual TWC.  Switched to 7777 to make the fake id easier to spot in
-# data logs.
+# All TWCs ship with a random two-byte ID.  We default to using 0x7777
+# as our fake TWC ID.  There is a 1 in 64535 chance that this ID will
+# match each real TWC on the network, in which case you should pick a
+# different random id below.
+# This isn't really too important because even if this ID matches
+# another TWC on the network, that TWC will pick its own new random ID
+# as soon as it sees ours conflicts.
 my $fakeTWCID = "\x77\x77";
 
 # TWCs send a seemingly-random byte after their 2-byte TWC id in a number
@@ -132,7 +154,7 @@ my $fakeTWCID = "\x77\x77";
 # The byte never changes unless the TWC is reset or power cycled.  We
 # use hard-coded values for now because I don't know if there are any
 # rules to what values can be chosen.  I picked 77 because it's easy to
-# recognize when looking at logs.
+# recognize when looking at logs.  These shouldn't need to be changed.
 my $masterSign = "\x77";
 my $slaveSign = "\x77";
 
@@ -271,7 +293,7 @@ for(;;) {
 					$totalAmpsMax = int(($solarWh / 240) * 100);
 					
 					print("Solar generating " . $solarWh 
-						. "wH so limit car charging to "
+						. "Wh so limit car charging to "
 						. ($totalAmpsMax / 100) . "A.\n");
 				}
 				else {
@@ -493,6 +515,13 @@ for(;;) {
 					
 					if($fakeTWCID eq $receiverID) {
 						my $actualSlaveAmpsMax = ($statusData[1] << 8) + $statusData[2];
+
+						if($totalAmpsMax > ($maxAmpsWiringCanHandle * 100)) {
+							# Never tell the slaves to draw more amps
+							# than the physical charger wiring can
+							# handle.
+							$totalAmpsMax = int($maxAmpsWiringCanHandle * 100);
+						}
 						
 						# Allocate this slave a fraction of $totalAmpsMax
 						# divided by teh number of slave TWCs on the network.
@@ -1098,7 +1127,7 @@ sub send_heartbeat
 		# itself could only handle 80A, but the slave dutifully responds
 		# with the same value master sends it even if that value is
 		# an insane 655.35A.  I tested these values on my car which has
-		# a 40A limit when AC charging:
+		# a 40A limit when AC charging and slave accepts them all:
 		#   0f aa (40.10A)
 		#   1f 40 (80.00A)
 		#   1f 41 (80.01A)
