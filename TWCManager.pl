@@ -12,7 +12,7 @@
 # Source code and protocol knowledge are hereby released to the
 # general public free for personal or commercial use.  I hope the
 # knowledge will be used to increase the use of green energy sources by
-# controlling the time of car charging.
+# controlling the time and power level of car charging.
 
 ########################################################################
 # What's this script good for?
@@ -163,6 +163,8 @@ my %slaveLastRxTimestamp;
 my $slaveIdxToGetNextStatus = 0;
 my $totalAmpsMax = 1;
 my $lastGreenEnergyCheckTimestamp = 0;
+my $lastHeartbeatDebugOutput = '';
+my $lastHeartbeatDebugOutputTimestamp = 0;
 #my $testTimer = undef;
 
 printf("TWC Manager starting as fake %s with id %02x%02x and sign %02x\n\n",
@@ -546,19 +548,36 @@ for(;;) {
 						else {
 							@masterStatus = (0x00,0x00,0x00,0x00,0x00,0x00,0x00);
 						}
-						
-						printf(time_now() . ": S %02x%02x %02.2f/%02.2fA: "
-							. "%02x %02x%02x %02x%02x %02x%02x  "
-							. "M: %02x %02x%02x %02x%02x %02x%02x\n",
-							vec($senderID, 0, 8), vec($senderID, 1, 8),
-							((($statusData[3] << 8) + $statusData[4]) / 100),
-							((($statusData[1] << 8) + $statusData[2]) / 100),
-							$statusData[0], $statusData[1], $statusData[2],
-							$statusData[3], $statusData[4], $statusData[5],
-							$statusData[6], 
-							$masterStatus[0], $masterStatus[1], $masterStatus[2],
-							$masterStatus[3], $masterStatus[4], $masterStatus[5],
-							$masterStatus[6]);
+
+						if($debugLevel >= 1) {
+							my $debugOutput =
+								sprintf(": S %02x%02x %02.2f/%02.2fA: "
+								. "%02x %02x%02x %02x%02x %02x%02x  "
+								. "M: %02x %02x%02x %02x%02x %02x%02x\n",
+								vec($senderID, 0, 8), vec($senderID, 1, 8),
+								((($statusData[3] << 8) + $statusData[4]) / 100),
+								((($statusData[1] << 8) + $statusData[2]) / 100),
+								$statusData[0], $statusData[1], $statusData[2],
+								$statusData[3], $statusData[4], $statusData[5],
+								$statusData[6],
+								$masterStatus[0], $masterStatus[1], $masterStatus[2],
+								$masterStatus[3], $masterStatus[4], $masterStatus[5],
+								$masterStatus[6]);
+
+							# Only output once-per-second heartbeat
+							# debug info when it's different from the
+							# last output, or if it's been 10 mins
+							# since the last output or if $debugLevel
+							# is turned up to 11.
+							if($debugOutput ne $lastHeartbeatDebugOutput
+								|| time - $lastHeartbeatDebugOutputTimestamp > 600
+								|| $debugLevel >= 11
+							) {
+								print(time_now() . $debugOutput);
+								$lastHeartbeatDebugOutput = $debugOutput;
+								$lastHeartbeatDebugOutputTimestamp = time;
+							}
+						}
 					}
 					else {
 						# I've tried different $fakeTWCID values to verify a
