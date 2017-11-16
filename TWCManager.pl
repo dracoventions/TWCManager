@@ -145,6 +145,7 @@ my $maxAmpsWiringCanHandle = 12;
 # 0 is no output other than errors.
 # 1 is just the most useful info.
 # 10 is all info.
+# 11 is more than all info.
 my $debugLevel = 1;
 
 # Normally we fake being a TWC Master. Set $fakeMaster = 0 to fake being a TWC
@@ -203,13 +204,10 @@ my %lastSlaveAmpsActual;
 my %timeLastSlaveAmpsMaxChanged;
 my %timelastSlaveAmpsActualChanged;
 
-my $maxAmpsToDivideAmongSlaves = 1;
+my $maxAmpsToDivideAmongSlaves = 0;
 my $timeLastGreenEnergyCheck = 0;
 my $lastHeartbeatDebugOutput = '';
 my $timeLastHeartbeatDebugOutput = 0;
-
-# This variable is unused unless you uncomment tests below.
-my $testTimer = undef;
 
 
 printf("TWC Manager starting as fake %s with id %02x%02x and sign %02x\n\n",
@@ -225,6 +223,12 @@ for(;;) {
     # By only sending our periodic messages when no incoming message data is
     # available, we reduce the chance that we will start transmitting a message
     # in the middle of an incoming message, which would corrupt both messages.
+
+    # Add a small sleep to prevent pegging pi's CPU at 100% which slows the UI
+    # (though even with the sleep the UI gets somewhat slow).
+    # Lower CPU also means less power user and less waste heat.
+    usleep(500);
+
     if($fakeMaster) {
         # A real master sends 5 copies of linkready1 and linkready2 whenever it
         # starts up, which we do here.
@@ -253,7 +257,7 @@ for(;;) {
                         # just going to scratch the slave from our little black
                         # book and add them again if they ever send us a
                         # linkready.
-                        print("WARNING: We haven't heard from slave "
+                        printf("WARNING: We haven't heard from slave "
                             . "%02x%02x for over 26 seconds.  "
                             . "Stop sending them heartbeat messages.\n\n",
                             vec($slaveID, 0, 8), vec($slaveID, 1, 8));
@@ -325,7 +329,7 @@ for(;;) {
                         # stop charging or maybe it's more like 20-30 seconds - I
                         # didn't test carefully).
                         my $greenEnergyData = `curl -s -m 4 "http://127.0.0.1/history/export.csv?T=1&D=0&M=1&C=1"`;
-                        
+
                         # In my case, $greenEnergyData will contain something like
                         # this:
                         #   MTU, Time, Power, Cost, Voltage
@@ -417,44 +421,45 @@ for(;;) {
             }
             next;
         }
-        if($msgLen == 1 && ord($data) == 0xfe) {
-            # This happens if we receive a message starting in the middle,
-            # discard its bytes till the last c0, then find fe on the next pass.
-            # Discard what we've got and expect a new message to start.
+        elsif($msgLen > 0 && $msgLen < 15 && ord($data) == 0xc0) {
+            # This usually means we found a c0 marking the end of a message and
+            # anything we received after that is random garbage that can appear
+            # between messages.  This c0 marks the start of a new message.
             if($debugLevel >= 10) {
                 printf("Found end of message before full-length message received.  Discard and wait for new message.\n", ord($data));
             }
-            $msgLen = 0;
+            vec($msg, 0, 8) = ord($data);
+            $msgLen = 1;
             next;
         }
 
         vec($msg, $msgLen, 8) = ord($data);
         $msgLen++;
 
-        # Messages are at least 17 bytes long and always end with \xc0\xfe.
+        # Messages are properly 17 bytes long and end with \xc0\xfe. However,
+        # when the network lacks termination and bias resistors, the last byte
+        # (\xfe) may be corrupted or even missing, and you may receive
+        # additional garbage bytes between messages.
         #
-        # Messages can be over 17 bytes long when special values are "escaped"
-        # as two bytes. See notes in send_msg.
+        # TWCs seem to account for corruption at the end and between messages by
+        # simply ignoring anything after the final \xc0 in a message, so we use
+        # the same tactic. If c0 happens to be within the corrupt noise between
+        # messages, we ignore it by starting a new message whenever we see a c0
+        # before 15 or more bytes are received.
         #
-        # Due to corruption caused by lack of termination resistors, messages
-        # may end in \xc0\x02\0x00 instead, so we also accept that. See notes in
-        # unescape_msg.
-        if($msgLen >= 17
-             &&
-           (
-             vec($msg, $msgLen - 2, 8) == 0xc0
-               &&
-             vec($msg, $msgLen - 1, 8) == 0xfe
-           )
-             ||
-           (
-             vec($msg, $msgLen - 3, 8) == 0xc0
-               &&
-             vec($msg, $msgLen - 2, 8) == 0x02
-               &&
-             vec($msg, $msgLen - 1, 8) == 0x00
-           )
-        ) {
+        # Uncorrupted messages can be over 17 bytes long when special values are
+        # "escaped" as two bytes. See notes in send_msg.
+        #
+        # To prevent most noise between messages, add a 120ohm "termination"
+        # resistor in parallel to the D+ and D- lines. Also add a 680ohm "bias"
+        # resistor between the D+ line and +5V and a second 680ohm "bias"
+        # resistor between the D- line and ground. See here for more
+        # information:
+        #   https://www.ni.com/support/serial/resinfo.htm
+        #   http://www.ti.com/lit/an/slyt514/slyt514.pdf
+        # This explains what happens without "termination" resistors:
+        #   https://e2e.ti.com/blogs_/b/analogwire/archive/2016/07/28/rs-485-basics-when-termination-is-necessary-and-how-to-do-it-properly
+        if($msgLen >= 16 && ord($data) == 0xc0) {
             $msg = unescape_msg($msg, $msgLen);
 
             # Set msgLen = 0 at start so we don't have to do it on errors below.
@@ -467,9 +472,10 @@ for(;;) {
                 print("Rx@" . time_now() . ": " . hex_str($msg) . "\n");
             }
 
-            if(length($msg) != 17) {
-                # After unescaping special values and removing corruption, a
-                # message should always be 17 bytes long.
+            if(length($msg) != 16) {
+                # After unescaping special values and cutting off the trailing
+                # \xfe that ends an uncorrupted message, the message should
+                # always be 16 bytes long.
                 printf("ERROR: Ignoring message of unexpected length %d: %s\n",
                     length($msg), hex_str($msg));
                 next;
@@ -490,7 +496,7 @@ for(;;) {
                 ############################
                 # Pretend to be a master TWC
 
-                if($msg =~ /\xc0\xfd\xe2(..)(.)\x1f\x40\x00\x00\x00\x00\x00\x00.\xc0\xfe/s) {
+                if($msg =~ /\xc0\xfd\xe2(..)(.)\x1f\x40\x00\x00\x00\x00\x00\x00.\xc0/s) {
                     # Handle linkready message from slave.
                     #
                     # We expect to see one of these before we start sending our
@@ -534,7 +540,7 @@ for(;;) {
 
                     send_heartbeat($senderID);
                 }
-                elsif($msg =~ /\xc0\xfd\xe0(..)(..)(.......).\xc0\xfe/s) {
+                elsif($msg =~ /\xc0\xfd\xe0(..)(..)(.......).\xc0/s) {
                     # Handle heartbeat message from slave.
                     #
                     # These messages come in as a direct response to each
@@ -726,10 +732,13 @@ for(;;) {
                                 # raise the TWC max charging limit without first
                                 # raising to at least 21A. 20.9A is not enough.
                                 # I'm not sure how long we have to hold 21A but
-                                # 3 seconds is definitely not enough and 10
+                                # 3 seconds is definitely not enough but 5
                                 # seconds seems to work. It doesn't seem to
                                 # matter if the car actually hits 21A of power
-                                # draw.
+                                # draw.  In fact, the car is slow enough to
+                                # respond that even with 10s at 21A the most
+                                # I've seen it actually draw starting at 6A is
+                                # 13A.
                                 if($debugLevel >= 10) {
                                     print('$lastSlaveAmpsMax{$senderID} ' . $lastSlaveAmpsMax{$senderID}
                                           . ' $slaveReportedAmpsActual ' . $slaveReportedAmpsActual
@@ -745,10 +754,11 @@ for(;;) {
                                      $desiredSlaveAmpsMax > $lastSlaveAmpsMax{$senderID}
                                        ||
                                      (
-                                       # If we somehow trigger the bug that drops
-                                       # power use to 5.14-5.23A, this should
-                                       # detect it after 10 seconds and we'll
-                                       # spike our power request to 21A to fix it.
+                                       # If we somehow trigger the bug that
+                                       # drops power use to 5.14-5.23A, this
+                                       # should detect it after 10 seconds and
+                                       # we'll spike our power request to 21A
+                                       # to fix it.
                                        $lastSlaveAmpsMax{$senderID} - $slaveReportedAmpsActual > 100
                                          &&
                                        time - $timelastSlaveAmpsActualChanged{$senderID} > 10
@@ -758,29 +768,30 @@ for(;;) {
                                     $desiredSlaveAmpsMax = 2100;
 
                                     # Note that the car should have no problem
-                                    # increasing max amps to any whole value over
-                                    # 21A as long as it's below any upper limit
-                                    # manually set in the car's UI.
-                                    # One time when I couldn't get TWC to push the
-                                    # car over 21A, I found the car's UI had set
-                                    # itself to 21A despite my setting it to 40A the
-                                    # day before. I have been unable to reproduce
-                                    # whatever caused that problem.
+                                    # increasing max amps to any whole value
+                                    # over 21A as long as it's below any upper
+                                    # limit manually set in the car's UI.
+                                    # One time when I couldn't get TWC to push
+                                    # the car over 21A, I found the car's UI
+                                    # had set itself to 21A despite my setting
+                                    # it to 40A the day before. I have been
+                                    # unable to reproduce whatever caused that
+                                    # problem.
                                 }
                                 elsif($desiredSlaveAmpsMax < $lastSlaveAmpsMax{$senderID}) {
-                                    # Tesla doesn't mind if we set a lower amp limit
-                                    # than the one we're currently using, but make
-                                    # sure we don't change limits more often than
-                                    # every 10 seconds. This has the side effect of
-                                    # holding the 21A limit mentioned above for 10
-                                    # seconds to make sure the car sees it.
+                                    # Tesla doesn't mind if we set a lower amp
+                                    # limit than the one we're currently using,
+                                    # but make sure we don't change limits
+                                    # more often than every 5 seconds. This
+                                    # has the side effect of holding the 21A
+                                    # limit mentioned above for 5 seconds to
+                                    # make sure the car sees it.
                                     if($debugLevel >= 10) {
                                         print('Reduce amps: time - $timeLastSlaveAmpsMaxChanged{$senderID} '
                                             . (time - $timeLastSlaveAmpsMaxChanged{$senderID})
                                             . "\n");
                                     }
-                                    if(time - $timeLastSlaveAmpsMaxChanged{$senderID} < 10) {
-                                        # $lastSlaveAmpsMax{$senderID} should only be changed using this sub.
+                                    if(time - $timeLastSlaveAmpsMaxChanged{$senderID} < 5) {
                                         $desiredSlaveAmpsMax = $lastSlaveAmpsMax{$senderID};
                                     }
                                 }
@@ -795,7 +806,9 @@ for(;;) {
                                                             $desiredSlaveAmpsMax);
 
                         # See notes in send_heartbeat(), fake slave section for
-                        # how these numbers work.
+                        # details on how we transmit $desiredSlaveAmpsMax and
+                        # the meaning of the code in $masterHeartbeatData[0].
+                        #
                         # Rather than only sending $desiredSlaveAmpsMax when
                         # slave is sending code 04 or 08, it seems to work
                         # better to send $desiredSlaveAmpsMax whenever it does
@@ -804,24 +817,28 @@ for(;;) {
                         # even when it's in state 00 or 03 which it swings
                         # between after you set $desiredSlaveAmpsMax = 0 to stop
                         # charging.
-                        if($slaveReportedAmpsMax != $desiredSlaveAmpsMax) {
+                        #
+                        # I later found that a slave may end up swinging between
+                        # state 01 and 03 when $desiredSlaveAmpsMax == 0:
+                        #   S 032e 0.25/0.00A: 01 0000 0019 0000  M: 00 0000 0000 0000
+                        #   S 032e 0.25/6.00A: 03 0258 0019 0000  M: 05 0000 0000 0000
+                        #   S 032e 0.25/0.00A: 01 0000 0019 0000  M: 00 0000 0000 0000
+                        #   S 032e 0.25/6.00A: 03 0258 0019 0000  M: 05 0000 0000 0000
+                        #
+                        # While it's doing this, it's continuously opening and
+                        # closing the relay on the TWC each second which makes
+                        # an audible click and will wear out the relay. To avoid
+                        # that problem, always send code 05 when
+                        # $desiredSlaveAmpsMax == 0. In that case, slave's
+                        # response should always look like this:
+                        #   S 032e 0.25/0.00A: 03 0000 0019 0000  M: 05 0000 0000 0000
+                        if($slaveReportedAmpsMax != $desiredSlaveAmpsMax
+                           || $desiredSlaveAmpsMax == 0
+                        ) {
                             @masterHeartbeatData = (0x05,
                               ($desiredSlaveAmpsMax >> 8) & 0xFF,
                               $desiredSlaveAmpsMax & 0xFF,
                               0x00,0x00,0x00,0x00);
-
-                            # Test code to start the car at 0.01A and after 60
-                            # seconds, increase the power by 0.50A every 10
-                            # seconds.
-                            #if(!defined($testTimer)) {
-                                #$testTimer = time + 60;
-                            #}
-                            #elsif($testTimer < time) {
-                                #if($maxAmpsToDivideAmongSlaves < 4000) {
-                                    #$maxAmpsToDivideAmongSlaves += 50;
-                                #}
-                                #$testTimer = time + 10;
-                            #}
                         }
                         else {
                             @masterHeartbeatData = (0x00,0x00,0x00,0x00,0x00,0x00,0x00);
@@ -879,7 +896,7 @@ for(;;) {
                 ###########################
                 # Pretend to be a slave TWC
 
-                if($msg =~ /\xc0\xfc\xe1(..)(.)\x00\x00\x00\x00\x00\x00\x00\x00.\xc0\xfe/s) {
+                if($msg =~ /\xc0\xfc\xe1(..)(.)\x00\x00\x00\x00\x00\x00\x00\x00.\xc0/s) {
                     # Handle linkready1 from master.
                     # See notes in send_master_linkready1() for details.
                     my $senderID = $1;
@@ -903,7 +920,7 @@ for(;;) {
                     # master, it doesn't seem that a real slave will make any
                     # sort of direct response when sent a master's linkready1.
                 }
-                elsif($msg =~ /\xc0\xfb\xe2(..)(.)\x00\x00\x00\x00\x00\x00\x00\x00.\xc0\xfe/s) {
+                elsif($msg =~ /\xc0\xfb\xe2(..)(.)\x00\x00\x00\x00\x00\x00\x00\x00.\xc0/s) {
                     # Handle linkready2 from master.
                     # See notes in send_master_linkready2() for details.
                     my $senderID = $1;
@@ -931,7 +948,7 @@ for(;;) {
                     # will see one of our 10-second linkreadys eventually.
                     send_slave_linkready();
                 }
-                elsif($msg =~ /\xc0\xfb\xe0(..)(..)(.......).\xc0\xfe/s) {
+                elsif($msg =~ /\xc0\xfb\xe0(..)(..)(.......).\xc0/s) {
                     # Handle heartbeat message from a master.
                     my $senderID = $1;
                     my $receiverID = $2;
@@ -963,23 +980,11 @@ for(;;) {
                     $slaveHeartbeatData[1] = $heartbeatData[1];
                     $slaveHeartbeatData[2] = $heartbeatData[2];
 
-                    #if(!defined($testTimer)) {
-                        #$slaveHeartbeatData[0] = 0;
-                        #$testTimer = time + 2;
-                    #}
-                    #elsif($testTimer < time) {
-                        #$slaveHeartbeatData[0]++;
-                        #if($slaveHeartbeatData[0] > 255) {
-                            #$slaveHeartbeatData[0] = 0;
-                        #}
-                        #$testTimer = time + 2;
-                    #}
-
                     # Slaves always respond to master's heartbeat by sending
                     # theirs back.
                     send_heartbeat($senderID);
                 }
-                elsif($msg =~ /\xc0\xfc\x1d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00.\xc0\xfe/s) {
+                elsif($msg =~ /\xc0\xfc\x1d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00.\xc0/s) {
                     # Handle 4-hour idle message
                     #
                     # I haven't verified this, but TheNoOne reports receiving
@@ -1151,32 +1156,6 @@ sub unescape_msg
 {
     my ($msg, $msgLen) = @_;
     $msg = substr($msg, 0, $msgLen);
-
-    # When you don't have a 120ohm resistor in parallel with the D+ and D- pins,
-    # you may see corruption in the data.
-    # This explains where terminators should be added:
-    #   https://www.ni.com/support/serial/resinfo.htm
-    # This explains what happens without terminators:
-    #   https://e2e.ti.com/blogs_/b/analogwire/archive/2016/07/28/rs-485-basics-when-termination-is-necessary-and-how-to-do-it-properly
-    #
-    # I don't understand why, but it seems like lack of termination only
-    # corrupts the last byte of a message, and only sometimes. In my system,
-    # lack of termination causes messages to periodically end in \xc0\x02\0x00
-    # instead of \xc0\xfe. This is easy to correct, so I do it here. I have no
-    # idea if other systems will see this exact same pattern of corruption.
-    if(
-        vec($msg, $msgLen - 3, 8) == 0xc0
-           &&
-         vec($msg, $msgLen - 2, 8) == 0x02
-           &&
-         vec($msg, $msgLen - 1, 8) == 0x00
-    ) {
-        if($debugLevel >= 1) {
-            print("Fixed corruption at end of message likely caused by "
-              . "lack of termination.  See notes in source code.\n");
-        }
-        substr($msg, $msgLen -2, 2, "\xfe");
-    }
 
     # See notes in send_msg() for the crazy way certain bytes in messages are
     # escaped.
