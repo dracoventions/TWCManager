@@ -110,6 +110,7 @@ use Time::HiRes qw(usleep nanosleep);
 use warnings;
 use strict;
 
+
 # This makes print output to screen immediately instead of waiting till
 # the end of the line is reached.
 $| = 1;
@@ -124,22 +125,37 @@ $| = 1;
 # of '/dev/ttyUSB0' below will work. If not, run 'dmesg |grep ttyUSB' on the
 # command line to find your rs485 adapter and put its ttyUSB# value in the
 # parameter below.
+# If you're using a non-USB adapter like an RS485 shield, the value may need to
+# be something like '/dev/serial0'.
 my $rs485Adapter = '/dev/ttyUSB0';
 
-# Set this to the maximum number of amps your charger wiring can handle. I
-# default this to a low 12A which is the minimum rated wiring in US households.
-# Most chargers will be wired to handle at least 40A and sometimes 80A.
-# Setting this too high will trip the circuit breaker on your charger if the car
-# draws max power or will START A FIRE if the circuit breaker malfunctions.
+# Set $wiringMaxAmpsAllTWCs to the maximum number of amps your charger wiring
+# can handle. I default this to a low 6A which should be safe with the minimum
+# standard of wiring in the areas of the world that I'm aware of.
+# Most U.S. chargers will be wired to handle at least 40A and sometimes 80A,
+# whereas EU chargers will handle at most 32A (using 3 AC lines instead of 2 so
+# the total power they deliver is similar).
+# Setting $wiringMaxAmpsAllTWCs too high will trip the circuit breaker on your
+# charger at best or START A FIRE if the circuit breaker malfunctions.
 # Keep in mind that circuit breakers are designed to handle only 80% of their
-# max power rating continuously. If your charger has a 50A circuit breaker, put
-# 50 * 0.8 = 40 here.
+# max power rating continuously, so if your charger has a 50A circuit breaker,
+# put 50 * 0.8 = 40 here.
 # 40 amp breaker * 0.8 = 32 here.
 # 30 amp breaker * 0.8 = 24 here.
 # 100 amp breaker * 0.8 = 80 here.
 # IF YOU'RE NOT SURE WHAT TO PUT HERE, ASK THE ELECTRICIAN WHO INSTALLED YOUR
 # CHARGER.
-my $maxAmpsWiringCanHandle = 12;
+my $wiringMaxAmpsAllTWCs = 6;
+
+# If all your chargers share a single circuit breaker, set $wiringMaxAmpsPerTWC
+# to the same value as $wiringMaxAmpsAllTWCs.
+# Rarely, each TWC will be wired to its own circuit breaker. If you're
+# absolutely sure your chargers each have a separate breaker, put the value of
+# that breaker * 0.8 here, and put the sum of all breakers * 0.8 as the value of
+# $wiringMaxAmpsAllTWCs.
+# For example, if you have two TWCs each with a 50A breaker, set
+# $wiringMaxAmpsPerTWC = 50 * 0.8 = 40 and $wiringMaxAmpsAllTWCs = 40 + 40 = 80.
+my $wiringMaxAmpsPerTWC = 6;
 
 # Choose how much debugging info to output.
 # 0 is no output other than errors.
@@ -190,23 +206,20 @@ system("stty -F $rs485Adapter raw -echo $baud cs8 -cstopb -parenb");
 sysopen(TWC, "$rs485Adapter", O_RDWR | O_NONBLOCK) or die "Can't open $rs485Adapter";
 binmode TWC, ":raw";
 
-my @masterHeartbeatData = (0x00,0x00,0x00,0x00,0x00,0x00,0x00); # This also works but not as compact: unpack('C*', "\x00\x00\x00\x00\x00\x00\x00");
 my @slaveHeartbeatData = (0x04,0x00,0x00,0x00,0x19,0x00,0x00);
 my $numInitMsgsToSend = 10;
 my $msgRxCount = 0;
 my $timeLastTx = 0;
 
-my @slaveTWCIDs = ();
+my %slaveTWCs;
+my @slaveTWCRoundRobin = ();
 my $idxSlaveToSendNextHeartbeat = 0;
-my %timeSlaveLastRx;
-my %lastSlaveAmpsMax;
-my %lastSlaveAmpsActual;
-my %timeLastSlaveAmpsMaxChanged;
-my %timelastSlaveAmpsActualChanged;
 
 my $maxAmpsToDivideAmongSlaves = 0;
+my $spikeAmpsToCancel6ALimit = 16;
 my $timeLastGreenEnergyCheck = 0;
-my $lastHeartbeatDebugOutput = '';
+my $overrideMaxAmps = -1;
+my $timeLastOverrideMaxAmpsCheck = 0;
 my $timeLastHeartbeatDebugOutput = 0;
 
 
@@ -232,6 +245,8 @@ for(;;) {
     if($fakeMaster) {
         # A real master sends 5 copies of linkready1 and linkready2 whenever it
         # starts up, which we do here.
+        # It doesn't seem to matter if we send these once per second or once per
+        # 100ms so I do once per 100ms to get them over with.
         if($numInitMsgsToSend > 5) {
             send_master_linkready1();
             usleep(100); # give slave time to respond
@@ -248,9 +263,9 @@ for(;;) {
             # a linkready message from. Do that here.
             if(time - $timeLastTx > 0) {
                 # It's been about a second since our last heartbeat.
-                if(@slaveTWCIDs > 0) {
-                    my $slaveID = $slaveTWCIDs[$idxSlaveToSendNextHeartbeat];
-                    if(time - $timeSlaveLastRx{$slaveID} > 26) {
+                if(@slaveTWCRoundRobin > 0) {
+                    my $slaveTWC = $slaveTWCRoundRobin[$idxSlaveToSendNextHeartbeat];
+                    if(time - $slaveTWC->{timeLastRx} > 26) {
                         # A real master stops sending heartbeats to a slave that
                         # hasn't responded for ~26 seconds. It may still send
                         # the slave a heartbeat every once in awhile but we're
@@ -260,104 +275,108 @@ for(;;) {
                         printf("WARNING: We haven't heard from slave "
                             . "%02x%02x for over 26 seconds.  "
                             . "Stop sending them heartbeat messages.\n\n",
-                            vec($slaveID, 0, 8), vec($slaveID, 1, 8));
-                        delete_slave($slaveID);
+                            vec($slaveTWC->{ID}, 0, 8), vec($slaveTWC->{ID}, 1, 8));
+                        delete_slave($slaveTWC->{ID});
                     }
                     else {
-                        send_heartbeat($slaveID);
+                        $slaveTWC->send_master_heartbeat();
                     }
 
                     $idxSlaveToSendNextHeartbeat++;
-                    if($idxSlaveToSendNextHeartbeat >= @slaveTWCIDs) {
+                    if($idxSlaveToSendNextHeartbeat >= @slaveTWCRoundRobin) {
                         $idxSlaveToSendNextHeartbeat = 0;
                     }
                     usleep(100); # give slave time to respond
                 }
             }
 
-            if(time - $timeLastGreenEnergyCheck > 60) {
+            if(time - $timeLastOverrideMaxAmpsCheck > 60) {
                 # If you'd like to test different amp limits while TWCManager
                 # runs, in the same directory as TWCManager.pl, create a file
-                # called overrideMaxAmps.txt and put just the amp limit in it in
-                # hundredths of amps, ie '2000' for 20 amps. TWCManager will
-                # pick up changed values as often as you set the 'time -
-                # $timeLastGreenEnergyCheck > 60' check above.
-                # Delete overrideMaxAmps.txt to resume normal operation.
-                my $overrideMaxAmps = -1;
+                # called 'overrideMaxAmps.txt'. Within the file, put the amp
+                # limit, ie '20' for 20 amps. TWCManager will pick up changed
+                # values as often as you set the 'time -
+                # $timeLastGreenEnergyCheck > 60' check above. Delete
+                # overrideMaxAmps.txt to resume normal operation, or just make it
+                # an empty file.
+                $timeLastOverrideMaxAmpsCheck = time;
+                $overrideMaxAmps = -1;
                 if(open(my $fh, '<', 'overrideMaxAmps.txt')) {
-                    if(<$fh> =~ m/([0-9]+)/m) {
-                        $overrideMaxAmps = int($1);
+                    # Once we find overrideMaxAmps.txt exists, check it every
+                    # five seconds for changes instead of checking for existence
+                    # every 60 seconds.
+                    $timeLastOverrideMaxAmpsCheck = time - 55;
+                    if(<$fh> =~ m/([0-9.]+)/m) {
+                        $overrideMaxAmps = $1;
+                        if($debugLevel >= 10) {
+                            print("\$overrideMaxAmps set to $overrideMaxAmps\n");
+                        }
                     }
                     close $fh;
                 }
+            }
 
-                if($overrideMaxAmps > -1) {
-                    $maxAmpsToDivideAmongSlaves = $overrideMaxAmps;
-                }
-                else {
-                    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
-                                                    localtime(time);
-                    # Don't bother to check solar generation before 6am or after
-                    # 8pm. Sunrise in most U.S. areas varies from a little before
-                    # 6am in Jun to almost 7:30am in Nov before the clocks get set
-                    # back an hour. Sunset can be ~4:30pm to just after 8pm.
-                    if($hour >= 6 && $hour < 20) {
-                        # I check my solar panel generation using an API exposed by
-                        # The Energy Detective (TED). It's a piece of hardware
-                        # available at http://www. theenergydetective.com/ You may
-                        # also be able to find a way to query a solar system on the
-                        # roof using an API provided by your solar installer. Most
-                        # of those systems only update the amount of power the
-                        # system is producing every 15 minutes at most, though
-                        # that's fine for tweaking your car charging.
-                        #
-                        # In the worst case, you could skip finding realtime green
-                        # energy data and simply direct the car to charge at certain
-                        # rates at certain times of day that typically have certain
-                        # levels of solar or wind generation. To do so, use the
-                        # $hour and $min variables above.
-                        #
-                        # The curl command used below can be used to communicate
-                        # with almost any web API, even ones that require POST
-                        # values or authentication. -s option prevents curl from
-                        # displaying download stats. -m 4 prevents the whole
-                        # operation from taking over 4 seconds. If your service
-                        # regularly takes a long time to respond, you'll have to
-                        # query it in a background process and have the process
-                        # update a file that you check here. If we delay over 9ish
-                        # seconds here, slave TWCs will decide we've disappeared and
-                        # stop charging or maybe it's more like 20-30 seconds - I
-                        # didn't test carefully).
-                        my $greenEnergyData = `curl -s -m 4 "http://127.0.0.1/history/export.csv?T=1&D=0&M=1&C=1"`;
+            if($overrideMaxAmps > -1) {
+                $maxAmpsToDivideAmongSlaves = $overrideMaxAmps;
+            }
+            elsif(time - $timeLastGreenEnergyCheck > 60) {
+                my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
+                                                localtime(time);
+                # Don't bother to check solar generation before 6am or after
+                # 8pm. Sunrise in most U.S. areas varies from a little before
+                # 6am in Jun to almost 7:30am in Nov before the clocks get set
+                # back an hour. Sunset can be ~4:30pm to just after 8pm.
+                if($hour >= 6 && $hour < 20) {
+                    # I check my solar panel generation using an API exposed by
+                    # The Energy Detective (TED). It's a piece of hardware
+                    # available at http://www. theenergydetective.com/ You may
+                    # also be able to find a way to query a solar system on the
+                    # roof using an API provided by your solar installer. Most
+                    # of those systems only update the amount of power the
+                    # system is producing every 15 minutes at most, though
+                    # that's fine for tweaking your car charging.
+                    #
+                    # In the worst case, you could skip finding realtime green
+                    # energy data and simply direct the car to charge at certain
+                    # rates at certain times of day that typically have certain
+                    # levels of solar or wind generation. To do so, use the
+                    # $hour and $min variables above.
+                    #
+                    # The curl command used below can be used to communicate
+                    # with almost any web API, even ones that require POST
+                    # values or authentication. -s option prevents curl from
+                    # displaying download stats. -m 4 prevents the whole
+                    # operation from taking over 4 seconds. If your service
+                    # regularly takes a long time to respond, you'll have to
+                    # query it in a background process and have the process
+                    # update a file that you check here. If we delay over 9ish
+                    # seconds here, slave TWCs will decide we've disappeared and
+                    # stop charging or maybe it's more like 20-30 seconds - I
+                    # didn't test carefully).
+                    my $greenEnergyData = `curl -s -m 4 "http://127.0.0.1/history/export.csv?T=1&D=0&M=1&C=1"`;
 
-                        # In my case, $greenEnergyData will contain something like
-                        # this:
-                        #   MTU, Time, Power, Cost, Voltage
-                        #   Solar,11/11/2017 14:20:43,-2.957,-0.29,124.3
-                        # The only part we care about is -2.957 which is negative
-                        # kWh currently being generated.
-                        if($greenEnergyData =~ m~^Solar,[^,]+,-([^, ]+),~m) {
-                            my $solarWh = int($1 * 1000);
+                    # In my case, $greenEnergyData will contain something like
+                    # this:
+                    #   MTU, Time, Power, Cost, Voltage
+                    #   Solar,11/11/2017 14:20:43,-2.957,-0.29,124.3
+                    # The only part we care about is -2.957 which is negative
+                    # kWh currently being generated.
+                    if($greenEnergyData =~ m~^Solar,[^,]+,-([^, ]+),~m) {
+                        my $solarWh = int($1 * 1000);
 
-                            # Watts = Volts * Amps
-                            # Car charges at 240 volts in the U.S. so we figure out
-                            # how many amps * 240 = $solarWh and limit the car to
-                            # that many amps.
-                            # Note that $maxAmpsToDivideAmongSlaves is in 0.01A
-                            # units, so $maxAmpsToDivideAmongSlaves 100 = 1A, 1567 =
-                            # 15.67A, etc.
-                            $maxAmpsToDivideAmongSlaves = int(($solarWh / 240) * 100);
+                        # Watts = Volts * Amps
+                        # Car charges at 240 volts in the U.S. so we figure out
+                        # how many amps * 240 = $solarWh and limit the car to
+                        # that many amps.
+                        $maxAmpsToDivideAmongSlaves = $solarWh / 240;
 
-                            print("Solar generating " . $solarWh
-                                . "Wh so limit car charging to "
-                                . ($maxAmpsToDivideAmongSlaves / 100) . "A.\n");
-                        }
-                        else {
-                            print("ERROR: Can't determine current solar generation.\n\n");
-                        }
+                        printf("Solar generating %dWh so limit car charging to %.2fA.\n",
+                            $solarWh, $maxAmpsToDivideAmongSlaves);
+                    }
+                    else {
+                        print("ERROR: Can't determine current solar generation.\n\n");
                     }
                 }
-
                 $timeLastGreenEnergyCheck = time;
             }
         }
@@ -409,22 +428,22 @@ for(;;) {
         }
 
         if($msgLen == 0 && ord($data) != 0xc0) {
-            # If you see this when the program is first started, it means we
-            # started listening in the middle of the TWC sending a message so we
-            # didn't see the 0xc0 char that starts a message. That's
-            # unavoidable.
-            # If you see this any other time, it means there was some corruption
-            # in what we received. It's normal for that to happen every once in
-            # awhile.
-            if($debugLevel >= 10) {
-                printf("Got unexpected byte %02x at start of msg.\n", ord($data));
+            # We expect to find these non-c0 bytes between messages, so we don't
+            # print any warning at standard debug levels.
+            if($debugLevel >= 11) {
+                printf("Ignoring byte %02x between messages.\n", ord($data));
             }
             next;
         }
         elsif($msgLen > 0 && $msgLen < 15 && ord($data) == 0xc0) {
-            # This usually means we found a c0 marking the end of a message and
-            # anything we received after that is random garbage that can appear
-            # between messages.  This c0 marks the start of a new message.
+            # If you see this when the program is first started, it means we
+            # started listening in the middle of the TWC sending a message so we
+            # didn't see the whole message and must discard it. That's
+            # unavoidable.
+            # If you see this any other time, it means there was some corruption
+            # in what we received. It's normal for that to happen every once in
+            # awhile but there may be a problem such as incorrect termination
+            # or bias resistors on the rs485 wiring if you see it frequently.
             if($debugLevel >= 10) {
                 printf("Found end of message before full-length message received.  Discard and wait for new message.\n", ord($data));
             }
@@ -496,7 +515,7 @@ for(;;) {
                 ############################
                 # Pretend to be a master TWC
 
-                if($msg =~ /\xc0\xfd\xe2(..)(.)\x1f\x40\x00\x00\x00\x00\x00\x00.\xc0/s) {
+                if($msg =~ /\xc0\xfd\xe2(..)(.)(..)\x00\x00\x00\x00\x00\x00.\xc0/s) {
                     # Handle linkready message from slave.
                     #
                     # We expect to see one of these before we start sending our
@@ -510,10 +529,25 @@ for(;;) {
                     # again.
                     my $senderID = $1;
                     my $sign = $2;
+                    my $maxAmps = ((vec($3, 0, 8) << 8) + vec($3, 1, 8)) / 100;
                     if($debugLevel >= 1) {
-                        printf(time_now() . ": Slave TWC %02x%02x is ready to link.  Sign: %s\n",
-                            vec($senderID, 0, 8), vec($senderID, 1, 8),
+                        printf(time_now() . ": %.2f amp slave TWC %02x%02x is ready to link.  Sign: %s\n",
+                            $maxAmps, vec($senderID, 0, 8), vec($senderID, 1, 8),
                             hex_str($sign));
+                    }
+
+                    if($maxAmps >= 80) {
+                        # U.S. chargers need a spike to 21A to cancel a 6A
+                        # charging limit imposed in an Oct 2017 Tesla car
+                        # firmware update. See notes where
+                        # $spikeAmpsToCancel6ALimit is used.
+                        $spikeAmpsToCancel6ALimit = 21;
+                    }
+                    else {
+                        # EU chargers need a spike to only 16A.  This value
+                        # comes from a forum post and has not been directly
+                        # tested.
+                        $spikeAmpsToCancel6ALimit = 16;
                     }
 
                     if($senderID eq $fakeTWCID) {
@@ -536,9 +570,22 @@ for(;;) {
                     # and generally no more than once, so this is a good
                     # opportunity to add the slave to our known pool of slave
                     # devices.
-                    new_slave($senderID);
+                    my $slaveTWC = new_slave($senderID);
 
-                    send_heartbeat($senderID);
+                    # We expect $maxAmps to be 80 on U.S. chargers and 32 on EU
+                    # chargers. Either way, don't allow
+                    # $slaveTWC->{wiringMaxAmps} to be greater than $maxAmps.
+                    if($slaveTWC->{wiringMaxAmps} > $maxAmps) {
+                        print("\n\n!!! DANGER DANGER !!!\nYou have set \$wiringMaxAmpsPerTWC to "
+                              . $wiringMaxAmpsPerTWC
+                              . " which is greater than the max "
+                              . $maxAmps . " amps your charger says it can handle.  "
+                              . "Please review instructions in the source code and consult an "
+                              . "electrician if you don't know what to do.\n\n");
+                        $slaveTWC->{wiringMaxAmps} = $maxAmps / 4;
+                    }
+
+                    $slaveTWC->send_master_heartbeat();
                 }
                 elsif($msg =~ /\xc0\xfd\xe0(..)(..)(.......).\xc0/s) {
                     # Handle heartbeat message from slave.
@@ -554,10 +601,8 @@ for(;;) {
                     my $receiverID = $2;
                     my @heartbeatData = unpack('C*', $3);
 
-                    if(exists($timeSlaveLastRx{$senderID})) {
-                        $timeSlaveLastRx{$senderID} = time;
-                    }
-                    else {
+                    my $slaveTWC = $slaveTWCs{$senderID};
+                    if(!defined($slaveTWC)) {
                         # Normally, a slave only sends us a heartbeat message if
                         # we send them ours first, so it's not expected we would
                         # hear heartbeat from a slave that's not in our list.
@@ -568,310 +613,7 @@ for(;;) {
                     }
 
                     if($fakeTWCID eq $receiverID) {
-                        my $slaveReportedAmpsMax = ($heartbeatData[1] << 8) + $heartbeatData[2];
-                        my $slaveReportedAmpsActual = ($heartbeatData[3] << 8) + $heartbeatData[4];
-
-                        # $lastSlaveAmpsMax{$senderID} is initialized to -1.
-                        # If we find it at that value, set it to the current
-                        # value reported by the TWC.
-                        if($lastSlaveAmpsMax{$senderID} < 0) {
-                            $lastSlaveAmpsMax{$senderID} = $slaveReportedAmpsMax;
-                        }
-
-                        # Keep track of the amps the slave is actually using and
-                        # the last time it changed by more than 0.8A.
-                        # Also update $lastSlaveAmpsActual{$senderID} if it's still
-                        # set to its initial value of -1.
-                        if($lastSlaveAmpsActual{$senderID} < 0
-                           || abs($slaveReportedAmpsActual - $lastSlaveAmpsActual{$senderID}) > 80
-                        ) {
-                            $timelastSlaveAmpsActualChanged{$senderID} = time;
-                            $lastSlaveAmpsActual{$senderID} = $slaveReportedAmpsActual;
-                        }
-
-                        if($maxAmpsToDivideAmongSlaves >
-                            ($maxAmpsWiringCanHandle * 100)
-                        ) {
-                            # Never tell the slaves to draw more amps than the
-                            # physical charger wiring can handle.
-                            $maxAmpsToDivideAmongSlaves =
-                                int($maxAmpsWiringCanHandle * 100);
-                        }
-
-                        # Allocate this slave a fraction of
-                        # $maxAmpsToDivideAmongSlaves divided by the number of
-                        # slave TWCs on the network.
-                        my $desiredSlaveAmpsMax =
-                            int($maxAmpsToDivideAmongSlaves / @slaveTWCIDs);
-
-                        if($desiredSlaveAmpsMax < 500) {
-                            # To avoid errors, don't charge the car under 5.0A.
-                            # 5A is the lowest value you can set using the Tesla
-                            # car's main screen, so lower values might have some
-                            # adverse affect on the car. I actually tried lower
-                            # values when the sun was providing under 5A of
-                            # power and found the car would occasionally set
-                            # itself to state 03 and refuse to charge until you
-                            # re-plugged the charger cable. Clicking "Start
-                            # charging" in the car's UI or in the phone app
-                            # would not start charging.
-                            #
-                            # A 5A charge only delivers ~3 miles of range to the
-                            # car per hour, but it forces the car to remain "on"
-                            # at a level that it wastes some power while it's
-                            # charging. The lower the amps, the more power is
-                            # wasted. This is another reason not to go below 5A.
-                            #
-                            # So if there isn't at least 5A of power available,
-                            # pass 0A as the desired value. This tells the car
-                            # to stop charging and it will enter state 03 and go
-                            # to sleep. You will hear the power relay in the TWC
-                            # turn off. When $desiredSlaveAmpsMax trends above
-                            # 6A again, it tells the car there's power. The car
-                            # seems to wake every 15 mins or so (unlocking or
-                            # using phone app also wake it) and next time it
-                            # wakes, it will see there's power and start
-                            # charging.
-                            $desiredSlaveAmpsMax = 0;
-
-                            if(
-                               $lastSlaveAmpsMax{$senderID} > 0
-                                 &&
-                               (
-                                 time - $timeLastSlaveAmpsMaxChanged{$senderID} < 60
-                                   ||
-                                 time - $timelastSlaveAmpsActualChanged{$senderID} < 60
-                                   ||
-                                 $slaveReportedAmpsActual < 400
-                               )
-                            ) {
-                                # We were previously telling the car to charge
-                                # but now we want to tell it to stop. However,
-                                # it's been less than a minute since we told it
-                                # to charge or since the last significant change
-                                # in the car's actual power draw or the car has
-                                # not yet started to draw at least 5 amps
-                                # (telling it 5A makes it actually draw around
-                                # 4.18-4.27A so we check for
-                                # $slaveReportedAmpsActual < 400).
-                                #
-                                # Once we tell the car to charge, we want to
-                                # keep it going for at least a minute before
-                                # turning it off again. In that minute,
-                                # $desiredSlaveAmpsMax might rise above 500A in
-                                # which case we won't have to turn it off at
-                                # all. Avoiding too many on/off cycles preserves
-                                # the life of the TWC's main power relay and may
-                                # also prevent errors in the car that might be
-                                # caused by turning its charging on and off too
-                                # rapidly.
-                                #
-                                # Seeing $slaveReportedAmpsActual < 400 means the
-                                # car hasn't ramped up to whatever level we told
-                                # it to charge at last time. It may be asleep
-                                # and take up to 15 minutes to wake up, see
-                                # there's power, and start charging. Once we
-                                # tell the car there's power available, I don't
-                                # want to risk telling it the power is gone
-                                # until it's woken up and started using the
-                                # power. I'm just guessing, but I worry that
-                                # yanking the power at just the wrong time
-                                # during start charge negotiation could put the
-                                # car into an error state where it won't charge
-                                # again without being re-plugged.
-                                if($debugLevel >= 10) {
-                                    print("Don't stop charging yet because:\n"
-                                          . 'time - $timeLastSlaveAmpsMaxChanged{$senderID} '
-                                          . (time - $timeLastSlaveAmpsMaxChanged{$senderID})
-                                          . "< 60\n"
-                                          . '|| time - $timelastSlaveAmpsActualChanged{$senderID} '
-                                          . (time - $timelastSlaveAmpsActualChanged{$senderID})
-                                          . "< 60\n"
-                                          . '|| $slaveReportedAmpsActual ' . $slaveReportedAmpsActual
-                                          . " < 400\n");
-                                }
-                                $desiredSlaveAmpsMax = $lastSlaveAmpsMax{$senderID};
-                            }
-                        }
-                        else {
-                            # We can tell the TWC how much power to use in 0.01A
-                            # increments, but the car will only alter its power
-                            # in larger increments (somewhere between 0.5 and
-                            # 0.6A). The car seems to prefer being sent whole
-                            # amps and when asked to adjust between certain
-                            # values like 12.6A one second and 12.0A the next
-                            # second, the car reduces its power use to
-                            # ~5.14-5.23A and refuses to go higher. So it seems
-                            # best to stick with whole amps.
-                            $desiredSlaveAmpsMax =
-                                    int($desiredSlaveAmpsMax / 100) * 100;
-
-                            if($lastSlaveAmpsMax{$senderID} == 0
-                               && time - $timeLastSlaveAmpsMaxChanged{$senderID} < 60
-                            ) {
-                                # Keep charger off for at least 60 seconds
-                                # before turning back on.  See reasoning above
-                                # where I don't turn the charger off till it's
-                                # been on at least 60 seconds.
-                                if($debugLevel >= 10) {
-                                    print("Don't start charging yet because:\n"
-                                          . '$lastSlaveAmpsMax{$senderID} '
-                                          . $lastSlaveAmpsMax{$senderID} . " == 0\n"
-                                          . '&& time - $timeLastSlaveAmpsMaxChanged{$senderID} '
-                                          . (time - $timeLastSlaveAmpsMaxChanged{$senderID})
-                                          . " < 60\n");
-                                }
-                                $desiredSlaveAmpsMax = $lastSlaveAmpsMax{$senderID};
-                            }
-                            else {
-                                # Mid Oct 2017, Tesla pushed a firmware update
-                                # to their cars that seems to create the
-                                # following bug:
-                                # The car will drop its power use to 5.14-5.23A
-                                # (as reported in $heartbeatData[2-3]) if you
-                                # raise the TWC max charging limit without first
-                                # raising to at least 21A. 20.9A is not enough.
-                                # I'm not sure how long we have to hold 21A but
-                                # 3 seconds is definitely not enough but 5
-                                # seconds seems to work. It doesn't seem to
-                                # matter if the car actually hits 21A of power
-                                # draw.  In fact, the car is slow enough to
-                                # respond that even with 10s at 21A the most
-                                # I've seen it actually draw starting at 6A is
-                                # 13A.
-                                if($debugLevel >= 10) {
-                                    print('$lastSlaveAmpsMax{$senderID} ' . $lastSlaveAmpsMax{$senderID}
-                                          . ' $slaveReportedAmpsActual ' . $slaveReportedAmpsActual
-                                          . ' time - $timelastSlaveAmpsActualChanged{$senderID}='
-                                          . (time - $timelastSlaveAmpsActualChanged{$senderID})
-                                          . "\n");
-                                }
-
-                                if(
-                                   $desiredSlaveAmpsMax < 2100
-                                     &&
-                                   (
-                                     $desiredSlaveAmpsMax > $lastSlaveAmpsMax{$senderID}
-                                       ||
-                                     (
-                                       # If we somehow trigger the bug that
-                                       # drops power use to 5.14-5.23A, this
-                                       # should detect it after 10 seconds and
-                                       # we'll spike our power request to 21A
-                                       # to fix it.
-                                       $lastSlaveAmpsMax{$senderID} - $slaveReportedAmpsActual > 100
-                                         &&
-                                       time - $timelastSlaveAmpsActualChanged{$senderID} > 10
-                                     )
-                                   )
-                                ) {
-                                    $desiredSlaveAmpsMax = 2100;
-
-                                    # Note that the car should have no problem
-                                    # increasing max amps to any whole value
-                                    # over 21A as long as it's below any upper
-                                    # limit manually set in the car's UI.
-                                    # One time when I couldn't get TWC to push
-                                    # the car over 21A, I found the car's UI
-                                    # had set itself to 21A despite my setting
-                                    # it to 40A the day before. I have been
-                                    # unable to reproduce whatever caused that
-                                    # problem.
-                                }
-                                elsif($desiredSlaveAmpsMax < $lastSlaveAmpsMax{$senderID}) {
-                                    # Tesla doesn't mind if we set a lower amp
-                                    # limit than the one we're currently using,
-                                    # but make sure we don't change limits
-                                    # more often than every 5 seconds. This
-                                    # has the side effect of holding the 21A
-                                    # limit mentioned above for 5 seconds to
-                                    # make sure the car sees it.
-                                    if($debugLevel >= 10) {
-                                        print('Reduce amps: time - $timeLastSlaveAmpsMaxChanged{$senderID} '
-                                            . (time - $timeLastSlaveAmpsMaxChanged{$senderID})
-                                            . "\n");
-                                    }
-                                    if(time - $timeLastSlaveAmpsMaxChanged{$senderID} < 5) {
-                                        $desiredSlaveAmpsMax = $lastSlaveAmpsMax{$senderID};
-                                    }
-                                }
-                            }
-                        }
-
-                        # set_last_slave_amps_max does some final checks to see
-                        # if the new $desiredSlaveAmpsMax is safe. It should be
-                        # called after we've picked a final value for
-                        # $desiredSlaveAmpsMax.
-                        $desiredSlaveAmpsMax = set_last_slave_amps_max($senderID,
-                                                            $desiredSlaveAmpsMax);
-
-                        # See notes in send_heartbeat(), fake slave section for
-                        # details on how we transmit $desiredSlaveAmpsMax and
-                        # the meaning of the code in $masterHeartbeatData[0].
-                        #
-                        # Rather than only sending $desiredSlaveAmpsMax when
-                        # slave is sending code 04 or 08, it seems to work
-                        # better to send $desiredSlaveAmpsMax whenever it does
-                        # not equal $slaveReportedAmpsMax reported by the slave
-                        # TWC. Doing it that way will get a slave charging again
-                        # even when it's in state 00 or 03 which it swings
-                        # between after you set $desiredSlaveAmpsMax = 0 to stop
-                        # charging.
-                        #
-                        # I later found that a slave may end up swinging between
-                        # state 01 and 03 when $desiredSlaveAmpsMax == 0:
-                        #   S 032e 0.25/0.00A: 01 0000 0019 0000  M: 00 0000 0000 0000
-                        #   S 032e 0.25/6.00A: 03 0258 0019 0000  M: 05 0000 0000 0000
-                        #   S 032e 0.25/0.00A: 01 0000 0019 0000  M: 00 0000 0000 0000
-                        #   S 032e 0.25/6.00A: 03 0258 0019 0000  M: 05 0000 0000 0000
-                        #
-                        # While it's doing this, it's continuously opening and
-                        # closing the relay on the TWC each second which makes
-                        # an audible click and will wear out the relay. To avoid
-                        # that problem, always send code 05 when
-                        # $desiredSlaveAmpsMax == 0. In that case, slave's
-                        # response should always look like this:
-                        #   S 032e 0.25/0.00A: 03 0000 0019 0000  M: 05 0000 0000 0000
-                        if($slaveReportedAmpsMax != $desiredSlaveAmpsMax
-                           || $desiredSlaveAmpsMax == 0
-                        ) {
-                            @masterHeartbeatData = (0x05,
-                              ($desiredSlaveAmpsMax >> 8) & 0xFF,
-                              $desiredSlaveAmpsMax & 0xFF,
-                              0x00,0x00,0x00,0x00);
-                        }
-                        else {
-                            @masterHeartbeatData = (0x00,0x00,0x00,0x00,0x00,0x00,0x00);
-                        }
-
-                        if($debugLevel >= 1) {
-                            my $debugOutput =
-                                sprintf(": S %02x%02x %02.2f/%02.2fA: "
-                                . "%02x %02x%02x %02x%02x %02x%02x  "
-                                . "M: %02x %02x%02x %02x%02x %02x%02x\n",
-                                vec($senderID, 0, 8), vec($senderID, 1, 8),
-                                ((($heartbeatData[3] << 8) + $heartbeatData[4]) / 100),
-                                ((($heartbeatData[1] << 8) + $heartbeatData[2]) / 100),
-                                $heartbeatData[0], $heartbeatData[1], $heartbeatData[2],
-                                $heartbeatData[3], $heartbeatData[4], $heartbeatData[5],
-                                $heartbeatData[6],
-                                $masterHeartbeatData[0], $masterHeartbeatData[1], $masterHeartbeatData[2],
-                                $masterHeartbeatData[3], $masterHeartbeatData[4], $masterHeartbeatData[5],
-                                $masterHeartbeatData[6]);
-
-                            # Only output once-per-second heartbeat debug info
-                            # when it's different from the last output, or if
-                            # it's been 10 mins since the last output or if
-                            # $debugLevel is turned up to 11.
-                            if($debugOutput ne $lastHeartbeatDebugOutput
-                                || time - $timeLastHeartbeatDebugOutput > 600
-                                || $debugLevel >= 11
-                            ) {
-                                print(time_now() . $debugOutput);
-                                $lastHeartbeatDebugOutput = $debugOutput;
-                                $timeLastHeartbeatDebugOutput = time;
-                            }
-                        }
+                        $slaveTWC->receive_slave_heartbeat(@heartbeatData);
                     }
                     else {
                         # I've tried different $fakeTWCID values to verify a
@@ -882,7 +624,7 @@ for(;;) {
                         # once so far, so it could have been corruption in the
                         # data or an unusual case.
                         if($debugLevel >= 1) {
-                            printf(time_now() . ": Slave TWC %02x%02x status data: %s sent to unknown TWC id %s.\n\n",
+                            printf(time_now() . ": WARNING: Slave TWC %02x%02x status data: %s sent to unknown TWC id %s.\n\n",
                                 vec($senderID, 0, 8), vec($senderID, 1, 8),
                                 hex_ary(@heartbeatData), hex_str($receiverID));
                         }
@@ -982,7 +724,7 @@ for(;;) {
 
                     # Slaves always respond to master's heartbeat by sending
                     # theirs back.
-                    send_heartbeat($senderID);
+                    send_slave_heartbeat($senderID);
                 }
                 elsif($msg =~ /\xc0\xfc\x1d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00.\xc0/s) {
                     # Handle 4-hour idle message
@@ -1016,38 +758,38 @@ close TWC;
 sub new_slave
 {
     my $newSlaveID = $_[0];
-    foreach(@slaveTWCIDs) {
-        if($_ eq $newSlaveID) {
-            # We already know about this slave.
-            return;
-        }
-    }
-    push @slaveTWCIDs, $newSlaveID;
-    $timeSlaveLastRx{$newSlaveID} = time;
-    $lastSlaveAmpsMax{$newSlaveID} = -1;
-    $lastSlaveAmpsActual{$newSlaveID} = -1;
-    $timeLastSlaveAmpsMaxChanged{$newSlaveID} = time;
-    $timelastSlaveAmpsActualChanged{$newSlaveID} = time;
+    my $slaveTWC = $slaveTWCs{$newSlaveID};
 
-    if(@slaveTWCIDs > 3) {
-        print("WARNING: More than 3 slave TWCs seen on network.  "
-            . "Dropping oldest: " . $slaveTWCIDs[0] . ".\n\n");
-        delete_slave($slaveTWCIDs[0]);
+    if(defined($slaveTWC)) {
+        # We already know about this slave.
+        return $slaveTWC;
     }
+
+    $slaveTWC = TWCSlave->new(ID => $newSlaveID);
+    $slaveTWCs{$newSlaveID} = $slaveTWC;
+    push @slaveTWCRoundRobin, $slaveTWC;
+
+    if(@slaveTWCRoundRobin > 3) {
+        print("WARNING: More than 3 slave TWCs seen on network.  "
+            . "Dropping oldest: " . hex_str($slaveTWCRoundRobin[0]->{ID}) . ".\n\n");
+        delete_slave($slaveTWCRoundRobin[0]->{ID});
+    }
+
+    return $slaveTWC;
 }
 
 sub delete_slave
 {
     my $deleteSlaveID = $_[0];
 
-    # Line from https://stackoverflow.com/questions/17216966/delete-elements-from-array-if-they-contain-some-string
-    @slaveTWCIDs = grep !/$deleteSlaveID/, @slaveTWCIDs;
+    for(my $i = 0; $i < @slaveTWCRoundRobin; $i++) {
+        if($slaveTWCRoundRobin[$i]->{ID} eq $deleteSlaveID) {
+            splice(@slaveTWCRoundRobin, $i, 1);
+            last;
+        }
+    }
 
-    delete $timeSlaveLastRx{$deleteSlaveID};
-    delete $lastSlaveAmpsMax{$deleteSlaveID};
-    delete $lastSlaveAmpsActual{$deleteSlaveID};
-    delete $timeLastSlaveAmpsMaxChanged{$deleteSlaveID};
-    delete $timelastSlaveAmpsActualChanged{$deleteSlaveID};
+    delete $slaveTWCs{$deleteSlaveID};
 }
 
 sub master_id_conflict
@@ -1069,44 +811,18 @@ sub master_id_conflict
 sub is_slave_total_power_unsafe
 {
     my $totalAmps = 0;
-    while(my ($key, $value) = each (%lastSlaveAmpsMax))
-    {
-        $totalAmps += $value;
+    foreach(@slaveTWCRoundRobin) {
+        $totalAmps += $_->{lastAmpsMax};
     }
     if($debugLevel >= 10) {
         print "Total amps of all slaves: " . $totalAmps . "\n";
     }
-    if($totalAmps > $maxAmpsWiringCanHandle * 100) {
+    if($totalAmps > $wiringMaxAmpsAllTWCs) {
         return 1;
     }
     return 0;
 }
 
-sub set_last_slave_amps_max
-# $lastSlaveAmpsMax{$senderID} should only be changed using this sub.
-{
-    my ($senderID, $desiredSlaveAmpsMax) = @_;
-
-    if($debugLevel >= 10) {
-        print("set_last_slave_amps_max(" . hex_str($senderID)
-              . "," . $desiredSlaveAmpsMax . ")\n");
-    }
-
-    if($desiredSlaveAmpsMax != $lastSlaveAmpsMax{$senderID}) {
-        my $oldLastSlaveAmpsMax = $lastSlaveAmpsMax{$senderID};
-        $lastSlaveAmpsMax{$senderID} = $desiredSlaveAmpsMax;
-        if(is_slave_total_power_unsafe()) {
-            print "ERROR: Unable to increase power to "
-                . "slave TWC without overloading wiring "
-                . "or triggering a bug that drops its power to 5A.\n";
-            $lastSlaveAmpsMax{$senderID} = $oldLastSlaveAmpsMax;
-            return $lastSlaveAmpsMax{$senderID};
-        }
-
-        $timeLastSlaveAmpsMaxChanged{$senderID} = time;
-    }
-    return $lastSlaveAmpsMax{$senderID};
-}
 
 sub send_msg
 {
@@ -1189,13 +905,16 @@ sub unescape_msg
 
 sub send_master_linkready1
 {
+    if($debugLevel >= 1) {
+        print(time_now() . ": Send master linkready1\n");
+    }
     # When master is powered on or reset, it sends 5 to 7 copies of this
-    # linkready1 message followed by 5 copies of linkready2 I've never seen more
-    # or less than 5 of linkready2).
+    # linkready1 message followed by 5 copies of linkready2 (I've never seen
+    # more or less than 5 of linkready2).
     #
     # This linkready1 message advertises master's ID to other slaves on the
     # network.
-    # If a slave happend to have the same id as master, it will pick a new
+    # If a slave happens to have the same id as master, it will pick a new
     # random ID. Other than that, slaves don't seem to respond to linkready1.
 
     # linkready1 and linkready2 are identical except fc e1 is replaced by fb e2
@@ -1236,24 +955,22 @@ sub send_master_linkready1
 
 sub send_master_linkready2
 {
+    if($debugLevel >= 1) {
+        print(time_now() . ": Send master linkready2\n");
+    }
     # This linkready2 message is also sent 5 times when master is booted/reset
     # and then not sent again if no other TWCs are heard from on the network.
     # If the master has ever seen a slave on the network, linkready2 is sent at
     # long intervals.
-    # I need to double check this, but I've seen some evidence that a slave will
-    # send 5 copies of its link ready message, once per second, in response to
-    # this master's linkready2.
+    # Slaves do not seem to respond to linkready1 or linkready2.
     #
     # It may be that this linkready2 message that sends fb e2 and the master
     # heartbeat that sends fb e0 message are really the same, (same fb byte
     # which I think is message type) except the e0 version includes the TWC ID
     # of the slave the message is intended for whereas the e2 version has no
-    # recipient TWC ID and is asking all slaves on the network to report
-    # immediately. The problem with that theory is if all slaves try to report
-    # immediately, all their responses will corrupt eachother. Could the random
-    # slave id or slave sign contain a timeslot that prevents that?
+    # recipient TWC ID.
     #
-    # Once master starts sending heartbeat messages to a slave, it
+    # Once a master starts sending heartbeat messages to a slave, it
     # no longer sends the global linkready2 message (or if it does,
     # they're quite rare so I haven't seen them).
     send_msg("\xFB\xE2$fakeTWCID$masterSign\x00\x00\x00\x00\x00\x00\x00\x00");
@@ -1261,145 +978,107 @@ sub send_master_linkready2
 
 sub send_slave_linkready
 {
+    # In the message below, \x1F\x40 (hex 0x1f40 or 8000 in base 10) refers to
+    # this being a max 80.00Amp charger model.
+    # EU chargers are 32A and send 0x0c80 (3200 in base 10).
+    #
     # I accidentally changed \x1f\x40 to \x2e\x69 at one point, which makes the
     # master TWC immediately start blinking its red LED 6 times with top green
     # LED on. Manual says this means "The networked Wall Connectors have
-    # different maximum current capabilities". Therefore, I theorize 0x1f40
-    # (8000 in base 10) refers to this being a max 80.00Amp charger model.
+    # different maximum current capabilities".
     send_msg("\xFD\xE2$fakeTWCID$slaveSign\x1F\x40\x00\x00\x00\x00\x00\x00");
 }
 
-sub send_heartbeat
+sub send_slave_heartbeat
 {
-    my $senderID = $_[0];
+    my $masterID = $_[0];
 
-    if($fakeMaster) {
-        # Send master heartbeat
-        #
-        # Heartbeat includes 7 bytes of data we store in @masterHeartbeatData.
-        # Meaning of 7 bytes:
-        #
-        # Byte 1 values I've seen with guesses at meaning:
-        #   00 Idle/all is well
-        #   02 Error
-        #     I saw this from a real master TWC when I caused it to blink its
-        #     red LED 6 times by sending a bad command. If you send 02 to a
-        #     slave TWC it responds with 02 in its heartbeat, then stops sending
-        #     heartbeat and refuses further communication. It blinks its red LED
-        #     3 times (which oddly means "Incorrect rotary switch setting") and
-        #     must be reset with the red button on its side.
-        #   05 Tell slave charger to limit power to number of amps in bytes 2-3.
-        # I haven't spent much time trying to discover if other values are
-        # possible. 00 and 05 are enough to fully control a slave TWC's power
-        # output.
-        #
-        # Byte 2-3 is the max current a slave TWC can charge at.
-        # For example, if bytes 2-3 are 0f a0, combine them as 0x0fa0 hex which
-        # is 4000 in base 10. Move the decimal point two places left and you get
-        # 40.00Amps max.
-        #
-        # Byte 4: Usually 00 but became 01 when a master TWC was plugged
-        # in to a car.
-        #
-        # Byte 5-7 are always 00 and may be unused.
-        #
-        # Example 7-byte data that real masters have sent:
-        #   00 00 00 00 00 00 00  (Idle)
-        #   02 04 00 00 00 00 00  (Error.  04 is probably an error code because interpretting 04 00 as an amp value gets us an odd 10.24A)
-        #   05 0f a0 00 00 00 00  (Master telling slave to limit power to 0f a0 (40.00A))
-        #   05 07 d0 01 00 00 00  (Master plugged in to a car and presumably telling slaves to limit power to 07 d0 (20.00A).  01 byte might indicate master is plugged in?  Master would not charge its car because I didn't have the fake slave issue the correct response.)
+    # Send slave heartbeat
+    #
+    # Heartbeat includes 7 bytes of data we store in @slaveHeartbeatData.
+    # Meaning of 7 bytes:
+    #
+    # Byte 1 values I've seen with guesses at meaning:
+    #   00 Ready (may or may not be plugged in)
+    #   01 Plugged in, charging
+    #   02 Lost communication with master (usually see this status briefly if I stop fake master script for awhile, then start it)
+    #   03 Plugged in, do not charge (I've seen this state briefly when plug is first inserted, and I've seen this state remain indefinitely after pressing stop charge on car's screen.  It may also remain indefinitely if TWCManager script is stopped for too long while car is charging even after TWCManager is restarted.  In that case, car will not charge even when start charge on screen is pressed - only re-plugging in charge cable fixes it.)
+    #   04 Plugged in, ready to charge (I've seen this state even when car is set to charge at a future time)
+    #   05 Only seen it hit this state for 1 second at a time and it can seemingly happen during any other state.  Maybe it means wait, I'm busy?  Communicating with car?  When Master sends 05, slave takes it as permission to continue, but I can't say for sure the value means the same thing in slave vs master use.
+    #   08 Lost communication with master while plugged in (Saw this consistently each time I stopped my fake master script with car scheduled to charge, plugged in, charge port blue.  If the car is actually charging and you stop TWCManager, after 20-30 seconds the charbe port turns solid red, steering wheel display says "charge cable fault", and main screen says "check charger power".  When TWCManager is started, it sees this 08 status again.  If we start TWCManager and send the slave a new max power value, 08 becomes 00 and car starts charging again.)
+    #
+    # Byte 2-3 is the max current available as provided by bytes 2-3 in our
+    # fake master status.
+    # For example, if bytes 2-3 are 0f a0, combine them as 0x0fa0 hex which
+    # is 4000 in base 10. Move the decimal point two places left and you get
+    # 40.00Amps max.
+    # Note that once bytes 2-3 are greater than 0, Byte 1 changes from 04 to
+    # 01 or 00 during charging.
+    #
+    # Byte 4-5 represents the power being drawn by the charger.
+    # When a car is charging at 18A you may see a value like 07 28 which is
+    # 0x728 hex or 1832 in base 10. Move the decimal point two places left
+    # and you see the charger is using 18.32A. When unplugged, my charger
+    # reports 00 19 (0.25A) but very occasionally changes to 00 11 (0.17A)
+    # or 00 21 (0.33A). Your charger may differ in its exact power use.
+    #
+    # Byte 6-7 are always 00 00 from what I've seen and could be reserved
+    # for future use or may be used in a situation I've not observed.
 
-        send_msg("\xFB\xE0$fakeTWCID$senderID"
-                 . pack('C*', @masterHeartbeatData));
-    }
-    else {
-        # Send slave heartbeat
-        #
-        # Heartbeat includes 7 bytes of data we store in @slaveHeartbeatData.
-        # Meaning of 7 bytes:
-        #
-        # Byte 1 values I've seen with guesses at meaning:
-        #   00 Ready (may or may not be plugged in)
-        #   01 Plugged in, charging
-        #   02 Lost communication with master (usually see this status briefly if I stop fake master script for awhile, then start it)
-        #   03 Plugged in, do not charge (I've seen this state briefly when plug is first inserted, and I've seen this state remain indefinitely after pressing stop charge on car's screen.  It may also remain indefinitely if TWCManager script is stopped for too long while car is charging even after TWCManager is restarted.  In that case, car will not charge even when start charge on screen is pressed - only re-plugging in charge cable fixes it.)
-        #   04 Plugged in, ready to charge (I've seen this state even when car is set to charge at a future time)
-        #   05 Only seen it hit this state for 1 second at a time and it can seemingly happen during any other state.  Maybe it means wait, I'm busy?  Communicating with car?  When Master sends 05, slave takes it as permission to continue, but I can't say for sure the value means the same thing in slave vs master use.
-        #   08 Lost communication with master while plugged in (Saw this consistently each time I stopped my fake master script with car scheduled to charge, plugged in, charge port blue.  If the car is actually charging and you stop TWCManager, after 20-30 seconds the charbe port turns solid red, steering wheel display says "charge cable fault", and main screen says "check charger power".  When TWCManager is started, it sees this 08 status again.  If we start TWCManager and send the slave a new max power value, 08 becomes 00 and car starts charging again.)
-        #
-        # Byte 2-3 is the max current available as provided by bytes 2-3 in our
-        # fake master status.
-        # For example, if bytes 2-3 are 0f a0, combine them as 0x0fa0 hex which
-        # is 4000 in base 10. Move the decimal point two places left and you get
-        # 40.00Amps max.
-        # Note that once bytes 2-3 are greater than 0, Byte 1 changes from 04 to
-        # 01 or 00 during charging.
-        #
-        # Byte 4-5 represents the power being drawn by the charger.
-        # When a car is charging at 18A you may see a value like 07 28 which is
-        # 0x728 hex or 1832 in base 10. Move the decimal point two places left
-        # and you see the charger is using 18.32A. When unplugged, my charger
-        # reports 00 19 (0.25A) but very occasionally changes to 00 11 (0.17A)
-        # or 00 21 (0.33A). Your charger may differ in its exact power use.
-        #
-        # Byte 6-7 are always 00 00 from what I've seen and could be reserved
-        # for future use or may be used in a situation I've not observed.
+    ###############################
+    # How was the above determined?
+    #
+    # An unplugged slave sends a status like this:
+    #   00 00 00 00 19 00 00
+    #
+    # A real master always sends all 00 status data to a slave reporting the
+    # above status. $slaveHeartbeatData[0] is the main driver of how master
+    # responds, but whether $slaveHeartbeatData[1] and [2] have 00 or non-00
+    # values also matters.
+    #
+    # I did a test with fake slave sending $slaveHeartbeatData[0] values
+    # from 00 to ff along with $slaveHeartbeatData[1-2] of 00 and whatever
+    # value Master last responded with. I found:
+    #   Slave sends:     04 00 00 00 19 00 00
+    #   Master responds: 05 12 c0 00 00 00 00
+    #
+    #   Slave sends:     04 12 c0 00 19 00 00
+    #   Master responds: 00 00 00 00 00 00 00
+    #
+    #   Slave sends:     08 00 00 00 19 00 00
+    #   Master responds: 08 12 c0 00 00 00 00
+    #
+    #   Slave sends:     08 12 c0 00 19 00 00
+    #   Master responds: 00 00 00 00 00 00 00
+    #
+    # In other words, master always sends all 00 unless slave sends
+    # $slaveHeartbeatData[0] 04 or 08 with $slaveHeartbeatData[1-2] both 00.
+    #
+    # I interpret all this to mean that when slave sends
+    # $slaveHeartbeatData[1-2] both 00, it's requesting a max power from
+    # master. Master responds by telling the slave how much power it can
+    # use. Once the slave is saying how much max power it's going to use
+    # ($slaveHeartbeatData[1-2] = 12 c0 = 32.00A), master indicates that's
+    # fine by sending 00 00.
+    #
+    # However, if the master wants to set a lower limit on the slave, all it
+    # has to do is send any $heartbeatData[1-2] value greater than 00 00 at
+    # any time and slave will respond by setting its
+    # $slaveHeartbeatData[1-2] to the same value.
+    #
+    # I thought slave might be able to negotiate a lower value if, say, the
+    # car reported 40A was its max capability or if the slave itself could
+    # only handle 80A, but the slave dutifully responds with the same value
+    # master sends it even if that value is an insane 655.35A. I tested
+    # these values on my car which has a 40A limit when AC charging and
+    # slave accepts them all:
+    #   0f aa (40.10A)
+    #   1f 40 (80.00A)
+    #   1f 41 (80.01A)
+    #   ff ff (655.35A)
 
-        ###############################
-        # How was the above determined?
-        #
-        # An unplugged slave sends a status like this:
-        #   00 00 00 00 19 00 00
-        #
-        # A real master always sends all 00 status data to a slave reporting the
-        # above status. $slaveHeartbeatData[0] is the main driver of how master
-        # responds, but whether $slaveHeartbeatData[1] and [2] have 00 or non-00
-        # values also matters.
-        #
-        # I did a test with fake slave sending $slaveHeartbeatData[0] values
-        # from 00 to ff along with $slaveHeartbeatData[1-2] of 00 and whatever
-        # value Master last responded with. I found:
-        #   Slave sends:     04 00 00 00 19 00 00
-        #   Master responds: 05 12 c0 00 00 00 00
-        #
-        #   Slave sends:     04 12 c0 00 19 00 00
-        #   Master responds: 00 00 00 00 00 00 00
-        #
-        #   Slave sends:     08 00 00 00 19 00 00
-        #   Master responds: 08 12 c0 00 00 00 00
-        #
-        #   Slave sends:     08 12 c0 00 19 00 00
-        #   Master responds: 00 00 00 00 00 00 00
-        #
-        # In other words, master always sends all 00 unless slave sends
-        # $slaveHeartbeatData[0] 04 or 08 with $slaveHeartbeatData[1-2] both 00.
-        #
-        # I interpret all this to mean that when slave sends
-        # $slaveHeartbeatData[1-2] both 00, it's requesting a max power from
-        # master. Master responds by telling the slave how much power it can
-        # use. Once the slave is saying how much max power it's going to use
-        # ($slaveHeartbeatData[1-2] = 12 c0 = 32.00A), master indicates that's
-        # fine by sending 00 00.
-        #
-        # However, if the master wants to set a lower limit on the slave, all it
-        # has to do is send any $heartbeatData[1-2] value greater than 00 00 at
-        # any time and slave will respond by setting its
-        # $slaveHeartbeatData[1-2] to the same value.
-        #
-        # I thought slave might be able to negotiate a lower value if, say, the
-        # car reported 40A was its max capability or if the slave itself could
-        # only handle 80A, but the slave dutifully responds with the same value
-        # master sends it even if that value is an insane 655.35A. I tested
-        # these values on my car which has a 40A limit when AC charging and
-        # slave accepts them all:
-        #   0f aa (40.10A)
-        #   1f 40 (80.00A)
-        #   1f 41 (80.01A)
-        #   ff ff (655.35A)
-
-        send_msg("\xFD\xE0$fakeTWCID$senderID"
-                 . pack('C*', @slaveHeartbeatData));
-    }
+    send_msg("\xFD\xE0$fakeTWCID$masterID"
+             . pack('C*', @slaveHeartbeatData));
 }
 
 
@@ -1429,6 +1108,390 @@ sub hex_str
     }
 
     return substr($result, 0, length($result) - 1);
+}
+
+
+package TWCSlave;
+
+sub new
+{
+    my $class = shift;
+
+    # This line will set $self->{ID}.
+    my $self = { @_ };
+
+    $self->{masterHeartbeatData} = [0x00,0x00,0x00,0x00,0x00,0x00,0x00]; # Square brackets make an array reference instead of an array.
+    $self->{timeLastRx} = time;
+    $self->{lastAmpsMax} = -1;
+    $self->{lastAmpsActual} = -1;
+    $self->{timeLastAmpsMaxChanged} = time;
+    $self->{timeLastAmpsActualChanged} = time;
+    $self->{lastHeartbeatDebugOutput} = '';
+    $self->{wiringMaxAmps} = $wiringMaxAmpsPerTWC;
+
+    return bless $self, $class;
+}
+
+sub send_master_heartbeat
+{
+    # Send our fake master's heartbeat to this TWCSlave.
+    #
+    # Heartbeat includes 7 bytes of data we store in @masterHeartbeatData.
+    # Meaning of 7 bytes:
+    #
+    # Byte 1 values I've seen with guesses at meaning:
+    #   00 Idle/all is well
+    #   02 Error
+    #     I saw this from a real master TWC when I caused it to blink its
+    #     red LED 6 times by sending a bad command. If you send 02 to a
+    #     slave TWC it responds with 02 in its heartbeat, then stops sending
+    #     heartbeat and refuses further communication. It blinks its red LED
+    #     3 times (which oddly means "Incorrect rotary switch setting") and
+    #     must be reset with the red button on its side.
+    #   05 Tell slave charger to limit power to number of amps in bytes 2-3.
+    # I haven't spent much time trying to discover if other values are
+    # possible. 00 and 05 are enough to fully control a slave TWC's power
+    # output.
+    #
+    # Byte 2-3 is the max current a slave TWC can charge at.
+    # For example, if bytes 2-3 are 0f a0, combine them as 0x0fa0 hex which
+    # is 4000 in base 10. Move the decimal point two places left and you get
+    # 40.00Amps max.
+    #
+    # Byte 4: Usually 00 but became 01 when a master TWC was plugged
+    # in to a car.
+    #
+    # Byte 5-7 are always 00 and may be unused.
+    #
+    # Example 7-byte data that real masters have sent:
+    #   00 00 00 00 00 00 00  (Idle)
+    #   02 04 00 00 00 00 00  (Error.  04 is probably an error code because interpretting 04 00 as an amp value gets us an odd 10.24A)
+    #   05 0f a0 00 00 00 00  (Master telling slave to limit power to 0f a0 (40.00A))
+    #   05 07 d0 01 00 00 00  (Master plugged in to a car and presumably telling slaves to limit power to 07 d0 (20.00A).  01 byte might indicate master is plugged in?  Master would not charge its car because I didn't have the fake slave issue the correct response.)
+    my $self = shift @_;
+
+    main::send_msg("\xFB\xE0$fakeTWCID" . $self->{ID}
+             . pack('C*', @{$self->{masterHeartbeatData}}));
+}
+
+sub receive_slave_heartbeat
+{
+    # Handle heartbeat message received from real slave TWC.
+    my ($self, @heartbeatData) = @_;
+
+    $self->{timeLastRx} = time;
+
+    my $slaveReportedAmpsMax = (($heartbeatData[1] << 8) + $heartbeatData[2]) / 100;
+    my $slaveReportedAmpsActual = (($heartbeatData[3] << 8) + $heartbeatData[4]) / 100;
+
+    # $self->{lastAmpsMax} is initialized to -1.
+    # If we find it at that value, set it to the current value reported by the
+    # TWC.
+    if($self->{lastAmpsMax} < 0) {
+        $self->{lastAmpsMax} = $slaveReportedAmpsMax;
+    }
+
+    # Keep track of the amps the slave is actually using and the last time it
+    # changed by more than 0.8A.
+    # Also update $self->{lastAmpsActual} if it's still set to its initial
+    # value of -1.
+    if($self->{lastAmpsActual} < 0
+       || abs($slaveReportedAmpsActual - $self->{lastAmpsActual}) > 0.8
+    ) {
+        $self->{timeLastAmpsActualChanged} = time;
+        $self->{lastAmpsActual} = $slaveReportedAmpsActual;
+    }
+
+    if($maxAmpsToDivideAmongSlaves > $wiringMaxAmpsAllTWCs) {
+        # Never tell the slaves to draw more amps than the physical charger
+        # wiring can handle.
+        if($debugLevel >= 1) {
+            print("ERROR: \$maxAmpsToDivideAmongSlaves $maxAmpsToDivideAmongSlaves > "
+                . "\$wiringMaxAmpsAllTWCs $wiringMaxAmpsAllTWCs.  "
+                . "See notes above \$wiringMaxAmpsAllTWCs.\n");
+        }
+        $maxAmpsToDivideAmongSlaves = $wiringMaxAmpsAllTWCs;
+    }
+
+    # Allocate this slave a fraction of $maxAmpsToDivideAmongSlaves divided by
+    # the number of slave TWCs on the network.
+    my $desiredAmpsMax =
+        int($maxAmpsToDivideAmongSlaves / @slaveTWCRoundRobin);
+
+    if($desiredAmpsMax < 5) {
+        # To avoid errors, don't charge the car under 5.0A. 5A is the lowest
+        # value you can set using the Tesla car's main screen, so lower values
+        # might have some adverse affect on the car. I actually tried lower
+        # values when the sun was providing under 5A of power and found the car
+        # would occasionally set itself to state 03 and refuse to charge until
+        # you re-plugged the charger cable. Clicking "Start charging" in the
+        # car's UI or in the phone app would not start charging.
+        #
+        # A 5A charge only delivers ~3 miles of range to the car per hour, but
+        # it forces the car to remain "on" at a level that it wastes some power
+        # while it's charging. The lower the amps, the more power is wasted.
+        # This is another reason not to go below 5A.
+        #
+        # So if there isn't at least 5A of power available, pass 0A as the
+        # desired value. This tells the car to stop charging and it will enter
+        # state 03 and go to sleep. You will hear the power relay in the TWC
+        # turn off. When $desiredAmpsMax trends above 6A again, it tells the car
+        # there's power.
+        # If a car is set to energy saver mode in the car's UI, the car seems to
+        # wake every 15 mins or so (unlocking or using phone app also wake it)
+        # and next time it wakes, it will see there's power and start charging.
+        # Without energy saver mode, the car should begin charging within about
+        # 10 seconds of changing this value.
+        $desiredAmpsMax = 0;
+
+        if(
+           $self->{lastAmpsMax} > 0
+             &&
+           (
+             time - $self->{timeLastAmpsMaxChanged} < 60
+               ||
+             time - $self->{timeLastAmpsActualChanged} < 60
+               ||
+             $slaveReportedAmpsActual < 4.0
+           )
+        ) {
+            # We were previously telling the car to charge but now we want to
+            # tell it to stop. However, it's been less than a minute since we
+            # told it to charge or since the last significant change in the
+            # car's actual power draw or the car has not yet started to draw at
+            # least 5 amps (telling it 5A makes it actually draw around
+            # 4.18-4.27A so we check for $slaveReportedAmpsActual < 4).
+            #
+            # Once we tell the car to charge, we want to keep it going for at
+            # least a minute before turning it off again. In that minute,
+            # $desiredAmpsMax might rise above 5A in which case we won't have
+            # to turn it off at all. Avoiding too many on/off cycles preserves
+            # the life of the TWC's main power relay and may also prevent errors
+            # in the car that might be caused by turning its charging on and off
+            # too rapidly.
+            #
+            # Seeing $slaveReportedAmpsActual < 4 means the car hasn't ramped
+            # up to whatever level we told it to charge at last time. It may be
+            # asleep and take up to 15 minutes to wake up, see there's power,
+            # and start charging. Once we tell the car there's power available,
+            # I don't want to risk telling it the power is gone until it's woken
+            # up and started using the power. I'm just guessing, but I worry
+            # that yanking the power at just the wrong time during start charge
+            # negotiation could put the car into an error state where it won't
+            # charge again without being re-plugged.
+            if($debugLevel >= 10) {
+                print("Don't stop charging yet because:\n"
+                      . 'time - $self->{timeLastAmpsMaxChanged} '
+                      . (time - $self->{timeLastAmpsMaxChanged})
+                      . "< 60\n"
+                      . '|| time - $self->{timeLastAmpsActualChanged} '
+                      . (time - $self->{timeLastAmpsActualChanged})
+                      . "< 60\n"
+                      . '|| $slaveReportedAmpsActual ' . $slaveReportedAmpsActual
+                      . " < 4\n");
+            }
+            $desiredAmpsMax = $self->{lastAmpsMax};
+        }
+    }
+    else {
+        # We can tell the TWC how much power to use in 0.01A increments, but the
+        # car will only alter its power in larger increments (somewhere between
+        # 0.5 and 0.6A). The car seems to prefer being sent whole amps and when
+        # asked to adjust between certain values like 12.6A one second and 12.0A
+        # the next second, the car reduces its power use to ~5.14-5.23A and
+        # refuses to go higher. So it seems best to stick with whole amps.
+        $desiredAmpsMax = int($desiredAmpsMax);
+
+        if($self->{lastAmpsMax} == 0
+           && time - $self->{timeLastAmpsMaxChanged} < 60
+        ) {
+            # Keep charger off for at least 60 seconds before turning back on.
+            # See reasoning above where I don't turn the charger off till it's
+            # been on at least 60 seconds.
+            if($debugLevel >= 10) {
+                print("Don't start charging yet because:\n"
+                      . '$self->{lastAmpsMax} '
+                      . $self->{lastAmpsMax} . " == 0\n"
+                      . '&& time - $self->{timeLastAmpsMaxChanged} '
+                      . (time - $self->{timeLastAmpsMaxChanged})
+                      . " < 60\n");
+            }
+            $desiredAmpsMax = $self->{lastAmpsMax};
+        }
+        else {
+            # Mid Oct 2017, Tesla pushed a firmware update to their cars that
+            # seems to create the following bug:
+            # If you raise $desiredAmpsMax AT ALL from the car's current max amp
+            # limit, the car will drop its max amp limit to the 6A setting
+            # (5.14-5.23A actual use as reported in $heartbeatData[2-3]). The
+            # odd fix to this problem is to tell the car to raise to at least
+            # $spikeAmpsToCancel6ALimit for 5 or more seconds, then tell it to
+            # lower the limit to $desiredAmpsMax. Even 0.01A less than
+            # $spikeAmpsToCancel6ALimit is not enough to cancel the 6A limit.
+            #
+            # I'm not sure how long we have to hold $spikeAmpsToCancel6ALimit
+            # but 3 seconds is definitely not enough but 5 seconds seems to
+            # work. It doesn't seem to matter if the car actually hits
+            # $spikeAmpsToCancel6ALimit of power draw. In fact, the car is slow
+            # enough to respond that even with 10s at 21A the most I've seen it
+            # actually draw starting at 6A is 13A.
+            if($debugLevel >= 10) {
+                print('$desiredAmpsMax=' . $desiredAmpsMax
+                      . ' $spikeAmpsToCancel6ALimit=' . $spikeAmpsToCancel6ALimit
+                      . ' $self->{lastAmpsMax}=' . $self->{lastAmpsMax}
+                      . ' $slaveReportedAmpsActual=' . $slaveReportedAmpsActual
+                      . ' time - $self->{timeLastAmpsActualChanged}='
+                      . (time - $self->{timeLastAmpsActualChanged})
+                      . "\n");
+            }
+
+            if(
+               $desiredAmpsMax < $spikeAmpsToCancel6ALimit
+                 &&
+               (
+                 $desiredAmpsMax > $self->{lastAmpsMax}
+                   ||
+                 (
+                   # If we somehow trigger the bug that drops power use to
+                   # 5.14-5.23A, this should detect it after 10 seconds and
+                   # we'll spike our power request to $spikeAmpsToCancel6ALimit
+                   # to fix it.
+                   $self->{lastAmpsMax} - $slaveReportedAmpsActual > 1.0
+                     &&
+                   time - $self->{timeLastAmpsActualChanged} > 10
+                 )
+               )
+            ) {
+                $desiredAmpsMax = $spikeAmpsToCancel6ALimit;
+
+                # Note that the car should have no problem increasing max amps
+                # to any whole value over $spikeAmpsToCancel6ALimit as long as
+                # it's below any upper limit manually set in the car's UI. One
+                # time when I couldn't get TWC to push the car over 21A, I found
+                # the car's UI had set itself to 21A despite my setting it to
+                # 40A the day before. I have been unable to reproduce whatever
+                # caused that problem.
+            }
+            elsif($desiredAmpsMax < $self->{lastAmpsMax}) {
+                # Tesla doesn't mind if we set a lower amp limit than the one
+                # we're currently using, but make sure we don't change limits
+                # more often than every 5 seconds. This has the side effect of
+                # holding the 21A limit mentioned above for 5 seconds to make
+                # sure the car sees it.
+                if($debugLevel >= 10) {
+                    print('Reduce amps: time - $self->{timeLastAmpsMaxChanged} '
+                        . (time - $self->{timeLastAmpsMaxChanged})
+                        . "\n");
+                }
+                if(time - $self->{timeLastAmpsMaxChanged} < 5) {
+                    $desiredAmpsMax = $self->{lastAmpsMax};
+                }
+            }
+        }
+    }
+
+    # set_last_amps_max does some final checks to see if the new $desiredAmpsMax
+    # is safe. It should be called after we've picked a final value for
+    # $desiredAmpsMax.
+    $desiredAmpsMax = $self->set_last_amps_max($desiredAmpsMax);
+
+    # See notes in send_slave_heartbeat() for details on how we transmit
+    # $desiredAmpsMax and the meaning of the code in
+    # $self->{masterHeartbeatData}[0].
+    #
+    # Rather than only sending $desiredAmpsMax when slave is sending code 04 or
+    # 08, it seems to work better to send $desiredAmpsMax whenever it does not
+    # equal $slaveReportedAmpsMax reported by the slave TWC. Doing it that way
+    # will get a slave charging again even when it's in state 00 or 03 which it
+    # swings between after you set $desiredAmpsMax = 0 to stop charging.
+    #
+    # I later found that a slave may end up swinging between state 01 and 03
+    # when $desiredAmpsMax == 0:
+    #   S 032e 0.25/0.00A: 01 0000 0019 0000  M: 00 0000 0000 0000
+    #   S 032e 0.25/6.00A: 03 0258 0019 0000  M: 05 0000 0000 0000
+    #   S 032e 0.25/0.00A: 01 0000 0019 0000  M: 00 0000 0000 0000
+    #   S 032e 0.25/6.00A: 03 0258 0019 0000  M: 05 0000 0000 0000
+    #
+    # While it's doing this, it's continuously opening and closing the relay on
+    # the TWC each second which makes an audible click and will wear out the
+    # relay. To avoid that problem, always send code 05 when $desiredAmpsMax ==
+    # 0. In that case, slave's response should always look like this:
+    #   S 032e 0.25/0.00A: 03 0000 0019 0000 M: 05 0000 0000 0000
+    if($slaveReportedAmpsMax != $desiredAmpsMax
+       || $desiredAmpsMax == 0
+    ) {
+        my $desiredHundredthsOfAmps = int($desiredAmpsMax * 100);
+        $self->{masterHeartbeatData} = [0x05,
+          ($desiredHundredthsOfAmps >> 8) & 0xFF,
+          $desiredHundredthsOfAmps & 0xFF,
+          0x00,0x00,0x00,0x00];
+    }
+    else {
+        $self->{masterHeartbeatData} = [0x00,0x00,0x00,0x00,0x00,0x00,0x00];
+    }
+
+    if($debugLevel >= 1) {
+        my $debugOutput =
+            sprintf(": S %02x%02x %02.2f/%02.2fA: "
+            . "%02x %02x%02x %02x%02x %02x%02x  "
+            . "M: %02x %02x%02x %02x%02x %02x%02x\n",
+            vec($self->{ID}, 0, 8), vec($self->{ID}, 1, 8),
+            ((($heartbeatData[3] << 8) + $heartbeatData[4]) / 100),
+            ((($heartbeatData[1] << 8) + $heartbeatData[2]) / 100),
+            $heartbeatData[0], $heartbeatData[1], $heartbeatData[2],
+            $heartbeatData[3], $heartbeatData[4], $heartbeatData[5],
+            $heartbeatData[6],
+            $self->{masterHeartbeatData}->[0], $self->{masterHeartbeatData}->[1], $self->{masterHeartbeatData}->[2],
+            $self->{masterHeartbeatData}->[3], $self->{masterHeartbeatData}->[4], $self->{masterHeartbeatData}->[5],
+            $self->{masterHeartbeatData}->[6]
+            );
+
+        # Only output once-per-second heartbeat debug info when it's different
+        # from the last output, or if it's been 10 mins since the last output or
+        # if $debugLevel is turned up to 11.
+        if($debugOutput ne $self->{lastHeartbeatDebugOutput}
+            || time - $timeLastHeartbeatDebugOutput > 600
+            || $debugLevel >= 10
+        ) {
+            print(main::time_now() . $debugOutput);
+            $self->{lastHeartbeatDebugOutput} = $debugOutput;
+            $timeLastHeartbeatDebugOutput = time;
+        }
+    }
+}
+
+sub set_last_amps_max
+# $self->{lastAmpsMax} should only be changed using this sub.
+{
+    my ($self, $desiredAmpsMax) = @_;
+
+    if($debugLevel >= 10) {
+        print("set_last_amps_max(" . main::hex_str($self->{ID})
+              . "," . $desiredAmpsMax . ")\n");
+    }
+
+    if($desiredAmpsMax != $self->{lastAmpsMax}) {
+        my $oldLastAmpsMax = $self->{lastAmpsMax};
+        $self->{lastAmpsMax} = $desiredAmpsMax;
+        if(main::is_slave_total_power_unsafe()) {
+            print "ERROR: Unable to increase power to slave TWC to "
+                . $desiredAmpsMax
+                . "A without overloading wiring shared by all TWCs.\n";
+            $self->{lastAmpsMax} = $oldLastAmpsMax;
+            return $self->{lastAmpsMax};
+        }
+
+        if($desiredAmpsMax > $self->{wiringMaxAmps}) {
+            print "ERROR: Unable to increase power to slave TWC to "
+                . $desiredAmpsMax
+                . "A without overloading wiring to the TWC.\n";
+            $self->{lastAmpsMax} = $oldLastAmpsMax;
+            return $self->{lastAmpsMax};
+        }
+
+        $self->{timeLastAmpsMaxChanged} = time;
+    }
+    return $self->{lastAmpsMax};
 }
 
 sub punish_slave
