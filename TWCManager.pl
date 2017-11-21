@@ -326,7 +326,10 @@ for(;;) {
                 # 8pm. Sunrise in most U.S. areas varies from a little before
                 # 6am in Jun to almost 7:30am in Nov before the clocks get set
                 # back an hour. Sunset can be ~4:30pm to just after 8pm.
-                if($hour >= 6 && $hour < 20) {
+                if($hour < 6 || $hour >= 20) {
+                    $maxAmpsToDivideAmongSlaves = 0;
+                }
+                else {
                     # I check my solar panel generation using an API exposed by
                     # The Energy Detective (TED). It's a piece of hardware
                     # available at http://www. theenergydetective.com/ You may
@@ -370,11 +373,11 @@ for(;;) {
                         # that many amps.
                         $maxAmpsToDivideAmongSlaves = $solarWh / 240;
 
-                        printf("Solar generating %dWh so limit car charging to %.2fA.\n",
-                            $solarWh, $maxAmpsToDivideAmongSlaves);
+                        printf("%s: Solar generating %dWh so limit car charging to %.2fA.\n",
+                            time_now(), $solarWh, $maxAmpsToDivideAmongSlaves);
                     }
                     else {
-                        print("ERROR: Can't determine current solar generation.\n\n");
+                        print(time_now() . "ERROR: Can't determine current solar generation.\n\n");
                     }
                 }
                 $timeLastGreenEnergyCheck = time;
