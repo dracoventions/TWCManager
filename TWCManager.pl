@@ -43,27 +43,28 @@
 # This script (TWCManager) pretends to be a Tesla Wall Charger (TWC) set to
 # master mode. When wired to the IN or OUT pins of real TWC units set to slave
 # mode (rotary switch position F), TWCManager can tell them to limit car
-# charging to any amp value between 0.01A and 80.00A. Tesla vehicles interpret
-# any amp value below 1.00A to mean don't charge the car at all.
+# charging to any whole amp value between 5A and the max rating of the charger.
+# Charging can also be stopped so the car goes to sleep.
 #
 # This level of control is useful for having TWCManager track the real-time
-# availability of green energy sources and direct the slave TWCs to use the
+# availability of green energy sources and direct the slave TWCs to use near the
 # exact amount of energy available. This saves energy compared to sending the
 # green energy off to a battery for later car charging or off to the grid where
 # some of it is lost in transmission.
 #
 # TWCManager can also be set up to only allow charging during certain hours,
-# stop charging if a grid overload or "save power day" is detected, stop
+# stop charging if a grid overload or "save power day" is detected, reduce
 # charging on one TWC when a "more important" one is plugged in, or whatever
-# else you can think of.
+# else you might want to do.
 #
 # One thing TWCManager does not have direct access to is the battery charge
-# percentage of each plugged-in car. It can tell when a car is near full and
-# requesting less power, but not how full it is. This is unfortunate, but if you
-# own a Tesla vehicle being charged, people have figured out how to get its
-# charge state by contacting Tesla's servers using the same password you use in
-# the Tesla phone app. Be very careful not to expose that password because it
-# allows unlocking and starting the car.
+# percentage of each plugged-in car. There are hints on forums that some TWCs
+# do report battery state, but we have yet to see a TWC send such a message.
+# It's possible the feature exists in TWCs with newer firmware.
+# This is unfortunate, but if you own a Tesla vehicle being charged, people have
+# figured out how to get its charge state by contacting Tesla's servers using
+# the same password you use in the Tesla phone app. Be very careful not to
+# expose that password because it allows unlocking and starting the car.
 
 ################################################################################
 # Overview of protocol TWCs use to load share
@@ -98,9 +99,8 @@
 # want power, is there an error, etc.
 # Next two bytes indicate the amount of power requested or the amount allowed in
 # 0.01 amp increments.
-# Next two bytes indicate the amount of power being used by the TWC, also in
-# 0.01 amp increments. TWCs report power use around 0.25A when not plugged in to
-# a car.
+# Next two bytes indicate the amount of power being used to charge the car, also in
+# 0.01 amp increments.
 # Last two bytes seem to be unused and always contain a value of 0.
 
 
@@ -1004,11 +1004,39 @@ sub send_slave_heartbeat
     # Byte 1 values I've seen with guesses at meaning:
     #   00 Ready (may or may not be plugged in)
     #   01 Plugged in, charging
-    #   02 Lost communication with master (usually see this status briefly if I stop fake master script for awhile, then start it)
-    #   03 Plugged in, do not charge (I've seen this state briefly when plug is first inserted, and I've seen this state remain indefinitely after pressing stop charge on car's screen.  It may also remain indefinitely if TWCManager script is stopped for too long while car is charging even after TWCManager is restarted.  In that case, car will not charge even when start charge on screen is pressed - only re-plugging in charge cable fixes it.)
-    #   04 Plugged in, ready to charge (I've seen this state even when car is set to charge at a future time)
-    #   05 Only seen it hit this state for 1 second at a time and it can seemingly happen during any other state.  Maybe it means wait, I'm busy?  Communicating with car?  When Master sends 05, slave takes it as permission to continue, but I can't say for sure the value means the same thing in slave vs master use.
-    #   08 Lost communication with master while plugged in (Saw this consistently each time I stopped my fake master script with car scheduled to charge, plugged in, charge port blue.  If the car is actually charging and you stop TWCManager, after 20-30 seconds the charbe port turns solid red, steering wheel display says "charge cable fault", and main screen says "check charger power".  When TWCManager is started, it sees this 08 status again.  If we start TWCManager and send the slave a new max power value, 08 becomes 00 and car starts charging again.)
+    #   02 Lost communication with master
+    #      I usually see this status briefly if I stop fake master script for
+    #      awhile, then start it.  This value may also indicate other error
+    #      conditions.
+    #   03 Plugged in, do not charge
+    #      I've seen this state briefly when plug is first inserted, and I've
+    #      seen this state remain indefinitely after pressing stop charge on
+    #      car's screen or when the car reaches its target charge percentage. It
+    #      may also remain indefinitely if TWCManager script is stopped for too
+    #      long while car is charging even after TWCManager is restarted. In
+    #      that case, car will not charge even when start charge on screen is
+    #      pressed - only re-plugging in charge cable fixes it.
+    #   04 Plugged in, ready to charge or charge scheduled
+    #      I've seen this state even when car is set to charge at a future time
+    #      via its UI.  In that case, it won't accept power offered to it.
+    #   05 Busy?
+    #      I've only seen it hit this state for 1 second at a time and it can
+    #      seemingly happen during any other state. Maybe it means wait, I'm
+    #      busy? Communicating with car? When Master sends 05, slave takes it as
+    #      meaning the next four bytes contain a max charging amps value, but it
+    #      doesn't seem that slave uses it in the same way.
+    #   08 Starting to charge?
+    #      This state may remain for a few seconds while car ramps up from 0A
+    #      to 1.3A, then state usually changes to 01. Sometimes car skips 08
+    #      and goes directly to 01.
+    #      I saw 08 consistently each time I stopped my fake master script with
+    #      car scheduled to charge, plugged in, charge port blue. If the car is
+    #      actually charging and you stop TWCManager, after 20-30 seconds the
+    #      charge port turns solid red, steering wheel display says "charge
+    #      cable fault", and main screen says "check charger power". When
+    #      TWCManager is started, it sees this 08 status again. If we start
+    #      TWCManager and send the slave a new max power value, 08 becomes 00
+    #      and car starts charging again.
     #
     # Byte 2-3 is the max current available as provided by bytes 2-3 in our
     # fake master status.
@@ -1018,12 +1046,13 @@ sub send_slave_heartbeat
     # Note that once bytes 2-3 are greater than 0, Byte 1 changes from 04 to
     # 01 or 00 during charging.
     #
-    # Byte 4-5 represents the power being drawn by the charger.
-    # When a car is charging at 18A you may see a value like 07 28 which is
+    # Byte 4-5 represents the power the car is actually drawing for charging.
+    # When a car is told to charge at 19A you may see a value like 07 28 which is
     # 0x728 hex or 1832 in base 10. Move the decimal point two places left
-    # and you see the charger is using 18.32A. When unplugged, my charger
-    # reports 00 19 (0.25A) but very occasionally changes to 00 11 (0.17A)
-    # or 00 21 (0.33A). Your charger may differ in its exact power use.
+    # and you see the charger is using 18.32A.
+    # Some TWCs report 0A when a car is not charging while others may report
+    # small values such as 0.25A. I suspect 0A is what should be reported and
+    # any small value indicates a minor calibration error.
     #
     # Byte 6-7 are always 00 00 from what I've seen and could be reserved
     # for future use or may be used in a situation I've not observed.
@@ -1168,9 +1197,16 @@ sub send_master_heartbeat
     #
     # Example 7-byte data that real masters have sent:
     #   00 00 00 00 00 00 00  (Idle)
-    #   02 04 00 00 00 00 00  (Error.  04 is probably an error code because interpretting 04 00 as an amp value gets us an odd 10.24A)
-    #   05 0f a0 00 00 00 00  (Master telling slave to limit power to 0f a0 (40.00A))
-    #   05 07 d0 01 00 00 00  (Master plugged in to a car and presumably telling slaves to limit power to 07 d0 (20.00A).  01 byte might indicate master is plugged in?  Master would not charge its car because I didn't have the fake slave issue the correct response.)
+    #   02 04 00 00 00 00 00  (Error.  04 is probably an error code because
+    #                          interpretting 04 00 as an amp value gets us an
+    #                          odd 10.24A)
+    #   05 0f a0 00 00 00 00  (Master telling slave to limit power to 0f a0
+    #                         (40.00A))
+    #   05 07 d0 01 00 00 00  (Master plugged in to a car and presumably telling
+    #                          slaves to limit power to 07 d0 (20.00A). 01 byte
+    #                          might indicate master is plugged in? Master would
+    #                          not charge its car because I didn't have the fake
+    #                          slave issue the correct response.)
     my $self = shift @_;
 
     main::send_msg("\xFB\xE0$fakeTWCID" . $self->{ID}
@@ -1221,7 +1257,7 @@ sub receive_slave_heartbeat
     my $desiredAmpsMax =
         int($maxAmpsToDivideAmongSlaves / @slaveTWCRoundRobin);
 
-    if($desiredAmpsMax < 5) {
+    if($desiredAmpsMax < 5.0) {
         # To avoid errors, don't charge the car under 5.0A. 5A is the lowest
         # value you can set using the Tesla car's main screen, so lower values
         # might have some adverse affect on the car. I actually tried lower
@@ -1263,25 +1299,47 @@ sub receive_slave_heartbeat
             # told it to charge or since the last significant change in the
             # car's actual power draw or the car has not yet started to draw at
             # least 5 amps (telling it 5A makes it actually draw around
-            # 4.18-4.27A so we check for $slaveReportedAmpsActual < 4).
+            # 4.18-4.27A so we check for $slaveReportedAmpsActual < 4.0).
             #
             # Once we tell the car to charge, we want to keep it going for at
-            # least a minute before turning it off again. In that minute,
-            # $desiredAmpsMax might rise above 5A in which case we won't have
-            # to turn it off at all. Avoiding too many on/off cycles preserves
-            # the life of the TWC's main power relay and may also prevent errors
-            # in the car that might be caused by turning its charging on and off
-            # too rapidly.
+            # least a minute before turning it off again. My concern is that
+            # yanking the power at just the wrong time during the start-charge
+            # negotiation could put the car into an error state where it won't
+            # charge again without being re-plugged. This concern is probably
+            # completely invalid, but I'd rather not take any chances with
+            # getting someone's car into a non-charging state so they're
+            # stranded when they need to get somewhere.
             #
-            # Seeing $slaveReportedAmpsActual < 4 means the car hasn't ramped
+            # The other reason for this tactic is that in the minute we wait,
+            # $desiredAmpsMax might rise above 5A in which case we won't have to
+            # turn off the charger power at all. Avoiding too many on/off cycles
+            # preserves the life of the TWC's main power relay and may also
+            # prevent errors in the car that might be caused by turning its
+            # charging on and off too rapidly.
+            #
+            # Seeing $slaveReportedAmpsActual < 4.0 means the car hasn't ramped
             # up to whatever level we told it to charge at last time. It may be
             # asleep and take up to 15 minutes to wake up, see there's power,
-            # and start charging. Once we tell the car there's power available,
-            # I don't want to risk telling it the power is gone until it's woken
-            # up and started using the power. I'm just guessing, but I worry
-            # that yanking the power at just the wrong time during start charge
-            # negotiation could put the car into an error state where it won't
-            # charge again without being re-plugged.
+            # and start charging.
+            #
+            # Unfortunately, $slaveReportedAmpsActual < 4.0 can also mean the
+            # car is at its target charge level and may not accept power for
+            # days until the battery drops below a certain level. I can't think
+            # of a reliable way to detect this case. When the car stops itself
+            # from charging, we'll see $slaveReportedAmpsActual drop to near 0A
+            # and $heartbeatData[0] becomes 03, but we can see the same 03 state
+            # when we tell the TWC to stop charging. We could record the time
+            # the car stopped taking power and assume it won't want more for
+            # some period of time, but we can't reliably detect if someone
+            # unplugged the car, drove it, and re-plugged it so it now needs
+            # power, or if someone plugged in a different car that needs power.
+            # Even if I see the car hasn't taken the power we've offered for the
+            # last hour, it's conceivable the car will reach a battery state
+            # where it decides it wants power the moment we decide it's safe to
+            # stop offering it. Thus, I think it's safest to always wait until
+            # the car has taken 5A for a minute before cutting power even if
+            # that means the car will charge for a minute when you first plug it
+            # in after a trip even at a time when no power should be available.
             if($debugLevel >= 10) {
                 print("Don't stop charging yet because:\n"
                       . 'time - $self->{timeLastAmpsMaxChanged} '
@@ -1293,7 +1351,7 @@ sub receive_slave_heartbeat
                       . '|| $slaveReportedAmpsActual ' . $slaveReportedAmpsActual
                       . " < 4\n");
             }
-            $desiredAmpsMax = $self->{lastAmpsMax};
+            $desiredAmpsMax = 5.0;
         }
     }
     else {
@@ -1359,9 +1417,11 @@ sub receive_slave_heartbeat
                    # 5.14-5.23A, this should detect it after 10 seconds and
                    # we'll spike our power request to $spikeAmpsToCancel6ALimit
                    # to fix it.
-                   $self->{lastAmpsMax} - $slaveReportedAmpsActual > 1.0
+                   $slaveReportedAmpsActual > 1.0 # The car is drawing enough amps to be charging
                      &&
-                   time - $self->{timeLastAmpsActualChanged} > 10
+                   ($self->{lastAmpsMax} - $slaveReportedAmpsActual) > 1.0 # Car is charging at over an amp under what we want it to charge at.
+                     &&
+                   time - $self->{timeLastAmpsActualChanged} > 10 # Car hasn't changed its amp draw significantly in over 10 seconds
                  )
                )
             ) {
