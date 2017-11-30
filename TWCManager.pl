@@ -218,6 +218,14 @@ my $idxSlaveToSendNextHeartbeat = 0;
 my $maxAmpsToDivideAmongSlaves = 0;
 my $spikeAmpsToCancel6ALimit = 16;
 my $timeLastGreenEnergyCheck = 0;
+
+# __FILE__ contains the path to the running script. Replace the script name with
+# overrideMaxAmps.txt. This gives us a path that will always locate
+# overrideMaxAmps.txt in the same directory as the script even when pwd does not
+# match the script directory.
+my $overrideMaxAmpsFileName = __FILE__;
+$overrideMaxAmpsFileName =~ s|/[^/]+$|/overrideMaxAmps.txt|;
+
 my $overrideMaxAmps = -1;
 my $timeLastOverrideMaxAmpsCheck = 0;
 my $timeLastHeartbeatDebugOutput = 0;
@@ -301,7 +309,7 @@ for(;;) {
                 # an empty file.
                 $timeLastOverrideMaxAmpsCheck = time;
                 $overrideMaxAmps = -1;
-                if(open(my $fh, '<', 'overrideMaxAmps.txt')) {
+                if(open(my $fh, '<', $overrideMaxAmpsFileName)) {
                     # Once we find overrideMaxAmps.txt exists, check it every
                     # five seconds for changes instead of checking for existence
                     # every 60 seconds.
@@ -356,7 +364,7 @@ for(;;) {
                     # seconds here, slave TWCs will decide we've disappeared and
                     # stop charging or maybe it's more like 20-30 seconds - I
                     # didn't test carefully).
-                    my $greenEnergyData = `curl -s -m 4 "http://127.0.0.1/history/export.csv?T=1&D=0&M=1&C=1"`;
+                    my $greenEnergyData = `curl -s -m 4 "http://192.168.13.58/history/export.csv?T=1&D=0&M=1&C=1"`;
 
                     # In my case, $greenEnergyData will contain something like
                     # this:
