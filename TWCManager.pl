@@ -107,6 +107,7 @@
 use Fcntl;
 use POSIX;
 use Time::HiRes qw(usleep nanosleep);
+use IPC::SysV qw(ftok IPC_PRIVATE IPC_RMID IPC_CREAT MSG_NOERROR IPC_NOWAIT);
 use warnings;
 use strict;
 
@@ -223,12 +224,63 @@ my $timeLastGreenEnergyCheck = 0;
 # overrideMaxAmps.txt. This gives us a path that will always locate
 # overrideMaxAmps.txt in the same directory as the script even when pwd does not
 # match the script directory.
-my $overrideMaxAmpsFileName = __FILE__;
-$overrideMaxAmpsFileName =~ s|/[^/]+$|/overrideMaxAmps.txt|;
-
+my $overrideMaxAmpsFileName = __FILE__ =~ s|/[^/]+$|/overrideMaxAmps.txt|r;
 my $overrideMaxAmps = -1;
 my $timeLastOverrideMaxAmpsCheck = 0;
 my $timeLastHeartbeatDebugOutput = 0;
+
+my $webMsgPacked = '';
+my $webMsgMaxSize = 300;
+my $webMsgResult;
+
+
+################################################################################
+# Create an IPC (Interprocess Communication) message queue that we can
+# periodically check to respond to queries from the TWCManager web interface.
+#
+# These messages will contain commands like "start charging at 10A" or may ask
+# for information like "how many amps is the solar array putting out".
+#
+# The message queue is identified by a numeric key. This script and the web
+# interface must both use the same key. The "ftok" function facilitates creating
+# such a key based on a shared piece of information that is not likely to
+# conflict with keys chosen by any other process in the system.
+#
+# ftok reads the inode number of the file or directory pointed to by its first
+# parameter. This file or dir must already exist and the permissions on it don't
+# seem to matter. The inode of a particular file or dir is fairly unique but
+# doesn't change often so it makes a decent choice for a key.  We use the parent
+# directory of the TWCManager script.
+#
+# The second parameter to ftok is a single byte that adds some additional
+# uniqueness and lets you create multiple queues linked to the file or dir in
+# the first param. We use 'T' for Tesla.
+#
+# If you can't get this to work, you can also set $key = <some arbitrary number>
+# and in the web interface, use the same arbitrary number. While that could
+# conflict with another process, it's very unlikely to.
+my $webIPCkey = ftok(__FILE__ =~ s|/[^/]+$|/|r, ord('T'));
+
+# Use the key to create a message queue with read/write access for all users.
+my $webIPCqueue = msgget($webIPCkey, IPC_CREAT | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+if(! defined $webIPCqueue) {
+    die("ERROR: Can't create Interprocess Communication message queue to communicate with web interface.\n");
+};
+
+# After the IPC message queue is created, if you type 'sudo ipcs -q' on the
+# command like, you should see something like:
+# ------ Message Queues --------
+# key        msqid      owner      perms      used-bytes   messages
+# 0x5402ed16 491520     pi         666        0            0
+#
+# Notice that we've created the only IPC message queue in the system. Apparently
+# default software on the pi doesn't use IPC or if it does, it creates and
+# deletes its message queues quickly.
+#
+# If you want to get rid of all queues because you created extras accidentally,
+# reboot or type 'sudo ipcrm -a msg'.  Don't get rid of all queues if you see
+# ones you didn't create or you may crash another process.
+################################################################################
 
 
 printf("TWC Manager starting as fake %s with id %02x%02x and sign %02x\n\n",
@@ -372,7 +424,9 @@ for(;;) {
                     #   Solar,11/11/2017 14:20:43,-2.957,-0.29,124.3
                     # The only part we care about is -2.957 which is negative
                     # kWh currently being generated.
-                    if($greenEnergyData =~ m~^Solar,[^,]+,-([^, ]+),~m) {
+                    # When 0kWh is generated, the negative disappears so we make
+                    # it optional.
+                    if($greenEnergyData =~ m~^Solar,[^,]+,-?([^, ]+),~m) {
                         my $solarWh = int($1 * 1000);
 
                         # Watts = Volts * Amps
@@ -385,7 +439,7 @@ for(;;) {
                             time_now(), $solarWh, $maxAmpsToDivideAmongSlaves);
                     }
                     else {
-                        print(time_now() . "ERROR: Can't determine current solar generation.\n\n");
+                        print(time_now() . " ERROR: Can't determine current solar generation from:\n$greenEnergyData$\n\n");
                     }
                 }
                 $timeLastGreenEnergyCheck = time;
@@ -415,6 +469,74 @@ for(;;) {
         }
     }
 
+
+    ############################################################################
+    # See if there's any message from the web interface.
+    # If the message is longer than $msgMaxSize, MSG_NOERROR tells it to return
+    # what it can of the message and discard the rest.
+    # When no message is available, IPC_NOWAIT tells msgrcv to return $msgResult
+    # = 0 and $! = 42 with description 'No message of desired type'.
+    # If there is an actual error, $webMsgResult will be -1.
+    # On success, $webMsgResult is the length of $webMsgPacked.
+    $webMsgResult = msgrcv($webIPCqueue, $webMsgPacked, $webMsgMaxSize, 2, MSG_NOERROR | IPC_NOWAIT );
+    if($webMsgResult < 1 && int($!) != 42) {
+        print(time_now() . ": Error " . int($!) . ": $! with msgrcv result $webMsgResult\n");
+    }
+    elsif($webMsgResult > 0) {
+        my ($webMsgType, $webMsgTime, $webMsgID, $webMsg) = unpack("lNna*", $webMsgPacked);
+        if($debugLevel >= 1) {
+            print time_now() . ": Web query: '" . $webMsg . "', id " . $webMsgID
+                             . ", time " . $webMsgTime . ", type " . $webMsgType
+                             . ", length " . $webMsgResult . "\n";
+        }
+
+        my $webResponseMsg = '';
+        if($webMsg eq 'getStatus') {
+            $webResponseMsg = $overrideMaxAmps . '`'
+                              . sprintf("%.2f", $maxAmpsToDivideAmongSlaves) . '`' . @slaveTWCRoundRobin;
+            for(my $i = 0; $i < @slaveTWCRoundRobin; $i++) {
+                $webResponseMsg .= '`' . sprintf("%02X%02X",
+                                           vec($slaveTWCRoundRobin[$i]->{ID}, 0, 8),
+                                           vec($slaveTWCRoundRobin[$i]->{ID}, 1, 8))
+                    . '~' . $slaveTWCRoundRobin[$i]->{maxAmps}
+                    . '~' . sprintf("%.2f", $slaveTWCRoundRobin[$i]->{reportedAmpsActual})
+                    . '~' . $slaveTWCRoundRobin[$i]->{reportedAmpsMax}
+                    . '~' . $slaveTWCRoundRobin[$i]->{reportedState};
+            }
+        }
+        elsif($webMsg =~ m/setAmps=([-0-9]+)/) {
+            $overrideMaxAmps = $1;
+            if($overrideMaxAmps == -1) {
+                unlink($overrideMaxAmpsFileName);
+                $timeLastOverrideMaxAmpsCheck = 0;
+            }
+            else {
+                if(open(my $fh, '>', $overrideMaxAmpsFileName)) {
+                    print $fh $overrideMaxAmps;
+                    close($fh);
+                }
+                $maxAmpsToDivideAmongSlaves = $overrideMaxAmps;
+            }
+        }
+
+        if($webResponseMsg ne '') {
+            if($debugLevel >= 10) {
+                print(time_now() . ": Web query response: '$webResponseMsg'\n");
+            }
+
+            # In this case, IPC_NOWAIT prevents blocking if the message queue is too
+            # full for our message to fit.  Instead, an error is returned.
+            if(!msgsnd($webIPCqueue, pack("lNna*", 1, $webMsgTime, $webMsgID,
+                       $webResponseMsg), IPC_NOWAIT)
+            ) {
+                print(time_now() . ": Error " . int($!) . ": $! trying to send response to web interface.\n");
+            }
+        }
+    }
+
+
+    ############################################################################
+    # See if there's an incoming message on the RS485 interface.
     for(;;) {
         $dataLen = sysread(TWC, $data, 1);
         if(!defined($dataLen) && $!{EAGAIN}) {
@@ -581,7 +703,7 @@ for(;;) {
                     # and generally no more than once, so this is a good
                     # opportunity to add the slave to our known pool of slave
                     # devices.
-                    my $slaveTWC = new_slave($senderID);
+                    my $slaveTWC = new_slave($senderID, $maxAmps);
 
                     # We expect $maxAmps to be 80 on U.S. chargers and 32 on EU
                     # chargers. Either way, don't allow
@@ -768,7 +890,7 @@ close TWC;
 
 sub new_slave
 {
-    my $newSlaveID = $_[0];
+    my ($newSlaveID, $maxAmps) = @_;
     my $slaveTWC = $slaveTWCs{$newSlaveID};
 
     if(defined($slaveTWC)) {
@@ -776,7 +898,7 @@ sub new_slave
         return $slaveTWC;
     }
 
-    $slaveTWC = TWCSlave->new(ID => $newSlaveID);
+    $slaveTWC = TWCSlave->new('ID' => $newSlaveID, 'maxAmps' => $maxAmps);
     $slaveTWCs{$newSlaveID} = $slaveTWC;
     push @slaveTWCRoundRobin, $slaveTWC;
 
@@ -1144,7 +1266,7 @@ sub hex_str
     my $result = '';
 
     foreach(unpack('C*', $buf)) { # unpack is supposedly more efficient than split(//, $buf)).  Unpack produces an array of integers instead of an array of single-character strings.
-        $result .= sprintf("%02x ", $_);;
+        $result .= sprintf("%02x ", $_);
     }
 
     return substr($result, 0, length($result) - 1);
@@ -1164,6 +1286,9 @@ sub new
     $self->{timeLastRx} = time;
     $self->{lastAmpsMax} = -1;
     $self->{lastAmpsActual} = -1;
+    $self->{reportedAmpsMax} = 0;
+    $self->{reportedAmpsActual} = 0;
+    $self->{reportedState} = 0;
     $self->{timeLastAmpsMaxChanged} = time;
     $self->{timeLastAmpsActualChanged} = time;
     $self->{lastHeartbeatDebugOutput} = '';
@@ -1228,14 +1353,15 @@ sub receive_slave_heartbeat
 
     $self->{timeLastRx} = time;
 
-    my $slaveReportedAmpsMax = (($heartbeatData[1] << 8) + $heartbeatData[2]) / 100;
-    my $slaveReportedAmpsActual = (($heartbeatData[3] << 8) + $heartbeatData[4]) / 100;
+    $self->{reportedAmpsMax} = (($heartbeatData[1] << 8) + $heartbeatData[2]) / 100;
+    $self->{reportedAmpsActual} = (($heartbeatData[3] << 8) + $heartbeatData[4]) / 100;
+    $self->{reportedState} = $heartbeatData[0];
 
     # $self->{lastAmpsMax} is initialized to -1.
     # If we find it at that value, set it to the current value reported by the
     # TWC.
     if($self->{lastAmpsMax} < 0) {
-        $self->{lastAmpsMax} = $slaveReportedAmpsMax;
+        $self->{lastAmpsMax} = $self->{reportedAmpsMax};
     }
 
     # Keep track of the amps the slave is actually using and the last time it
@@ -1243,10 +1369,10 @@ sub receive_slave_heartbeat
     # Also update $self->{lastAmpsActual} if it's still set to its initial
     # value of -1.
     if($self->{lastAmpsActual} < 0
-       || abs($slaveReportedAmpsActual - $self->{lastAmpsActual}) > 0.8
+       || abs($self->{reportedAmpsActual} - $self->{lastAmpsActual}) > 0.8
     ) {
         $self->{timeLastAmpsActualChanged} = time;
-        $self->{lastAmpsActual} = $slaveReportedAmpsActual;
+        $self->{lastAmpsActual} = $self->{reportedAmpsActual};
     }
 
     if($maxAmpsToDivideAmongSlaves > $wiringMaxAmpsAllTWCs) {
@@ -1299,7 +1425,7 @@ sub receive_slave_heartbeat
                ||
              time - $self->{timeLastAmpsActualChanged} < 60
                ||
-             $slaveReportedAmpsActual < 4.0
+             $self->{reportedAmpsActual} < 4.0
            )
         ) {
             # We were previously telling the car to charge but now we want to
@@ -1307,7 +1433,7 @@ sub receive_slave_heartbeat
             # told it to charge or since the last significant change in the
             # car's actual power draw or the car has not yet started to draw at
             # least 5 amps (telling it 5A makes it actually draw around
-            # 4.18-4.27A so we check for $slaveReportedAmpsActual < 4.0).
+            # 4.18-4.27A so we check for $self->{reportedAmpsActual} < 4.0).
             #
             # Once we tell the car to charge, we want to keep it going for at
             # least a minute before turning it off again. My concern is that
@@ -1325,20 +1451,20 @@ sub receive_slave_heartbeat
             # prevent errors in the car that might be caused by turning its
             # charging on and off too rapidly.
             #
-            # Seeing $slaveReportedAmpsActual < 4.0 means the car hasn't ramped
-            # up to whatever level we told it to charge at last time. It may be
-            # asleep and take up to 15 minutes to wake up, see there's power,
-            # and start charging.
+            # Seeing $self->{reportedAmpsActual} < 4.0 means the car hasn't
+            # ramped up to whatever level we told it to charge at last time. It
+            # may be asleep and take up to 15 minutes to wake up, see there's
+            # power, and start charging.
             #
-            # Unfortunately, $slaveReportedAmpsActual < 4.0 can also mean the
+            # Unfortunately, $self->{reportedAmpsActual} < 4.0 can also mean the
             # car is at its target charge level and may not accept power for
             # days until the battery drops below a certain level. I can't think
             # of a reliable way to detect this case. When the car stops itself
-            # from charging, we'll see $slaveReportedAmpsActual drop to near 0A
-            # and $heartbeatData[0] becomes 03, but we can see the same 03 state
-            # when we tell the TWC to stop charging. We could record the time
-            # the car stopped taking power and assume it won't want more for
-            # some period of time, but we can't reliably detect if someone
+            # from charging, we'll see $self->{reportedAmpsActual} drop to near
+            # 0A and $heartbeatData[0] becomes 03, but we can see the same 03
+            # state when we tell the TWC to stop charging. We could record the
+            # time the car stopped taking power and assume it won't want more
+            # for some period of time, but we can't reliably detect if someone
             # unplugged the car, drove it, and re-plugged it so it now needs
             # power, or if someone plugged in a different car that needs power.
             # Even if I see the car hasn't taken the power we've offered for the
@@ -1356,7 +1482,7 @@ sub receive_slave_heartbeat
                       . '|| time - $self->{timeLastAmpsActualChanged} '
                       . (time - $self->{timeLastAmpsActualChanged})
                       . "< 60\n"
-                      . '|| $slaveReportedAmpsActual ' . $slaveReportedAmpsActual
+                      . '|| $self->{reportedAmpsActual} ' . $self->{reportedAmpsActual}
                       . " < 4\n");
             }
             $desiredAmpsMax = 5.0;
@@ -1408,7 +1534,7 @@ sub receive_slave_heartbeat
                 print('$desiredAmpsMax=' . $desiredAmpsMax
                       . ' $spikeAmpsToCancel6ALimit=' . $spikeAmpsToCancel6ALimit
                       . ' $self->{lastAmpsMax}=' . $self->{lastAmpsMax}
-                      . ' $slaveReportedAmpsActual=' . $slaveReportedAmpsActual
+                      . ' $self->{reportedAmpsActual}=' . $self->{reportedAmpsActual}
                       . ' time - $self->{timeLastAmpsActualChanged}='
                       . (time - $self->{timeLastAmpsActualChanged})
                       . "\n");
@@ -1425,9 +1551,9 @@ sub receive_slave_heartbeat
                    # 5.14-5.23A, this should detect it after 10 seconds and
                    # we'll spike our power request to $spikeAmpsToCancel6ALimit
                    # to fix it.
-                   $slaveReportedAmpsActual > 1.0 # The car is drawing enough amps to be charging
+                   $self->{reportedAmpsActual} > 1.0 # The car is drawing enough amps to be charging
                      &&
-                   ($self->{lastAmpsMax} - $slaveReportedAmpsActual) > 1.0 # Car is charging at over an amp under what we want it to charge at.
+                   ($self->{lastAmpsMax} - $self->{reportedAmpsActual}) > 1.0 # Car is charging at over an amp under what we want it to charge at.
                      &&
                    time - $self->{timeLastAmpsActualChanged} > 10 # Car hasn't changed its amp draw significantly in over 10 seconds
                  )
@@ -1472,9 +1598,9 @@ sub receive_slave_heartbeat
     #
     # Rather than only sending $desiredAmpsMax when slave is sending code 04 or
     # 08, it seems to work better to send $desiredAmpsMax whenever it does not
-    # equal $slaveReportedAmpsMax reported by the slave TWC. Doing it that way
-    # will get a slave charging again even when it's in state 00 or 03 which it
-    # swings between after you set $desiredAmpsMax = 0 to stop charging.
+    # equal $self->{reportedAmpsMax} reported by the slave TWC. Doing it that
+    # way will get a slave charging again even when it's in state 00 or 03 which
+    # it swings between after you set $desiredAmpsMax = 0 to stop charging.
     #
     # I later found that a slave may end up swinging between state 01 and 03
     # when $desiredAmpsMax == 0:
@@ -1488,7 +1614,7 @@ sub receive_slave_heartbeat
     # relay. To avoid that problem, always send code 05 when $desiredAmpsMax ==
     # 0. In that case, slave's response should always look like this:
     #   S 032e 0.25/0.00A: 03 0000 0019 0000 M: 05 0000 0000 0000
-    if($slaveReportedAmpsMax != $desiredAmpsMax
+    if($self->{reportedAmpsMax} != $desiredAmpsMax
        || $desiredAmpsMax == 0
     ) {
         my $desiredHundredthsOfAmps = int($desiredAmpsMax * 100);
@@ -1522,7 +1648,7 @@ sub receive_slave_heartbeat
         # if $debugLevel is turned up to 11.
         if($debugOutput ne $self->{lastHeartbeatDebugOutput}
             || time - $timeLastHeartbeatDebugOutput > 600
-            || $debugLevel >= 10
+            || $debugLevel >= 11
         ) {
             print(main::time_now() . $debugOutput);
             $self->{lastHeartbeatDebugOutput} = $debugOutput;
