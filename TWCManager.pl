@@ -280,6 +280,8 @@ if(! defined $webIPCqueue) {
 # If you want to get rid of all queues because you created extras accidentally,
 # reboot or type 'sudo ipcrm -a msg'.  Don't get rid of all queues if you see
 # ones you didn't create or you may crash another process.
+# Find more details in IPC here:
+# http://www.onlamp.com/pub/a/php/2004/05/13/shared_memory.html
 ################################################################################
 
 
@@ -483,7 +485,7 @@ for(;;) {
         print(time_now() . ": Error " . int($!) . ": $! with msgrcv result $webMsgResult\n");
     }
     elsif($webMsgResult > 0) {
-        my ($webMsgType, $webMsgTime, $webMsgID, $webMsg) = unpack("lNna*", $webMsgPacked);
+        my ($webMsgType, $webMsgTime, $webMsgID, $webMsg) = unpack("lLSa*", $webMsgPacked);
         if($debugLevel >= 1) {
             print time_now() . ": Web query: '" . $webMsg . "', id " . $webMsgID
                              . ", time " . $webMsgTime . ", type " . $webMsgType
@@ -526,7 +528,7 @@ for(;;) {
 
             # In this case, IPC_NOWAIT prevents blocking if the message queue is too
             # full for our message to fit.  Instead, an error is returned.
-            if(!msgsnd($webIPCqueue, pack("lNna*", 1, $webMsgTime, $webMsgID,
+            if(!msgsnd($webIPCqueue, pack("lLSa*", 1, $webMsgTime, $webMsgID,
                        $webResponseMsg), IPC_NOWAIT)
             ) {
                 print(time_now() . ": Error " . int($!) . ": $! trying to send response to web interface.\n");

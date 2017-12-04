@@ -8,7 +8,9 @@
     // 10 is all info.
     $debugLevel = 0;
 
-    // Point $twcScriptDir to the directory containing TWCManager.pl script.
+    // Point $twcScriptDir to the directory containing the TWCManager.pl script.
+    // Interprocess Communication with TWCManager.pl will not work if this
+    // parameter is incorrect.
     $twcScriptDir = "/home/pi/TWC/";
 
     // End configuration parameters
@@ -77,7 +79,7 @@
                 /*if($subStatus[4] == 0) {
                     // I was hoping state 0 meant no car is plugged in, but
                     // there are periods when we're telling the car no power is
-                    // available and the state flips between 05 and 00 every
+                    // available and the state flips between 5 and 0 every
                     // second. Sometimes it changes to state 0 for long periods
                     // (likely when the car goes to sleep for ~15 mins at a
                     // time) even when the car is plugged in, so it looks like
@@ -213,7 +215,7 @@
                 }
             }
             else {
-                $aryMsg = unpack("Ntime/nID/a*msg", $ipcMsgRecv);
+                $aryMsg = unpack("Ltime/SID/a*msg", $ipcMsgRecv);
                 if($debugLevel >= 10) {
                    print "ipcQuery received '" . $aryMsg['msg'] . "', id " . $aryMsg['ID']
                            . ", time " . $aryMsg['time'] . "<p>";
@@ -242,7 +244,11 @@
         }
 
         if($i >= $maxRetries) {
-            print "Timed out waiting for TWCManager script.</br>";
+            print "<span style=\"color:#F00; font-weight:bold;\">"
+                . "Timed out waiting for response from TWCManager script.</span><p>"
+                . "If the script is running, make sure the \$twcScriptDir parameter "
+                . "in the source of this web page points to the directory containing "
+                . "the TWCManager script.</p><p>";
         }
         return '';
     }
@@ -274,7 +280,7 @@
             }
         }
 
-        if(msg_send($ipcQueue, $ipcMsgType, pack("Nna*", $ipcMsgTime, $ipcMsgID, $ipcMsg),
+        if(msg_send($ipcQueue, $ipcMsgType, pack("LSa*", $ipcMsgTime, $ipcMsgID, $ipcMsg),
                     false, false, $ipcErrorCode) == false
         ) {
             print("Couldn't send '$ipcMsgSend'.  Error code $ipcErrorcode.<br><br>");
