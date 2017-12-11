@@ -12,7 +12,11 @@
 #
 # Report bugs at https://github.com/cdragon/TWCManager/issues
 #
-# Source code and TWC protocol knowledge are hereby released to the general
+# A Python project based on TWCManager is available here:
+# https://github.com/wido/smarthpwc
+#
+# This software is released under the "Unlicense" model: http://unlicense.org
+# This means source code and TWC protocol knowledge are released to the general
 # public free for personal or commercial use. I hope the knowledge will be used
 # to increase the use of green energy sources by controlling the time and power
 # level of car charging.
@@ -20,11 +24,13 @@
 # WARNING:
 # Misuse of the protocol described in this software can direct a Tesla Wall
 # Charger to supply more current to a car than the charger wiring was designed
-# for. This will trip a circuit breaker at best and may start a fire if the
-# circuit breaker fails.
-# This software was not written or designed with the benefit of information
-# from Tesla and there is always a small possibility that some aspect of its
-# operation could damage a Tesla vehicle or a Tesla Wall Charger.
+# for. This will trip a circuit breaker or may start a fire in the unlikely
+# event that the circuit breaker fails.
+# This software was not written or designed with the benefit of information from
+# Tesla and there is always a small possibility that some unforeseen aspect of
+# its operation could damage a Tesla vehicle or a Tesla Wall Charger. All
+# efforts have been made to avoid such damage and this software is in active use
+# on the author's own vehicle and TWC.
 #
 # In short, USE THIS SOFTWARE AT YOUR OWN RISK.
 #
@@ -35,7 +41,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
-# For more information, please refer to <http://unlicense.org>
+# For more information, please visit http://unlicense.org
 
 ################################################################################
 # What's TWCManager good for?
@@ -200,10 +206,11 @@ my $slaveSign = "\x77";
 my ($data, $dataLen);
 my ($msg, $msgLen) = ('', 0);
 
+# Set options to make the $rs485Adapter work correctly, then open it for reading
+# and writing.
 # 'raw' and '-echo' options are necessary with the FTDI chipset to avoid corrupt
 # output or missing data.
 system("stty -F $rs485Adapter raw -echo $baud cs8 -cstopb -parenb");
-
 sysopen(TWC, "$rs485Adapter", O_RDWR | O_NONBLOCK) or die "Can't open $rs485Adapter";
 binmode TWC, ":raw";
 
@@ -217,22 +224,27 @@ my @slaveTWCRoundRobin = ();
 my $idxSlaveToSendNextHeartbeat = 0;
 
 my $maxAmpsToDivideAmongSlaves = 0;
+my $scheduledAmpsMax = 0;
+my $scheduledAmpsStartHour = -1;
+my $scheduledAmpsEndHour = -1;
+
 my $spikeAmpsToCancel6ALimit = 16;
 my $timeLastGreenEnergyCheck = 0;
+my $hourResumeTrackGreenEnergy = -1;
 
 # __FILE__ contains the path to the running script. Replace the script name with
-# overrideMaxAmps.txt. This gives us a path that will always locate
-# overrideMaxAmps.txt in the same directory as the script even when pwd does not
-# match the script directory.
-my $overrideMaxAmpsFileName = __FILE__ =~ s|/[^/]+$|/overrideMaxAmps.txt|r;
-my $overrideMaxAmps = -1;
-my $timeLastOverrideMaxAmpsCheck = 0;
+# TWCManagerSettings.txt. This gives us a path that will always locate
+# TWCManagerSettings.txt in the same directory as the script even when pwd does
+# not match the script directory.
+my $settingsFileName = __FILE__ =~ s|/[^/]+$|/TWCManagerSettings.txt|r;
+my $nonScheduledAmpsMax = -1;
 my $timeLastHeartbeatDebugOutput = 0;
 
 my $webMsgPacked = '';
 my $webMsgMaxSize = 300;
 my $webMsgResult;
 
+load_settings();
 
 ################################################################################
 # Create an IPC (Interprocess Communication) message queue that we can
@@ -352,34 +364,8 @@ for(;;) {
                 }
             }
 
-            if(time - $timeLastOverrideMaxAmpsCheck > 60) {
-                # If you'd like to test different amp limits while TWCManager
-                # runs, in the same directory as TWCManager.pl, create a file
-                # called 'overrideMaxAmps.txt'. Within the file, put the amp
-                # limit, ie '20' for 20 amps. TWCManager will pick up changed
-                # values as often as you set the 'time -
-                # $timeLastGreenEnergyCheck > 60' check above. Delete
-                # overrideMaxAmps.txt to resume normal operation, or just make it
-                # an empty file.
-                $timeLastOverrideMaxAmpsCheck = time;
-                $overrideMaxAmps = -1;
-                if(open(my $fh, '<', $overrideMaxAmpsFileName)) {
-                    # Once we find overrideMaxAmps.txt exists, check it every
-                    # five seconds for changes instead of checking for existence
-                    # every 60 seconds.
-                    $timeLastOverrideMaxAmpsCheck = time - 55;
-                    if(<$fh> =~ m/([0-9.]+)/m) {
-                        $overrideMaxAmps = $1;
-                        if($debugLevel >= 10) {
-                            print("\$overrideMaxAmps set to $overrideMaxAmps\n");
-                        }
-                    }
-                    close $fh;
-                }
-            }
-
-            if($overrideMaxAmps > -1) {
-                $maxAmpsToDivideAmongSlaves = $overrideMaxAmps;
+            if($nonScheduledAmpsMax > -1) {
+                $maxAmpsToDivideAmongSlaves = $nonScheduledAmpsMax;
             }
             elsif(time - $timeLastGreenEnergyCheck > 60) {
                 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
@@ -418,7 +404,7 @@ for(;;) {
                     # seconds here, slave TWCs will decide we've disappeared and
                     # stop charging or maybe it's more like 20-30 seconds - I
                     # didn't test carefully).
-                    my $greenEnergyData = `curl -s -m 4 "http://192.168.13.58/history/export.csv?T=1&D=0&M=1&C=1"`;
+                    my $greenEnergyData = `curl -s -m 4 "http://127.0.0.1/history/export.csv?T=1&D=0&M=1&C=1"`;
 
                     # In my case, $greenEnergyData will contain something like
                     # this:
@@ -494,8 +480,20 @@ for(;;) {
 
         my $webResponseMsg = '';
         if($webMsg eq 'getStatus') {
-            $webResponseMsg = $overrideMaxAmps . '`'
-                              . sprintf("%.2f", $maxAmpsToDivideAmongSlaves) . '`' . @slaveTWCRoundRobin;
+            $webResponseMsg =
+                sprintf("%.2f", $maxAmpsToDivideAmongSlaves)
+                . '`' . $nonScheduledAmpsMax
+                . '`' . $scheduledAmpsMax
+                . '`' . sprintf("%02d:%02d",
+                                floor($scheduledAmpsStartHour),
+                                floor(($scheduledAmpsStartHour % 1) * 60))
+                . '`' . sprintf("%02d:%02d",
+                                floor($scheduledAmpsEndHour),
+                                floor(($scheduledAmpsEndHour % 1) * 60))
+                . '`' . sprintf("%02d:%02d",
+                                floor($hourResumeTrackGreenEnergy),
+                                floor(($hourResumeTrackGreenEnergy % 1) * 60))
+                . '`' . @slaveTWCRoundRobin;
             for(my $i = 0; $i < @slaveTWCRoundRobin; $i++) {
                 $webResponseMsg .= '`' . sprintf("%02X%02X",
                                            vec($slaveTWCRoundRobin[$i]->{ID}, 0, 8),
@@ -506,19 +504,28 @@ for(;;) {
                     . '~' . $slaveTWCRoundRobin[$i]->{reportedState};
             }
         }
-        elsif($webMsg =~ m/setAmps=([-0-9]+)/) {
-            $overrideMaxAmps = $1;
-            if($overrideMaxAmps == -1) {
-                unlink($overrideMaxAmpsFileName);
-                $timeLastOverrideMaxAmpsCheck = 0;
+        elsif($webMsg =~ m/setNonScheduledAmps=([-0-9]+)/) {
+            $nonScheduledAmpsMax = $1;
+
+            # Save $nonScheduledAmpsMax to SD card so the setting isn't lost on
+            # power failure or script restart.
+            save_settings();
+
+            # $nonScheduledAmpsMax = -1 means track green energy source.  If given
+            # any other value, set $maxAmpsToDivideAmongSlaves to that value.
+            if($nonScheduledAmpsMax > -1) {
+                $maxAmpsToDivideAmongSlaves = $nonScheduledAmpsMax;
             }
-            else {
-                if(open(my $fh, '>', $overrideMaxAmpsFileName)) {
-                    print $fh $overrideMaxAmps;
-                    close($fh);
-                }
-                $maxAmpsToDivideAmongSlaves = $overrideMaxAmps;
-            }
+        }
+        elsif($webMsg =~ m/setScheduledAmps=([-0-9]+)\nstartTime=([-0-9]+):([0-9]+)\nendTime=([-0-9]+):([0-9]+)/m) {
+            $scheduledAmpsMax = $1;
+            $scheduledAmpsStartHour = $2 + ($3 / 60);
+            $scheduledAmpsEndHour = $4 + ($5 / 60);
+            save_settings();
+        }
+        elsif($webMsg =~ m/setResumeTrackGreenEnergyTime=([-0-9]+):([0-9]+)/m) {
+            $hourResumeTrackGreenEnergy = $1 + ($2 / 60);
+            save_settings();
         }
 
         if($webResponseMsg ne '') {
@@ -766,7 +773,9 @@ for(;;) {
                     }
                 }
                 else {
-                    print(time_now() . ": ***UNKNOWN MESSAGE from slave: " . hex_str($msg) . "\n");
+                    print(time_now() . ": *** UNKNOWN MESSAGE FROM SLAVE:\n" . hex_str($msg)
+                          . "\nPlease private message user CDragon at http://teslamotorsclub.com\n"
+                          . "with a copy of this error.\n\n");
                 }
             }
             else {
@@ -889,6 +898,61 @@ for(;;) {
 }
 
 close TWC;
+
+
+################################################################################
+# Begin subs
+
+sub load_settings
+{
+   if(open(my $fh, '<', $settingsFileName)) {
+        while(my $line = <$fh>) {
+            if($line =~ m/^\s*nonScheduledAmpsMax\s*=\s*([-0-9.]+)/m) {
+                $nonScheduledAmpsMax = $1;
+                if($debugLevel >= 10) {
+                    print("load_settings: \$nonScheduledAmpsMax set to $nonScheduledAmpsMax\n");
+                }
+            }
+            if($line =~ m/^\s*scheduledAmpsMax\s*=\s*([-0-9.]+)/m) {
+                $scheduledAmpsMax = $1;
+                if($debugLevel >= 10) {
+                    print("load_settings: \$scheduledAmpsMax set to $scheduledAmpsMax\n");
+                }
+            }
+            if($line =~ m/^\s*scheduledAmpsStartHour\s*=\s*([-0-9.]+)/m) {
+                $scheduledAmpsStartHour = $1;
+                if($debugLevel >= 10) {
+                    print("load_settings: \$scheduledAmpsStartHour set to $scheduledAmpsStartHour\n");
+                }
+            }
+            if($line =~ m/^\s*scheduledAmpsEndHour\s*=\s*([-0-9.]+)/m) {
+                $scheduledAmpsEndHour = $1;
+                if($debugLevel >= 10) {
+                    print("load_settings: \$scheduledAmpsEndHour set to $scheduledAmpsEndHour\n");
+                }
+            }
+            if($line =~ m/^\s*hourResumeTrackGreenEnergy\s*=\s*([-0-9.]+)/m) {
+                $hourResumeTrackGreenEnergy = $1;
+                if($debugLevel >= 10) {
+                    print("load_settings: \$hourResumeTrackGreenEnergy set to $hourResumeTrackGreenEnergy\n");
+                }
+            }
+        }
+        close $fh;
+    }
+}
+
+sub save_settings
+{
+    if(open(my $fh, '>', $settingsFileName)) {
+        print $fh "nonScheduledAmpsMax=$nonScheduledAmpsMax\n"
+                . "scheduledAmpsMax=$scheduledAmpsMax\n"
+                . "scheduledAmpsStartHour=$scheduledAmpsStartHour\n"
+                . "scheduledAmpsEndHour=$scheduledAmpsEndHour\n"
+                . "hourResumeTrackGreenEnergy=$hourResumeTrackGreenEnergy\n";
+        close($fh);
+    }
+}
 
 sub new_slave
 {
@@ -1275,6 +1339,9 @@ sub hex_str
 }
 
 
+################################################################################
+# Begin TWCSlave object methods
+
 package TWCSlave;
 
 sub new
@@ -1377,6 +1444,59 @@ sub receive_slave_heartbeat
         $self->{lastAmpsActual} = $self->{reportedAmpsActual};
     }
 
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
+                                                localtime(time);
+    my $hourNow = $hour + ($min / 60);
+
+    # Check if it's time to resume tracking green energy.
+    if($nonScheduledAmpsMax != -1 && $hourResumeTrackGreenEnergy > -1
+       && $hourResumeTrackGreenEnergy == $hourNow
+    ) {
+        $nonScheduledAmpsMax = -1;
+        main::save_settings();
+    }
+
+    # Check if we're within the hours we must use $scheduledAmpsMax instead of
+    # $nonScheduledAmpsMax
+    if($scheduledAmpsMax > 0
+         &&
+       $scheduledAmpsStartHour > -1
+         &&
+       $scheduledAmpsEndHour > -1
+    ) {
+        my $blnUseScheduledAmps = 0;
+        if($scheduledAmpsStartHour > $scheduledAmpsEndHour) {
+            # We have a time like 8am to 7am which we must interpret as the
+            # 23-hour period after 8am or before 7am.
+            if($hourNow >= $scheduledAmpsStartHour
+               || $hourNow < $scheduledAmpsEndHour
+            ) {
+               $blnUseScheduledAmps = 1;
+            }
+        }
+        else {
+            # We have a time like 7am to 8am which we must interpret as the
+            # 1-hour period between 7am and 8am.
+            if($hourNow >= $scheduledAmpsStartHour
+               && $hourNow < $scheduledAmpsEndHour
+            ) {
+               $blnUseScheduledAmps = 1;
+            }
+        }
+
+        if($blnUseScheduledAmps) {
+            # We're within the scheduled hours that we need to provide a set
+            # number of amps.
+            $maxAmpsToDivideAmongSlaves = $scheduledAmpsMax;
+        }
+        else {
+            if($nonScheduledAmpsMax > -1) {
+                $maxAmpsToDivideAmongSlaves = $nonScheduledAmpsMax;
+            }
+        }
+    }
+
+
     if($maxAmpsToDivideAmongSlaves > $wiringMaxAmpsAllTWCs) {
         # Never tell the slaves to draw more amps than the physical charger
         # wiring can handle.
@@ -1413,7 +1533,7 @@ sub receive_slave_heartbeat
         # turn off. When $desiredAmpsMax trends above 6A again, it tells the car
         # there's power.
         # If a car is set to energy saver mode in the car's UI, the car seems to
-        # wake every 15 mins or so (unlocking or using phone app also wake it)
+        # wake every 15 mins or so (unlocking or using phone app also wakes it)
         # and next time it wakes, it will see there's power and start charging.
         # Without energy saver mode, the car should begin charging within about
         # 10 seconds of changing this value.
@@ -1441,10 +1561,13 @@ sub receive_slave_heartbeat
             # least a minute before turning it off again. My concern is that
             # yanking the power at just the wrong time during the start-charge
             # negotiation could put the car into an error state where it won't
-            # charge again without being re-plugged. This concern is probably
-            # completely invalid, but I'd rather not take any chances with
-            # getting someone's car into a non-charging state so they're
-            # stranded when they need to get somewhere.
+            # charge again without being re-plugged. This concern is
+            # hypothetical and most likely could not happen to a real car, but
+            # I'd rather not take any chances with getting someone's car into a
+            # non-charging state so they're stranded when they need to get
+            # somewhere. Note that non-Tesla cars using third-party adapters to
+            # plug in are at a higher risk of encountering this sort of
+            # hypothetical problem.
             #
             # The other reason for this tactic is that in the minute we wait,
             # $desiredAmpsMax might rise above 5A in which case we won't have to
@@ -1463,7 +1586,7 @@ sub receive_slave_heartbeat
             # days until the battery drops below a certain level. I can't think
             # of a reliable way to detect this case. When the car stops itself
             # from charging, we'll see $self->{reportedAmpsActual} drop to near
-            # 0A and $heartbeatData[0] becomes 03, but we can see the same 03
+            # 0.0A and $heartbeatData[0] becomes 03, but we can see the same 03
             # state when we tell the TWC to stop charging. We could record the
             # time the car stopped taking power and assume it won't want more
             # for some period of time, but we can't reliably detect if someone
@@ -1476,6 +1599,12 @@ sub receive_slave_heartbeat
             # the car has taken 5A for a minute before cutting power even if
             # that means the car will charge for a minute when you first plug it
             # in after a trip even at a time when no power should be available.
+            #
+            # One advantage of the above situation is that whenever you plug the
+            # car in, unless no power has been available since you unplugged,
+            # the charge port will turn green and start charging for a minute.
+            # This lets the owner quickly see that TWCManager is working
+            # properly each time they return home and plug in.
             if($debugLevel >= 10) {
                 print("Don't stop charging yet because:\n"
                       . 'time - $self->{timeLastAmpsMaxChanged} '

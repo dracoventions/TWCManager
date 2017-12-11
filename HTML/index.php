@@ -39,11 +39,19 @@
     $ipcQueue = msg_get_queue($ipcKey, 0666);
 
     if(@$_REQUEST['submit'] != '') {
-        if(@$_REQUEST['setAmps'] != '') {
+        if(@$_REQUEST['nonScheduledAmpsMax'] != '') {
             // Someone submitted the form asking to change the power limit, so
             // tell TWCManager.pl script how many amps to limit charging to.
             // A limit of -1 means track green energy sources.
-            ipcCommand('setAmps=' . $_REQUEST['setAmps']);
+            ipcCommand('setNonScheduledAmps=' . $_REQUEST['nonScheduledAmpsMax']);
+        }
+        if(@$_REQUEST['scheduledAmpsMax'] != '') {
+            ipcCommand('setScheduledAmps=' . $_REQUEST['scheduledAmpsMax']
+                       . "\nstartTime=" . @$_REQUEST['scheduledAmpStartTime']
+                       . "\nendTime=" . @$_REQUEST['scheduledAmpsEndTime']);
+        }
+        if(@$_REQUEST['resumeTrackGreenEnergyTime'] != '') {
+            ipcCommand('setResumeTrackGreenEnergyTime=' . $_REQUEST['resumeTrackGreenEnergyTime']);
         }
     }
 ?>
@@ -64,8 +72,22 @@
     if($response != '') {
         $status = explode('`', $response);
         $statusIdx = 0;
-        $overrideMaxAmps = $status[$statusIdx++];
         $maxAmpsToDivideAmongSlaves = $status[$statusIdx++];
+        $GLOBALS['nonScheduledAmpsMax'] = $status[$statusIdx++];
+        $GLOBALS['scheduledAmpsMax'] = $status[$statusIdx++];
+        $GLOBALS['scheduledAmpStartTime'] = $status[$statusIdx++];
+        $GLOBALS['scheduledAmpsEndTime'] = $status[$statusIdx++];
+        $GLOBALS['resumeTrackGreenEnergyTime'] = $status[$statusIdx++];
+
+        print "<p><strong>Power available for all TWCs:</strong> ";
+        if($maxAmpsToDivideAmongSlaves > 0) {
+              print $maxAmpsToDivideAmongSlaves . "A";
+        }
+        else {
+            print "None";
+        }
+        print "</p>";
+
         if($status[$statusIdx] < 1) {
             print "<strong>No slave TWCs found on RS485 network.</strong>";
         }
@@ -92,7 +114,8 @@
                     print "No power available.";
                 }
                 else {
-                    print "Finished charging, unplugged, or waking up.";
+                    print "Finished charging, unplugged, or waking up."
+                        . " (" . $subStatus[3] . "A available)";
                 }
             }
             else {
@@ -100,9 +123,67 @@
                 if($subStatus[3] - $subStatus[2] > 1.0) {
                     // Car is using over 1A less than is available, so print
                     // a note.
-                    print "  (" . $subStatus[3] . "A available)";
+                    print " (" . $subStatus[3] . "A available)";
                 }
             }
+        }
+    }
+
+    if($twcModelMaxAmps < 40) {
+        // The last TWC in the list reported supporting under 40 total amps.
+        // Assume this is a 32A EU TWC and offer appropriate values.  You can
+        // add or remove values, just make sure they are whole numbers between 5
+        // and $twcModelMaxAmps.
+        $use24HourTime = true;
+        $aryStandardAmps = array(
+                                '5A' => '5',
+                                '6A' => '8',
+                                '8A' => '8',
+                                '10A' => '10',
+                                '13A' => '13',
+                                '16A' => '16',
+                                '20A' => '20',
+                                '25A' => '25',
+                                '32A' => '32',
+                            );
+    }
+    else {
+        // Offer values appropriate for an 80A North American TWC
+        $use24HourTime = false;
+        $aryStandardAmps = array(
+                                '5A' => '5',
+                                '8A' => '8',
+                                '12A' => '12',
+                                '16A' => '16',
+                                '20A' => '20',
+                                '24A' => '24',
+                                '28A' => '28',
+                                '32A' => '32',
+                                '36A' => '36',
+                                '40A' => '40',
+                                '48A' => '48',
+                                '56A' => '56',
+                                '64A' => '64',
+                                '72A' => '72',
+                                '80A' => '80',
+                            );
+    }
+
+    $aryHours = array();
+    for($hour = 0; $hour < 12; $hour++) {
+        if($use24HourTime) {
+            $aryHours[sprintf("%02d:00", $hour)] = sprintf("%02d:00", $hour);
+        }
+        else {
+            $aryHours[sprintf("%d:00am", ($hour < 1 ? $hour + 12 : $hour))] = sprintf("%02d:00", $hour);
+        }
+    }
+    for($hour = 12; $hour < 24; $hour++) {
+        if($use24HourTime) {
+            $aryHours[sprintf("%02d:00", $hour)] = sprintf("%02d:00", $hour);
+        }
+        else {
+            $aryHours[sprintf("%d:00pm", ($hour > 12 ? $hour - 12 : $hour))] = sprintf("%02d:00", $hour);
         }
     }
 ?>
@@ -110,60 +191,56 @@
     <input type="submit" name="submit" value="Refresh">
 </p>
 </form>
-
+<br />
 
 <form action="index.php" name="setAmps" method="get">
-    <strong>Power available for all TWCs: </strong><?=$maxAmpsToDivideAmongSlaves?>A<p>
-    <strong>Power limit: </strong>
+    <p><strong>Scheduled power:</strong>
     <?php
-        $setAmpsAry = array('Track green energy' => '-1',
-                            'Do not charge' => '0');
-        if($twcModelMaxAmps < 40) {
-            // The last TWC in the list reported supporting under 40 total amps.
-            // Assume this is a 32A EU TWC and offer appropriate values.  You can
-            // add or remove values, just make sure they are whole numbers between 5
-            // and $twcModelMaxAmps.
-            $setAmpsAry = array_merge($setAmpsAry, array(
-                                                    '5A' => '5',
-                                                    '6A' => '8',
-                                                    '8A' => '8',
-                                                    '10A' => '10',
-                                                    '13A' => '13',
-                                                    '16A' => '16',
-                                                    '20A' => '20',
-                                                    '25A' => '25',
-                                                    '32A' => '32',
-                                                ));
-        }
-        else {
-            // Offer values appropriate for an 80A North American TWC
-            $setAmpsAry = array_merge($setAmpsAry, array(
-                                                    '5A' => '5',
-                                                    '8A' => '8',
-                                                    '12A' => '12',
-                                                    '16A' => '16',
-                                                    '20A' => '20',
-                                                    '24A' => '24',
-                                                    '28A' => '28',
-                                                    '32A' => '32',
-                                                    '36A' => '36',
-                                                    '40A' => '40',
-                                                    '48A' => '48',
-                                                    '56A' => '56',
-                                                    '64A' => '64',
-                                                    '72A' => '72',
-                                                    '80A' => '80',
-                                                ));
-        }
-
-        // DisplaySelect('setAmps', ...) will set the selected dropdown menu item to
-        // the value of $GLOBALS['setAmps'].
-        $GLOBALS['setAmps'] = ($overrideMaxAmps < 0 ? $overrideMaxAmps : (int)$maxAmpsToDivideAmongSlaves);
-        DisplaySelect('setAmps', '', $setAmpsAry);
+    DisplaySelect('scheduledAmpsMax',
+                  " onchange=\"if(this.value=='-1'){document.getElementById('scheduledPower').style.display='none'}"
+                . "else {document.getElementById('scheduledPower').style.display='inline'};\"",
+                  array_merge(array('Disabled' => '-1'), $aryStandardAmps));
     ?>
+    <span id="scheduledPower">
+    <strong>from</strong>
+    <?php
+    DisplaySelect('scheduledAmpStartTime', '', $aryHours);
+    ?>
+    <strong>to</strong>
+    <?php
+    DisplaySelect('scheduledAmpsEndTime', '', $aryHours);
+    ?>
+    </span>
+    </p>
 
-    <input type="submit" name="submit" value="Set">
+    <p><strong>Non-scheduled power:</strong>
+    <?php
+        DisplaySelect('nonScheduledAmpsMax',
+                      " onchange=\"if(this.value=='-1'){document.getElementById('resumeGreen').style.display='none'}"
+                    . "else {document.getElementById('resumeGreen').style.display='block'};\"",
+                      array_merge(array('Track green energy' => '-1',
+                                        'Do not charge' => '0'),
+                                  $aryStandardAmps));
+    ?></p>
+<p id="resumeGreen"><strong>Resume 'Track green energy' at:</strong>
+    <?php
+    DisplaySelect('resumeTrackGreenEnergyTime', '', array_merge(array('Never' => '-1:00'),
+                                                                     $aryHours));
+    ?></p>
+
+    <p><input type="submit" name="submit" value="Save"></p>
 </form>
+
+
+<script type="text/javascript">
+    <!--
+    document.getElementById('resumeGreen').style.display='<?=
+    ($GLOBALS['nonScheduledAmpsMax'] == -1 ? 'none' : 'block') ?>';
+
+    document.getElementById('scheduledPower').style.display='<?=
+    ($GLOBALS['scheduledAmpsMax'] == -1 ? 'none' : 'inline') ?>';
+    -->
+</script>
 
 <?php
     function ipcCommand($ipcCommand)
@@ -290,11 +367,11 @@
     }
 
 
-    function DisplaySelect($name, $class, $valueArray, $defaultKey = "")
+    function DisplaySelect($name, $selectExtraParams, $valueArray, $defaultKey = "")
     // Display an HTML form <select><option>...</option></select> block using
     // values from $valueArray.
     {
-      print "<SELECT name=\"$name\"" . ($class == '' ? '' : " class=\"$class\"") . " id=\"$name\">\n";
+      print "<SELECT name=\"$name\"" . $selectExtraParams . " id=\"$name\">\n";
       foreach($valueArray as $key => $value) {
         print "<OPTION value=\"$value\"";
         // Use === and string casting or else "0" == "" will be found true
