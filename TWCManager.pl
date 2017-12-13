@@ -164,6 +164,21 @@ my $wiringMaxAmpsAllTWCs = 6;
 # $wiringMaxAmpsPerTWC = 50 * 0.8 = 40 and $wiringMaxAmpsAllTWCs = 40 + 40 = 80.
 my $wiringMaxAmpsPerTWC = 6;
 
+# After determining how much green energy is available for charging, we add
+# $greenEnergyAmpsOffset to the value. This is most often given a negative value
+# equal to the average amount of power consumed by everything other than car
+# charging. For example, if your house uses an average of 2.8A to power
+# computers, lights, etc while you expect the car to be charging, set
+# $greenEnergyAmpsOffset = -2.8.
+#
+# If you have solar panels, look at your utility meter while your car charges.
+# If it says you're using 0.67kW, that means you should set
+# $greenEnergyAmpsOffset = -0.67kW * 1000 / 240V = -2.79A assuming you're on the
+# North American 240V grid. In other words, during car charging, you want your
+# utility meter to show a value close to 0kW meaning no energy is being sent to
+# or from the grid.
+my $greenEnergyAmpsOffset = 0;
+
 # Choose how much debugging info to output.
 # 0 is no output other than errors.
 # 1 is just the most useful info.
@@ -1452,8 +1467,6 @@ sub receive_slave_heartbeat
             $maxAmpsToDivideAmongSlaves = $nonScheduledAmpsMax;
         }
         elsif(time - $timeLastGreenEnergyCheck > 60) {
-            my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
-                                            localtime(time);
             # Don't bother to check solar generation before 6am or after 8pm.
             # Sunrise in most U.S. areas varies from a little before 6am in Jun
             # to almost 7:30am in Nov before the clocks get set back an hour.
@@ -1464,28 +1477,28 @@ sub receive_slave_heartbeat
             else {
                 # I check my solar panel generation using an API exposed by The
                 # Energy Detective (TED). It's a piece of hardware available at
-                # http://www. theenergydetective.com/ You may also be able to
-                # find a way to query a solar system on the roof using an API
-                # provided by your solar installer. Most of those systems only
-                # update the amount of power the system is producing every 15
-                # minutes at most, though that's fine for tweaking your car
-                # charging.
+                # http://www. theenergydetective.com
+                # You may also be able to find a way to query a solar system on
+                # the roof using an API provided by your solar installer. Most
+                # of those systems only update the amount of power the system is
+                # producing every 15 minutes at most, but that's fine for
+                # tweaking your car charging.
                 #
                 # In the worst case, you could skip finding realtime green
                 # energy data and simply direct the car to charge at certain
                 # rates at certain times of day that typically have certain
                 # levels of solar or wind generation. To do so, use the $hour
-                # and $min variables above.
+                # and $min variables as demonstrated above.
                 #
                 # The curl command used below can be used to communicate with
                 # almost any web API, even ones that require POST values or
-                # authentication. -s option prevents curl from displaying
+                # authentication. The -s option prevents curl from displaying
                 # download stats. -m 4 prevents the whole operation from taking
                 # over 4 seconds. If your service regularly takes a long time to
                 # respond, you'll have to query it in a background process and
                 # have the process send an IPC message to set a variable to be
                 # used here. If we delay over 9ish seconds here, slave TWCs will
-                # decide we've disappeared and stop charging or maybe it's more
+                # decide we've disappeared and stop charging (or maybe it's more
                 # like 20-30 seconds - I didn't test carefully).
                 my $greenEnergyData = `curl -s -m 4 "http://127.0.0.1/history/export.csv?T=1&D=0&M=1&C=1"`;
 
@@ -1495,21 +1508,28 @@ sub receive_slave_heartbeat
                 # The only part we care about is -2.957 which is negative kWh
                 # currently being generated.
                 # When 0kWh is generated, the negative disappears so we make it
-                # optional.
+                # optional in the regex below.
                 if($greenEnergyData =~ m~^Solar,[^,]+,-?([^, ]+),~m) {
                     my $solarWh = int($1 * 1000);
 
                     # Watts = Volts * Amps
-                    # Car charges at 240 volts in the U.S. so we figure out how
-                    # many amps * 240 = $solarWh and limit the car to that many
-                    # amps.
-                    $maxAmpsToDivideAmongSlaves = $solarWh / 240;
+                    # Car charges at 240 volts in North America so we figure out
+                    # how many amps * 240 = $solarWh and limit the car to that
+                    # many amps.
+                    $maxAmpsToDivideAmongSlaves = ($solarWh / 240)
+                                                + $greenEnergyAmpsOffset;
 
-                    printf("%s: Solar generating %dWh so limit car charging to %.2fA.\n",
-                        time_now(), $solarWh, $maxAmpsToDivideAmongSlaves);
+                    if($debugLevel >= 1) {
+                        printf("%s: Solar generating %dWh so limit car charging to:\n"
+                             . "          %.2fA + %.2fA = %.2fA.\n",
+                             main::time_now(), $solarWh, ($solarWh / 240),
+                             $greenEnergyAmpsOffset, $maxAmpsToDivideAmongSlaves);
+                    }
                 }
                 else {
-                    print(time_now() . " ERROR: Can't determine current solar generation from:\n$greenEnergyData$\n\n");
+                    print(main::time_now()
+                        . " ERROR: Can't determine current solar generation from:"
+                        . "\n$greenEnergyData\n\n");
                 }
             }
             $timeLastGreenEnergyCheck = time;
@@ -1520,7 +1540,8 @@ sub receive_slave_heartbeat
         # Never tell the slaves to draw more amps than the physical charger
         # wiring can handle.
         if($debugLevel >= 1) {
-            print("ERROR: \$maxAmpsToDivideAmongSlaves $maxAmpsToDivideAmongSlaves > "
+            print(main::time_now()
+                . " ERROR: \$maxAmpsToDivideAmongSlaves $maxAmpsToDivideAmongSlaves > "
                 . "\$wiringMaxAmpsAllTWCs $wiringMaxAmpsAllTWCs.  "
                 . "See notes above \$wiringMaxAmpsAllTWCs.\n");
         }
