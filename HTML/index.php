@@ -46,9 +46,16 @@
             ipcCommand('setNonScheduledAmps=' . $_REQUEST['nonScheduledAmpsMax']);
         }
         if(@$_REQUEST['scheduledAmpsMax'] != '') {
+            $daysBitmap = 0;
+            for($i = 0; $i < 7; $i++) {
+                if(@$_REQUEST['scheduledAmpsDay'][$i]) {
+                    $daysBitmap |= (1 << $i);
+                }
+            }
             ipcCommand('setScheduledAmps=' . $_REQUEST['scheduledAmpsMax']
                        . "\nstartTime=" . @$_REQUEST['scheduledAmpStartTime']
-                       . "\nendTime=" . @$_REQUEST['scheduledAmpsEndTime']);
+                       . "\nendTime=" . @$_REQUEST['scheduledAmpsEndTime']
+                       . "\ndays=" . $daysBitmap);
         }
         if(@$_REQUEST['resumeTrackGreenEnergyTime'] != '') {
             ipcCommand('setResumeTrackGreenEnergyTime=' . $_REQUEST['resumeTrackGreenEnergyTime']);
@@ -56,181 +63,222 @@
     }
 ?>
 <form action="index.php" name="refresh" method="get">
-<?php
-    // TWC models in different world regions have different max amp values.
-    // Default to 80 amps and expect to fix this value later based on what
-    // slave TWCs connect to TWCManager.pl.
-    $twcModelMaxAmps = 80;
+    <table border="0" padding="0" margin="0"><tr>
+        <td valign="top">
+            <?php
+                // TWC models in different world regions have different max amp values.
+                // Default to 80 amps and expect to fix this value later based on what
+                // slave TWCs connect to TWCManager.pl.
+                $twcModelMaxAmps = 80;
 
-    // Get status info from TWCManager.pl which includes state of each slave
-    // TWC and how many amps total are being split amongst them.
-    $response = ipcQuery('getStatus');
-    if($debugLevel >= 1) {
-        print("Got response: '$response'<p>");
-    }
-
-    if($response != '') {
-        $status = explode('`', $response);
-        $statusIdx = 0;
-        $maxAmpsToDivideAmongSlaves = $status[$statusIdx++];
-        $GLOBALS['nonScheduledAmpsMax'] = $status[$statusIdx++];
-        $GLOBALS['scheduledAmpsMax'] = $status[$statusIdx++];
-        $GLOBALS['scheduledAmpStartTime'] = $status[$statusIdx++];
-        $GLOBALS['scheduledAmpsEndTime'] = $status[$statusIdx++];
-        $GLOBALS['resumeTrackGreenEnergyTime'] = $status[$statusIdx++];
-
-        print "<p><strong>Power available for all TWCs:</strong> ";
-        if($maxAmpsToDivideAmongSlaves > 0) {
-              print $maxAmpsToDivideAmongSlaves . "A";
-        }
-        else {
-            print "None";
-        }
-        print "</p>";
-
-        if($status[$statusIdx] < 1) {
-            print "<strong>No slave TWCs found on RS485 network.</strong>";
-        }
-
-        // Display info about each TWC being managed.
-        for($i = 0; $i < $status[$statusIdx]; $i++) {
-            $subStatus = explode('~', $status[$statusIdx + 1]);
-            $twcModelMaxAmps = $subStatus[1];
-            print("<strong>TWC " . $subStatus[0] . ':</strong> ');
-            if($subStatus[2] < 1.0) {
-                /*if($subStatus[4] == 0) {
-                    // I was hoping state 0 meant no car is plugged in, but
-                    // there are periods when we're telling the car no power is
-                    // available and the state flips between 5 and 0 every
-                    // second. Sometimes it changes to state 0 for long periods
-                    // (likely when the car goes to sleep for ~15 mins at a
-                    // time) even when the car is plugged in, so it looks like
-                    // we can't actually determine if a car is plugged in or
-                    // not.
-                    print "No car plugged in.";
+                // Get status info from TWCManager.pl which includes state of each slave
+                // TWC and how many amps total are being split amongst them.
+                $response = ipcQuery('getStatus');
+                if($debugLevel >= 1) {
+                    print("Got response: '$response'<p>");
                 }
-                else {*/
-                if($subStatus[3] < 5.0) {
-                    print "No power available.";
+
+                if($response != '') {
+                    $status = explode('`', $response);
+                    $statusIdx = 0;
+                    $maxAmpsToDivideAmongSlaves = $status[$statusIdx++];
+                    $wiringMaxAmpsAllTWCs = $status[$statusIdx++];
+                    $GLOBALS['nonScheduledAmpsMax'] = $status[$statusIdx++];
+                    $GLOBALS['scheduledAmpsMax'] = $status[$statusIdx++];
+                    $GLOBALS['scheduledAmpStartTime'] = $status[$statusIdx++];
+                    $GLOBALS['scheduledAmpsEndTime'] = $status[$statusIdx++];
+                    $scheduledAmpsDaysBitmap = $status[$statusIdx++];
+                    for($i = 0; $i < 7; $i++) {
+                        if($scheduledAmpsDaysBitmap & (1 << $i)) {
+                            $GLOBALS["scheduledAmpsDay[$i]"] = 1;
+                        }
+                    }
+
+                    $GLOBALS['resumeTrackGreenEnergyTime'] = $status[$statusIdx++];
+
+                    print "<p style=\"margin-top:0;\"><strong>Power available for all TWCs:</strong> ";
+                    if($maxAmpsToDivideAmongSlaves > 0) {
+                          print $maxAmpsToDivideAmongSlaves . "A";
+                    }
+                    else {
+                        print "None";
+                    }
+                    print "</p><p style=\"margin-bottom:0\">";
+
+                    if($status[$statusIdx] < 1) {
+                        print "<strong>No slave TWCs found on RS485 network.</strong>";
+                    }
+
+                    // Display info about each TWC being managed.
+                    for($i = 0; $i < $status[$statusIdx]; $i++) {
+                        $subStatus = explode('~', $status[$statusIdx + 1]);
+                        $twcModelMaxAmps = $subStatus[1];
+                        print("<strong>TWC " . $subStatus[0] . ':</strong> ');
+                        if($subStatus[2] < 1.0) {
+                            /*if($subStatus[4] == 0) {
+                                // I was hoping state 0 meant no car is plugged in, but
+                                // there are periods when we're telling the car no power is
+                                // available and the state flips between 5 and 0 every
+                                // second. Sometimes it changes to state 0 for long periods
+                                // (likely when the car goes to sleep for ~15 mins at a
+                                // time) even when the car is plugged in, so it looks like
+                                // we can't actually determine if a car is plugged in or
+                                // not.
+                                print "No car plugged in.";
+                            }
+                            else {*/
+                            if($subStatus[3] < 5.0) {
+                                print "No power available.";
+                            }
+                            else {
+                                print "Finished charging, unplugged, or waking up."
+                                    . " (" . $subStatus[3] . "A available)";
+                            }
+                        }
+                        else {
+                            print "Charging at " . $subStatus[2] . "A.";
+                            if($subStatus[3] - $subStatus[2] > 1.0) {
+                                // Car is using over 1A less than is available, so print
+                                // a note.
+                                print " (" . $subStatus[3] . "A available)";
+                            }
+                        }
+                    }
+                    print "</p>";
+                }
+
+                if($twcModelMaxAmps < 40) {
+                    // The last TWC in the list reported supporting under 40 total amps.
+                    // Assume this is a 32A EU TWC and offer appropriate values.  You can
+                    // add or remove values, just make sure they are whole numbers between 5
+                    // and $twcModelMaxAmps.
+                    $use24HourTime = true;
+                    $aryStandardAmps = array(
+                                            '5A' => '5',
+                                            '6A' => '8',
+                                            '8A' => '8',
+                                            '10A' => '10',
+                                            '13A' => '13',
+                                            '16A' => '16',
+                                            '20A' => '20',
+                                            '25A' => '25',
+                                            '32A' => '32',
+                                        );
                 }
                 else {
-                    print "Finished charging, unplugged, or waking up."
-                        . " (" . $subStatus[3] . "A available)";
+                    // Offer values appropriate for an 80A North American TWC
+                    $use24HourTime = false;
+                    $aryStandardAmps = array(
+                                            '5A' => '5',
+                                            '8A' => '8',
+                                            '12A' => '12',
+                                            '16A' => '16',
+                                            '20A' => '20',
+                                            '24A' => '24',
+                                            '28A' => '28',
+                                            '32A' => '32',
+                                            '36A' => '36',
+                                            '40A' => '40',
+                                            '48A' => '48',
+                                            '56A' => '56',
+                                            '64A' => '64',
+                                            '72A' => '72',
+                                            '80A' => '80',
+                                        );
                 }
-            }
-            else {
-                print "Charging at " . $subStatus[2] . "A.";
-                if($subStatus[3] - $subStatus[2] > 1.0) {
-                    // Car is using over 1A less than is available, so print
-                    // a note.
-                    print " (" . $subStatus[3] . "A available)";
+
+                // Remove amp values higher than the value of
+                // $wiringMaxAmpsAllTWCs set in TWCManager.pl.
+                foreach($aryStandardAmps as $key => $value) {
+                    if($value > $wiringMaxAmpsAllTWCs) {
+                        unset($aryStandardAmps[$key]);
+                    }
                 }
-            }
-        }
-    }
 
-    if($twcModelMaxAmps < 40) {
-        // The last TWC in the list reported supporting under 40 total amps.
-        // Assume this is a 32A EU TWC and offer appropriate values.  You can
-        // add or remove values, just make sure they are whole numbers between 5
-        // and $twcModelMaxAmps.
-        $use24HourTime = true;
-        $aryStandardAmps = array(
-                                '5A' => '5',
-                                '6A' => '8',
-                                '8A' => '8',
-                                '10A' => '10',
-                                '13A' => '13',
-                                '16A' => '16',
-                                '20A' => '20',
-                                '25A' => '25',
-                                '32A' => '32',
-                            );
-    }
-    else {
-        // Offer values appropriate for an 80A North American TWC
-        $use24HourTime = false;
-        $aryStandardAmps = array(
-                                '5A' => '5',
-                                '8A' => '8',
-                                '12A' => '12',
-                                '16A' => '16',
-                                '20A' => '20',
-                                '24A' => '24',
-                                '28A' => '28',
-                                '32A' => '32',
-                                '36A' => '36',
-                                '40A' => '40',
-                                '48A' => '48',
-                                '56A' => '56',
-                                '64A' => '64',
-                                '72A' => '72',
-                                '80A' => '80',
-                            );
-    }
-
-    $aryHours = array();
-    for($hour = 0; $hour < 12; $hour++) {
-        if($use24HourTime) {
-            $aryHours[sprintf("%02d:00", $hour)] = sprintf("%02d:00", $hour);
-        }
-        else {
-            $aryHours[sprintf("%d:00am", ($hour < 1 ? $hour + 12 : $hour))] = sprintf("%02d:00", $hour);
-        }
-    }
-    for($hour = 12; $hour < 24; $hour++) {
-        if($use24HourTime) {
-            $aryHours[sprintf("%02d:00", $hour)] = sprintf("%02d:00", $hour);
-        }
-        else {
-            $aryHours[sprintf("%d:00pm", ($hour > 12 ? $hour - 12 : $hour))] = sprintf("%02d:00", $hour);
-        }
-    }
-?>
-<p>
-    <input type="submit" name="submit" value="Refresh">
-</p>
-</form>
+                $aryHours = array();
+                for($hour = 0; $hour < 12; $hour++) {
+                    if($use24HourTime) {
+                        $aryHours[sprintf("%02d:00", $hour)] = sprintf("%02d:00", $hour);
+                    }
+                    else {
+                        $aryHours[sprintf("%d:00am", ($hour < 1 ? $hour + 12 : $hour))] = sprintf("%02d:00", $hour);
+                    }
+                }
+                for($hour = 12; $hour < 24; $hour++) {
+                    if($use24HourTime) {
+                        $aryHours[sprintf("%02d:00", $hour)] = sprintf("%02d:00", $hour);
+                    }
+                    else {
+                        $aryHours[sprintf("%d:00pm", ($hour > 12 ? $hour - 12 : $hour))] = sprintf("%02d:00", $hour);
+                    }
+                }
+            ?>
+        </td>
+        <td valign="middle">
+            <input type="image" alt="Refresh" src="refresh.png" style="margin-left:1em">
+        </td>
+    </tr></table>
+    </form>
+</div>
 <br />
+<div style="display: inline-block; text-align:right;">
+    <form action="index.php" name="setAmps" method="get">
+        <p style="margin-bottom:0;">
+            <strong>Scheduled power:</strong>
+            <?php
+            DisplaySelect('scheduledAmpsMax',
+                          " onchange=\"if(this.value=='-1'){document.getElementById('scheduledPower').style.display='none'}"
+                        . "else {document.getElementById('scheduledPower').style.display='block'};\"",
+                          array_merge(array('Disabled' => '-1'), $aryStandardAmps));
+            ?>
+        </p>
+        <div id="scheduledPower">
+            <p style="margin-top:0.3em; margin-bottom:0; padding-top:0;">
+                <strong>from</strong>
+                <?php
+                DisplaySelect('scheduledAmpStartTime', '', $aryHours);
+                ?>
+                <strong>to</strong>
+                <?php
+                DisplaySelect('scheduledAmpsEndTime', '', $aryHours);
+                ?>
+            </p>
+            <p style="margin-top:0.3em; margin-bottom:0; padding-top:0;">
+                <strong>on days</strong>
+                <?php DisplayCheckbox("scheduledAmpsDay[0]", '', '1') ?>Su
+                <?php DisplayCheckbox("scheduledAmpsDay[1]", '', '1') ?>Mo
+                <?php DisplayCheckbox("scheduledAmpsDay[2]", '', '1') ?>Tu
+                <?php DisplayCheckbox("scheduledAmpsDay[3]", '', '1') ?>We
+                <?php DisplayCheckbox("scheduledAmpsDay[4]", '', '1') ?>Th
+                <?php DisplayCheckbox("scheduledAmpsDay[5]", '', '1') ?>Fr
+                <?php DisplayCheckbox("scheduledAmpsDay[6]", '', '1') ?>Sa
+            </p>
+        </div>
 
-<form action="index.php" name="setAmps" method="get">
-    <p><strong>Scheduled power:</strong>
-    <?php
-    DisplaySelect('scheduledAmpsMax',
-                  " onchange=\"if(this.value=='-1'){document.getElementById('scheduledPower').style.display='none'}"
-                . "else {document.getElementById('scheduledPower').style.display='inline'};\"",
-                  array_merge(array('Disabled' => '-1'), $aryStandardAmps));
-    ?>
-    <span id="scheduledPower">
-    <strong>from</strong>
-    <?php
-    DisplaySelect('scheduledAmpStartTime', '', $aryHours);
-    ?>
-    <strong>to</strong>
-    <?php
-    DisplaySelect('scheduledAmpsEndTime', '', $aryHours);
-    ?>
-    </span>
-    </p>
+        <p style="margin-bottom:0; margin-top:1.8em;">
+            <strong>Non-scheduled power:</strong>
+            <?php
+                DisplaySelect('nonScheduledAmpsMax',
+                              " onchange=\"if(this.value=='-1'){document.getElementById('resumeGreen').style.display='none'}"
+                            . "else {document.getElementById('resumeGreen').style.display='block'};\"",
+                              array_merge(array('Track green energy' => '-1',
+                                                'Do not charge' => '0'),
+                                          $aryStandardAmps));
+            ?>
+        </p>
+        <p id="resumeGreen" style="margin-top:0.3em">
+            <strong>Resume 'Track green energy' at:</strong>
+            <?php
+            DisplaySelect('resumeTrackGreenEnergyTime', '', array_merge(array('Never' => '-1:00'),
+                                                                             $aryHours));
+            ?>
+        </p>
 
-    <p><strong>Non-scheduled power:</strong>
-    <?php
-        DisplaySelect('nonScheduledAmpsMax',
-                      " onchange=\"if(this.value=='-1'){document.getElementById('resumeGreen').style.display='none'}"
-                    . "else {document.getElementById('resumeGreen').style.display='block'};\"",
-                      array_merge(array('Track green energy' => '-1',
-                                        'Do not charge' => '0'),
-                                  $aryStandardAmps));
-    ?></p>
-<p id="resumeGreen"><strong>Resume 'Track green energy' at:</strong>
-    <?php
-    DisplaySelect('resumeTrackGreenEnergyTime', '', array_merge(array('Never' => '-1:00'),
-                                                                     $aryHours));
-    ?></p>
-
-    <p><input type="submit" name="submit" value="Save"></p>
-</form>
-
+        <p style="margin-top:1.8em; text-align:right;">
+            <input type="submit" name="submit" value="Save">
+        </p>
+    </form>
+</div>
 
 <script type="text/javascript">
     <!--
@@ -238,7 +286,7 @@
     ($GLOBALS['nonScheduledAmpsMax'] == -1 ? 'none' : 'block') ?>';
 
     document.getElementById('scheduledPower').style.display='<?=
-    ($GLOBALS['scheduledAmpsMax'] == -1 ? 'none' : 'inline') ?>';
+    ($GLOBALS['scheduledAmpsMax'] == -1 ? 'none' : 'block') ?>';
     -->
 </script>
 
@@ -371,17 +419,29 @@
     // Display an HTML form <select><option>...</option></select> block using
     // values from $valueArray.
     {
-      print "<SELECT name=\"$name\"" . $selectExtraParams . " id=\"$name\">\n";
-      foreach($valueArray as $key => $value) {
-        print "<OPTION value=\"$value\"";
-        // Use === and string casting or else "0" == "" will be found true
-        if(((string)$GLOBALS[$name]) === ((string)$value) ||
-          ( ((string)$GLOBALS[$name]) === "" && $key === $defaultKey )) {
-          print " selected";
+        print "<SELECT name=\"$name\"" . $selectExtraParams . " id=\"$name\">\n";
+        foreach($valueArray as $key => $value) {
+            print "<OPTION value=\"$value\"";
+            // Use === and string casting or else "0" == "" will be found true
+            if(((string)$GLOBALS[$name]) === ((string)$value) ||
+                ( ((string)$GLOBALS[$name]) === "" && $key === $defaultKey )) {
+                print " selected";
+            }
+            print " autocomplete=\"off\">$key</OPTION>\n";
         }
-        print " autocomplete=\"off\">$key</OPTION>\n";
-      }
-      print "</SELECT>\n";
+        print "</SELECT>\n";
+    }
+
+    function DisplayCheckbox($name, $extraParams, $value)
+    {
+        print '<INPUT type="checkbox" name="' . $name . '" value="' . $value . '"';
+        if( ((string)$GLOBALS[$name]) === ((string)$value) ) {
+            print " checked";
+        }
+        if($extraParams != '') {
+            print $extraParams;
+        }
+        print '>';
     }
 ?>
 </body>

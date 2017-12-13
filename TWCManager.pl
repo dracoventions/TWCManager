@@ -227,6 +227,7 @@ my $maxAmpsToDivideAmongSlaves = 0;
 my $scheduledAmpsMax = 0;
 my $scheduledAmpsStartHour = -1;
 my $scheduledAmpsEndHour = -1;
+my $scheduledAmpsDaysBitmap = 0x7F;
 
 my $spikeAmpsToCancel6ALimit = 16;
 my $timeLastGreenEnergyCheck = 0;
@@ -311,9 +312,8 @@ for(;;) {
     # available, we reduce the chance that we will start transmitting a message
     # in the middle of an incoming message, which would corrupt both messages.
 
-    # Add a small sleep to prevent pegging pi's CPU at 100% which slows the UI
-    # (though even with the sleep the UI gets somewhat slow).
-    # Lower CPU also means less power user and less waste heat.
+    # Add a sleep to prevent pegging pi's CPU at 100%. Lower CPU means less
+    # power used and less waste heat.
     usleep(500);
 
     if($fakeMaster) {
@@ -362,75 +362,6 @@ for(;;) {
                     }
                     usleep(100); # give slave time to respond
                 }
-            }
-
-            if($nonScheduledAmpsMax > -1) {
-                $maxAmpsToDivideAmongSlaves = $nonScheduledAmpsMax;
-            }
-            elsif(time - $timeLastGreenEnergyCheck > 60) {
-                my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
-                                                localtime(time);
-                # Don't bother to check solar generation before 6am or after
-                # 8pm. Sunrise in most U.S. areas varies from a little before
-                # 6am in Jun to almost 7:30am in Nov before the clocks get set
-                # back an hour. Sunset can be ~4:30pm to just after 8pm.
-                if($hour < 6 || $hour >= 20) {
-                    $maxAmpsToDivideAmongSlaves = 0;
-                }
-                else {
-                    # I check my solar panel generation using an API exposed by
-                    # The Energy Detective (TED). It's a piece of hardware
-                    # available at http://www. theenergydetective.com/ You may
-                    # also be able to find a way to query a solar system on the
-                    # roof using an API provided by your solar installer. Most
-                    # of those systems only update the amount of power the
-                    # system is producing every 15 minutes at most, though
-                    # that's fine for tweaking your car charging.
-                    #
-                    # In the worst case, you could skip finding realtime green
-                    # energy data and simply direct the car to charge at certain
-                    # rates at certain times of day that typically have certain
-                    # levels of solar or wind generation. To do so, use the
-                    # $hour and $min variables above.
-                    #
-                    # The curl command used below can be used to communicate
-                    # with almost any web API, even ones that require POST
-                    # values or authentication. -s option prevents curl from
-                    # displaying download stats. -m 4 prevents the whole
-                    # operation from taking over 4 seconds. If your service
-                    # regularly takes a long time to respond, you'll have to
-                    # query it in a background process and have the process
-                    # update a file that you check here. If we delay over 9ish
-                    # seconds here, slave TWCs will decide we've disappeared and
-                    # stop charging or maybe it's more like 20-30 seconds - I
-                    # didn't test carefully).
-                    my $greenEnergyData = `curl -s -m 4 "http://127.0.0.1/history/export.csv?T=1&D=0&M=1&C=1"`;
-
-                    # In my case, $greenEnergyData will contain something like
-                    # this:
-                    #   MTU, Time, Power, Cost, Voltage
-                    #   Solar,11/11/2017 14:20:43,-2.957,-0.29,124.3
-                    # The only part we care about is -2.957 which is negative
-                    # kWh currently being generated.
-                    # When 0kWh is generated, the negative disappears so we make
-                    # it optional.
-                    if($greenEnergyData =~ m~^Solar,[^,]+,-?([^, ]+),~m) {
-                        my $solarWh = int($1 * 1000);
-
-                        # Watts = Volts * Amps
-                        # Car charges at 240 volts in the U.S. so we figure out
-                        # how many amps * 240 = $solarWh and limit the car to
-                        # that many amps.
-                        $maxAmpsToDivideAmongSlaves = $solarWh / 240;
-
-                        printf("%s: Solar generating %dWh so limit car charging to %.2fA.\n",
-                            time_now(), $solarWh, $maxAmpsToDivideAmongSlaves);
-                    }
-                    else {
-                        print(time_now() . " ERROR: Can't determine current solar generation from:\n$greenEnergyData$\n\n");
-                    }
-                }
-                $timeLastGreenEnergyCheck = time;
             }
         }
     }
@@ -482,6 +413,7 @@ for(;;) {
         if($webMsg eq 'getStatus') {
             $webResponseMsg =
                 sprintf("%.2f", $maxAmpsToDivideAmongSlaves)
+                . '`' . sprintf("%.2f", $wiringMaxAmpsAllTWCs)
                 . '`' . $nonScheduledAmpsMax
                 . '`' . $scheduledAmpsMax
                 . '`' . sprintf("%02d:%02d",
@@ -490,6 +422,7 @@ for(;;) {
                 . '`' . sprintf("%02d:%02d",
                                 floor($scheduledAmpsEndHour),
                                 floor(($scheduledAmpsEndHour % 1) * 60))
+                . '`' . $scheduledAmpsDaysBitmap
                 . '`' . sprintf("%02d:%02d",
                                 floor($hourResumeTrackGreenEnergy),
                                 floor(($hourResumeTrackGreenEnergy % 1) * 60))
@@ -510,17 +443,12 @@ for(;;) {
             # Save $nonScheduledAmpsMax to SD card so the setting isn't lost on
             # power failure or script restart.
             save_settings();
-
-            # $nonScheduledAmpsMax = -1 means track green energy source.  If given
-            # any other value, set $maxAmpsToDivideAmongSlaves to that value.
-            if($nonScheduledAmpsMax > -1) {
-                $maxAmpsToDivideAmongSlaves = $nonScheduledAmpsMax;
-            }
         }
-        elsif($webMsg =~ m/setScheduledAmps=([-0-9]+)\nstartTime=([-0-9]+):([0-9]+)\nendTime=([-0-9]+):([0-9]+)/m) {
+        elsif($webMsg =~ m/setScheduledAmps=([-0-9]+)\nstartTime=([-0-9]+):([0-9]+)\nendTime=([-0-9]+):([0-9]+)\ndays=([0-9]+)/m) {
             $scheduledAmpsMax = $1;
             $scheduledAmpsStartHour = $2 + ($3 / 60);
             $scheduledAmpsEndHour = $4 + ($5 / 60);
+            $scheduledAmpsDaysBitmap = $6;
             save_settings();
         }
         elsif($webMsg =~ m/setResumeTrackGreenEnergyTime=([-0-9]+):([0-9]+)/m) {
@@ -931,6 +859,12 @@ sub load_settings
                     print("load_settings: \$scheduledAmpsEndHour set to $scheduledAmpsEndHour\n");
                 }
             }
+            if($line =~ m/^\s*scheduledAmpsDaysBitmap\s*=\s*([-0-9.]+)/m) {
+                $scheduledAmpsDaysBitmap = $1;
+                if($debugLevel >= 10) {
+                    print("load_settings: \$scheduledAmpsDaysBitmap set to $scheduledAmpsDaysBitmap\n");
+                }
+            }
             if($line =~ m/^\s*hourResumeTrackGreenEnergy\s*=\s*([-0-9.]+)/m) {
                 $hourResumeTrackGreenEnergy = $1;
                 if($debugLevel >= 10) {
@@ -949,6 +883,7 @@ sub save_settings
                 . "scheduledAmpsMax=$scheduledAmpsMax\n"
                 . "scheduledAmpsStartHour=$scheduledAmpsStartHour\n"
                 . "scheduledAmpsEndHour=$scheduledAmpsEndHour\n"
+                . "scheduledAmpsDaysBitmap=$scheduledAmpsDaysBitmap\n"
                 . "hourResumeTrackGreenEnergy=$hourResumeTrackGreenEnergy\n";
         close($fh);
     }
@@ -1444,9 +1379,13 @@ sub receive_slave_heartbeat
         $self->{lastAmpsActual} = $self->{reportedAmpsActual};
     }
 
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
+    my ($sec,$min,$hour,$mday,$mon,$year,$weekday,$yday,$isdst) =
                                                 localtime(time);
     my $hourNow = $hour + ($min / 60);
+    my $yesterday = $weekday - 1;
+    if($yesterday < 0) {
+        $yesterday += 7;
+    }
 
     # Check if it's time to resume tracking green energy.
     if($nonScheduledAmpsMax != -1 && $hourResumeTrackGreenEnergy > -1
@@ -1458,18 +1397,35 @@ sub receive_slave_heartbeat
 
     # Check if we're within the hours we must use $scheduledAmpsMax instead of
     # $nonScheduledAmpsMax
+    my $blnUseScheduledAmps = 0;
     if($scheduledAmpsMax > 0
          &&
        $scheduledAmpsStartHour > -1
          &&
        $scheduledAmpsEndHour > -1
+         &&
+       $scheduledAmpsDaysBitmap > 0
     ) {
-        my $blnUseScheduledAmps = 0;
         if($scheduledAmpsStartHour > $scheduledAmpsEndHour) {
             # We have a time like 8am to 7am which we must interpret as the
             # 23-hour period after 8am or before 7am.
-            if($hourNow >= $scheduledAmpsStartHour
-               || $hourNow < $scheduledAmpsEndHour
+            # Since this case always crosses midnight, we only ensure that
+            # $scheduledAmpsDaysBitmap is set for the day the period starts on.
+            # For example, if $scheduledAmpsDaysBitmap says only schedule on
+            # Monday, 8am to 7am, we apply scheduledAmpsMax from Monday at 8am
+            # to Monday at 11:59pm, and on Tuesday at 12am to Tuesday at 6:59am.
+            if(
+               (
+                 $hourNow >= $scheduledAmpsStartHour
+                   &&
+                 ($scheduledAmpsDaysBitmap & (1 << $weekday))
+               )
+                 ||
+               (
+                 $hourNow < $scheduledAmpsEndHour
+                   &&
+                 ($scheduledAmpsDaysBitmap & (1 << $yesterday))
+               )
             ) {
                $blnUseScheduledAmps = 1;
             }
@@ -1479,23 +1435,86 @@ sub receive_slave_heartbeat
             # 1-hour period between 7am and 8am.
             if($hourNow >= $scheduledAmpsStartHour
                && $hourNow < $scheduledAmpsEndHour
+               && ($scheduledAmpsDaysBitmap & (1 << $weekday))
             ) {
                $blnUseScheduledAmps = 1;
             }
         }
-
-        if($blnUseScheduledAmps) {
-            # We're within the scheduled hours that we need to provide a set
-            # number of amps.
-            $maxAmpsToDivideAmongSlaves = $scheduledAmpsMax;
-        }
-        else {
-            if($nonScheduledAmpsMax > -1) {
-                $maxAmpsToDivideAmongSlaves = $nonScheduledAmpsMax;
-            }
-        }
     }
 
+    if($blnUseScheduledAmps) {
+        # We're within the scheduled hours that we need to provide a set number
+        # of amps.
+        $maxAmpsToDivideAmongSlaves = $scheduledAmpsMax;
+    }
+    else {
+        if($nonScheduledAmpsMax > -1) {
+            $maxAmpsToDivideAmongSlaves = $nonScheduledAmpsMax;
+        }
+        elsif(time - $timeLastGreenEnergyCheck > 60) {
+            my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
+                                            localtime(time);
+            # Don't bother to check solar generation before 6am or after 8pm.
+            # Sunrise in most U.S. areas varies from a little before 6am in Jun
+            # to almost 7:30am in Nov before the clocks get set back an hour.
+            # Sunset can be ~4:30pm to just after 8pm.
+            if($hour < 6 || $hour >= 20) {
+                $maxAmpsToDivideAmongSlaves = 0;
+            }
+            else {
+                # I check my solar panel generation using an API exposed by The
+                # Energy Detective (TED). It's a piece of hardware available at
+                # http://www. theenergydetective.com/ You may also be able to
+                # find a way to query a solar system on the roof using an API
+                # provided by your solar installer. Most of those systems only
+                # update the amount of power the system is producing every 15
+                # minutes at most, though that's fine for tweaking your car
+                # charging.
+                #
+                # In the worst case, you could skip finding realtime green
+                # energy data and simply direct the car to charge at certain
+                # rates at certain times of day that typically have certain
+                # levels of solar or wind generation. To do so, use the $hour
+                # and $min variables above.
+                #
+                # The curl command used below can be used to communicate with
+                # almost any web API, even ones that require POST values or
+                # authentication. -s option prevents curl from displaying
+                # download stats. -m 4 prevents the whole operation from taking
+                # over 4 seconds. If your service regularly takes a long time to
+                # respond, you'll have to query it in a background process and
+                # have the process send an IPC message to set a variable to be
+                # used here. If we delay over 9ish seconds here, slave TWCs will
+                # decide we've disappeared and stop charging or maybe it's more
+                # like 20-30 seconds - I didn't test carefully).
+                my $greenEnergyData = `curl -s -m 4 "http://127.0.0.1/history/export.csv?T=1&D=0&M=1&C=1"`;
+
+                # In my case, $greenEnergyData will contain something like this:
+                #   MTU, Time, Power, Cost, Voltage
+                #   Solar,11/11/2017 14:20:43,-2.957,-0.29,124.3
+                # The only part we care about is -2.957 which is negative kWh
+                # currently being generated.
+                # When 0kWh is generated, the negative disappears so we make it
+                # optional.
+                if($greenEnergyData =~ m~^Solar,[^,]+,-?([^, ]+),~m) {
+                    my $solarWh = int($1 * 1000);
+
+                    # Watts = Volts * Amps
+                    # Car charges at 240 volts in the U.S. so we figure out how
+                    # many amps * 240 = $solarWh and limit the car to that many
+                    # amps.
+                    $maxAmpsToDivideAmongSlaves = $solarWh / 240;
+
+                    printf("%s: Solar generating %dWh so limit car charging to %.2fA.\n",
+                        time_now(), $solarWh, $maxAmpsToDivideAmongSlaves);
+                }
+                else {
+                    print(time_now() . " ERROR: Can't determine current solar generation from:\n$greenEnergyData$\n\n");
+                }
+            }
+            $timeLastGreenEnergyCheck = time;
+        }
+    }
 
     if($maxAmpsToDivideAmongSlaves > $wiringMaxAmpsAllTWCs) {
         # Never tell the slaves to draw more amps than the physical charger
