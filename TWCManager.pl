@@ -13,7 +13,7 @@
 # Report bugs at https://github.com/cdragon/TWCManager/issues
 #
 # A Python project based on TWCManager is available here:
-# https://github.com/wido/smarthpwc
+# https://github.com/wido/smarttwc
 #
 # This software is released under the "Unlicense" model: http://unlicense.org
 # This means source code and TWC protocol knowledge are released to the general
