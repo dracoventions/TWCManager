@@ -30,6 +30,7 @@
 
     <?php /* This tag makes the page fill a mobile phone screen. */ ?>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
 <body>
 <?php
     // Initialize Interprocess Communication message queue for sending commands to
@@ -59,6 +60,15 @@
         }
         if(@$_REQUEST['resumeTrackGreenEnergyTime'] != '') {
             ipcCommand('setResumeTrackGreenEnergyTime=' . $_REQUEST['resumeTrackGreenEnergyTime']);
+        }
+        if(@$_REQUEST['sendTWCMsg'] != '') {
+            // This hidden option can be used to tell a TWC to send an arbitrary
+            // message on the RS-485 network for debugging and experimentation.
+            // To use, type a URL like this in your browser:
+            // http://(Pi Zero address)/index.php?submit=1&sendTWCMsg=FBEB7777032E000000000000000000
+            // This will send message FBEB7777032E000000000000000000.  Message
+            // start, CRC, and end bytes are added automatically.
+            ipcCommand('sendTWCMsg=' . $_REQUEST['sendTWCMsg']);
         }
     }
 ?>
