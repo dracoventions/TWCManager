@@ -330,7 +330,7 @@ for(;;) {
 
     # Add a sleep to prevent pegging pi's CPU at 100%. Lower CPU means less
     # power used and less waste heat.
-    usleep(500);
+    usleep(100000);
 
     if($fakeMaster) {
         # A real master sends 5 copies of linkready1 and linkready2 whenever it
