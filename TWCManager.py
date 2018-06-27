@@ -149,7 +149,7 @@ rs485Adapter = '/dev/ttyUSB0'
 # 100 amp breaker * 0.8 = 80 here.
 # IF YOU'RE NOT SURE WHAT TO PUT HERE, ASK THE ELECTRICIAN WHO INSTALLED YOUR
 # CHARGER.
-wiringMaxAmpsAllTWCs = 12
+wiringMaxAmpsAllTWCs = 40
 
 # If all your chargers share a single circuit breaker, set wiringMaxAmpsPerTWC
 # to the same value as wiringMaxAmpsAllTWCs.
@@ -159,7 +159,7 @@ wiringMaxAmpsAllTWCs = 12
 # wiringMaxAmpsAllTWCs.
 # For example, if you have two TWCs each with a 50A breaker, set
 # wiringMaxAmpsPerTWC = 50 * 0.8 = 40 and wiringMaxAmpsAllTWCs = 40 + 40 = 80.
-wiringMaxAmpsPerTWC = 12
+wiringMaxAmpsPerTWC = 40
 
 # https://teslamotorsclub.com/tmc/threads/model-s-gen2-charger-efficiency-testing.78740/#post-1844789
 # says you're using 10.85% more power (91.75/82.77=1.1085) charging at 5A vs 40A,
@@ -1417,7 +1417,7 @@ class TWCSlave:
                     # query it in a thread that sets a variable to be used here.
                     # If we delay over 26ish seconds here, slave TWCs will
                     # decide we've disappeared and stop charging.
-                    greenEnergyData = run_process('curl -s -m 4 "http://127.0.0.1/history/export.csv?T=1&D=0&M=1&C=1"')
+                    greenEnergyData = run_process('curl -s -m 4 "http://192.168.13.58/history/export.csv?T=1&D=0&M=1&C=1"')
 
                     # In case, greenEnergyData will contain something like this:
                     #   MTU, Time, Power, Cost, Voltage

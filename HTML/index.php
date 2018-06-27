@@ -46,6 +46,15 @@
                 print '<script>document.title = "TWCDebugLevel";</script>';
                 ipcCommand('setDebugLevel=' . intval($_REQUEST['setDebugLevel']));
             }
+            else if(array_key_exists('beginTest', $_REQUEST)) {
+                print '<script>document.title = "TWCTest";</script>';
+                if($_REQUEST['beginTest'] == '') {
+                    ipcCommand('beginTest');
+                }
+                else {
+                    ipcCommand('beginTest=' . $_REQUEST['beginTest']);
+                }
+            }
         }
         ?>
         <form action="index.php" method="get">
@@ -54,6 +63,11 @@
             <input type="submit" name="submit" value="Set">
         </form>
         <p>
+        <form action="index.php" method="get">
+            <input type="hidden" name="debugTWC" value="<?=htmlspecialchars($_REQUEST['debugTWC'])?>">
+            Test: <input type="text" name="beginTest" size="2" value="<?=htmlspecialchars(@$_REQUEST['beginTest'])?>">
+            <input type="submit" name="submit" value="Begin">
+        </form>
         <p>
             <a href="index.php?sendTWCMsg=&submit=1">Send message</a>
             | <a href="index.php?setMasterHeartbeatData=&submit=1">Override master heartbeat data</a>
