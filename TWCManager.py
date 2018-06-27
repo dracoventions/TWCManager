@@ -805,6 +805,7 @@ def car_api_charge(charge):
         if(debugLevel >= 10):
             print(time_now() + ': Car API cmd', cmd)
 
+        apiResponseDict = {}
         try:
             apiResponseDict = json.loads(run_process(cmd).decode('ascii'))
         except json.decoder.JSONDecodeError:
@@ -812,7 +813,8 @@ def car_api_charge(charge):
 
         try:
             if(debugLevel >= 2):
-                print(time_now() + ': Car API ' + startOrStop + ' charge response', apiResponseDict)
+                print(time_now() + ': Car API ' + startOrStop + \
+                      ' charge response', apiResponseDict)
             # Responses I've seen in apiResponseDict:
             # Car is done charging:
             #   {'response': {'result': False, 'reason': 'complete'}}
@@ -1245,7 +1247,7 @@ class TWCSlave:
         if(len(overrideMasterHeartbeatData) >= 7):
             self.masterHeartbeatData = overrideMasterHeartbeatData
 
-        if(protocolVersion == 2):
+        if(self.protocolVersion == 2):
             # TODO: Start and stop charging using protocol 2 commands to TWC
             # instead of car api if I ever figure out how.
             if(self.lastAmpsOffered == 0 and self.lastAmpsActual > 4.0):
