@@ -2026,6 +2026,12 @@ while True:
                 webResponseMsg = ''
                 numPackets = 0
                 if(webMsg == b'getStatus'):
+                    needCarApiBearerToken = False
+                    if(carApiBearerToken == ''):
+                        for i in range(0, len(slaveTWCRoundRobin)):
+                            if(slaveTWCRoundRobin[i].protocolVersion == 2):
+                                needCarApiBearerToken = True
+
                     webResponseMsg = (
                         "%.2f" % (maxAmpsToDivideAmongSlaves) +
                         '`' + "%.2f" % (wiringMaxAmpsAllTWCs) +
@@ -2041,9 +2047,10 @@ while True:
                         '`' + "%02d:%02d" % (int(hourResumeTrackGreenEnergy),
                                              int((hourResumeTrackGreenEnergy % 1) * 60)) +
                         # Send 1 if we need an email/password entered for car api, otherwise send 0
-                        '`' + ('1' if protocolVersion == 2 and carApiBearerToken == '' else '0') +
+                        '`' + ('1' if needCarApiBearerToken else '0') +
                         '`' + str(len(slaveTWCRoundRobin))
                         )
+
                     for i in range(0, len(slaveTWCRoundRobin)):
                         webResponseMsg += (
                             '`' + "%02X%02X" % (slaveTWCRoundRobin[i].TWCID[0],
