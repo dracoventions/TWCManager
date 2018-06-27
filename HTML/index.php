@@ -8,8 +8,8 @@
     // 10 is all info.
     $debugLevel = 0;
 
-    // Point $twcScriptDir to the directory containing the TWCManager.pl script.
-    // Interprocess Communication with TWCManager.pl will not work if this
+    // Point $twcScriptDir to the directory containing the TWCManager.py script.
+    // Interprocess Communication with TWCManager.py will not work if this
     // parameter is incorrect.
     $twcScriptDir = "/home/pi/TWC/";
 
@@ -34,41 +34,179 @@
 <body>
 <?php
     // Initialize Interprocess Communication message queue for sending commands to
-    // TWCManager.pl script and getting data back.  See notes in TWCManager.pl for
+    // TWCManager.py script and getting data back.  See notes in TWCManager.py for
     // how IPC works.
     $ipcKey = ftok($twcScriptDir, "T");
     $ipcQueue = msg_get_queue($ipcKey, 0666);
 
-    if(@$_REQUEST['submit'] != '') {
-        if(@$_REQUEST['nonScheduledAmpsMax'] != '') {
-            // Someone submitted the form asking to change the power limit, so
-            // tell TWCManager.pl script how many amps to limit charging to.
-            // A limit of -1 means track green energy sources.
-            ipcCommand('setNonScheduledAmps=' . $_REQUEST['nonScheduledAmpsMax']);
-        }
-        if(@$_REQUEST['scheduledAmpsMax'] != '') {
-            $daysBitmap = 0;
-            for($i = 0; $i < 7; $i++) {
-                if(@$_REQUEST['scheduledAmpsDay'][$i]) {
-                    $daysBitmap |= (1 << $i);
-                }
+    if(@$_REQUEST['debugTWC'] != '') {
+        print '<script>document.title = "TWCDebug";</script>';
+        if(@$_REQUEST['submit'] != '') {
+            if(@$_REQUEST['setDebugLevel'] > 0) {
+                print '<script>document.title = "TWCDebugLevel";</script>';
+                ipcCommand('setDebugLevel=' . intval($_REQUEST['setDebugLevel']));
             }
-            ipcCommand('setScheduledAmps=' . $_REQUEST['scheduledAmpsMax']
-                       . "\nstartTime=" . @$_REQUEST['scheduledAmpStartTime']
-                       . "\nendTime=" . @$_REQUEST['scheduledAmpsEndTime']
-                       . "\ndays=" . $daysBitmap);
         }
-        if(@$_REQUEST['resumeTrackGreenEnergyTime'] != '') {
-            ipcCommand('setResumeTrackGreenEnergyTime=' . $_REQUEST['resumeTrackGreenEnergyTime']);
+        ?>
+        <form action="index.php" method="get">
+            <input type="hidden" name="debugTWC" value="<?=htmlspecialchars($_REQUEST['debugTWC'])?>">
+            Debug level: <input type="text" name="setDebugLevel" size="2" value="<?=htmlspecialchars(@$_REQUEST['setDebugLevel'])?>">
+            <input type="submit" name="submit" value="Set">
+        </form>
+        <p>
+        <p>
+            <a href="index.php?sendTWCMsg=&submit=1">Send message</a>
+            | <a href="index.php?setMasterHeartbeatData=&submit=1">Override master heartbeat data</a>
+            | <a href="index.php?dumpState=1&submit=1">Dump state</a>
+        </p><p>
+        <a href="index.php?debugTWC=<?=htmlspecialchars($_REQUEST['debugTWC'])?>&beginTest=&submit=1">Begin test</a>
+        </p>
+        <?php
+        print '</body></html>';
+
+        exit;
+    }
+    elseif(@$_REQUEST['submit'] != '') {
+        if(@$_REQUEST['email'] != '' && @$_REQUEST['password'] != '') {
+            ipcCommand('carApiEmailPassword=' . $_REQUEST['email'] . "\n" . $_REQUEST['password']);
+            // Wait 5 seconds for TWCManager to log in or getStatus will have us show
+            // the user/password entry again.
+            usleep(5000000);
         }
-        if(@$_REQUEST['sendTWCMsg'] != '') {
+        else if(array_key_exists('sendTWCMsg', $_REQUEST)) {
             // This hidden option can be used to tell a TWC to send an arbitrary
             // message on the RS-485 network for debugging and experimentation.
+            //
+            // *****************************************************************
+            // THE WRONG MESSAGE CAN PERMANENTLY DISABLE YOUR TWC.
+            // TWCManager.py will prevent you from sending messages known to
+            // kill TWCs, but there may still be unknown messages that are
+            // damaging, so do not use this feature without good reason.
+            // *****************************************************************
+            //
             // To use, type a URL like this in your browser:
-            // http://(Pi Zero address)/index.php?submit=1&sendTWCMsg=FBEB7777032E000000000000000000
-            // This will send message FBEB7777032E000000000000000000.  Message
-            // start, CRC, and end bytes are added automatically.
-            ipcCommand('sendTWCMsg=' . $_REQUEST['sendTWCMsg']);
+            // http://(Pi address)/index.php?submit=1&sendTWCMsg=FB1B
+            // This will send message FB 1B 00 00 00 00 00 00 00 00 00 00 00
+            // on a protocol 2 TWC.  The message is truncated or padded with 00
+            // such that it is always the standard message length for your TWC's
+            // protocol version.  Message start, CRC, and end bytes are added
+            // automatically.
+            ?>
+            <form action="index.php" method="get">
+            Send RS485 message: <input type="text" name="sendTWCMsg" size="40" value="<?=htmlspecialchars($_REQUEST['sendTWCMsg'])?>">
+            <input type="submit" name="submit" value="Submit">
+            </form>
+            <script>document.title = "TWCSendMsg";</script>
+            <p>
+            <a href="index.php?sendTWCMsg=FB1B&submit=1">Get firmware version</a>
+            | <a href="index.php?sendTWCMsg=FCE1777766&submit=1">Master Linkready1</a>
+            | <a href="index.php?sendTWCMsg=FBE2777766&submit=1">Master Linkready2</a>
+            </p>
+            <?php
+
+            if(@$_REQUEST['sendTWCMsg'] != '') {
+                ipcCommand('sendTWCMsg=' . preg_replace('/[ \r\n\t]/', '', $_REQUEST['sendTWCMsg']));
+
+                // Most messages return a response within 2 seconds.  The few that
+                // don't are likely not safe to use.  Sometimes the message sent
+                // gets no response because we happened to send it at the same
+                // time another message was sent or received, in which case both
+                // messages get corrupted.
+                sleep(2);
+                if(substr($_REQUEST['sendTWCMsg'], 0, 4) == "FCA1") {
+                    // FCA1 will silence TWC for ~5 seconds.  Wait that long
+                    // before looking for a response.
+                    sleep(5);
+                }
+                $response = ipcQuery('getLastTWCMsgResponse');
+                print '<p>Response: ' . $response . '</p>';
+            }
+            ?>
+            <p>
+                <a href="index.php?debugTWC=1">Main debug menu</a>
+            </p>
+            </body></html>
+            <?php
+            exit;
+        }
+        else if(array_key_exists('setMasterHeartbeatData', $_REQUEST)) {
+            // This hidden option can be used to tell a TWC to set arbitrary
+            // Master heartbeat data for debugging and experimentation.
+            // To use, type a URL like this in your browser:
+            // http://(Pi address)/index.php?submit=1&setMasterHeartbeatData=090600000000000000
+            ipcCommand('setMasterHeartbeatData=' . preg_replace('/[ \r\n\t]/', '', $_REQUEST['setMasterHeartbeatData']));
+            ?>
+            <form action="index.php" method="get">
+            Override Master heartbeat data: <input type="text" name="setMasterHeartbeatData" size="30" value="<?=htmlspecialchars($_REQUEST['setMasterHeartbeatData'])?>">
+            <input type="submit" name="submit" value="Submit">
+            </form>
+            <p>
+                <a href="index.php?setMasterHeartbeatData=&submit=1">Stop overriding</a>
+                | <a href="index.php?setMasterHeartbeatData=05&submit=1">Charge 0A</a>
+                | <a href="index.php?setMasterHeartbeatData=050258&submit=1">Charge 6A</a>
+                | <a href="index.php?setMasterHeartbeatData=050834&submit=1">Charge 21A</a>
+                | <a href="index.php?setMasterHeartbeatData=050FA0&submit=1">Charge 40A</a>
+                | <a href="index.php?setMasterHeartbeatData=093200&submit=1">Charge 128A (buggy 0A)</a>
+                | <a href="index.php?setMasterHeartbeatData=0201&submit=1">Error 1</a>
+            </p>
+            <p>
+                <a href="index.php?debugTWC=1">Main debug menu</a>
+            </p>
+            <?php
+            print '<script>document.title = "TWCHeartbeat";</script>';
+            print '</body></html>';
+
+            exit;
+        }
+        else if(@$_REQUEST['dumpState'] != '') {
+            // This hidden option will display the state of a number of
+            // variables used by TWCManager.
+            // To use, type a URL like this in your browser:
+            // http://(Pi address)/index.php?submit=1&dumpState=1
+            ?>
+            <form action="index.php" method="get">
+            <p style="line-height:2;">
+            <?=preg_replace('/\n/', '<br>', htmlspecialchars(ipcQuery('dumpState', true))) . '</p>'?>
+            <input type="hidden" name="dumpState" value="1">
+            <input type="submit" name="submit" value="Refresh">
+            </form>
+            <script>document.title = "TWCDump";</script>
+            </body></html>
+            <p>
+                <a href="index.php?debugTWC=1">Main debug menu</a>
+            </p>
+            <?php
+            exit;
+        }
+        else {
+            if(@$_REQUEST['nonScheduledAmpsMax'] != '') {
+                // Someone submitted the form asking to change the power limit, so
+                // tell TWCManager.py script how many amps to limit charging to.
+                // A limit of -1 means track green energy sources.
+                ipcCommand('setNonScheduledAmps=' . $_REQUEST['nonScheduledAmpsMax']);
+            }
+            if(@$_REQUEST['scheduledAmpsMax'] != '') {
+                $daysBitmap = 0;
+                for($i = 0; $i < 7; $i++) {
+                    if(@$_REQUEST['scheduledAmpsDay'][$i]) {
+                        $daysBitmap |= (1 << $i);
+                    }
+                }
+                ipcCommand('setScheduledAmps=' . $_REQUEST['scheduledAmpsMax']
+                           . "\nstartTime=" . @$_REQUEST['scheduledAmpStartTime']
+                           . "\nendTime=" . @$_REQUEST['scheduledAmpsEndTime']
+                           . "\ndays=" . $daysBitmap);
+            }
+            if(@$_REQUEST['resumeTrackGreenEnergyTime'] != '') {
+                ipcCommand('setResumeTrackGreenEnergyTime=' . $_REQUEST['resumeTrackGreenEnergyTime']);
+            }
+
+            if(preg_match('/^1-day charge/', $_REQUEST['submit'])) {
+                ipcCommand('chargeNow');
+            }
+            else if($_REQUEST['submit'] == 'Cancel 1-day charge') {
+                ipcCommand('chargeNowCancel');
+            }
         }
     }
 ?>
@@ -78,10 +216,12 @@
             <?php
                 // TWC models in different world regions have different max amp values.
                 // Default to 80 amps and expect to fix this value later based on what
-                // slave TWCs connect to TWCManager.pl.
+                // slave TWCs connect to TWCManager.py.
                 $twcModelMaxAmps = 80;
 
-                // Get status info from TWCManager.pl which includes state of each slave
+                $carApiEmailPasswordNeeded = 0;
+
+                // Get status info from TWCManager.py which includes state of each slave
                 // TWC and how many amps total are being split amongst them.
                 $response = ipcQuery('getStatus');
                 if($debugLevel >= 1) {
@@ -93,6 +233,8 @@
                     $statusIdx = 0;
                     $maxAmpsToDivideAmongSlaves = $status[$statusIdx++];
                     $wiringMaxAmpsAllTWCs = $status[$statusIdx++];
+                    $minAmpsPerTWC = $status[$statusIdx++];
+                    $chargeNowAmps = $status[$statusIdx++];
                     $GLOBALS['nonScheduledAmpsMax'] = $status[$statusIdx++];
                     $GLOBALS['scheduledAmpsMax'] = $status[$statusIdx++];
                     $GLOBALS['scheduledAmpStartTime'] = $status[$statusIdx++];
@@ -114,6 +256,8 @@
                         print "None";
                     }
                     print "</p><p style=\"margin-bottom:0\">";
+
+                    $carApiEmailPasswordNeeded = $status[$statusIdx++];
 
                     if($status[$statusIdx] < 1) {
                         print "<strong>No slave TWCs found on RS485 network.</strong>";
@@ -138,7 +282,13 @@
                             }
                             else {*/
                             if($subStatus[3] < 5.0) {
-                                print "No power available.";
+                                if($maxAmpsToDivideAmongSlaves > 0 &&
+                                   $maxAmpsToDivideAmongSlaves < $minAmpsPerTWC) {
+                                    print "Power available less than {$minAmpsPerTWC}A (minAmpsPerTWC).";
+                                }
+                                else {
+                                    print "No power available.";
+                                }
                             }
                             else {
                                 print "Finished charging, unplugged, or waking up."
@@ -164,8 +314,7 @@
                     // and $twcModelMaxAmps.
                     $use24HourTime = true;
                     $aryStandardAmps = array(
-                                            '5A' => '5',
-                                            '6A' => '8',
+                                            '6A' => '6',
                                             '8A' => '8',
                                             '10A' => '10',
                                             '13A' => '13',
@@ -179,7 +328,7 @@
                     // Offer values appropriate for an 80A North American TWC
                     $use24HourTime = false;
                     $aryStandardAmps = array(
-                                            '5A' => '5',
+                                            '6A' => '6',
                                             '8A' => '8',
                                             '12A' => '12',
                                             '16A' => '16',
@@ -198,9 +347,10 @@
                 }
 
                 // Remove amp values higher than the value of
-                // $wiringMaxAmpsAllTWCs set in TWCManager.pl.
+                // $wiringMaxAmpsAllTWCs or lower than $minAmpsPerTWC set in
+                // TWCManager.py.
                 foreach($aryStandardAmps as $key => $value) {
-                    if($value > $wiringMaxAmpsAllTWCs) {
+                    if($value > $wiringMaxAmpsAllTWCs || $value < $minAmpsPerTWC) {
                         unset($aryStandardAmps[$key]);
                     }
                 }
@@ -285,9 +435,37 @@
         </p>
 
         <p style="margin-top:1.8em; text-align:right;">
+            <?php
+            if($chargeNowAmps > 0) {
+                print '<input type="submit" name="submit" value="Cancel 1-day charge">';
+            }
+            else {
+                print '<input type="submit" name="submit" value="1-day charge, '
+                    . sprintf("%.0f", $wiringMaxAmpsAllTWCs) . 'A">';
+            }
+            ?>
             <input type="submit" name="submit" value="Save">
         </p>
     </form>
+    <?php
+        if($carApiEmailPasswordNeeded) {
+            ?>
+            <form action="index.php" method="get">
+                <p>
+                    Enter your email and password to allow TWCManager to start and
+                    stop Tesla vehicles you own from charging.  These credentials are
+                    sent once to Tesla and are not stored.  Credentials must be entered
+                    again if no cars are connected to this charger for over 45 days.
+                </p>
+                <p>
+                Email: <input type="text" name="email" value="<?php print htmlspecialchars(@$_REQUEST['email'])?>"><br>
+                Password: <input type="password" name="password"><br>
+                <input type="submit" name="submit" value="Submit">
+                </p>
+            </form>
+            <?php
+        }
+    ?>
 </div>
 
 <script type="text/javascript">
@@ -302,7 +480,7 @@
 
 <?php
     function ipcCommand($ipcCommand)
-    // Send an IPC command to TWCManager.pl.  A command does not expect a
+    // Send an IPC command to TWCManager.py.  A command does not expect a
     // response.
     {
         global $ipcQueue, $debugLevel;
@@ -313,15 +491,15 @@
         ipcSend($ipcMsgTime, $ipcMsgID, $ipcCommand);
     }
 
-    function ipcQuery($ipcMsgSend)
-    // Send an IPC query to TWCManager.pl and wait for a response which we
+    function ipcQuery($ipcMsgSend, $usePackets = false)
+    // Send an IPC query to TWCManager.py and wait for a response which we
     // return.
     {
         global $ipcQueue, $debugLevel;
         $ipcErrorCode = 0;
 
         // There could be multiple web pages or other interfaces sending queries
-        // to TWCManager.pl.  To help ensure we get back the response to our
+        // to TWCManager.py.  To help ensure we get back the response to our
         // particular query, assign a random ID to our query and only accept
         // responses containing the same ID.
         $ipcMsgID = rand(1,65535);
@@ -341,8 +519,14 @@
         $ipcMaxMsgSize = 300;
         $i = 0;
         $maxRetries = 50;
+        $numPackets = 0;
+        $msgResult = '';
         for(; $i < $maxRetries; $i++) {
-            if(msg_receive($ipcQueue, 1, $ipcMsgType, $ipcMaxMsgSize, $ipcMsgRecv, false, MSG_IPC_NOWAIT, $ipcErrorCode) == false) {
+            // MSG_NOERROR flag prevents showing an error if there are too many
+            // characters and some were lost.
+            if(msg_receive($ipcQueue, 1, $ipcMsgType, $ipcMaxMsgSize, $ipcMsgRecv, false,
+                           MSG_IPC_NOWAIT | MSG_NOERROR, $ipcErrorCode) == false
+            ) {
                 // Error 42 means no response is available yet, which is likely to happen
                 // briefly.
                 if($ipcErrorCode != 42) {
@@ -357,9 +541,26 @@
                 }
 
                 if($aryMsg['ID'] == $ipcMsgID) {
-                    // This response matches our message ID, so return the
-                    // response.
-                    return $aryMsg['msg'];
+                    // This response matches our message ID
+                    if($usePackets) {
+                        if($numPackets == 0) {
+                            $numPackets = ord($aryMsg['msg']);
+                            if($debugLevel >= 10) {
+                                print "ipcQuery numPackets $numPackets<p>";
+                            }
+                        }
+                        else {
+                            $msgResult .= $aryMsg['msg'];
+                            $numPackets--;
+                            if($numPackets == 0) {
+                                return $msgResult;
+                            }
+                        }
+                        continue;
+                    }
+                    else {
+                        return $aryMsg['msg'];
+                    }
                 }
                 if(time() - $aryMsg['time'] < 30) {
                     // Message ID doesn't match the ID of our query so this
@@ -391,7 +592,7 @@
     function ipcSend($ipcMsgTime, $ipcMsgID, $ipcMsg, $ipcMsgType = 2)
     // Help ipcCommand or ipcQuery send their IPC message. Don't call this
     // directly.
-    // Most messages we send to TWCManager.pl will use $ipcMsgType = 2 while
+    // Most messages we send to TWCManager.py will use $ipcMsgType = 2 while
     // responses to queries will use $ipcMsgType = 1. I picked those values
     // thinking I might use type 1 for responses to queries and values 2 and
     // higher to distinguish different commands or queries but decided to use
