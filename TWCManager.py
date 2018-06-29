@@ -169,19 +169,27 @@ wiringMaxAmpsPerTWC = 40
 # https://teslamotorsclub.com/tmc/threads/higher-amp-charging-is-more-efficient.24972/
 # says that cars using a 1st generation charger may use up to 30% more power
 # at 6A vs 40A!  However, the data refers to 120V 12A charging vs 240V 40A
-# charging.  120V 12A is technically the same power as 240V 6A, but a lot more
-# power is wasted converting 120V AC to 400V DC than 240V AC to 400V DC to
-# charge the batteries.
+# charging. 120V 12A is technically the same power as 240V 6A, but the car
+# batteries need 400V DC to charge and a lot more power is wasted converting
+# 120V AC to 400V DC than 240V AC to 400V DC.
 #
-# The main point is 6A charging wastes a lot of power, so I recommend you set
-# minAmpsPerTWC to 10, or even 20.  If using 3-phase, 240V power (ie in the EU),
-# then 6A is fine (it's more kW than 10A on 2-phase 240V).
+# The main point is 6A charging wastes a lot of power, so we default to charging
+# at a minimum of 12A * 240V = 2880W by setting minWattsPerTWC to 2880. I picked
+# 12A instead of 10A because there was a theory that multiples of 3A were most
+# efficient, though I couldn't find any data showing that had been tested.
+#
+# In 3-phase EU chargers, 6A is still the minimum amperage, but the Watts
+# delivered by 6A is much higher: 6A * 230V * 3 = 4140W. That means the default
+# setting of 2880W is below what an EU charger can deliver so the setting has no
+# effect.
 #
 # https://forums.tesla.com/forum/forums/charging-lowest-amperage-purposely
 # says another reason to charge at higher power is to preserve battery life.
 # The best charge rate is the capacity of the battery pack / 2.  Home chargers
-# can't reach that rate, so charging as fast as your wiring supports is best.
-minAmpsPerTWC = 10
+# can't reach that rate, so charging as fast as your wiring supports is best
+# from that standpoint.  It's not clear how much damage charging at slower
+# rates really does.
+minWattsPerTWC = 2880
 
 # After determining how much green energy is available for charging, we add
 # greenEnergyAmpsOffset to the value. This is most often given a negative value
@@ -942,6 +950,28 @@ class TWCSlave:
         self.TWCID = TWCID
         self.maxAmps = maxAmps
 
+    def amps_to_watts(self, amps):
+        if(self.maxAmps == 80):
+            return(amps*240)
+        elif(self.maxAmps == 32):
+            return(amps*230*3)
+        else:
+            print(time_now() +
+                    " ERROR: TWC %02X%02X has unknown amp rating %.2f" % \
+                    (self.TWCID[0], self.TWCID[1], self.maxAmps))
+            return(0)
+
+    def watts_to_amps(self, watts):
+        if(self.maxAmps == 80):
+            return(watts/240)
+        elif(self.maxAmps == 32):
+            return(watts/230/3)
+        else:
+            print(time_now() +
+                    " ERROR: TWC %02X%02X has unknown amp rating %.2f" % \
+                    (self.TWCID[0], self.TWCID[1], self.maxAmps))
+            return(0)
+
     def print_status(self, heartbeatData):
         global fakeMaster, masterTWCID
 
@@ -1288,7 +1318,7 @@ class TWCSlave:
                maxAmpsToDivideAmongSlaves, wiringMaxAmpsAllTWCs, \
                timeLastGreenEnergyCheck, greenEnergyAmpsOffset, \
                slaveTWCRoundRobin, spikeAmpsToCancel6ALimit, \
-               chargeNowAmps, chargeNowTimeEnd, minAmpsPerTWC
+               chargeNowAmps, chargeNowTimeEnd, minWattsPerTWC
 
         now = time.time()
         self.timeLastRx = now
@@ -1425,26 +1455,26 @@ class TWCSlave:
                     #   MTU, Time, Power, Cost, Voltage
                     #   Solar,11/11/2017 14:20:43,-2.957,-0.29,124.3
                     # The only part we care about is -2.957 which is negative
-                    # kWh currently being generated. When 0kWh is generated, the
+                    # kW currently being generated. When 0kW is generated, the
                     # negative disappears so we make it optional in the regex
                     # below.
                     m = re.search(b'^Solar,[^,]+,-?([^, ]+),', greenEnergyData, re.MULTILINE)
                     if(m):
-                        solarWh = int(float(m.group(1)) * 1000)
+                        solarW = int(float(m.group(1)) * 1000)
 
                         # Watts = Volts * Amps
                         # Car charges at 240 volts in North America so we figure
-                        # out how many amps * 240 = solarWh and limit the car to
+                        # out how many amps * 240 = solarW and limit the car to
                         # that many amps.
-                        maxAmpsToDivideAmongSlaves = (solarWh / 240) + \
+                        maxAmpsToDivideAmongSlaves = (solarW / 240) + \
                                                       greenEnergyAmpsOffset
 
                         if(debugLevel >= 1):
-                            print("%s: Solar generating %dWh so limit car charging to:\n" \
-                                 "          %.2fA + %.2fA = %.2fA.  Charge when above %.2fA (minAmpsPerTWC)." % \
-                                 (time_now(), solarWh, (solarWh / 240),
+                            print("%s: Solar generating %dW so limit car charging to:\n" \
+                                 "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fW (minWattsPerTWC)." % \
+                                 (time_now(), solarW, (solarW / 240),
                                  greenEnergyAmpsOffset, maxAmpsToDivideAmongSlaves,
-                                 minAmpsPerTWC))
+                                 minWattsPerTWC))
                     else:
                         print(time_now() +
                             " ERROR: Can't determine current solar generation from:\n" +
@@ -1466,7 +1496,7 @@ class TWCSlave:
         # by the number of slave TWCs on the network.
         desiredAmpsOffered = int(maxAmpsToDivideAmongSlaves / len(slaveTWCRoundRobin))
 
-        minAmpsToOffer = minAmpsPerTWC
+        minAmpsToOffer = self.watts_to_amps(minWattsPerTWC)
         if(self.minAmpsTWCSupports > minAmpsToOffer):
             minAmpsToOffer = self.minAmpsTWCSupports
 
@@ -2037,7 +2067,7 @@ while True:
                     webResponseMsg = (
                         "%.2f" % (maxAmpsToDivideAmongSlaves) +
                         '`' + "%.2f" % (wiringMaxAmpsAllTWCs) +
-                        '`' + "%.2f" % (minAmpsPerTWC) +
+                        '`' + "%.2f" % (slaveTWCRoundRobin[0].watts_to_amps(minWattsPerTWC)) +
                         '`' + "%.2f" % (chargeNowAmps) +
                         '`' + str(nonScheduledAmpsMax) +
                         '`' + str(scheduledAmpsMax) +
