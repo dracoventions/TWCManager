@@ -174,14 +174,16 @@ wiringMaxAmpsPerTWC = 40
 # 120V AC to 400V DC than 240V AC to 400V DC.
 #
 # The main point is 6A charging wastes a lot of power, so we default to charging
-# at a minimum of 12A * 240V = 2880W by setting minWattsPerTWC to 2880. I picked
-# 12A instead of 10A because there was a theory that multiples of 3A were most
-# efficient, though I couldn't find any data showing that had been tested.
+# at a minimum of 12A by setting minAmpsPerTWC to 12. I picked 12A instead of 10A
+# because there is a theory that multiples of 3A are most efficient, though I
+# couldn't find any data showing that had been tested.
 #
-# In 3-phase EU chargers, 6A is still the minimum amperage, but the Watts
-# delivered by 6A is much higher: 6A * 230V * 3 = 4140W. That means the default
-# setting of 2880W is below what an EU charger can deliver so the setting has no
-# effect.
+# Most EU chargers are connected to 230V, single-phase power which means 12A is
+# about the same power as in US chargers. If you have three-phase power, you can
+# lower minAmpsPerTWC to 6 and still be charging with more power than 12A on
+# single-phase.  For example, 12A * 230V * 1 = 2760W for single-phase power, while
+# 6A * 230V * 3 = 4140W for three-phase power. Consult an electrician if this
+# doesn't make sense.
 #
 # https://forums.tesla.com/forum/forums/charging-lowest-amperage-purposely
 # says another reason to charge at higher power is to preserve battery life.
@@ -189,7 +191,7 @@ wiringMaxAmpsPerTWC = 40
 # can't reach that rate, so charging as fast as your wiring supports is best
 # from that standpoint.  It's not clear how much damage charging at slower
 # rates really does.
-minWattsPerTWC = 2880
+minAmpsPerTWC = 12
 
 # After determining how much green energy is available for charging, we add
 # greenEnergyAmpsOffset to the value. This is most often given a negative value
@@ -935,13 +937,29 @@ class TWCSlave:
     minAmpsTWCSupports = 6
     masterHeartbeatData = bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00')
     timeLastRx = time.time()
-    lastAmpsOffered = -1
-    lastAmpsActual = -1
+
+    # reported* vars below are reported to us in heartbeat messages from a Slave
+    # TWC.
     reportedAmpsMax = 0
     reportedAmpsActual = 0
     reportedState = 0
+
+    # reportedAmpsActual frequently changes by small amounts, like 5.14A may
+    # frequently change to 5.23A and back.
+    # reportedAmpsActualSignificantChangeMonitor is set to reportedAmpsActual
+    # whenever reportedAmpsActual is at least 0.8A different than
+    # reportedAmpsActualSignificantChangeMonitor. Whenever
+    # reportedAmpsActualSignificantChangeMonitor is changed,
+    # timeReportedAmpsActualChangedSignificantly is set to the time of the
+    # change. The value of reportedAmpsActualSignificantChangeMonitor should not
+    # be used for any other purpose. timeReportedAmpsActualChangedSignificantly
+    # is used for things like preventing start and stop charge on a car more
+    # than once per minute.
+    reportedAmpsActualSignificantChangeMonitor = -1
+    timeReportedAmpsActualChangedSignificantly = time.time()
+
+    lastAmpsOffered = -1
     timeLastAmpsOfferedChanged = time.time()
-    timeLastAmpsActualChanged = time.time()
     lastHeartbeatDebugOutput = ''
     timeLastHeartbeatDebugOutput = 0
     wiringMaxAmps = wiringMaxAmpsPerTWC
@@ -949,28 +967,6 @@ class TWCSlave:
     def __init__(self, TWCID, maxAmps):
         self.TWCID = TWCID
         self.maxAmps = maxAmps
-
-    def amps_to_watts(self, amps):
-        if(self.maxAmps == 80):
-            return(amps*240)
-        elif(self.maxAmps == 32):
-            return(amps*230*3)
-        else:
-            print(time_now() +
-                    " ERROR: TWC %02X%02X has unknown amp rating %.2f" % \
-                    (self.TWCID[0], self.TWCID[1], self.maxAmps))
-            return(0)
-
-    def watts_to_amps(self, watts):
-        if(self.maxAmps == 80):
-            return(watts/240)
-        elif(self.maxAmps == 32):
-            return(watts/230/3)
-        else:
-            print(time_now() +
-                    " ERROR: TWC %02X%02X has unknown amp rating %.2f" % \
-                    (self.TWCID[0], self.TWCID[1], self.maxAmps))
-            return(0)
 
     def print_status(self, heartbeatData):
         global fakeMaster, masterTWCID
@@ -1280,24 +1276,25 @@ class TWCSlave:
         if(self.protocolVersion == 2):
             # TODO: Start and stop charging using protocol 2 commands to TWC
             # instead of car api if I ever figure out how.
-            if(self.lastAmpsOffered == 0 and self.lastAmpsActual > 4.0):
-                # Car is trying to charge, so stop it via car API.  car_api_charge()
-                # will prevent telling the car to start or stop more than once per
-                # minute.  Once the car gets the message to stop, lastAmpsActual should
-                # drop to near zero within a few seconds.
+            if(self.lastAmpsOffered == 0 and self.reportedAmpsActual > 4.0):
+                # Car is trying to charge, so stop it via car API.
+                # car_api_charge() will prevent telling the car to start or stop
+                # more than once per minute. Once the car gets the message to
+                # stop, reportedAmpsActualSignificantChangeMonitor should drop
+                # to near zero within a few seconds.
                 # WARNING: If you own two vehicles and one is charging at home but
                 # the other is charging away from home, this command will stop
                 # them both from charging.  If the away vehicle is not currently
                 # charging, I'm not sure if this would prevent it from charging
                 # when next plugged in.
                 car_api_charge(False)
-            elif(self.lastAmpsOffered >= 5.0 and self.lastAmpsActual < 2.0
+            elif(self.lastAmpsOffered >= 5.0 and self.reportedAmpsActual < 2.0
                  and self.reportedState != 0x02
             ):
                 # Car is not charging and is not reporting an error state, so
                 # try starting charge via car api.
                 result = car_api_charge(True)
-            elif(carApiStopAskingToStartCharging and self.lastAmpsActual > 4.0):
+            elif(carApiStopAskingToStartCharging and self.reportedAmpsActual > 4.0):
                 # Car is successfully charging, so set
                 # carApiStopAskingToStartCharging to False such that if it ever
                 # stops charging without us calling car_api_charge(False), we'll
@@ -1318,7 +1315,7 @@ class TWCSlave:
                maxAmpsToDivideAmongSlaves, wiringMaxAmpsAllTWCs, \
                timeLastGreenEnergyCheck, greenEnergyAmpsOffset, \
                slaveTWCRoundRobin, spikeAmpsToCancel6ALimit, \
-               chargeNowAmps, chargeNowTimeEnd, minWattsPerTWC
+               chargeNowAmps, chargeNowTimeEnd, minAmpsPerTWC
 
         now = time.time()
         self.timeLastRx = now
@@ -1335,13 +1332,13 @@ class TWCSlave:
 
         # Keep track of the amps the slave is actually using and the last time it
         # changed by more than 0.8A.
-        # Also update self.lastAmpsActual if it's still set to its initial
-        # value of -1.
-        if(self.lastAmpsActual < 0
-           or abs(self.reportedAmpsActual - self.lastAmpsActual) > 0.8
+        # Also update self.reportedAmpsActualSignificantChangeMonitor if it's
+        # still set to its initial value of -1.
+        if(self.reportedAmpsActualSignificantChangeMonitor < 0
+           or abs(self.reportedAmpsActual - self.reportedAmpsActualSignificantChangeMonitor) > 0.8
         ):
-            self.timeLastAmpsActualChanged = now
-            self.lastAmpsActual = self.reportedAmpsActual
+            self.timeReportedAmpsActualChangedSignificantly = now
+            self.reportedAmpsActualSignificantChangeMonitor = self.reportedAmpsActual
 
         ltNow = time.localtime()
         hourNow = ltNow.tm_hour + (ltNow.tm_min / 60)
@@ -1471,10 +1468,10 @@ class TWCSlave:
 
                         if(debugLevel >= 1):
                             print("%s: Solar generating %dW so limit car charging to:\n" \
-                                 "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fW (minWattsPerTWC)." % \
+                                 "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
                                  (time_now(), solarW, (solarW / 240),
                                  greenEnergyAmpsOffset, maxAmpsToDivideAmongSlaves,
-                                 minWattsPerTWC))
+                                 minAmpsPerTWC))
                     else:
                         print(time_now() +
                             " ERROR: Can't determine current solar generation from:\n" +
@@ -1496,7 +1493,7 @@ class TWCSlave:
         # by the number of slave TWCs on the network.
         desiredAmpsOffered = int(maxAmpsToDivideAmongSlaves / len(slaveTWCRoundRobin))
 
-        minAmpsToOffer = self.watts_to_amps(minWattsPerTWC)
+        minAmpsToOffer = minAmpsPerTWC
         if(self.minAmpsTWCSupports > minAmpsToOffer):
             minAmpsToOffer = self.minAmpsTWCSupports
 
@@ -1533,7 +1530,7 @@ class TWCSlave:
                (
                  now - self.timeLastAmpsOfferedChanged < 60
                    or
-                 now - self.timeLastAmpsActualChanged < 60
+                 now - self.timeReportedAmpsActualChangedSignificantly < 60
                    or
                  self.reportedAmpsActual < 4.0
                )
@@ -1600,8 +1597,8 @@ class TWCSlave:
                     print("Don't stop charging yet because: " +
                           'time - self.timeLastAmpsOfferedChanged ' +
                           str(int(now - self.timeLastAmpsOfferedChanged)) +
-                          ' < 60 or time - self.timeLastAmpsActualChanged ' +
-                          str(int(now - self.timeLastAmpsActualChanged)) +
+                          ' < 60 or time - self.timeReportedAmpsActualChangedSignificantly ' +
+                          str(int(now - self.timeReportedAmpsActualChangedSignificantly)) +
                           ' < 60 or self.reportedAmpsActual ' + str(self.reportedAmpsActual) +
                           ' < 4')
                 desiredAmpsOffered = minAmpsToOffer
@@ -1652,8 +1649,8 @@ class TWCSlave:
                           ' spikeAmpsToCancel6ALimit=' + str(spikeAmpsToCancel6ALimit) +
                           ' self.lastAmpsOffered=' + str(self.lastAmpsOffered) +
                           ' self.reportedAmpsActual=' + str(self.reportedAmpsActual) +
-                          ' now - self.timeLastAmpsActualChanged=' +
-                          str(int(now - self.timeLastAmpsActualChanged)))
+                          ' now - self.timeReportedAmpsActualChangedSignificantly=' +
+                          str(int(now - self.timeReportedAmpsActualChangedSignificantly)))
 
                 if(
                     # If we just moved from a lower amp limit to
@@ -1685,7 +1682,7 @@ class TWCSlave:
                      # ...and car hasn't changed its amp draw significantly in
                      # over 10 seconds, meaning it's stuck at its current amp
                      # draw.
-                     now - self.timeLastAmpsActualChanged > 10
+                     now - self.timeReportedAmpsActualChangedSignificantly > 10
                    )
                 ):
                     # We must set desiredAmpsOffered to a value that gets
@@ -2067,7 +2064,7 @@ while True:
                     webResponseMsg = (
                         "%.2f" % (maxAmpsToDivideAmongSlaves) +
                         '`' + "%.2f" % (wiringMaxAmpsAllTWCs) +
-                        '`' + "%.2f" % (slaveTWCRoundRobin[0].watts_to_amps(minWattsPerTWC)) +
+                        '`' + "%.2f" % (minAmpsPerTWC) +
                         '`' + "%.2f" % (chargeNowAmps) +
                         '`' + str(nonScheduledAmpsMax) +
                         '`' + str(scheduledAmpsMax) +
