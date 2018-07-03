@@ -287,7 +287,8 @@ def load_settings():
     global debugLevel, settingsFileName, nonScheduledAmpsMax, scheduledAmpsMax, \
            scheduledAmpsStartHour, scheduledAmpsEndHour, \
            scheduledAmpsDaysBitmap, hourResumeTrackGreenEnergy, kWhDelivered, \
-           carApiBearerToken, carApiRefreshToken, carApiTokenExpireTime
+           carApiBearerToken, carApiRefreshToken, carApiTokenExpireTime, \
+           homeLat, homeLon
 
     try:
         fh = open(settingsFileName, 'r')
@@ -363,6 +364,20 @@ def load_settings():
                     print("load_settings: carApiTokenExpireTime set to " + str(carApiTokenExpireTime))
                 continue
 
+            m = re.search(r'^\s*homeLat\s*=\s*(.+)', line, re.MULTILINE)
+            if(m):
+                homeLat = float(m.group(1))
+                if(debugLevel >= 10):
+                    print("load_settings: homeLat set to " + str(homeLat))
+                continue
+
+            m = re.search(r'^\s*homeLon\s*=\s*(.+)', line, re.MULTILINE)
+            if(m):
+                homeLon = float(m.group(1))
+                if(debugLevel >= 10):
+                    print("load_settings: homeLon set to " + str(homeLon))
+                continue
+
             print(time_now() + ": load_settings: Unknown setting " + line)
 
         fh.close()
@@ -374,7 +389,8 @@ def save_settings():
     global debugLevel, settingsFileName, nonScheduledAmpsMax, scheduledAmpsMax, \
            scheduledAmpsStartHour, scheduledAmpsEndHour, \
            scheduledAmpsDaysBitmap, hourResumeTrackGreenEnergy, kWhDelivered, \
-           carApiBearerToken, carApiRefreshToken, carApiTokenExpireTime
+           carApiBearerToken, carApiRefreshToken, carApiTokenExpireTime, \
+           homeLat, homeLon
 
     fh = open(settingsFileName, 'w')
     fh.write('nonScheduledAmpsMax=' + str(nonScheduledAmpsMax) +
@@ -386,7 +402,10 @@ def save_settings():
             '\nkWhDelivered=' + str(kWhDelivered) +
             '\ncarApiBearerToken=' + str(carApiBearerToken) +
             '\ncarApiRefreshToken=' + str(carApiRefreshToken) +
-            '\ncarApiTokenExpireTime=' + str(int(carApiTokenExpireTime)))
+            '\ncarApiTokenExpireTime=' + str(int(carApiTokenExpireTime)) +
+            '\nhomeLat=' + str(homeLat) +
+            '\nhomeLon=' + str(homeLon)
+            )
 
     fh.close()
 
@@ -721,24 +740,24 @@ def car_api_ready(email = None, password = None):
         if(len(carApiVehicles) > 0):
             # Wake cars if needed
             for vehicle in carApiVehicles:
-                if(vehicle.awake()):
+                if(vehicle.ready()):
                     continue
 
-                delayNextWaitAttempt = 0
+                delayNextWakeAttempt = 0
                 if(vehicle.failedWakeAttempts < 2):
                     # Wait 1 minute between first 2 wake attempts
-                    delayNextWaitAttempt = 60;
+                    delayNextWakeAttempt = 60;
                 elif(vehicle.failedWakeAttempts < 5):
-                    delayNextWaitAttempt = 2*60;
+                    delayNextWakeAttempt = 2*60;
                 elif(vehicle.failedWakeAttempts < 10):
-                    delayNextWaitAttempt = 5*60;
+                    delayNextWakeAttempt = 5*60;
                 elif(vehicle.failedWakeAttempts < 20):
-                    delayNextWaitAttempt = 10*60;
+                    delayNextWakeAttempt = 10*60;
                 else:
-                    delayNextWaitAttempt = 30*60;
+                    delayNextWakeAttempt = 30*60;
 
-                if(time.time() - vehicle.lastWakeAttemptTime > delayNextWaitAttempt):
-                    # It's been delayNextWaitAttempt seconds since we last failed to wake
+                if(time.time() - vehicle.lastWakeAttemptTime > delayNextWakeAttempt):
+                    # It's been delayNextWakeAttempt seconds since we last failed to wake
                     # the car, or it's never been woken.  Wake it.
                     vehicle.lastWakeAttemptTime = time.time()
                     cmd = 'curl -s -m 10 -X POST -H "accept: application/json" -H "Authorization:Bearer ' + carApiBearerToken + \
@@ -776,12 +795,13 @@ def car_api_ready(email = None, password = None):
 
 def car_api_charge(charge):
     global debugLevel, carApiLastErrorTime, carApiVehicles, \
-           carApiLastStartOrStopChargeTime, carApiStopAskingToStartCharging
+           carApiLastStartOrStopChargeTime, carApiStopAskingToStartCharging, \
+           homeLat, homeLon
 
     if(charge and carApiStopAskingToStartCharging):
         if(debugLevel >= 7):
             print(time_now() + ': car_api_charge return because carApiStopAskingToStartCharging == True')
-        return
+        return 'stopasking'
     elif(not charge):
         carApiStopAskingToStartCharging = False
 
@@ -789,25 +809,51 @@ def car_api_charge(charge):
         # Don't start or stop more often than once a minute
         if(debugLevel >= 7):
             print(time_now() + ': car_api_charge return because under 60 sec since last carApiLastStartOrStopChargeTime')
-        return
+        return 'error'
 
     if(car_api_ready() == False):
         if(debugLevel >= 7):
             print(time_now() + ': car_api_charge return because car_api_ready() == False')
-        return
+        return 'error'
 
     startOrStop = 'start' if charge else 'stop'
     now = time.time()
     result = 'success'
 
     for vehicle in carApiVehicles:
-        if(vehicle.awake() == False):
+        if(vehicle.ready() == False):
             continue
 
-        # Only update carApiLastStartOrStopChargeTime if we told at least one
-        # awake car to start or stop charging. car_api_ready() attempts to wake
-        # cars.
+        # Only update carApiLastStartOrStopChargeTime if car_api_ready() managed
+        # to wake cars.  Setting this prevents any command below from being sent
+        # more than once per minute.
         carApiLastStartOrStopChargeTime = now
+
+        if(vehicle.update_location() == False):
+            continue
+
+        if(homeLat == 10000):
+            if(debugLevel >= 1):
+                print(time_now() + ": Home location for vehicles has never been set.  " +
+                    "We'll assume home is where we found the first vehicle currently parked.  " +
+                    "Home set to lat=" + str(vehicle.lat) + ", lon=" +
+                    str(vehicle.lon))
+            homeLat = vehicle.lat
+            homeLon = vehicle.lon
+            save_settings()
+
+        # 1 lat or lon = ~364488.888 feet.
+        # 1/364488.888 * 2000 = 0.00548.
+        # So if vehicle is within 0.00548 lat and lon of homeLat/Lon,
+        # it's within 2000 feet of home and we'll consider it to be
+        # at home.
+        if(abs(homeLat - vehicle.lat) > 0.00548
+           or abs(homeLon - vehicle.lon) > 0.00548):
+            # Vehicle is not at home, so don't change its charge state.
+            if(debugLevel >= 1):
+                print(time_now() + ': Vehicle ID ' + str(self.ID) +
+                      ' is not at home.  Do not ' + startOrStop + ' charge.')
+            continue
 
         cmd = 'curl -s -m 10 -X POST -H "accept: application/json" -H "Authorization:Bearer ' + carApiBearerToken + \
             '" "https://owner-api.teslamotors.com/api/1/vehicles/' + \
@@ -836,6 +882,9 @@ def car_api_charge(charge):
             #   {'response': {'result': False, 'reason': 'charging'}}
             # Car not reachable:
             #   {'response': None, 'error_description': '', 'error': 'vehicle unavailable: {:error=>"vehicle unavailable:"}'}
+            # This weird error seems to happen randomly and re-trying a few
+            # seconds later often succeeds:
+            #   {'response': {'result': False, 'reason': 'could_not_wake_buses'}}
             # Start or stop charging success:
             #   {'response': {'result': True, 'reason': ''}}
             if(apiResponseDict['response'] == None):
@@ -843,42 +892,63 @@ def car_api_charge(charge):
                 # unavailable', but it's not something I think the caller can do
                 # anything about, so return generic 'error'.
                 result = 'error'
-                carApiLastErrorTime = time.time()
+                # Don't send another command to this vehicle for 10 mins.
+                vehicle.lastErrorTime = time.time()
             elif(apiResponseDict['response']['result'] == False):
                 if(charge):
-                    # We asked the car to charge, but it responded that it
-                    # can't, either because it's reached target charge state
-                    # (apiResponseDict['response']['reason'] == 'complete'),
-                    # it's already trying to charge
-                    # (apiResponseDict['response']['reason'] == 'charging'), or
-                    # possibly for other reasons. Whatever the reason, it won't
-                    # help to keep asking it to charge, so set result =
-                    # 'stopasking'.
-                    #
-                    # Remember, this only means at least one car in the list
-                    # wants us to stop asking and we don't know which car in the
-                    # list is connected to our TWC.
-                    #
-                    # Don't overwrite result != 'success' with 'stopasking'
-                    # because we don't want to stop asking if there was an error
-                    # asking at least one car in the list to start charging. For
-                    # the same reason, we don't set
-                    # carApiStopAskingToStartCharging = True unless we talk to
-                    # all cars and result still equals 'success'.
-                    #
-                    # Using the above method could cause a car that's out of
-                    # range of the API to prevent us from ever giving up on
-                    # sending start charge requests, but a non-success result
-                    # should also set carApiLastErrorTime which will at least
-                    # delay the next attempt for 10 minutes. Hitting the API
-                    # every 10 mins with a start charge probably won't bother
-                    # Tesla.
-                    if(result == 'success'):
-                        result = 'stopasking'
+                    reason = apiResponseDict['response']['reason']
+                    if(reason == 'complete' or reason == 'charging'):
+                        # We asked the car to charge, but it responded that it
+                        # can't, either because it's reached target charge state
+                        # (reason == 'complete'), or it's already trying to charge
+                        # (reason == 'charging'). In these cases, it won't help to
+                        # keep asking it to charge, so set result = 'stopasking'.
+                        #
+                        # Remember, this only means at least one car in the list
+                        # wants us to stop asking and we don't know which car in the
+                        # list is connected to our TWC.
+                        #
+                        # Don't overwrite result != 'success' with 'stopasking'
+                        # because we don't want to stop asking if there was an error
+                        # asking at least one car in the list to start charging. For
+                        # the same reason, we don't set
+                        # carApiStopAskingToStartCharging = True unless we talk to
+                        # all cars and result still equals 'success'.
+                        #
+                        # Using the above method could cause a car that's out of
+                        # range of the API to prevent us from ever giving up on
+                        # sending start charge requests, but a non-success result
+                        # should also set carApiLastErrorTime which will at least
+                        # delay the next attempt for 10 minutes. Hitting the API
+                        # every 10 mins with a start charge probably won't bother
+                        # Tesla.
+                        if(result == 'success'):
+                            result = 'stopasking'
+                    else:
+                        # Car was unable to charge for some other reason, such
+                        # as 'could_not_wake_buses'.
+                        result = 'error'
+                        if(reason == 'could_not_wake_buses'):
+                            # Someone said that retrying the command a moment
+                            # after receiving 'could_not_wake_buses'
+                            # consistently made the command succeed. I don't
+                            # want to risk trying it once a second but we'll
+                            # try again in a minute because we set
+                            # carApiLastStartOrStopChargeTime to earlier.
+                            pass
+                        else:
+                            # Start or stop charge failed with an error I
+                            # haven't seen before, so wait 10 mins before trying
+                            # again.
+                            print(time_now() + ': ERROR "' + reason + '" when trying to ' +
+                                  startOrStop + ' car charging via Tesla car API.  Will try again later.' +
+                                  "\nIf this error persists, please private message user CDragon at http://teslamotorsclub.com " \
+                                  "with a copy of this error.")
+                            vehicle.lastErrorTime = time.time()
 
         except (KeyError, TypeError):
             print(time_now() + ': ERROR: Failed to ' + startOrStop + ' car charging via Tesla car API.  Will try again later.')
-            carApiLastErrorTime = time.time()
+            vehicle.lastErrorTime = time.time()
 
     if(debugLevel >= 1 and carApiLastStartOrStopChargeTime == now):
         print(time_now() + ': Car API ' + startOrStop + ' charge result: ' + result)
@@ -903,16 +973,61 @@ class CarApiVehicle:
     ID = None
     failedWakeAttempts = 0
     lastWakeAttemptTime = 0
+    lastErrorTime = 0
+    lat = 10000
+    lon = 10000
 
     def __init__(self, ID):
         self.ID = ID
 
-    def awake(self):
+    def ready(self):
+        global carApiLastErrorTime
+
+        if(time.time() - self.lastErrorTime < 10*60):
+            # It's been under 10 minutes since the car API generated an error
+            # on this vehicle.  Return that car is not ready.
+            return False
+
         if(self.failedWakeAttempts == 0 and time.time() - self.lastWakeAttemptTime < 10*60):
             # Less than 10 minutes since we successfully woke this car.
             # It should still be awake.
             return True
         return False
+
+    def update_location(self):
+        global carApiLastErrorTime
+
+        if(self.ready() == False):
+            return False
+
+        cmd = 'curl -s -m 10 -H "accept: application/json" -H "Authorization:Bearer ' + carApiBearerToken + \
+              '" "https://owner-api.teslamotors.com/api/1/vehicles/' + \
+              str(self.ID) + '/data_request/drive_state"'
+        if(debugLevel >= 8):
+            print(time_now() + ': Car API cmd', cmd)
+        try:
+            apiResponseDict = json.loads(run_process(cmd).decode('ascii'))
+            # Here's an odd error response I saw:
+            # {'response': {'reason': 'could_not_wake_buses', 'result': False}}
+            # This one is somewhat common:
+            # {'response': None, 'error': 'vehicle unavailable: {:error=>"vehicle unavailable:"}', 'error_description': ''}
+        except json.decoder.JSONDecodeError:
+            pass
+
+        try:
+            if(debugLevel >= 8):
+                print(time_now() + ': Car API vehicle drive state', apiResponseDict)
+
+            response = apiResponseDict['response']
+            self.lat = response['latitude']
+            self.lon = response['longitude']
+        except (KeyError, TypeError):
+            print(time_now() + ": ERROR: Can't get drive state of vehicle " + str(self.ID) + \
+                  ".  Will try again later.")
+            self.lastErrorTime = time.time()
+            return False
+
+        return True
 
 
 #
@@ -1293,7 +1408,7 @@ class TWCSlave:
             ):
                 # Car is not charging and is not reporting an error state, so
                 # try starting charge via car api.
-                result = car_api_charge(True)
+                car_api_charge(True)
             elif(carApiStopAskingToStartCharging and self.reportedAmpsActual > 4.0):
                 # Car is successfully charging, so set
                 # carApiStopAskingToStartCharging to False such that if it ever
@@ -1874,6 +1989,8 @@ carApiTokenExpireTime = time.time()
 carApiLastStartOrStopChargeTime = 0
 carApiStopAskingToStartCharging = False
 carApiVehicles = []
+homeLat = 10000
+homeLon = 10000
 
 ser = None
 ser = serial.Serial(rs485Adapter, baud, timeout=0)
