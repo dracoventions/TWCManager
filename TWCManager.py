@@ -648,19 +648,20 @@ def car_api_ready(email = None, password = None):
            carApiBearerToken, carApiRefreshToken, carApiTokenExpireTime, \
            carApiVehicles
 
-    if(time.time() - carApiLastErrorTime < 10*60):
+    now = time.time()
+    if(now - carApiLastErrorTime < 10*60):
         # It's been under 10 minutes since the car API generated an error.
         # To avoid hammering Tesla's API servers with bad requests and getting
         # the API disabled for this car or this IP address, wait 10 mins till
         # we try again.
         if(debugLevel >= 11):
             print(time_now() + ': Car API disabled for ' +
-                  str(int(10*60 - (time.time() - carApiLastErrorTime))) +
+                  str(int(10*60 - (now - carApiLastErrorTime))) +
                   ' more seconds due to recent error.')
         return False
 
     # Tesla car API info comes from https://timdorr.docs.apiary.io/
-    if(carApiBearerToken == '' or carApiTokenExpireTime - time.time() < 30*24*60*60):
+    if(carApiBearerToken == '' or carApiTokenExpireTime - now < 30*24*60*60):
         # If we don't have a bearer token or our refresh token will expire in
         # under 30 days, get a new bearer token.  Refresh tokens expire in 45
         # days when first issued, so we'll get a new token every 15 days.
@@ -701,10 +702,10 @@ def car_api_ready(email = None, password = None):
                 print(time_now() + ': Car API auth response', apiResponseDict)
             carApiBearerToken = apiResponseDict['access_token']
             carApiRefreshToken = apiResponseDict['refresh_token']
-            carApiTokenExpireTime = time.time() + apiResponseDict['expires_in']
+            carApiTokenExpireTime = now + apiResponseDict['expires_in']
         except KeyError:
             print(time_now() + ": ERROR: Can't access Tesla car via API.  Please log in again via web interface.")
-            carApiLastErrorTime = time.time()
+            carApiLastErrorTime = now
             # Instead of just setting carApiLastErrorTime, erase tokens to
             # prevent further authorization attempts until user enters password
             # on web interface. I feel this is safer than trying to log in every
@@ -734,7 +735,7 @@ def car_api_ready(email = None, password = None):
                     carApiVehicles.append(CarApiVehicle(apiResponseDict['response'][i]['id']))
             except (KeyError, TypeError):
                 print(time_now() + ": ERROR: Can't get list of vehicles via Tesla car API.  Will try again in 10 minutes.")
-                carApiLastErrorTime = time.time()
+                carApiLastErrorTime = now
                 return False
 
         if(len(carApiVehicles) > 0):
@@ -756,41 +757,54 @@ def car_api_ready(email = None, password = None):
                 else:
                     delayNextWakeAttempt = 30*60;
 
-                if(time.time() - vehicle.lastWakeAttemptTime > delayNextWakeAttempt):
-                    # It's been delayNextWakeAttempt seconds since we last failed to wake
-                    # the car, or it's never been woken.  Wake it.
-                    vehicle.lastWakeAttemptTime = time.time()
-                    cmd = 'curl -s -m 10 -X POST -H "accept: application/json" -H "Authorization:Bearer ' + carApiBearerToken + \
-                          '" "https://owner-api.teslamotors.com/api/1/vehicles/' + \
-                          str(vehicle.ID) + '/wake_up"'
-                    if(debugLevel >= 8):
-                        print(time_now() + ': Car API cmd', cmd)
+                if(now - vehicle.lastWakeAttemptTime <= delayNextWakeAttempt):
+                    if(debugLevel >= 10):
+                        print(time_now() + ": car_api_ready returning False because we are still delaying "
+                              + str(delayNextWakeAttempt) + " seconds after the last failed wake attempt.")
+                    return False
 
-                    try:
-                        apiResponseDict = json.loads(run_process(cmd).decode('ascii'))
-                    except json.decoder.JSONDecodeError:
-                        pass
+                # It's been delayNextWakeAttempt seconds since we last failed to wake
+                # the car, or it's never been woken.  Wake it.
+                vehicle.lastWakeAttemptTime = now
+                cmd = 'curl -s -m 10 -X POST -H "accept: application/json" -H "Authorization:Bearer ' + carApiBearerToken + \
+                      '" "https://owner-api.teslamotors.com/api/1/vehicles/' + \
+                      str(vehicle.ID) + '/wake_up"'
+                if(debugLevel >= 8):
+                    print(time_now() + ': Car API cmd', cmd)
 
-                    try:
-                        if(debugLevel >= 7):
-                            print(time_now() + ': Car API wake car response', apiResponseDict)
-                        # Some possible responses:
-                        # {'response': {'in_service': None, 'state': 'online', ...
-                        # {'response': {'in_service': None, 'state': 'asleep', ...
+                try:
+                    apiResponseDict = json.loads(run_process(cmd).decode('ascii'))
+                except json.decoder.JSONDecodeError:
+                    pass
 
-                        if(apiResponseDict['response']['state'] == 'online'):
-                            vehicle.failedWakeAttempts = 0
-                        else:
-                            vehicle.failedWakeAttempts += 1
-                            if(debugLevel >= 1):
-                                print(time_now() + ': Car API wake car failed: ', apiResponseDict['response']['reason'])
+                try:
+                    if(debugLevel >= 7):
+                        print(time_now() + ': Car API wake car response', apiResponseDict)
+                    # Some possible responses:
+                    # {'response': {'in_service': None, 'state': 'online', ...
+                    # {'response': {'in_service': None, 'state': 'asleep', ...
 
-                    except (KeyError, TypeError):
-                        print(time_now() + ": ERROR: Failed to wake car via Tesla car API.  Will try again later.")
+                    if(apiResponseDict['response']['state'] == 'online'):
+                        vehicle.failedWakeAttempts = 0
+                    else:
                         vehicle.failedWakeAttempts += 1
+                        if(debugLevel >= 1):
+                            print(time_now() + ': Car API wake car failed: ', apiResponseDict['response']['reason'])
 
-    if(time.time() - carApiLastErrorTime < 10*60 or carApiBearerToken == ''):
+                except (KeyError, TypeError):
+                    if(debugLevel >= 1):
+                        print(time_now() + ": ERROR: Failed to wake car via Tesla car API.  Will try again later.")
+                    vehicle.failedWakeAttempts += 1
+
+    if(now - carApiLastErrorTime < 10*60 or carApiBearerToken == ''):
+        if(debugLevel >= 8):
+            print(time_now() + ": car_api_ready returning False because of recent carApiLasterrorTime "
+                + str(now - carApiLastErrorTime) + " or empty carApiBearerToken '"
+                + carApiBearerToken + "'")
         return False
+
+    if(debugLevel >= 8):
+        print(time_now() + ": car_api_ready returning True")
     return True
 
 def car_api_charge(charge):
@@ -798,6 +812,7 @@ def car_api_charge(charge):
            carApiLastStartOrStopChargeTime, carApiStopAskingToStartCharging, \
            homeLat, homeLon
 
+    now = time.time()
     if(charge and carApiStopAskingToStartCharging):
         if(debugLevel >= 7):
             print(time_now() + ': car_api_charge return because carApiStopAskingToStartCharging == True')
@@ -805,7 +820,7 @@ def car_api_charge(charge):
     elif(not charge):
         carApiStopAskingToStartCharging = False
 
-    if(time.time() - carApiLastStartOrStopChargeTime < 60):
+    if(now - carApiLastStartOrStopChargeTime < 60):
         # Don't start or stop more often than once a minute
         if(debugLevel >= 7):
             print(time_now() + ': car_api_charge return because under 60 sec since last carApiLastStartOrStopChargeTime')
@@ -817,7 +832,6 @@ def car_api_charge(charge):
         return 'error'
 
     startOrStop = 'start' if charge else 'stop'
-    now = time.time()
     result = 'success'
 
     for vehicle in carApiVehicles:
@@ -858,7 +872,7 @@ def car_api_charge(charge):
         cmd = 'curl -s -m 10 -X POST -H "accept: application/json" -H "Authorization:Bearer ' + carApiBearerToken + \
             '" "https://owner-api.teslamotors.com/api/1/vehicles/' + \
             str(vehicle.ID) + '/command/charge_' + startOrStop + '"'
-        if(debugLevel >= 10):
+        if(debugLevel >= 8):
             print(time_now() + ': Car API cmd', cmd)
 
         apiResponseDict = {}
@@ -893,7 +907,7 @@ def car_api_charge(charge):
                 # anything about, so return generic 'error'.
                 result = 'error'
                 # Don't send another command to this vehicle for 10 mins.
-                vehicle.lastErrorTime = time.time()
+                vehicle.lastErrorTime = now
             elif(apiResponseDict['response']['result'] == False):
                 if(charge):
                     reason = apiResponseDict['response']['reason']
@@ -944,11 +958,11 @@ def car_api_charge(charge):
                                   startOrStop + ' car charging via Tesla car API.  Will try again later.' +
                                   "\nIf this error persists, please private message user CDragon at http://teslamotorsclub.com " \
                                   "with a copy of this error.")
-                            vehicle.lastErrorTime = time.time()
+                            vehicle.lastErrorTime = now
 
         except (KeyError, TypeError):
             print(time_now() + ': ERROR: Failed to ' + startOrStop + ' car charging via Tesla car API.  Will try again later.')
-            vehicle.lastErrorTime = time.time()
+            vehicle.lastErrorTime = now
 
     if(debugLevel >= 1 and carApiLastStartOrStopChargeTime == now):
         print(time_now() + ': Car API ' + startOrStop + ' charge result: ' + result)
@@ -986,12 +1000,20 @@ class CarApiVehicle:
         if(time.time() - self.lastErrorTime < 10*60):
             # It's been under 10 minutes since the car API generated an error
             # on this vehicle.  Return that car is not ready.
+            if(debugLevel >= 8):
+                print(time_now() + ': Vehicle ' + str(self.ID)
+                    + ' not ready because of recent lastErrorTime '
+                    + str(self.lastErrorTime))
             return False
 
         if(self.failedWakeAttempts == 0 and time.time() - self.lastWakeAttemptTime < 10*60):
             # Less than 10 minutes since we successfully woke this car.
             # It should still be awake.
             return True
+
+        if(debugLevel >= 8):
+            print(time_now() + ': Vehicle ' + str(self.ID)
+                + " not ready because it wasn't woken in the last 10 minutes.")
         return False
 
     def update_location(self):
