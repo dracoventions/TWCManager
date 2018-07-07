@@ -118,6 +118,7 @@ import traceback
 import sysv_ipc
 import json
 from datetime import datetime
+import threading
 
 
 ##########################
@@ -649,6 +650,8 @@ def car_api_ready(email = None, password = None):
            carApiVehicles
 
     now = time.time()
+    apiResponseDict = {}
+
     if(now - carApiLastErrorTime < 10*60):
         # It's been under 10 minutes since the car API generated an error.
         # To avoid hammering Tesla's API servers with bad requests and getting
@@ -662,12 +665,12 @@ def car_api_ready(email = None, password = None):
 
     # Tesla car API info comes from https://timdorr.docs.apiary.io/
     if(carApiBearerToken == '' or carApiTokenExpireTime - now < 30*24*60*60):
+        cmd = None
+        apiResponse = b''
+
         # If we don't have a bearer token or our refresh token will expire in
         # under 30 days, get a new bearer token.  Refresh tokens expire in 45
         # days when first issued, so we'll get a new token every 15 days.
-        cmd = None
-        apiResponse = b''
-        apiResponseDict = {}
         if(carApiRefreshToken != ''):
             cmd = 'curl -s -m 10 -X POST -H "accept: application/json" -H "Content-Type: application/json" -d \'' + \
                   json.dumps({'grant_type': 'refresh_token', \
@@ -698,8 +701,8 @@ def car_api_ready(email = None, password = None):
             pass
 
         try:
-            if(debugLevel >= 2):
-                print(time_now() + ': Car API auth response', apiResponseDict)
+            if(debugLevel >= 4):
+                print(time_now() + ': Car API auth response', apiResponseDict, '\n')
             carApiBearerToken = apiResponseDict['access_token']
             carApiRefreshToken = apiResponseDict['refresh_token']
             carApiTokenExpireTime = now + apiResponseDict['expires_in']
@@ -718,7 +721,8 @@ def car_api_ready(email = None, password = None):
 
     if(carApiBearerToken != ''):
         if(len(carApiVehicles) < 1):
-            cmd = 'curl -s -m 10 -H "accept: application/json" -H "Authorization:Bearer ' + carApiBearerToken + \
+            cmd = 'curl -s -m 10 -H "accept: application/json" -H "Authorization:Bearer ' + \
+                  carApiBearerToken + \
                   '" "https://owner-api.teslamotors.com/api/1/vehicles"'
             if(debugLevel >= 8):
                 print(time_now() + ': Car API cmd', cmd)
@@ -728,8 +732,8 @@ def car_api_ready(email = None, password = None):
                 pass
 
             try:
-                if(debugLevel >= 8):
-                    print(time_now() + ': Car API vehicle list', apiResponseDict)
+                if(debugLevel >= 4):
+                    print(time_now() + ': Car API vehicle list', apiResponseDict, '\n')
 
                 for i in range(0, apiResponseDict['count']):
                     carApiVehicles.append(CarApiVehicle(apiResponseDict['response'][i]['id']))
@@ -740,22 +744,34 @@ def car_api_ready(email = None, password = None):
 
         if(len(carApiVehicles) > 0):
             # Wake cars if needed
+            needSleep = False
             for vehicle in carApiVehicles:
                 if(vehicle.ready()):
                     continue
 
+                # When the first wake attempt fails, wait 30 seconds before the
+                # next attempt. A car in sleep mode will usually fail the first
+                # wake attempt, then often return that it's awake on the next
+                # attempt. Rarely, I've seen this return 'awake' on the first
+                # call even when the car has not been contacted in a long while.
+                # I don't know if that means it succeeds in waking it quickly
+                # sometimes, or if I just happen to contact it when it's already
+                # awake (it wakes itself to some extent every 10 mins, I think).
+                # If the next attempt fails, wait 1 minute. Gradually increase
+                # time between each attempt up to 20 mins after 30 failures.
                 delayNextWakeAttempt = 0
-                if(vehicle.failedWakeAttempts < 2):
-                    # Wait 1 minute between first 2 wake attempts
-                    delayNextWakeAttempt = 60;
-                elif(vehicle.failedWakeAttempts < 5):
+                if(vehicle.failedWakeAttempts <= 1):
+                    delayNextWakeAttempt = 30;
+                elif(vehicle.failedWakeAttempts <= 5):
+                    delayNextWakeAttempt = 1*60;
+                elif(vehicle.failedWakeAttempts <= 10):
                     delayNextWakeAttempt = 2*60;
-                elif(vehicle.failedWakeAttempts < 10):
+                elif(vehicle.failedWakeAttempts <= 20):
                     delayNextWakeAttempt = 5*60;
-                elif(vehicle.failedWakeAttempts < 20):
+                elif(vehicle.failedWakeAttempts <= 30):
                     delayNextWakeAttempt = 10*60;
                 else:
-                    delayNextWakeAttempt = 30*60;
+                    delayNextWakeAttempt = 20*60;
 
                 if(now - vehicle.lastWakeAttemptTime <= delayNextWakeAttempt):
                     if(debugLevel >= 10):
@@ -766,7 +782,8 @@ def car_api_ready(email = None, password = None):
                 # It's been delayNextWakeAttempt seconds since we last failed to wake
                 # the car, or it's never been woken.  Wake it.
                 vehicle.lastWakeAttemptTime = now
-                cmd = 'curl -s -m 10 -X POST -H "accept: application/json" -H "Authorization:Bearer ' + carApiBearerToken + \
+                cmd = 'curl -s -m 10 -X POST -H "accept: application/json" -H "Authorization:Bearer ' + \
+                      carApiBearerToken + \
                       '" "https://owner-api.teslamotors.com/api/1/vehicles/' + \
                       str(vehicle.ID) + '/wake_up"'
                 if(debugLevel >= 8):
@@ -778,14 +795,15 @@ def car_api_ready(email = None, password = None):
                     pass
 
                 try:
-                    if(debugLevel >= 7):
-                        print(time_now() + ': Car API wake car response', apiResponseDict)
+                    if(debugLevel >= 4):
+                        print(time_now() + ': Car API wake car response', apiResponseDict, '\n')
                     # Some possible responses:
                     # {'response': {'in_service': None, 'state': 'online', ...
                     # {'response': {'in_service': None, 'state': 'asleep', ...
 
                     if(apiResponseDict['response']['state'] == 'online'):
                         vehicle.failedWakeAttempts = 0
+                        needSleep = True
                     else:
                         vehicle.failedWakeAttempts += 1
                         if(debugLevel >= 1):
@@ -805,29 +823,41 @@ def car_api_ready(email = None, password = None):
 
     if(debugLevel >= 8):
         print(time_now() + ": car_api_ready returning True")
+
+    if(needSleep):
+        # If you send charge_start/stop less than 1 second after calling
+        # update_location(), the charge command usually returns:
+        #   {'response': {'result': False, 'reason': 'could_not_wake_buses'}}
+        # I'm not sure if the same problem exists when sending commands too
+        # quickly after we send wake_up.  I haven't seen a problem sending a
+        # command immediately, but it seems safest to sleep 5 seconds after
+        # waking before sending a command.
+        time.sleep(5);
+
     return True
 
 def car_api_charge(charge):
+    # Do not call this function directly.  Call by using background thread:
+    # backgroundTasksQueue.put({'cmd':'charge', 'charge':<True/False>})
     global debugLevel, carApiLastErrorTime, carApiVehicles, \
-           carApiLastStartOrStopChargeTime, carApiStopAskingToStartCharging, \
-           homeLat, homeLon
+           carApiLastStartOrStopChargeTime, homeLat, homeLon
 
     now = time.time()
-    if(charge and carApiStopAskingToStartCharging):
-        if(debugLevel >= 7):
-            print(time_now() + ': car_api_charge return because carApiStopAskingToStartCharging == True')
-        return 'stopasking'
-    elif(not charge):
-        carApiStopAskingToStartCharging = False
+    apiResponseDict = {}
+    if(not charge):
+        # Whenever we are going to tell vehicles to stop charging, set
+        # vehicle.stopAskingToStartCharging = False on all vehicles.
+        for vehicle in carApiVehicles:
+            vehicle.stopAskingToStartCharging = False
 
     if(now - carApiLastStartOrStopChargeTime < 60):
         # Don't start or stop more often than once a minute
-        if(debugLevel >= 7):
+        if(debugLevel >= 8):
             print(time_now() + ': car_api_charge return because under 60 sec since last carApiLastStartOrStopChargeTime')
         return 'error'
 
     if(car_api_ready() == False):
-        if(debugLevel >= 7):
+        if(debugLevel >= 8):
             print(time_now() + ': car_api_charge return because car_api_ready() == False')
         return 'error'
 
@@ -835,6 +865,12 @@ def car_api_charge(charge):
     result = 'success'
 
     for vehicle in carApiVehicles:
+        if(charge and vehicle.stopAskingToStartCharging):
+            if(debugLevel >= 8):
+                print(time_now() + ": Don't charge vehicle " + str(vehicle.ID)
+                      + " because vehicle.stopAskingToStartCharging == True")
+            continue
+
         if(vehicle.ready() == False):
             continue
 
@@ -844,6 +880,7 @@ def car_api_charge(charge):
         carApiLastStartOrStopChargeTime = now
 
         if(vehicle.update_location() == False):
+            result = 'error'
             continue
 
         if(homeLat == 10000):
@@ -869,108 +906,192 @@ def car_api_charge(charge):
                       ' is not at home.  Do not ' + startOrStop + ' charge.')
             continue
 
-        cmd = 'curl -s -m 10 -X POST -H "accept: application/json" -H "Authorization:Bearer ' + carApiBearerToken + \
-            '" "https://owner-api.teslamotors.com/api/1/vehicles/' + \
+        # If you send charge_start/stop less than 1 second after calling
+        # update_location(), the charge command usually returns:
+        #   {'response': {'result': False, 'reason': 'could_not_wake_buses'}}
+        # Waiting 2 seconds seems to consistently avoid the error, but let's
+        # wait 5 seconds in case of hardware differences between cars.
+        time.sleep(5)
+
+        cmd = 'curl -s -m 10 -X POST -H "accept: application/json" -H "Authorization:Bearer ' + \
+              carApiBearerToken + \
+              '" "https://owner-api.teslamotors.com/api/1/vehicles/' + \
             str(vehicle.ID) + '/command/charge_' + startOrStop + '"'
-        if(debugLevel >= 8):
-            print(time_now() + ': Car API cmd', cmd)
 
-        apiResponseDict = {}
-        try:
-            apiResponseDict = json.loads(run_process(cmd).decode('ascii'))
-        except json.decoder.JSONDecodeError:
-            pass
+        # Retry up to 3 times on certain errors.
+        for retryCount in range(0, 3):
+            if(debugLevel >= 8):
+                print(time_now() + ': Car API cmd', cmd)
 
-        try:
-            if(debugLevel >= 2):
-                print(time_now() + ': Car API ' + startOrStop + \
-                      ' charge response', apiResponseDict)
-            # Responses I've seen in apiResponseDict:
-            # Car is done charging:
-            #   {'response': {'result': False, 'reason': 'complete'}}
-            # Car wants to charge but may not actually be charging. Oddly, this
-            # is the state reported when car is not plugged in to a charger!
-            # It's also reported when plugged in but charger is not offering
-            # power or even when the car is in an error state and refuses to
-            # charge.
-            #   {'response': {'result': False, 'reason': 'charging'}}
-            # Car not reachable:
-            #   {'response': None, 'error_description': '', 'error': 'vehicle unavailable: {:error=>"vehicle unavailable:"}'}
-            # This weird error seems to happen randomly and re-trying a few
-            # seconds later often succeeds:
-            #   {'response': {'result': False, 'reason': 'could_not_wake_buses'}}
-            # Start or stop charging success:
-            #   {'response': {'result': True, 'reason': ''}}
-            if(apiResponseDict['response'] == None):
-                # This generally indicates a significant error like 'vehicle
-                # unavailable', but it's not something I think the caller can do
-                # anything about, so return generic 'error'.
-                result = 'error'
-                # Don't send another command to this vehicle for 10 mins.
-                vehicle.lastErrorTime = now
-            elif(apiResponseDict['response']['result'] == False):
-                if(charge):
-                    reason = apiResponseDict['response']['reason']
-                    if(reason == 'complete' or reason == 'charging'):
-                        # We asked the car to charge, but it responded that it
-                        # can't, either because it's reached target charge state
-                        # (reason == 'complete'), or it's already trying to charge
-                        # (reason == 'charging'). In these cases, it won't help to
-                        # keep asking it to charge, so set result = 'stopasking'.
-                        #
-                        # Remember, this only means at least one car in the list
-                        # wants us to stop asking and we don't know which car in the
-                        # list is connected to our TWC.
-                        #
-                        # Don't overwrite result != 'success' with 'stopasking'
-                        # because we don't want to stop asking if there was an error
-                        # asking at least one car in the list to start charging. For
-                        # the same reason, we don't set
-                        # carApiStopAskingToStartCharging = True unless we talk to
-                        # all cars and result still equals 'success'.
-                        #
-                        # Using the above method could cause a car that's out of
-                        # range of the API to prevent us from ever giving up on
-                        # sending start charge requests, but a non-success result
-                        # should also set carApiLastErrorTime which will at least
-                        # delay the next attempt for 10 minutes. Hitting the API
-                        # every 10 mins with a start charge probably won't bother
-                        # Tesla.
-                        if(result == 'success'):
-                            result = 'stopasking'
-                    else:
-                        # Car was unable to charge for some other reason, such
-                        # as 'could_not_wake_buses'.
-                        result = 'error'
-                        if(reason == 'could_not_wake_buses'):
-                            # Someone said that retrying the command a moment
-                            # after receiving 'could_not_wake_buses'
-                            # consistently made the command succeed. I don't
-                            # want to risk trying it once a second but we'll
-                            # try again in a minute because we set
-                            # carApiLastStartOrStopChargeTime to earlier.
-                            pass
+            try:
+                apiResponseDict = json.loads(run_process(cmd).decode('ascii'))
+            except json.decoder.JSONDecodeError:
+                pass
+
+            try:
+                if(debugLevel >= 4):
+                    print(time_now() + ': Car API ' + startOrStop + \
+                          ' charge response', apiResponseDict, '\n')
+                # Responses I've seen in apiResponseDict:
+                # Car is done charging:
+                #   {'response': {'result': False, 'reason': 'complete'}}
+                # Car wants to charge but may not actually be charging. Oddly, this
+                # is the state reported when car is not plugged in to a charger!
+                # It's also reported when plugged in but charger is not offering
+                # power or even when the car is in an error state and refuses to
+                # charge.
+                #   {'response': {'result': False, 'reason': 'charging'}}
+                # Car not reachable:
+                #   {'response': None, 'error_description': '', 'error': 'vehicle unavailable: {:error=>"vehicle unavailable:"}'}
+                # This weird error seems to happen randomly and re-trying a few
+                # seconds later often succeeds:
+                #   {'response': {'result': False, 'reason': 'could_not_wake_buses'}}
+                # Start or stop charging success:
+                #   {'response': {'result': True, 'reason': ''}}
+                if(apiResponseDict['response'] == None):
+                    # This generally indicates a significant error like 'vehicle
+                    # unavailable', but it's not something I think the caller can do
+                    # anything about, so return generic 'error'.
+                    result = 'error'
+                    # Don't send another command to this vehicle for 10 mins.
+                    vehicle.lastErrorTime = now
+                elif(apiResponseDict['response']['result'] == False):
+                    if(charge):
+                        reason = apiResponseDict['response']['reason']
+                        if(reason == 'complete' or reason == 'charging'):
+                            # We asked the car to charge, but it responded that
+                            # it can't, either because it's reached target
+                            # charge state (reason == 'complete'), or it's
+                            # already trying to charge (reason == 'charging').
+                            # In these cases, it won't help to keep asking it to
+                            # charge, so set vehicle.stopAskingToStartCharging =
+                            # True.
+                            #
+                            # Remember, this only means at least one car in the
+                            # list wants us to stop asking and we don't know
+                            # which car in the list is connected to our TWC.
+                            if(debugLevel >= 1):
+                                print(time_now() + ': Vehicle ' + str(vehicle.ID)
+                                      + ' is done charging or already trying to charge.  Stop asking to start charging.')
+                            vehicle.stopAskingToStartCharging = True
                         else:
-                            # Start or stop charge failed with an error I
-                            # haven't seen before, so wait 10 mins before trying
-                            # again.
-                            print(time_now() + ': ERROR "' + reason + '" when trying to ' +
-                                  startOrStop + ' car charging via Tesla car API.  Will try again later.' +
-                                  "\nIf this error persists, please private message user CDragon at http://teslamotorsclub.com " \
-                                  "with a copy of this error.")
-                            vehicle.lastErrorTime = now
+                            # Car was unable to charge for some other reason, such
+                            # as 'could_not_wake_buses'.
+                            result = 'error'
+                            if(reason == 'could_not_wake_buses'):
+                                # This error often happens if you call
+                                # charge_start too quickly after another command
+                                # like drive_state. Even if you delay 5 seconds
+                                # between the commands, this error still comes
+                                # up occasionally. Retrying often succeeds, so
+                                # wait 5 secs and retry.
+                                # If all retries fail, we'll try again in a
+                                # minute because we set
+                                # carApiLastStartOrStopChargeTime = now earlier.
+                                time.sleep(5)
+                                continue
+                            else:
+                                # Start or stop charge failed with an error I
+                                # haven't seen before, so wait 10 mins before trying
+                                # again.
+                                print(time_now() + ': ERROR "' + reason + '" when trying to ' +
+                                      startOrStop + ' car charging via Tesla car API.  Will try again later.' +
+                                      "\nIf this error persists, please private message user CDragon at http://teslamotorsclub.com " \
+                                      "with a copy of this error.")
+                                vehicle.lastErrorTime = now
 
-        except (KeyError, TypeError):
-            print(time_now() + ': ERROR: Failed to ' + startOrStop + ' car charging via Tesla car API.  Will try again later.')
-            vehicle.lastErrorTime = now
+            except (KeyError, TypeError):
+                print(time_now() + ': ERROR: Failed to ' + startOrStop + ' car charging via Tesla car API.  Will try again later.')
+                vehicle.lastErrorTime = now
+            break
 
     if(debugLevel >= 1 and carApiLastStartOrStopChargeTime == now):
         print(time_now() + ': Car API ' + startOrStop + ' charge result: ' + result)
 
-    if(result == 'stopasking'):
-        carApiStopAskingToStartCharging = True
+    #if(result == 'stopasking'):
+    #    carApiStopAskingToStartCharging = True
 
     return result
+
+def background_tasks_thread():
+    while True:
+        task = backgroundTasksQueue.get()
+
+        if(task['cmd'] == 'charge'):
+            # car_api_charge does nothing if it's been under 60 secs since it
+            # was last used so we shouldn't have to worry about calling this
+            # too frequently.
+            car_api_charge(task['charge'])
+        elif(task['cmd'] == 'checkGreenEnergy'):
+            check_green_energy()
+
+        # task_done() must be called to let the queue know the task is finished.
+        # backgroundTasksQueue.join() can then be used to block until all tasks
+        # in the queue are done.
+        backgroundTasksQueue.task_done()
+
+def check_green_energy():
+    global debugLevel, maxAmpsToDivideAmongSlaves, greenEnergyAmpsOffset, \
+           minAmpsPerTWC, backgroundTasksLock
+
+    # I check solar panel generation using an API exposed by The
+    # Energy Detective (TED). It's a piece of hardware available
+    # at http://www. theenergydetective.com
+    # You may also be able to find a way to query a solar system
+    # on the roof using an API provided by your solar installer.
+    # Most of those systems only update the amount of power the
+    # system is producing every 15 minutes at most, but that's
+    # fine for tweaking your car charging.
+    #
+    # In the worst case, you could skip finding realtime green
+    # energy data and simply direct the car to charge at certain
+    # rates at certain times of day that typically have certain
+    # levels of solar or wind generation. To do so, use the hour
+    # and min variables as demonstrated just above this line:
+    #   backgroundTasksQueue.put({'cmd':'checkGreenEnergy')
+    #
+    # The curl command used below can be used to communicate
+    # with almost any web API, even ones that require POST
+    # values or authentication. The -s option prevents curl from
+    # displaying download stats. -m 60 prevents the whole
+    # operation from taking over 60 seconds.
+    greenEnergyData = run_process('curl -s -m 60 "http://192.168.13.58/history/export.csv?T=1&D=0&M=1&C=1"')
+
+    # In case, greenEnergyData will contain something like this:
+    #   MTU, Time, Power, Cost, Voltage
+    #   Solar,11/11/2017 14:20:43,-2.957,-0.29,124.3
+    # The only part we care about is -2.957 which is negative
+    # kW currently being generated. When 0kW is generated, the
+    # negative disappears so we make it optional in the regex
+    # below.
+    m = re.search(b'^Solar,[^,]+,-?([^, ]+),', greenEnergyData, re.MULTILINE)
+    if(m):
+        solarW = int(float(m.group(1)) * 1000)
+
+        # Use backgroundTasksLock to prevent changing maxAmpsToDivideAmongSlaves
+        # if the main thread is in the middle of examining and later using
+        # that value.
+        backgroundTasksLock.acquire()
+
+        # Watts = Volts * Amps
+        # Car charges at 240 volts in North America so we figure
+        # out how many amps * 240 = solarW and limit the car to
+        # that many amps.
+        maxAmpsToDivideAmongSlaves = (solarW / 240) + \
+                                      greenEnergyAmpsOffset
+
+        if(debugLevel >= 1):
+            print("%s: Solar generating %dW so limit car charging to:\n" \
+                 "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
+                 (time_now(), solarW, (solarW / 240),
+                 greenEnergyAmpsOffset, maxAmpsToDivideAmongSlaves,
+                 minAmpsPerTWC))
+
+        backgroundTasksLock.release()
+    else:
+        print(time_now() +
+            " ERROR: Can't determine current solar generation from:\n" +
+            str(greenEnergyData))
 
 #
 # End functions
@@ -988,6 +1109,7 @@ class CarApiVehicle:
     failedWakeAttempts = 0
     lastWakeAttemptTime = 0
     lastErrorTime = 0
+    stopAskingToStartCharging = False
     lat = 10000
     lon = 10000
 
@@ -1006,14 +1128,16 @@ class CarApiVehicle:
                     + str(self.lastErrorTime))
             return False
 
-        if(self.failedWakeAttempts == 0 and time.time() - self.lastWakeAttemptTime < 10*60):
-            # Less than 10 minutes since we successfully woke this car.
-            # It should still be awake.
+        if(self.failedWakeAttempts == 0 and time.time() - self.lastWakeAttemptTime < 2*60):
+            # Less than 2 minutes since we successfully woke this car, so it
+            # should still be awake.  Tests on my car in energy saver mode show
+            # it returns to sleep state about two minutes after the last command
+            # was issued.  Times I've tested: 1:35, 1:57, 2:30
             return True
 
         if(debugLevel >= 8):
             print(time_now() + ': Vehicle ' + str(self.ID)
-                + " not ready because it wasn't woken in the last 10 minutes.")
+                + " not ready because it wasn't woken in the last 2 minutes.")
         return False
 
     def update_location(self):
@@ -1022,34 +1146,49 @@ class CarApiVehicle:
         if(self.ready() == False):
             return False
 
-        cmd = 'curl -s -m 10 -H "accept: application/json" -H "Authorization:Bearer ' + carApiBearerToken + \
+        apiResponseDict = {}
+
+        cmd = 'curl -s -m 10 -H "accept: application/json" -H "Authorization:Bearer ' + \
+              carApiBearerToken + \
               '" "https://owner-api.teslamotors.com/api/1/vehicles/' + \
               str(self.ID) + '/data_request/drive_state"'
-        if(debugLevel >= 8):
-            print(time_now() + ': Car API cmd', cmd)
-        try:
-            apiResponseDict = json.loads(run_process(cmd).decode('ascii'))
-            # Here's an odd error response I saw:
-            # {'response': {'reason': 'could_not_wake_buses', 'result': False}}
-            # This one is somewhat common:
-            # {'response': None, 'error': 'vehicle unavailable: {:error=>"vehicle unavailable:"}', 'error_description': ''}
-        except json.decoder.JSONDecodeError:
-            pass
 
-        try:
+        # Retry up to 3 times on certain errors.
+        for retryCount in range(0, 3):
             if(debugLevel >= 8):
-                print(time_now() + ': Car API vehicle drive state', apiResponseDict)
+                print(time_now() + ': Car API cmd', cmd)
+            try:
+                apiResponseDict = json.loads(run_process(cmd).decode('ascii'))
+                # This error can happen here as well:
+                #   {'response': {'reason': 'could_not_wake_buses', 'result': False}}
+                # This one is somewhat common:
+                #   {'response': None, 'error': 'vehicle unavailable: {:error=>"vehicle unavailable:"}', 'error_description': ''}
+            except json.decoder.JSONDecodeError:
+                pass
 
-            response = apiResponseDict['response']
-            self.lat = response['latitude']
-            self.lon = response['longitude']
-        except (KeyError, TypeError):
-            print(time_now() + ": ERROR: Can't get drive state of vehicle " + str(self.ID) + \
-                  ".  Will try again later.")
-            self.lastErrorTime = time.time()
-            return False
+            try:
+                if(debugLevel >= 4):
+                    print(time_now() + ': Car API vehicle GPS location', apiResponseDict, '\n')
 
-        return True
+                response = apiResponseDict['response']
+
+                # A successful call to drive_state will not contain a
+                # response['reason'], so we check if the 'reason' key exists.
+                if('reason' in response and response['reason'] == 'could_not_wake_buses'):
+                    # Retry after 5 seconds.  See notes in car_api_charge where
+                    # 'could_not_wake_buses' is handled.
+                    time.sleep(5)
+                    continue
+
+                self.lat = response['latitude']
+                self.lon = response['longitude']
+            except (KeyError, TypeError):
+                print(time_now() + ": ERROR: Can't get GPS location of vehicle " + str(self.ID) + \
+                      ".  Will try again later.")
+                self.lastErrorTime = time.time()
+                return False
+
+            return True
 
 
 #
@@ -1405,7 +1544,7 @@ class TWCSlave:
         #                          (20.00A). 01 byte indicates Master is plugged
         #                          in to a car.)
         global fakeTWCID, overrideMasterHeartbeatData, debugLevel, \
-               timeLastTx, carApiStopAskingToStartCharging
+               timeLastTx, carApiVehicles
 
         if(len(overrideMasterHeartbeatData) >= 7):
             self.masterHeartbeatData = overrideMasterHeartbeatData
@@ -1424,23 +1563,25 @@ class TWCSlave:
                 # them both from charging.  If the away vehicle is not currently
                 # charging, I'm not sure if this would prevent it from charging
                 # when next plugged in.
-                car_api_charge(False)
+                backgroundTasksQueue.put({'cmd':'charge', 'charge':False})
             elif(self.lastAmpsOffered >= 5.0 and self.reportedAmpsActual < 2.0
                  and self.reportedState != 0x02
             ):
                 # Car is not charging and is not reporting an error state, so
                 # try starting charge via car api.
-                car_api_charge(True)
-            elif(carApiStopAskingToStartCharging and self.reportedAmpsActual > 4.0):
-                # Car is successfully charging, so set
-                # carApiStopAskingToStartCharging to False such that if it ever
-                # stops charging without us calling car_api_charge(False), we'll
-                # try to start it charging again at least once. This probably
-                # isn't necessary but might prevent some unexpected case from
-                # never starting a charge. It also seems less confusing to see
-                # in the output that we always try to start API charging after
-                # the car stops taking a charge.
-                carApiStopAskingToStartCharging = False
+                backgroundTasksQueue.put({'cmd':'charge', 'charge':True})
+            elif(self.reportedAmpsActual > 4.0):
+                # At least one plugged in car is successfully charging. We don't
+                # know which car it is, so we must set
+                # vehicle.stopAskingToStartCharging = False on all vehicles such
+                # that if any vehicle is not charging without us calling
+                # car_api_charge(False), we'll try to start it charging again at
+                # least once. This probably isn't necessary but might prevent
+                # some unexpected case from never starting a charge. It also
+                # seems less confusing to see in the output that we always try
+                # to start API charging after the car stops taking a charge.
+                for vehicle in carApiVehicles:
+                    vehicle.stopAskingToStartCharging = False
 
         send_msg(bytearray(b'\xFB\xE0') + fakeTWCID + bytearray(self.TWCID)
                  + bytearray(self.masterHeartbeatData))
@@ -1552,6 +1693,8 @@ class TWCSlave:
             if(nonScheduledAmpsMax > -1):
                 maxAmpsToDivideAmongSlaves = nonScheduledAmpsMax
             elif(now - timeLastGreenEnergyCheck > 60):
+                timeLastGreenEnergyCheck = now
+
                 # Don't bother to check solar generation before 6am or after
                 # 8pm. Sunrise in most U.S. areas varies from a little before
                 # 6am in Jun to almost 7:30am in Nov before the clocks get set
@@ -1559,62 +1702,12 @@ class TWCSlave:
                 if(ltNow.tm_hour < 6 or ltNow.tm_hour >= 20):
                     maxAmpsToDivideAmongSlaves = 0
                 else:
-                    # I check solar panel generation using an API exposed by The
-                    # Energy Detective (TED). It's a piece of hardware available
-                    # at http://www. theenergydetective.com
-                    # You may also be able to find a way to query a solar system
-                    # on the roof using an API provided by your solar installer.
-                    # Most of those systems only update the amount of power the
-                    # system is producing every 15 minutes at most, but that's
-                    # fine for tweaking your car charging.
-                    #
-                    # In the worst case, you could skip finding realtime green
-                    # energy data and simply direct the car to charge at certain
-                    # rates at certain times of day that typically have certain
-                    # levels of solar or wind generation. To do so, use the hour
-                    # and min variables as demonstrated above.
-                    #
-                    # The curl command used below can be used to communicate
-                    # with almost any web API, even ones that require POST
-                    # values or authentication. The -s option prevents curl from
-                    # displaying download stats. -m 4 prevents the whole
-                    # operation from taking over 4 seconds. If your service
-                    # regularly takes a long time to respond, you'll have to
-                    # query it in a thread that sets a variable to be used here.
-                    # If we delay over 26ish seconds here, slave TWCs will
-                    # decide we've disappeared and stop charging.
-                    greenEnergyData = run_process('curl -s -m 4 "http://192.168.13.58/history/export.csv?T=1&D=0&M=1&C=1"')
+                    backgroundTasksQueue.put({'cmd':'checkGreenEnergy'})
 
-                    # In case, greenEnergyData will contain something like this:
-                    #   MTU, Time, Power, Cost, Voltage
-                    #   Solar,11/11/2017 14:20:43,-2.957,-0.29,124.3
-                    # The only part we care about is -2.957 which is negative
-                    # kW currently being generated. When 0kW is generated, the
-                    # negative disappears so we make it optional in the regex
-                    # below.
-                    m = re.search(b'^Solar,[^,]+,-?([^, ]+),', greenEnergyData, re.MULTILINE)
-                    if(m):
-                        solarW = int(float(m.group(1)) * 1000)
-
-                        # Watts = Volts * Amps
-                        # Car charges at 240 volts in North America so we figure
-                        # out how many amps * 240 = solarW and limit the car to
-                        # that many amps.
-                        maxAmpsToDivideAmongSlaves = (solarW / 240) + \
-                                                      greenEnergyAmpsOffset
-
-                        if(debugLevel >= 1):
-                            print("%s: Solar generating %dW so limit car charging to:\n" \
-                                 "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
-                                 (time_now(), solarW, (solarW / 240),
-                                 greenEnergyAmpsOffset, maxAmpsToDivideAmongSlaves,
-                                 minAmpsPerTWC))
-                    else:
-                        print(time_now() +
-                            " ERROR: Can't determine current solar generation from:\n" +
-                            str(greenEnergyData))
-
-                timeLastGreenEnergyCheck = now
+        # Use backgroundTasksLock to prevent the background thread from changing
+        # the value of maxAmpsToDivideAmongSlaves after we've checked the value
+        # is safe to use but before we've used it.
+        backgroundTasksLock.acquire()
 
         if(maxAmpsToDivideAmongSlaves > wiringMaxAmpsAllTWCs):
             # Never tell the slaves to draw more amps than the physical charger
@@ -1629,6 +1722,8 @@ class TWCSlave:
         # Allocate this slave a fraction of maxAmpsToDivideAmongSlaves divided
         # by the number of slave TWCs on the network.
         desiredAmpsOffered = int(maxAmpsToDivideAmongSlaves / len(slaveTWCRoundRobin))
+
+        backgroundTasksLock.release()
 
         minAmpsToOffer = minAmpsPerTWC
         if(self.minAmpsTWCSupports > minAmpsToOffer):
@@ -2009,10 +2104,12 @@ carApiBearerToken = ''
 carApiRefreshToken = ''
 carApiTokenExpireTime = time.time()
 carApiLastStartOrStopChargeTime = 0
-carApiStopAskingToStartCharging = False
 carApiVehicles = []
 homeLat = 10000
 homeLon = 10000
+
+backgroundTasksQueue = queue.Queue()
+backgroundTasksLock = threading.Lock()
 
 ser = None
 ser = serial.Serial(rs485Adapter, baud, timeout=0)
@@ -2030,7 +2127,14 @@ ser = serial.Serial(rs485Adapter, baud, timeout=0)
 load_settings()
 
 
-################################################################################
+# Create a background thread to handle tasks that take too long on the main
+# thread.  For a primer on threads in Python, see:
+# http://www.laurentluce.com/posts/python-threads-synchronization-locks-rlocks-semaphores-conditions-events-and-queues/
+backgroundTasksThread = threading.Thread(target=background_tasks_thread, args = ())
+backgroundTasksThread.daemon = True
+backgroundTasksThread.start()
+
+
 # Create an IPC (Interprocess Communication) message queue that we can
 # periodically check to respond to queries from the TWCManager web interface.
 #
@@ -2077,7 +2181,6 @@ if(webIPCqueue == None):
 # ones you didn't create or you may crash another process.
 # Find more details in IPC here:
 # http://www.onlamp.com/pub/a/php/2004/05/13/shared_memory.html
-################################################################################
 
 
 print("TWC Manager starting as fake %s with id %02X%02X and sign %02X" \
@@ -2298,8 +2401,7 @@ while True:
                     webResponseMsg = ('time=' + str(now) + ', fakeMaster='
                         + str(fakeMaster) + '\n')
                     webResponseMsg += (
-                        'carApiStopAskingToStartCharging=' + str(carApiStopAskingToStartCharging)
-                        + '\ncarApiLastStartOrStopChargeTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carApiLastStartOrStopChargeTime)))
+                        'carApiLastStartOrStopChargeTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carApiLastStartOrStopChargeTime)))
                         + '\ncarApiLastErrorTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carApiLastErrorTime)))
                         + '\ncarApiTokenExpireTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carApiTokenExpireTime)))
                         + '\n'
@@ -2955,7 +3057,7 @@ while True:
                     print(time_now() + ": ***UNKNOWN MESSAGE from master: " + hex_str(msg))
 
     except KeyboardInterrupt:
-        print("Exiting...")
+        print("Exiting after background tasks complete...")
         break
 
     except Exception as e:
@@ -2966,6 +3068,12 @@ while True:
         # Sleep 5 seconds so the user might see the error.
         time.sleep(5)
 
+
+# Wait for background tasks thread to finish all tasks.
+# Note that there is no such thing as backgroundTasksThread.stop(). Because we
+# set the thread type to daemon, it will be automatically killed when we exit
+# this program.
+backgroundTasksQueue.join()
 
 ser.close()
 
