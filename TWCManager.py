@@ -1017,6 +1017,8 @@ def car_api_charge(charge):
     return result
 
 def background_tasks_thread():
+    global backgroundTasksQueue, carApiLastErrorTime
+
     while True:
         task = backgroundTasksQueue.get()
 
@@ -1025,6 +1027,9 @@ def background_tasks_thread():
             # was last used so we shouldn't have to worry about calling this
             # too frequently.
             car_api_charge(task['charge'])
+        elif(task['cmd'] == 'carApiEmailPassword'):
+            carApiLastErrorTime = 0
+            car_api_ready(task['email'], task['password'])
         elif(task['cmd'] == 'checkGreenEnergy'):
             check_green_energy()
 
@@ -2361,7 +2366,8 @@ while True:
                     m = re.search(b'([0-9a-fA-F]+)', webMsg[11:len(webMsg)], re.MULTILINE)
                     if(m):
                         twcMsg = trim_pad(bytearray.fromhex(m.group(1).decode('ascii')),
-                                          15 if slaveTWCRoundRobin[0].protocolVersion == 2 else 13)
+                                          15 if len(slaveTWCRoundRobin) == 0 \
+                                          or slaveTWCRoundRobin[0].protocolVersion == 2 else 13)
                         if((twcMsg[0:2] == b'\xFC\x19') or (twcMsg[0:2] == b'\xFC\x1A')):
                             print("\n*** ERROR: Web interface requested sending command:\n"
                                   + hex_str(twcMsg)
@@ -2381,8 +2387,9 @@ while True:
                 elif(webMsg[0:20] == b'carApiEmailPassword='):
                     m = re.search(b'([^\n]+)\n([^\n]+)', webMsg[20:len(webMsg)], re.MULTILINE)
                     if(m):
-                        carApiLastErrorTime = 0
-                        car_api_ready(m.group(1).decode('ascii'), m.group(2).decode('ascii'))
+                        backgroundTasksQueue.put({'cmd':'carApiEmailPassword',
+                                                  'email':m.group(1).decode('ascii'),
+                                                  'password':m.group(2).decode('ascii')})
                 elif(webMsg[0:23] == b'setMasterHeartbeatData='):
                     m = re.search(b'([0-9a-fA-F]*)', webMsg[23:len(webMsg)], re.MULTILINE)
                     if(m):
@@ -2565,8 +2572,9 @@ while True:
             # repeated message like master or slave linkready, heartbeat, or
             # voltage/kWh report.
             if(lastTWCResponseMsg == b''
-               and msg[0:2] != b'\xFB\xE0' and msg[0:2] != b'\xFC\xE1'
-               and msg[0:2] != b'\xFB\xE2' and msg[0:2] != b'\xFB\xEB'
+               and msg[0:2] != b'\xFB\xE0' and msg[0:2] != b'\xFD\xE0'
+               and msg[0:2] != b'\xFC\xE1' and msg[0:2] != b'\xFB\xE2'
+               and msg[0:2] != b'\xFD\xE2' and msg[0:2] != b'\xFB\xEB'
                and msg[0:2] != b'\xFD\xEB' and msg[0:2] != b'\xFD\xE0'
             ):
                 lastTWCResponseMsg = msg

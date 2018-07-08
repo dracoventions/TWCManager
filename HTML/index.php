@@ -113,6 +113,8 @@
             <script>document.title = "TWCSendMsg";</script>
             <p>
             <a href="index.php?sendTWCMsg=FB1B&submit=1">Get firmware version</a>
+            | <a href="index.php?sendTWCMsg=FB19&submit=1">Get (S)TSN (serial number)</a>
+            | <a href="index.php?sendTWCMsg=FB1A&submit=1">Get model</a>
             | <a href="index.php?sendTWCMsg=FCE1777766&submit=1">Master Linkready1</a>
             | <a href="index.php?sendTWCMsg=FBE2777766&submit=1">Master Linkready2</a>
             </p>
@@ -126,14 +128,61 @@
                 // gets no response because we happened to send it at the same
                 // time another message was sent or received, in which case both
                 // messages get corrupted.
-                sleep(2);
+                sleep(3);
                 if(substr($_REQUEST['sendTWCMsg'], 0, 4) == "FCA1") {
                     // FCA1 will silence TWC for ~5 seconds.  Wait that long
                     // before looking for a response.
                     sleep(5);
                 }
                 $response = ipcQuery('getLastTWCMsgResponse');
-                print '<p>Response: ' . $response . '</p>';
+                print '<p>Response: <strong>' . $response . '</strong></p>';
+                if(substr($response, 0, 5) == "FD 19") {
+                    $serialHexAry = explode(' ', substr($response, 6, strlen($response) - 6 - 3));
+                    $stsn = '';
+                    foreach($serialHexAry as $value) {
+                        $ascii = hexdec($value);
+                        if($ascii > 0 && $ascii < 0xFF) {
+                            $stsn .= chr($ascii);
+                        }
+                    }
+
+                    // I originally theorized substr($stsn, 1, 2) is the year of
+                    // manufacture, while substr($stsn, 3, 1) represent the
+                    // 'half month' of manufacture. So substr($stsn, 3, 1) = 0 =
+                    // 1/1, 1 = 1/15, 2 = 2/1, etc. Later, user greenjb reported
+                    // an (S)TSN starting with A18D. D = 7/15, but that's after
+                    // his first post on 7/1/18 saying his TWC was already set
+                    // up. Interpreting as 14-day periods instead of half-months
+                    // makes 0 = 1/1, 1 = 1/15, 2 = 1/29, D = 7/2, which is
+                    // still too late. So, maybe 0 is not used such that 1 =
+                    // 1/1, 2 = 1/15, D = 6/18. That still doesn't give much
+                    // time to ship and install after manufacture, but it's my
+                    // best guess.  This dating system theory fits with about
+                    // five other (S)TSNs I've seen, though I only know the
+                    // rough date of delivery for most of them.
+                    $day = ord(substr($stsn, 3, 1)) - 0x30;
+                    if($day > 9) {
+                        $day -= 7;
+                    }
+                    $day = ($day - 1) * 14;
+                    $year = intval('20'.substr($stsn, 1, 2));
+                    $date = DateTime::createFromFormat('Y z' , $year . ' ' . $day);
+                    print '<p>Decoded response:<br>(S)TSN: <strong>' . $stsn . '</strong> (manufactured ~'
+                        . $date->format('M jS Y') . ', TWCID '
+                        . substr($stsn, 7, 4) . ')</p>';
+                }
+                else if(substr($response, 0, 5) == "FD 1A") {
+                    $serialHexAry = explode(' ', substr($response, 6, strlen($response) - 6 - 3));
+                    $model = '';
+                    foreach($serialHexAry as $value) {
+                        $ascii = hexdec($value);
+                        if($ascii > 0 && $ascii < 0xFF) {
+                            $model .= chr($ascii);
+                        }
+                    }
+
+                    print '<p>Decoded response:<br>Model: <strong>' . $model . '</strong></p>';
+                }
             }
             ?>
             <p>
@@ -472,6 +521,13 @@
                     again if no cars are connected to this charger for over 45 days.
                 </p>
                 <p>
+                <?php
+                if(@$_REQUEST['email'] != '' || @$_REQUEST['password'] != '') {
+                    // An email or password were entered, but not authorized
+                    // by car API, so presumably they were wrong.
+                    print '<p style="color:#bb0000; font-weight:bold;">Incorrect email or password.</p>';
+                }
+                ?>
                 Email: <input type="text" name="email" value="<?php print htmlspecialchars(@$_REQUEST['email'])?>"><br>
                 Password: <input type="password" name="password"><br>
                 <input type="submit" name="submit" value="Submit">
