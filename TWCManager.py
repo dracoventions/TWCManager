@@ -132,7 +132,7 @@ import threading
 # parameter below.
 # If you're using a non-USB adapter like an RS485 shield, the value may need to
 # be something like '/dev/serial0'.
-rs485Adapter = '/dev/pts/2'
+rs485Adapter = '/dev/ttyUSB0'
 
 # Set wiringMaxAmpsAllTWCs to the maximum number of amps your charger wiring
 # can handle. I default this to a low 6A which should be safe with the minimum
@@ -216,7 +216,7 @@ greenEnergyAmpsOffset = 0
 # 9 includes raw RS-485 messages transmitted and received (2-3 per sec)
 # 10 is all info.
 # 11 is more than all info.  ;)
-debugLevel = 1
+debugLevel = 4
 
 # Choose whether to display milliseconds after time on each line of debug info.
 displayMilliseconds = False
@@ -2162,7 +2162,7 @@ backgroundTasksThread.start()
 # If you can't get this to work, you can also set key = <some arbitrary number>
 # and in the web interface, use the same arbitrary number. While that could
 # conflict with another process, it's very unlikely to.
-webIPCkey = 12321 #sysv_ipc.ftok(re.sub(r'/[^/]+$', r'/', __file__), ord('T'), True)
+webIPCkey = sysv_ipc.ftok(re.sub(r'/[^/]+$', r'/', __file__), ord('T'), True)
 
 # Use the key to create a message queue with read/write access for all users.
 webIPCqueue = sysv_ipc.MessageQueue(webIPCkey, sysv_ipc.IPC_CREAT, 0o666)
