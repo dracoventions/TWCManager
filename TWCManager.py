@@ -644,7 +644,7 @@ def is_slave_total_power_unsafe():
     return 0
 
 
-def car_api_ready(email = None, password = None):
+def car_api_ready(email = None, password = None, charge = None):
     global debugLevel, carApiLastErrorTime, \
            carApiBearerToken, carApiRefreshToken, carApiTokenExpireTime, \
            carApiVehicles
@@ -746,6 +746,12 @@ def car_api_ready(email = None, password = None):
             # Wake cars if needed
             needSleep = False
             for vehicle in carApiVehicles:
+                if(charge == True and vehicle.stopAskingToStartCharging):
+                    if(debugLevel >= 8):
+                        print(time_now() + ": Don't charge vehicle " + str(vehicle.ID)
+                              + " because vehicle.stopAskingToStartCharging == True")
+                    continue
+
                 if(vehicle.ready()):
                     continue
 
@@ -856,7 +862,7 @@ def car_api_charge(charge):
             print(time_now() + ': car_api_charge return because under 60 sec since last carApiLastStartOrStopChargeTime')
         return 'error'
 
-    if(car_api_ready() == False):
+    if(car_api_ready(charge = charge) == False):
         if(debugLevel >= 8):
             print(time_now() + ': car_api_charge return because car_api_ready() == False')
         return 'error'
@@ -1007,9 +1013,6 @@ def car_api_charge(charge):
 
     if(debugLevel >= 1 and carApiLastStartOrStopChargeTime == now):
         print(time_now() + ': Car API ' + startOrStop + ' charge result: ' + result)
-
-    #if(result == 'stopasking'):
-    #    carApiStopAskingToStartCharging = True
 
     return result
 
