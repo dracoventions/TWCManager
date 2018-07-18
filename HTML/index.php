@@ -151,20 +151,22 @@
                     // 'half month' of manufacture. So substr($stsn, 3, 1) = 0 =
                     // 1/1, 1 = 1/15, 2 = 2/1, etc. Later, user greenjb reported
                     // an (S)TSN starting with A18D. D = 7/15, but that's after
-                    // his first post on 7/1/18 saying his TWC was already set
-                    // up. Interpreting as 14-day periods instead of half-months
-                    // makes 0 = 1/1, 1 = 1/15, 2 = 1/29, D = 7/2, which is
-                    // still too late. So, maybe 0 is not used such that 1 =
-                    // 1/1, 2 = 1/15, D = 6/18. That still doesn't give much
-                    // time to ship and install after manufacture, but it's my
-                    // best guess.  This dating system theory fits with about
-                    // five other (S)TSNs I've seen, though I only know the
-                    // rough date of delivery for most of them.
-                    $day = ord(substr($stsn, 3, 1)) - 0x30;
-                    if($day > 9) {
-                        $day -= 7;
-                    }
-                    $day = ($day - 1) * 14;
+                    // his delivery date of 6/27. Interpreting as 14-day periods
+                    // instead of half-months makes 0 = 1/1, 1 = 1/15, 2 = 1/29,
+                    // D = 7/2, which is still too late.
+                    //
+                    // So, maybe 0 is not used at all, which makes 1 = 1/1, 2 =
+                    // 1/15, D = 6/18. It seems unlikely that it was
+                    // manufactured and delivered in 9 days, but not impossible
+                    // if Tesla also has a factory making them in the EU (do
+                    // they?). I then realized that 365 days in a year / 14 day
+                    // periods = 26.07. Since there are 26 letters between A-Z,
+                    // it seems most likely that A=1/1 instead of 0 = 1/1. Out
+                    // of 6 TSNs reported so far, none have had 0-9 in them. I'm
+                    // going with that theory for now. That means A18D was
+                    // manufactured 2/12/18.
+                    $day = ord(substr($stsn, 3, 1)) - 0x41;
+                    $day *= 14;
                     $year = intval('20'.substr($stsn, 1, 2));
                     $date = DateTime::createFromFormat('Y z' , $year . ' ' . $day);
                     print '<p>Decoded response:<br>(S)TSN: <strong>' . $stsn . '</strong> (manufactured ~'
@@ -371,18 +373,24 @@
                 }
 
                 if($twcModelMaxAmps < 40) {
-                    // The last TWC in the list reported supporting under 40 total amps.
-                    // Assume this is a 32A EU TWC and offer appropriate values.  You can
-                    // add or remove values, just make sure they are whole numbers between 5
-                    // and $twcModelMaxAmps.
+                    // The last TWC in the list reported supporting under 40
+                    // total amps. Assume this is a 32A EU TWC and offer
+                    // appropriate values. You can add or remove values, just
+                    // make sure they are whole numbers between 5 and
+                    // $twcModelMaxAmps.
+                    // Nietschy pointed out that his car was limited to 16A by
+                    // onboard chargers, but setting the TWC to 16A leads to
+                    // 15.7A actual usage.  When set to 17A, the car is able to
+                    // draw a little more power, so we offer 17A instead of 16A
+                    // below.
                     $use24HourTime = true;
                     $aryStandardAmps = array(
                                             '6A' => '6',
                                             '8A' => '8',
                                             '10A' => '10',
                                             '13A' => '13',
-                                            '16A' => '16',
-                                            '20A' => '20',
+                                            '17A' => '17',
+                                            '21A' => '21',
                                             '25A' => '25',
                                             '32A' => '32',
                                         );
