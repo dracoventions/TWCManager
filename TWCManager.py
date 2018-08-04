@@ -1051,7 +1051,7 @@ def car_api_charge(charge):
            or abs(homeLon - vehicle.lon) > 0.00548):
             # Vehicle is not at home, so don't change its charge state.
             if(debugLevel >= 1):
-                print(time_now() + ': Vehicle ID ' + str(self.ID) +
+                print(time_now() + ': Vehicle ID ' + str(vehicle.ID) +
                       ' is not at home.  Do not ' + startOrStop + ' charge.')
             continue
 
