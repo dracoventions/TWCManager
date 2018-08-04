@@ -650,18 +650,19 @@ def is_slave_total_power_unsafe():
 
 
 def car_api_available(email = None, password = None, charge = None):
-    global debugLevel, carApiLastErrorTime, \
-           carApiBearerToken, carApiRefreshToken, carApiTokenExpireTime, \
-           carApiVehicles
+    global debugLevel, carApiLastErrorTime, carApiErrorRetryMins, \
+           carApiKnownErrors, carApiBearerToken, carApiRefreshToken, \
+           carApiTokenExpireTime, carApiVehicles
 
     now = time.time()
     apiResponseDict = {}
 
-    if(now - carApiLastErrorTime < 10*60):
-        # It's been under 10 minutes since the car API generated an error. To
-        # keep strain off Tesla's API servers, wait 10 mins till we try again.
-        # This delay could be reduced if you feel the need. It's mostly here to
-        # deal with unexpected errors that are hopefully transient.
+    if(now - carApiLastErrorTime < carApiErrorRetryMins*60):
+        # It's been under carApiErrorRetryMins minutes since the car API
+        # generated an error. To keep strain off Tesla's API servers, wait
+        # carApiErrorRetryMins mins till we try again. This delay could be
+        # reduced if you feel the need. It's mostly here to deal with unexpected
+        # errors that are hopefully transient.
         # https://teslamotorsclub.com/tmc/threads/model-s-rest-api.13410/page-114#post-2732052
         # says he tested hammering the servers with requests as fast as possible
         # and was automatically blacklisted after 2 minutes. Waiting 30 mins was
@@ -670,7 +671,7 @@ def car_api_available(email = None, password = None, charge = None):
         # automatically.
         if(debugLevel >= 11):
             print(time_now() + ': Car API disabled for ' +
-                  str(int(10*60 - (now - carApiLastErrorTime))) +
+                  str(int(carApiErrorRetryMins*60 - (now - carApiLastErrorTime))) +
                   ' more seconds due to recent error.')
         return False
 
@@ -752,7 +753,8 @@ def car_api_available(email = None, password = None, charge = None):
                 # This catches cases like trying to access
                 # apiResponseDict['response'] when 'response' doesn't exist in
                 # apiResponseDict.
-                print(time_now() + ": ERROR: Can't get list of vehicles via Tesla car API.  Will try again in 10 minutes.")
+                print(time_now() + ": ERROR: Can't get list of vehicles via Tesla car API.  Will try again in "
+                      + str(carApiErrorRetryMins) + " minutes.")
                 carApiLastErrorTime = now
                 return False
 
@@ -766,12 +768,14 @@ def car_api_available(email = None, password = None, charge = None):
                               + " because vehicle.stopAskingToStartCharging == True")
                     continue
 
-                if(now - vehicle.lastErrorTime < 10*60):
-                    # It's been under 10 minutes since the car API generated an
-                    # error on this vehicle. Don't send it more commands yet.
+                if(now - vehicle.lastErrorTime < carApiErrorRetryMins*60):
+                    # It's been under carApiErrorRetryMins minutes since the car
+                    # API generated an error on this vehicle. Don't send it more
+                    # commands yet.
                     if(debugLevel >= 8):
                         print(time_now() + ": Don't send commands to vehicle " + str(vehicle.ID)
-                              + " because it returned an error in the last 10 minutes.")
+                              + " because it returned an error in the last "
+                              + str(carApiErrorRetryMins) + " minutes.")
                     continue
 
                 if(vehicle.ready()):
@@ -906,11 +910,19 @@ def car_api_available(email = None, password = None, charge = None):
                         if(now - vehicle.firstWakeAttemptTime <= 60*60):
                             # We've tried to wake the car for less than an
                             # hour.
-                            if('error' in apiResponseDict
-                            and apiResponseDict['error'] == 'upstream internal error'):
-                                # I see this error often enough that I think it's
-                                # worth re-trying in 1 minute rather than waiting 5
-                                # minutes for retry in the standard error handler.
+                            foundKnownError = False
+                            if('error' in apiResponseDict):
+                                error = apiResponseDict['error']
+                                for knownError in carApiKnownErrors:
+                                    if(knownError == error[0:len(knownError)]):
+                                        foundKnownError = True
+                                        break
+
+                            if(foundKnownError):
+                                # I see these errors often enough that I think
+                                # it's worth re-trying in 1 minute rather than
+                                # waiting 5 minutes for retry in the standard
+                                # error handler.
                                 vehicle.delayNextWakeAttempt = 60;
                             else:
                                 # We're in an unexpected state. This could be caused
@@ -946,7 +958,7 @@ def car_api_available(email = None, password = None, charge = None):
                           ((now - vehicle.firstWakeAttemptTime) / 60 / 60),
                           str(apiResponseDict)))
 
-    if(now - carApiLastErrorTime < 10*60 or carApiBearerToken == ''):
+    if(now - carApiLastErrorTime < carApiErrorRetryMins*60 or carApiBearerToken == ''):
         if(debugLevel >= 8):
             print(time_now() + ": car_api_available returning False because of recent carApiLasterrorTime "
                 + str(now - carApiLastErrorTime) + " or empty carApiBearerToken '"
@@ -975,8 +987,9 @@ def car_api_available(email = None, password = None, charge = None):
 def car_api_charge(charge):
     # Do not call this function directly.  Call by using background thread:
     # queue_background_task({'cmd':'charge', 'charge':<True/False>})
-    global debugLevel, carApiLastErrorTime, carApiVehicles, \
-           carApiLastStartOrStopChargeTime, homeLat, homeLon
+    global debugLevel, carApiLastErrorTime, carApiErrorRetryMins, \
+           carApiKnownErrors, carApiVehicles, carApiLastStartOrStopChargeTime, \
+           homeLat, homeLon
 
     now = time.time()
     apiResponseDict = {}
@@ -1038,7 +1051,7 @@ def car_api_charge(charge):
            or abs(homeLon - vehicle.lon) > 0.00548):
             # Vehicle is not at home, so don't change its charge state.
             if(debugLevel >= 1):
-                print(time_now() + ': Vehicle ID ' + str(self.ID) +
+                print(time_now() + ': Vehicle ID ' + str(vehicle.ID) +
                       ' is not at home.  Do not ' + startOrStop + ' charge.')
             continue
 
@@ -1082,27 +1095,34 @@ def car_api_charge(charge):
                 # This weird error seems to happen randomly and re-trying a few
                 # seconds later often succeeds:
                 #   {'response': {'result': False, 'reason': 'could_not_wake_buses'}}
-                # I've seen this once on charge_start and once on drive_state:
+                # I've seen this a few times on wake_up, charge_start, and drive_state:
                 #   {'error': 'upstream internal error', 'response': None, 'error_description': ''}
+                # I've seen this once on wake_up:
+                #   {'error': 'operation_timedout for txid `4853e3ad74de12733f8cc957c9f60040`}', 'response': None, 'error_description': ''}
                 # Start or stop charging success:
                 #   {'response': {'result': True, 'reason': ''}}
                 if(apiResponseDict['response'] == None):
-                    if('error' in apiResponseDict
-                    and apiResponseDict['error'] == 'upstream internal error'):
-                        # I see this error often enough that I think it's worth
-                        # re-trying in 1 minute rather than waiting 10 minutes
-                        # for retry in the standard error handler.
-                        time.sleep(60)
-                        if(debugLevel >= 1):
-                            print(time_now() + ": Car API returned 'upstream internal error' "
-                                  "when trying to start charging.  Try again in 1 minute.")
-                        continue
+                    if('error' in apiResponseDict):
+                        error = apiResponseDict['error']
+                        for knownError in carApiKnownErrors:
+                            if(knownError == error[0:len(knownError)]):
+                                # I see these errors often enough that I think
+                                # it's worth re-trying in 1 minute rather than
+                                # waiting carApiErrorRetryMins minutes for retry
+                                # in the standard error handler.
+                                if(debugLevel >= 1):
+                                    print(time_now() + ": Car API returned '"
+                                          + error
+                                          + "' when trying to start charging.  Try again in 1 minute.")
+                                time.sleep(60)
+                                continue
 
                     # This generally indicates a significant error like 'vehicle
                     # unavailable', but it's not something I think the caller can do
                     # anything about, so return generic 'error'.
                     result = 'error'
-                    # Don't send another command to this vehicle for 10 mins.
+                    # Don't send another command to this vehicle for
+                    # carApiErrorRetryMins mins.
                     vehicle.lastErrorTime = now
                 elif(apiResponseDict['response']['result'] == False):
                     if(charge):
@@ -1141,8 +1161,8 @@ def car_api_charge(charge):
                                 continue
                             else:
                                 # Start or stop charge failed with an error I
-                                # haven't seen before, so wait 10 mins before trying
-                                # again.
+                                # haven't seen before, so wait
+                                # carApiErrorRetryMins mins before trying again.
                                 print(time_now() + ': ERROR "' + reason + '" when trying to ' +
                                       startOrStop + ' car charging via Tesla car API.  Will try again later.' +
                                       "\nIf this error persists, please private message user CDragon at http://teslamotorsclub.com " \
@@ -1297,11 +1317,11 @@ class CarApiVehicle:
         self.ID = ID
 
     def ready(self):
-        global carApiLastErrorTime
+        global carApiLastErrorTime, carApiErrorRetryMins
 
-        if(time.time() - self.lastErrorTime < 10*60):
-            # It's been under 10 minutes since the car API generated an error
-            # on this vehicle.  Return that car is not ready.
+        if(time.time() - self.lastErrorTime < carApiErrorRetryMins*60):
+            # It's been under carApiErrorRetryMins minutes since the car API
+            # generated an error on this vehicle. Return that car is not ready.
             if(debugLevel >= 8):
                 print(time_now() + ': Vehicle ' + str(self.ID)
                     + ' not ready because of recent lastErrorTime '
@@ -1321,7 +1341,7 @@ class CarApiVehicle:
         return False
 
     def update_location(self):
-        global carApiLastErrorTime
+        global carApiLastErrorTime, carApiKnownErrors
 
         if(self.ready() == False):
             return False
@@ -1351,15 +1371,19 @@ class CarApiVehicle:
                     print(time_now() + ': Car API vehicle GPS location', apiResponseDict, '\n')
 
                 if('error' in apiResponseDict):
-                    if(apiResponseDict['error'] == 'upstream internal error'):
-                        # I see this error often enough that I think it's worth
-                        # re-trying in 1 minute rather than waiting 10 minutes
-                        # for retry in the standard error handler.
-                        time.sleep(60)
-                        if(debugLevel >= 1):
-                            print(time_now() + ": Car API returned 'upstream internal error' "
-                                  "when trying to get GPS location.  Try again in 1 minute.")
-                        continue
+                    error = apiResponseDict['error']
+                    for knownError in carApiKnownErrors:
+                        if(knownError == error[0:len(knownError)]):
+                            # I see these errors often enough that I think
+                            # it's worth re-trying in 1 minute rather than
+                            # waiting carApiErrorRetryMins minutes for retry
+                            # in the standard error handler.
+                            if(debugLevel >= 1):
+                                print(time_now() + ": Car API returned '"
+                                      + error
+                                      + "' when trying to get GPS location.  Try again in 1 minute.")
+                            time.sleep(60)
+                            continue
 
                 response = apiResponseDict['response']
 
@@ -2300,6 +2324,8 @@ carApiRefreshToken = ''
 carApiTokenExpireTime = time.time()
 carApiLastStartOrStopChargeTime = 0
 carApiVehicles = []
+carApiKnownErrors = ['upstream internal error', 'operation_timedout']
+carApiErrorRetryMins = 10
 homeLat = 10000
 homeLon = 10000
 
@@ -2749,7 +2775,7 @@ while True:
         if(msgLen >= 16):
             msg = unescape_msg(msg, msgLen)
             # Set msgLen = 0 at start so we don't have to do it on errors below.
-            # length($msg) now contains the unescaped message length.
+            # len($msg) now contains the unescaped message length.
             msgLen = 0
 
             msgRxCount += 1

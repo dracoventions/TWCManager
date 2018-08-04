@@ -168,9 +168,12 @@
                     $day = ord(substr($stsn, 3, 1)) - 0x41;
                     $day *= 14;
                     $year = intval('20'.substr($stsn, 1, 2));
-                    $date = DateTime::createFromFormat('Y z' , $year . ' ' . $day);
-                    print '<p>Decoded response:<br>(S)TSN: <strong>' . $stsn . '</strong> (manufactured ~'
-                        . $date->format('M jS Y') . ', TWCID '
+                    $dateStart = DateTime::createFromFormat('Y z' , $year . ' ' . $day);
+                    $dateEnd = DateTime::createFromFormat('Y z' , $year . ' ' . ($day + 13));
+                    print '<p><strong><u>Decoded response</u></strong><br>(S)TSN: <strong>' . $stsn
+                        . '</strong> (manufactured between '
+                        . $dateStart->format('M jS') . ' and '
+                        . $dateEnd->format('M jS Y') . ', TWCID '
                         . substr($stsn, 7, 4) . ')</p>';
                 }
                 else if(substr($response, 0, 5) == "FD 1A") {
@@ -183,7 +186,14 @@
                         }
                     }
 
-                    print '<p>Decoded response:<br>Model: <strong>' . $model . '</strong></p>';
+                    print '<p><strong><u>Decoded response</u></strong><br>Model: <strong>'
+                        . $model . '</strong></p>';
+                }
+                else if(substr($response, 0, 5) == "FD 1B") {
+                    print '<p><strong><u>Decoded response</u></strong><br>Firmware version: <strong>'
+                        . hexdec(substr($response, 6, 2)) . '.'
+                        . hexdec(substr($response, 9, 2)) . '.'
+                        . hexdec(substr($response, 12, 2)) . '</strong></p>';
                 }
             }
             ?>
