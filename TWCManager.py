@@ -651,7 +651,7 @@ def is_slave_total_power_unsafe():
 
 def car_api_available(email = None, password = None, charge = None):
     global debugLevel, carApiLastErrorTime, carApiErrorRetryMins, \
-           carApiKnownErrors, carApiBearerToken, carApiRefreshToken, \
+           carApiTransientErrors, carApiBearerToken, carApiRefreshToken, \
            carApiTokenExpireTime, carApiVehicles
 
     now = time.time()
@@ -913,7 +913,7 @@ def car_api_available(email = None, password = None, charge = None):
                             foundKnownError = False
                             if('error' in apiResponseDict):
                                 error = apiResponseDict['error']
-                                for knownError in carApiKnownErrors:
+                                for knownError in carApiTransientErrors:
                                     if(knownError == error[0:len(knownError)]):
                                         foundKnownError = True
                                         break
@@ -988,7 +988,7 @@ def car_api_charge(charge):
     # Do not call this function directly.  Call by using background thread:
     # queue_background_task({'cmd':'charge', 'charge':<True/False>})
     global debugLevel, carApiLastErrorTime, carApiErrorRetryMins, \
-           carApiKnownErrors, carApiVehicles, carApiLastStartOrStopChargeTime, \
+           carApiTransientErrors, carApiVehicles, carApiLastStartOrStopChargeTime, \
            homeLat, homeLon
 
     now = time.time()
@@ -1103,8 +1103,9 @@ def car_api_charge(charge):
                 #   {'response': {'result': True, 'reason': ''}}
                 if(apiResponseDict['response'] == None):
                     if('error' in apiResponseDict):
+                        foundKnownError = False
                         error = apiResponseDict['error']
-                        for knownError in carApiKnownErrors:
+                        for knownError in carApiTransientErrors:
                             if(knownError == error[0:len(knownError)]):
                                 # I see these errors often enough that I think
                                 # it's worth re-trying in 1 minute rather than
@@ -1115,7 +1116,10 @@ def car_api_charge(charge):
                                           + error
                                           + "' when trying to start charging.  Try again in 1 minute.")
                                 time.sleep(60)
-                                continue
+                                foundKnownError = True
+                                break
+                        if(foundKnownError):
+                            continue
 
                     # This generally indicates a significant error like 'vehicle
                     # unavailable', but it's not something I think the caller can do
@@ -1146,7 +1150,6 @@ def car_api_charge(charge):
                         else:
                             # Car was unable to charge for some other reason, such
                             # as 'could_not_wake_buses'.
-                            result = 'error'
                             if(reason == 'could_not_wake_buses'):
                                 # This error often happens if you call
                                 # charge_start too quickly after another command
@@ -1167,6 +1170,7 @@ def car_api_charge(charge):
                                       startOrStop + ' car charging via Tesla car API.  Will try again later.' +
                                       "\nIf this error persists, please private message user CDragon at http://teslamotorsclub.com " \
                                       "with a copy of this error.")
+                                result = 'error'
                                 vehicle.lastErrorTime = now
 
             except (KeyError, TypeError):
@@ -1341,7 +1345,7 @@ class CarApiVehicle:
         return False
 
     def update_location(self):
-        global carApiLastErrorTime, carApiKnownErrors
+        global carApiLastErrorTime, carApiTransientErrors
 
         if(self.ready() == False):
             return False
@@ -1371,8 +1375,9 @@ class CarApiVehicle:
                     print(time_now() + ': Car API vehicle GPS location', apiResponseDict, '\n')
 
                 if('error' in apiResponseDict):
+                    foundKnownError = False
                     error = apiResponseDict['error']
-                    for knownError in carApiKnownErrors:
+                    for knownError in carApiTransientErrors:
                         if(knownError == error[0:len(knownError)]):
                             # I see these errors often enough that I think
                             # it's worth re-trying in 1 minute rather than
@@ -1383,7 +1388,10 @@ class CarApiVehicle:
                                       + error
                                       + "' when trying to get GPS location.  Try again in 1 minute.")
                             time.sleep(60)
-                            continue
+                            foundKnownError = True
+                            break
+                    if(foundKnownError):
+                        continue
 
                 response = apiResponseDict['response']
 
@@ -2324,8 +2332,22 @@ carApiRefreshToken = ''
 carApiTokenExpireTime = time.time()
 carApiLastStartOrStopChargeTime = 0
 carApiVehicles = []
-carApiKnownErrors = ['upstream internal error', 'operation_timedout']
+
+# Transient errors are ones that usually disappear if we retry the car API
+# command a minute or less later.
+# 'vehicle unavailable:' sounds like it implies the car is out of connection
+# range, but I once saw it returned by drive_state after wake_up returned
+# 'online'. In that case, the car is reacahble, but drive_state failed for some
+# reason. Thus we consider it a transient error.
+# Error strings below need only match the start of an error response such as:
+# {'response': None, 'error_description': '',
+# 'error': 'operation_timedout for txid `4853e3ad74de12733f8cc957c9f60040`}'}
+carApiTransientErrors = ['upstream internal error', 'operation_timedout',
+'vehicle unavailable']
+
+# Define minutes between retrying non-transient errors.
 carApiErrorRetryMins = 10
+
 homeLat = 10000
 homeLon = 10000
 
