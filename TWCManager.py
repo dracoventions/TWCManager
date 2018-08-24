@@ -194,6 +194,19 @@ wiringMaxAmpsPerTWC = 40
 # rates really does.
 minAmpsPerTWC = 12
 
+# When you have more than one vehicle associated with the Tesla car API and
+# onlyChargeMultiCarsAtHome = True, cars will only be controlled by the API when
+# parked at home. For example, when one vehicle is plugged in at home and
+# another is plugged in at a remote location and you've set TWCManager to stop
+# charging at the current time, only the one plugged in at home will be stopped
+# from charging using the car API.
+# Unfortunately, bugs in the car GPS system may cause a car to not be reported
+# as at home even if it is, in which case the car might not be charged when you
+# expect it to be. If you encounter that problem with multiple vehicles, you can
+# set onlyChargeMultiCarsAtHome = False, but you may encounter the problem of
+# a car not at home being stopped from charging by the API.
+onlyChargeMultiCarsAtHome = True
+
 # After determining how much green energy is available for charging, we add
 # greenEnergyAmpsOffset to the value. This is most often given a negative value
 # equal to the average amount of power consumed by everything other than car
@@ -989,7 +1002,7 @@ def car_api_charge(charge):
     # queue_background_task({'cmd':'charge', 'charge':<True/False>})
     global debugLevel, carApiLastErrorTime, carApiErrorRetryMins, \
            carApiTransientErrors, carApiVehicles, carApiLastStartOrStopChargeTime, \
-           homeLat, homeLon
+           homeLat, homeLon, onlyChargeMultiCarsAtHome
 
     now = time.time()
     apiResponseDict = {}
@@ -1028,39 +1041,52 @@ def car_api_charge(charge):
         # more than once per minute.
         carApiLastStartOrStopChargeTime = now
 
-        if(vehicle.update_location() == False):
-            result = 'error'
-            continue
+        if(onlyChargeMultiCarsAtHome and len(carApiVehicles) > 1):
+            # When multiple cars are enrolled in the car API, only start/stop
+            # charging cars parked at home.
 
-        if(homeLat == 10000):
-            if(debugLevel >= 1):
-                print(time_now() + ": Home location for vehicles has never been set.  " +
-                    "We'll assume home is where we found the first vehicle currently parked.  " +
-                    "Home set to lat=" + str(vehicle.lat) + ", lon=" +
-                    str(vehicle.lon))
-            homeLat = vehicle.lat
-            homeLon = vehicle.lon
-            save_settings()
+            if(vehicle.update_location() == False):
+                result = 'error'
+                continue
 
-        # 1 lat or lon = ~364488.888 feet.
-        # 1/364488.888 * 2000 = 0.00548.
-        # So if vehicle is within 0.00548 lat and lon of homeLat/Lon,
-        # it's within 2000 feet of home and we'll consider it to be
-        # at home.
-        if(abs(homeLat - vehicle.lat) > 0.00548
-           or abs(homeLon - vehicle.lon) > 0.00548):
-            # Vehicle is not at home, so don't change its charge state.
-            if(debugLevel >= 1):
-                print(time_now() + ': Vehicle ID ' + str(vehicle.ID) +
-                      ' is not at home.  Do not ' + startOrStop + ' charge.')
-            continue
+            if(homeLat == 10000):
+                if(debugLevel >= 1):
+                    print(time_now() + ": Home location for vehicles has never been set.  " +
+                        "We'll assume home is where we found the first vehicle currently parked.  " +
+                        "Home set to lat=" + str(vehicle.lat) + ", lon=" +
+                        str(vehicle.lon))
+                homeLat = vehicle.lat
+                homeLon = vehicle.lon
+                save_settings()
 
-        # If you send charge_start/stop less than 1 second after calling
-        # update_location(), the charge command usually returns:
-        #   {'response': {'result': False, 'reason': 'could_not_wake_buses'}}
-        # Waiting 2 seconds seems to consistently avoid the error, but let's
-        # wait 5 seconds in case of hardware differences between cars.
-        time.sleep(5)
+            # 1 lat or lon = ~364488.888 feet. The exact feet is different depending
+            # on the value of latitude, but this value should be close enough for
+            # our rough needs.
+            # 1/364488.888 * 10560 = 0.0289.
+            # So if vehicle is within 0289 lat and lon of homeLat/Lon,
+            # it's within ~10560 feet (2 miles) of home and we'll consider it to be
+            # at home.
+            # I originally tried using 0.00548 (~2000 feet) but one night the car
+            # consistently reported being 2839 feet away from home despite being
+            # parked in the exact spot I always park it.  This is very odd because
+            # GPS is supposed to be accurate to within 12 feet.  Tesla phone app
+            # also reports the car is not at its usual address.  I suspect this
+            # is another case of a bug that's been causing car GPS to freeze  the
+            # last couple months.
+            if(abs(homeLat - vehicle.lat) > 0.0289
+               or abs(homeLon - vehicle.lon) > 0.0289):
+                # Vehicle is not at home, so don't change its charge state.
+                if(debugLevel >= 1):
+                    print(time_now() + ': Vehicle ID ' + str(vehicle.ID) +
+                          ' is not at home.  Do not ' + startOrStop + ' charge.')
+                continue
+
+            # If you send charge_start/stop less than 1 second after calling
+            # update_location(), the charge command usually returns:
+            #   {'response': {'result': False, 'reason': 'could_not_wake_buses'}}
+            # Waiting 2 seconds seems to consistently avoid the error, but let's
+            # wait 5 seconds in case of hardware differences between cars.
+            time.sleep(5)
 
         cmd = 'curl -s -m 60 -X POST -H "accept: application/json" -H "Authorization:Bearer ' + \
               carApiBearerToken + \
