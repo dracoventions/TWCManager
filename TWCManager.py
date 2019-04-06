@@ -192,7 +192,7 @@ wiringMaxAmpsPerTWC = 16
 # can't reach that rate, so charging as fast as your wiring supports is best
 # from that standpoint.  It's not clear how much damage charging at slower
 # rates really does.
-minAmpsPerTWC = 12
+minAmpsPerTWC = 6
 
 # When you have more than one vehicle associated with the Tesla car API and
 # onlyChargeMultiCarsAtHome = True, cars will only be controlled by the API when
