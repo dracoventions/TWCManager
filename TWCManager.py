@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 
 ################################################################################
-# Code and TWC protocol reverse engineering by Chris Dragon. test
+# Code and TWC protocol reverse engineering by Chris Dragon.
 #
 # Additional logs and hints provided by Teslamotorsclub.com users:
 #   TheNoOne, IanAmber, and twc.
@@ -229,7 +229,7 @@ greenEnergyAmpsOffset = 0
 # 9 includes raw RS-485 messages transmitted and received (2-3 per sec)
 # 10 is all info.
 # 11 is more than all info.  ;)
-debugLevel = 1
+debugLevel = 11
 
 # Choose whether to display milliseconds after time on each line of debug info.
 displayMilliseconds = False
@@ -1023,7 +1023,9 @@ def car_api_charge(charge):
 
     startOrStop = 'start' if charge else 'stop'
     result = 'success'
-
+    if(debugLevel >= 8):
+        print("startOrStop is set to " + str(startOrStop))
+    
     for vehicle in carApiVehicles:
         if(charge and vehicle.stopAskingToStartCharging):
             if(debugLevel >= 8):
@@ -1103,7 +1105,7 @@ def car_api_charge(charge):
 
             try:
                 if(debugLevel >= 4):
-                    print(time_now() + ': Car API ' + startOrStop + \
+                    print(time_now() + ': Car API TWC' + str(vehicle.ID) + ': ' + startOrStop + \
                           ' charge response', apiResponseDict, '\n')
                 # Responses I've seen in apiResponseDict:
                 # Car is done charging:
@@ -1207,7 +1209,7 @@ def car_api_charge(charge):
             break
 
     if(debugLevel >= 1 and carApiLastStartOrStopChargeTime == now):
-        print(time_now() + ': Car API ' + startOrStop + ' charge result: ' + result)
+        print(time_now() + ': Car API TWC' + str(vehicle.ID) + ': ' + startOrStop + ' charge result: ' + result)
 
     return result
 
@@ -1280,7 +1282,7 @@ def check_green_energy():
     # values or authentication. The -s option prevents curl from
     # displaying download stats. -m 60 prevents the whole
     # operation from taking over 60 seconds.
-    greenEnergyData = run_process('curl -s -m 60 "http://192.168.13.58/history/export.csv?T=1&D=0&M=1&C=1"')
+    greenEnergyData = run_process('curl -s -m 60 "http://192.168.86.97:8080/rest/items/powerForCars/state"')
 
     # In case, greenEnergyData will contain something like this:
     #   MTU, Time, Power, Cost, Voltage
@@ -1289,9 +1291,11 @@ def check_green_energy():
     # kW currently being generated. When 0kW is generated, the
     # negative disappears so we make it optional in the regex
     # below.
-    m = re.search(b'^Solar,[^,]+,-?([^, ]+),', greenEnergyData, re.MULTILINE)
-    if(m):
-        solarW = int(float(m.group(1)) * 1000)
+    
+    #m = re.search(b'^Solar,[^,]+,-?([^, ]+),', greenEnergyData, re.MULTILINE)
+    #if(m):
+    
+        solarW = int(float(greenEnergyData))
 
         # Use backgroundTasksLock to prevent changing maxAmpsToDivideAmongSlaves
         # if the main thread is in the middle of examining and later using
@@ -1302,21 +1306,26 @@ def check_green_energy():
         # Car charges at 240 volts in North America so we figure
         # out how many amps * 240 = solarW and limit the car to
         # that many amps.
-        maxAmpsToDivideAmongSlaves = (solarW / 240) + \
-                                      greenEnergyAmpsOffset
+        totalAmpsUsed = total_amps_actual_all_twcs()
+        temporaryMaxAmpsToDivideAmongSlaves = (solarW / 230 / 3) + totalAmpsUsed
+        
+        if(temporaryMaxAmpsToDivideAmongSlaves < 4):
+            maxAmpsToDivideAmongSlaves = 0
+        else:
+            maxAmpsToDivideAmongSlaves = temporaryMaxAmpsToDivideAmongSlaves
 
         if(debugLevel >= 1):
             print("%s: Solar generating %dW so limit car charging to:\n" \
                  "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
-                 (time_now(), solarW, (solarW / 240),
-                 greenEnergyAmpsOffset, maxAmpsToDivideAmongSlaves,
+                 (time_now(), solarW, (solarW / 230 / 3),
+                 totalAmpsUsed, maxAmpsToDivideAmongSlaves,
                  minAmpsPerTWC))
 
         backgroundTasksLock.release()
-    else:
-        print(time_now() +
-            " ERROR: Can't determine current solar generation from:\n" +
-            str(greenEnergyData))
+#    else:
+#        print(time_now() +
+#            " ERROR: Can't determine current solar generation from:\n" +
+#            str(greenEnergyData))
 
 #
 # End functions
@@ -1950,7 +1959,7 @@ class TWCSlave:
                 # 8pm. Sunrise in most U.S. areas varies from a little before
                 # 6am in Jun to almost 7:30am in Nov before the clocks get set
                 # back an hour. Sunset can be ~4:30pm to just after 8pm.
-                if(ltNow.tm_hour < 6 or ltNow.tm_hour >= 20):
+                if(ltNow.tm_hour < 7 or ltNow.tm_hour >= 21):
                     maxAmpsToDivideAmongSlaves = 0
                 else:
                     queue_background_task({'cmd':'checkGreenEnergy'})
@@ -1989,7 +1998,7 @@ class TWCSlave:
             desiredAmpsOffered = fairShareAmps
 
         if(debugLevel >= 10):
-            print("desiredAmpsOffered reduced from " + str(maxAmpsToDivideAmongSlaves)
+            print("desiredAmpsOffered TWC" + hex_str(self.TWCID) + " reduced from " + str(maxAmpsToDivideAmongSlaves)
                   + " to " + str(desiredAmpsOffered)
                   + " with " + str(numCarsCharging)
                   + " cars charging.")
@@ -2020,7 +2029,7 @@ class TWCSlave:
                 # exceeding by up to minAmpsTWCSupports for such a short period
                 # of time will cause problems.
                 if(debugLevel >= 10):
-                    print("desiredAmpsOffered increased from " + str(desiredAmpsOffered)
+                    print("desiredAmpsOffered TWC" + hex_str(self.TWCID) + " increased from " + str(desiredAmpsOffered)
                           + " to " + str(self.minAmpsTWCSupports)
                           + " (self.minAmpsTWCSupports)")
                 desiredAmpsOffered = self.minAmpsTWCSupports
@@ -2054,7 +2063,7 @@ class TWCSlave:
                 # and start charging. Without energy saver mode, the car should
                 # begin charging within about 10 seconds of changing this value.
                 if(debugLevel >= 10):
-                    print("desiredAmpsOffered reduced to 0 from " + str(desiredAmpsOffered)
+                    print("desiredAmpsOffered TWC" + hex_str(self.TWCID) + " reduced to 0 from " + str(desiredAmpsOffered)
                           + " because maxAmpsToDivideAmongSlaves "
                           + str(maxAmpsToDivideAmongSlaves)
                           + " / numCarsCharging " + str(numCarsCharging)
@@ -2131,14 +2140,18 @@ class TWCSlave:
                     # for a minute. This lets the owner quickly see that TWCManager
                     # is working properly each time they return home and plug in.
                     if(debugLevel >= 10):
-                        print("Don't stop charging yet because: " +
+                        print("Don't stop charging TWC" + hex_str(self.TWCID) + " yet because: " +
                               'time - self.timeLastAmpsOfferedChanged ' +
                               str(int(now - self.timeLastAmpsOfferedChanged)) +
                               ' < 60 or time - self.timeReportedAmpsActualChangedSignificantly ' +
                               str(int(now - self.timeReportedAmpsActualChangedSignificantly)) +
                               ' < 60 or self.reportedAmpsActual ' + str(self.reportedAmpsActual) +
                               ' < 4')
-                    desiredAmpsOffered = minAmpsToOffer
+                    if(maxAmpsToDivideAmongSlaves < 1):
+                        desiredAmpsOffered = 0
+                        
+                    else: desiredAmpsOffered = minAmpsToOffer
+                        
         else:
             # We can tell the TWC how much power to use in 0.01A increments, but
             # the car will only alter its power in larger increments (somewhere
@@ -2156,7 +2169,7 @@ class TWCSlave:
                 # on. See reasoning above where I don't turn the charger off
                 # till it's been on at least 60 seconds.
                 if(debugLevel >= 10):
-                    print("Don't start charging yet because: " +
+                    print("Don't start charging TWC" + hex_str(self.TWCID) + " yet because: " +
                           'self.lastAmpsOffered ' +
                           str(self.lastAmpsOffered) + " == 0 " +
                           'and time - self.timeLastAmpsOfferedChanged ' +
@@ -2182,7 +2195,8 @@ class TWCSlave:
                 # slow enough to respond that even with 10s at 21A the most I've
                 # seen it actually draw starting at 6A is 13A.
                 if(debugLevel >= 10):
-                    print('desiredAmpsOffered=' + str(desiredAmpsOffered) +
+                    print('TWCID=' + hex_str(self.TWCID) + 
+						  ' desiredAmpsOffered=' + str(desiredAmpsOffered) +
                           ' spikeAmpsToCancel6ALimit=' + str(spikeAmpsToCancel6ALimit) +
                           ' self.lastAmpsOffered=' + str(self.lastAmpsOffered) +
                           ' self.reportedAmpsActual=' + str(self.reportedAmpsActual) +
