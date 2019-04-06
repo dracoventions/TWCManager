@@ -1297,35 +1297,31 @@ def check_green_energy():
     
     solarW = int(float(greenEnergyData))
 
-    # Use backgroundTasksLock to prevent changing maxAmpsToDivideAmongSlaves
-    # if the main thread is in the middle of examining and later using
-    # that value.
+        # Use backgroundTasksLock to prevent changing maxAmpsToDivideAmongSlaves
+        # if the main thread is in the middle of examining and later using
+        # that value.
     backgroundTasksLock.acquire()
 
-    # Watts = Volts * Amps
-    # Car charges at 240 volts in North America so we figure
-    # out how many amps * 240 = solarW and limit the car to
-    # that many amps.
+        # Watts = Volts * Amps
+        # Car charges at 240 volts in North America so we figure
+        # out how many amps * 240 = solarW and limit the car to
+        # that many amps.
     totalAmpsUsed = total_amps_actual_all_twcs()
     temporaryMaxAmpsToDivideAmongSlaves = (solarW / 230 / 3) + totalAmpsUsed
-        
     if(temporaryMaxAmpsToDivideAmongSlaves < 4):
         maxAmpsToDivideAmongSlaves = 0
     else:
         maxAmpsToDivideAmongSlaves = temporaryMaxAmpsToDivideAmongSlaves
-
+ 
     if(debugLevel >= 1):
         print("%s: Solar generating %dW so limit car charging to:\n" \
-             "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
-             (time_now(), solarW, (solarW / 230 / 3),
-             totalAmpsUsed, maxAmpsToDivideAmongSlaves,
-             minAmpsPerTWC))
+                 "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
+                 (time_now(), solarW, (solarW / 230 / 3),
+                 totalAmpsUsed, maxAmpsToDivideAmongSlaves,
+                 minAmpsPerTWC))
 
-     backgroundTasksLock.release()
-#    else:
-#        print(time_now() +
-#            " ERROR: Can't determine current solar generation from:\n" +
-#            str(greenEnergyData))
+    backgroundTasksLock.release()
+
 
 #
 # End functions
