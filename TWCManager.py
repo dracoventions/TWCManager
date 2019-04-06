@@ -150,7 +150,7 @@ rs485Adapter = '/dev/ttyUSB0'
 # 100 amp breaker * 0.8 = 80 here.
 # IF YOU'RE NOT SURE WHAT TO PUT HERE, ASK THE ELECTRICIAN WHO INSTALLED YOUR
 # CHARGER.
-wiringMaxAmpsAllTWCs = 31
+wiringMaxAmpsAllTWCs = 32
 
 # If all your chargers share a single circuit breaker, set wiringMaxAmpsPerTWC
 # to the same value as wiringMaxAmpsAllTWCs.
@@ -160,7 +160,7 @@ wiringMaxAmpsAllTWCs = 31
 # wiringMaxAmpsAllTWCs.
 # For example, if you have two TWCs each with a 50A breaker, set
 # wiringMaxAmpsPerTWC = 50 * 0.8 = 40 and wiringMaxAmpsAllTWCs = 40 + 40 = 80.
-wiringMaxAmpsPerTWC = 40
+wiringMaxAmpsPerTWC = 16
 
 # https://teslamotorsclub.com/tmc/threads/model-s-gen2-charger-efficiency-testing.78740/#post-1844789
 # says you're using 10.85% more power (91.75/82.77=1.1085) charging at 5A vs 40A,
