@@ -339,10 +339,16 @@
                     }
 
                     // Display info about each TWC being managed.
-                    for($i = 0; $i < $status[$statusIdx]; $i++) {
-                        $subStatus = explode('~', $status[$statusIdx + 1]);
+                    for($i = 1; $i <= $status[$statusIdx]; $i++) {
+                        $subStatus = explode('~', $status[$statusIdx + $i]);
                         $twcModelMaxAmps = $subStatus[1];
-                        print("<strong>TWC " . $subStatus[0] . ':</strong> ');
+                        print("<br /><strong>TWC " . $subStatus[0] . ' </strong> ');
+                        if($subStatus[0] == 6486) {
+                            print("(carport) ");
+                        }
+                        if($subStatus[0] == 1987) {
+                            print("(garage) ");
+                        }
                         if($subStatus[2] < 1.0) {
                             /*if($subStatus[4] == 0) {
                                 // I was hoping state 0 meant no car is plugged in, but
@@ -359,23 +365,23 @@
                             if($subStatus[3] < 5.0) {
                                 if($maxAmpsToDivideAmongSlaves > 0 &&
                                    $maxAmpsToDivideAmongSlaves < $minAmpsPerTWC) {
-                                    print "Power available less than {$minAmpsPerTWC}A (minAmpsPerTWC).";
+                                    print ": Power available less than {$minAmpsPerTWC}A (minAmpsPerTWC).";
                                 }
                                 else {
-                                    print "No power available.";
+                                    print ": No power available.";
                                 }
                             }
                             else {
-                                print "Finished charging, unplugged, or waking up."
+                                print ": Finished charging, unplugged, or waking up."
                                     . " (" . $subStatus[3] . "A available)";
                             }
                         }
                         else {
-                            print "Charging at " . $subStatus[2] . "A.";
+                            print ": Charging at " . $subStatus[2] . "A.";
                             if($subStatus[3] - $subStatus[2] > 1.0) {
                                 // Car is using over 1A less than is available, so print
                                 // a note.
-                                print " (" . $subStatus[3] . "A available)";
+                                print " (" . $subStatus[3] . "A available)<br />";
                             }
                         }
                     }
