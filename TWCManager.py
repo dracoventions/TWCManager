@@ -2020,8 +2020,7 @@ class TWCSlave:
                         # To avoid exceeding maxAmpsToDivideAmongSlaves, we must
                         # subtract the actual amps being used by this TWC from the amps
                         # we will offer.
-                        desiredAmpsOffered -= slaveTWC.reportedAmpsActual
-                
+                                desiredAmpsOffered -= slaveTWC.reportedAmpsActual
 
         # Allocate this slave a fraction of maxAmpsToDivideAmongSlaves divided
         # by the number of cars actually charging.
