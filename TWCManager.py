@@ -2040,9 +2040,11 @@ class TWCSlave:
         minAmpsToOffer = minAmpsPerTWC
         if(self.minAmpsTWCSupports > minAmpsToOffer):
             minAmpsToOffer = self.minAmpsTWCSupports
-
+        
+        
         if(desiredAmpsOffered < minAmpsToOffer):
-            if(maxAmpsToDivideAmongSlaves / numCarsCharging > minAmpsToOffer):
+                if (numCarsCharging > 0):
+                        if(maxAmpsToDivideAmongSlaves / numCarsCharging > minAmpsToOffer):
                 # There is enough power available to give each car
                 # minAmpsToOffer, but currently-charging cars are leaving us
                 # less power than minAmpsToOffer to give this car.
@@ -2060,12 +2062,12 @@ class TWCSlave:
                 # wiringMaxAmpsAllTWCs for a few seconds, but I don't think
                 # exceeding by up to minAmpsTWCSupports for such a short period
                 # of time will cause problems.
-                if(debugLevel >= 10):
-                    print("desiredAmpsOffered TWC" + hex_str(self.TWCID) + " increased from " + str(desiredAmpsOffered)
-                          + " to " + str(self.minAmpsTWCSupports)
-                          + " (self.minAmpsTWCSupports)")
-                desiredAmpsOffered = self.minAmpsTWCSupports
-            else:
+                        if(debugLevel >= 10):
+                                print("desiredAmpsOffered TWC" + hex_str(self.TWCID) + " increased from " + str(desiredAmpsOffered)
+                                + " to " + str(self.minAmpsTWCSupports)
+                                + " (self.minAmpsTWCSupports)")
+                        desiredAmpsOffered = self.minAmpsTWCSupports
+                else:
                 # There is not enough power available to give each car
                 # minAmpsToOffer, so don't offer power to any cars. Alternately,
                 # we could charge one car at a time and switch cars
@@ -2094,13 +2096,14 @@ class TWCSlave:
                 # also wakes it) and next time it wakes, it will see there's power
                 # and start charging. Without energy saver mode, the car should
                 # begin charging within about 10 seconds of changing this value.
-                if(debugLevel >= 10):
-                    print("desiredAmpsOffered TWC" + hex_str(self.TWCID) + " reduced to 0 from " + str(desiredAmpsOffered)
-                          + " because maxAmpsToDivideAmongSlaves "
-                          + str(maxAmpsToDivideAmongSlaves)
-                          + " / numCarsCharging " + str(numCarsCharging)
-                          + " < minAmpsToOffer " + str(minAmpsToOffer))
-                desiredAmpsOffered = 0
+                        if(debugLevel >= 10):
+                                print("desiredAmpsOffered TWC" + hex_str(self.TWCID) + " reduced to 0 from " + str(desiredAmpsOffered)
+                                + " because maxAmpsToDivideAmongSlaves "
+                                + str(maxAmpsToDivideAmongSlaves)
+                                + " / numCarsCharging " + str(numCarsCharging)
+                                + " < minAmpsToOffer " + str(minAmpsToOffer))
+                    desiredAmpsOffered = 0
+            
 
             if(
                    self.lastAmpsOffered > 0
