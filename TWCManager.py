@@ -2067,8 +2067,8 @@ class TWCSlave:
                                         + " to " + str(self.minAmpsTWCSupports)
                                         + " (self.minAmpsTWCSupports)")
                                 desiredAmpsOffered = self.minAmpsTWCSupports
-                else:
-                        desiredAmpsOffered = 0
+                        else:
+                                desiredAmpsOffered = 0
                 # There is not enough power available to give each car
                 # minAmpsToOffer, so don't offer power to any cars. Alternately,
                 # we could charge one car at a time and switch cars
@@ -2097,24 +2097,17 @@ class TWCSlave:
                 # also wakes it) and next time it wakes, it will see there's power
                 # and start charging. Without energy saver mode, the car should
                 # begin charging within about 10 seconds of changing this value.
-                        if(debugLevel >= 10):
-                                print("desiredAmpsOffered TWC" + hex_str(self.TWCID) + " reduced to 0 from " + str(desiredAmpsOffered)
-                                + " because maxAmpsToDivideAmongSlaves "
-                                + str(maxAmpsToDivideAmongSlaves)
-                                + " / numCarsCharging " + str(numCarsCharging)
-                                + " < minAmpsToOffer " + str(minAmpsToOffer))
+                                if(debugLevel >= 10):
+                                        print("desiredAmpsOffered TWC" + hex_str(self.TWCID) + " reduced to 0 from " + str(desiredAmpsOffered)
+                                        + " because maxAmpsToDivideAmongSlaves "
+                                        + str(maxAmpsToDivideAmongSlaves)
+                                        + " / numCarsCharging " + str(numCarsCharging)
+                                        + " < minAmpsToOffer " + str(minAmpsToOffer))
 
-            if(
-                   self.lastAmpsOffered > 0
-                     and
-                   (
-                     now - self.timeLastAmpsOfferedChanged < 60
-                       or
-                     now - self.timeReportedAmpsActualChangedSignificantly < 60
-                       or
-                     self.reportedAmpsActual < 4.0
-                   )
-                ):
+                        if(self.lastAmpsOffered > 0 
+                           and (now - self.timeLastAmpsOfferedChanged < 60
+                                or now - self.timeReportedAmpsActualChangedSignificantly < 60
+                                or self.reportedAmpsActual < 4.0)):
                     # We were previously telling the car to charge but now we want
                     # to tell it to stop. However, it's been less than a minute
                     # since we told it to charge or since the last significant
@@ -2173,18 +2166,18 @@ class TWCSlave:
                     # unplugged, the charge port will turn green and start charging
                     # for a minute. This lets the owner quickly see that TWCManager
                     # is working properly each time they return home and plug in.
-                    if(debugLevel >= 10):
-                        print("Don't stop charging TWC" + hex_str(self.TWCID) + " yet because: " +
-                              'time - self.timeLastAmpsOfferedChanged ' +
-                              str(int(now - self.timeLastAmpsOfferedChanged)) +
-                              ' < 60 or time - self.timeReportedAmpsActualChangedSignificantly ' +
-                              str(int(now - self.timeReportedAmpsActualChangedSignificantly)) +
-                              ' < 60 or self.reportedAmpsActual ' + str(self.reportedAmpsActual) +
-                              ' < 4')
-                    if(maxAmpsToDivideAmongSlaves < 1):
-                        desiredAmpsOffered = 0
+                        if(debugLevel >= 10):
+                                print("Don't stop charging TWC" + hex_str(self.TWCID) + " yet because: " +
+                                'time - self.timeLastAmpsOfferedChanged ' +
+                                str(int(now - self.timeLastAmpsOfferedChanged)) +
+                                ' < 60 or time - self.timeReportedAmpsActualChangedSignificantly ' +
+                                str(int(now - self.timeReportedAmpsActualChangedSignificantly)) +
+                                ' < 60 or self.reportedAmpsActual ' + str(self.reportedAmpsActual) +
+                                ' < 4')
+                        if(maxAmpsToDivideAmongSlaves < 1):
+                                desiredAmpsOffered = 0
                         
-                    else: desiredAmpsOffered = minAmpsToOffer
+                        else: desiredAmpsOffered = minAmpsToOffer
                         
         else:
             # We can tell the TWC how much power to use in 0.01A increments, but
