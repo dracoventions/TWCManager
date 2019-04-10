@@ -2022,12 +2022,12 @@ class TWCSlave:
                         # we will offer.
                                 desiredAmpsOffered -= slaveTWC.reportedAmpsActual
 
-        # Allocate this slave a fraction of maxAmpsToDivideAmongSlaves divided
-        # by the number of cars actually charging.
+                # Allocate this slave a fraction of maxAmpsToDivideAmongSlaves divided
+                # by the number of cars actually charging.
                 fairShareAmps = int(maxAmpsToDivideAmongSlaves / numCarsCharging)
                 
                 if(desiredAmpsOffered > fairShareAmps):
-                desiredAmpsOffered = fairShareAmps
+                        desiredAmpsOffered = fairShareAmps
 
         if(debugLevel >= 10):
             print("desiredAmpsOffered TWC" + hex_str(self.TWCID) + " reduced from " + str(maxAmpsToDivideAmongSlaves)
