@@ -1295,32 +1295,32 @@ def check_green_energy():
     #m = re.search(b'^Solar,[^,]+,-?([^, ]+),', greenEnergyData, re.MULTILINE)
     #if(m):
     
-    solarW = int(float(greenEnergyData))
+        solarW = int(float(greenEnergyData))
 
         # Use backgroundTasksLock to prevent changing maxAmpsToDivideAmongSlaves
         # if the main thread is in the middle of examining and later using
         # that value.
-    backgroundTasksLock.acquire()
+        backgroundTasksLock.acquire()
 
         # Watts = Volts * Amps
         # Car charges at 240 volts in North America so we figure
         # out how many amps * 240 = solarW and limit the car to
         # that many amps.
-    totalAmpsUsed = total_amps_actual_all_twcs()
-    temporaryMaxAmpsToDivideAmongSlaves = (solarW / 230 / 3) + totalAmpsUsed
-    if(temporaryMaxAmpsToDivideAmongSlaves < 4):
-        maxAmpsToDivideAmongSlaves = 0
-    else:
-        maxAmpsToDivideAmongSlaves = temporaryMaxAmpsToDivideAmongSlaves
+        totalAmpsUsed = total_amps_actual_all_twcs()
+        temporaryMaxAmpsToDivideAmongSlaves = (solarW / 230 / 3) + totalAmpsUsed
+        if(temporaryMaxAmpsToDivideAmongSlaves < 4):
+            maxAmpsToDivideAmongSlaves = 0
+        else:
+            maxAmpsToDivideAmongSlaves = temporaryMaxAmpsToDivideAmongSlaves
  
-    if(debugLevel >= 1):
-        print("%s: Solar generating %dW so limit car charging to:\n" \
-                 "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
-                 (time_now(), solarW, (solarW / 230 / 3),
-                 totalAmpsUsed, maxAmpsToDivideAmongSlaves,
-                 minAmpsPerTWC))
+        if(debugLevel >= 1):
+            print("%s: Solar generating %dW so limit car charging to:\n" \
+                     "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
+                     (time_now(), solarW, (solarW / 230 / 3),
+                     totalAmpsUsed, maxAmpsToDivideAmongSlaves,
+                     minAmpsPerTWC))
 
-    backgroundTasksLock.release()
+        backgroundTasksLock.release()
 
 
 #
@@ -1820,12 +1820,16 @@ class TWCSlave:
                 # charging, I'm not sure if this would prevent it from charging
                 # when next plugged in.
                 queue_background_task({'cmd':'charge', 'charge':False})
+                if(debugLevel >= 10):
+                    print(time_now() + ': BUGFIX: lastAmpsOffered = 0 and reportedAmpsActual > 4')
             elif(self.lastAmpsOffered >= 5.0 and self.reportedAmpsActual < 2.0
                  and self.reportedState != 0x02
             ):
                 # Car is not charging and is not reporting an error state, so
                 # try starting charge via car api.
                 queue_background_task({'cmd':'charge', 'charge':True})
+                if(debugLevel >= 10):
+                    print(time_now() + ': BUGFIX: lastAmpsOffered >= 5 and reportedAmpsActual < 2')
             elif(self.reportedAmpsActual > 4.0):
                 # At least one plugged in car is successfully charging. We don't
                 # know which car it is, so we must set
@@ -1838,6 +1842,8 @@ class TWCSlave:
                 # to start API charging after the car stops taking a charge.
                 for vehicle in carApiVehicles:
                     vehicle.stopAskingToStartCharging = False
+                if(debugLevel >= 10):
+                    print(time_now() + ': BUGFIX: reportedAmpsActual > 4')
 
         send_msg(bytearray(b'\xFB\xE0') + fakeTWCID + bytearray(self.TWCID)
                  + bytearray(self.masterHeartbeatData))
@@ -1887,9 +1893,16 @@ class TWCSlave:
             nonScheduledAmpsMax = -1
             save_settings()
 
+            if(debugLevel >= 10):
+                print(time_now() + ': BUGFIX: nonScheduledAmpsMax = -1')
+
         # Check if we're within the hours we must use scheduledAmpsMax instead
         # of nonScheduledAmpsMax
         blnUseScheduledAmps = 0
+
+        if(debugLevel >= 10):
+            print(time_now() + ': BUGFIX: blnUseScheduledAmps = 0')
+
         if(scheduledAmpsMax > 0
              and
            scheduledAmpsStartHour > -1
@@ -1929,6 +1942,9 @@ class TWCSlave:
                 ):
                    blnUseScheduledAmps = 1
 
+        if(debugLevel >= 10):
+            print(time_now() + ': BUGFIX: blnUseScheduledAmps = 1')
+
         if(chargeNowTimeEnd > 0 and chargeNowTimeEnd < now):
             # We're beyond the one-day period where we want to charge at
             # chargeNowAmps, so reset the chargeNow variables.
@@ -1941,6 +1957,7 @@ class TWCSlave:
             maxAmpsToDivideAmongSlaves = chargeNowAmps
             if(debugLevel >= 10):
                 print(time_now() + ': Charge at chargeNowAmps %.2f' % (chargeNowAmps))
+
         elif(blnUseScheduledAmps):
             # We're within the scheduled hours that we need to provide a set
             # number of amps.
@@ -1948,6 +1965,10 @@ class TWCSlave:
         else:
             if(nonScheduledAmpsMax > -1):
                 maxAmpsToDivideAmongSlaves = nonScheduledAmpsMax
+
+                if(debugLevel >= 10):
+                    print(time_now() + ': BUGFIX: nonScheduledAmpsMax = -1')
+
             elif(now - timeLastGreenEnergyCheck > 60):
                 timeLastGreenEnergyCheck = now
 
@@ -1957,8 +1978,15 @@ class TWCSlave:
                 # back an hour. Sunset can be ~4:30pm to just after 8pm.
                 if(ltNow.tm_hour < 7 or ltNow.tm_hour >= 21):
                     maxAmpsToDivideAmongSlaves = 0
+
+                    if(debugLevel >= 10):
+                        print(time_now() + ': BUGFIX: Now.tm_hour < 7 or ltNow.tm_hour >= 21')
+
                 else:
                     queue_background_task({'cmd':'checkGreenEnergy'})
+
+                    if(debugLevel >= 10):
+                        print(time_now() + ': BUGFIX: queue_background_task checkGreenEnergy')
 
         # Use backgroundTasksLock to prevent the background thread from changing
         # the value of maxAmpsToDivideAmongSlaves after we've checked the value
