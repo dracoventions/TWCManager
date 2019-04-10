@@ -2166,18 +2166,18 @@ class TWCSlave:
                     # unplugged, the charge port will turn green and start charging
                     # for a minute. This lets the owner quickly see that TWCManager
                     # is working properly each time they return home and plug in.
-                        if(debugLevel >= 10):
-                                print("Don't stop charging TWC" + hex_str(self.TWCID) + " yet because: " +
-                                'time - self.timeLastAmpsOfferedChanged ' +
-                                str(int(now - self.timeLastAmpsOfferedChanged)) +
-                                ' < 60 or time - self.timeReportedAmpsActualChangedSignificantly ' +
-                                str(int(now - self.timeReportedAmpsActualChangedSignificantly)) +
-                                ' < 60 or self.reportedAmpsActual ' + str(self.reportedAmpsActual) +
-                                ' < 4')
-                        if(maxAmpsToDivideAmongSlaves < 1):
-                                desiredAmpsOffered = 0
+                        	if(debugLevel >= 10):
+                                	print("Don't stop charging TWC" + hex_str(self.TWCID) + " yet because: " +
+                                	'time - self.timeLastAmpsOfferedChanged ' +
+                                	str(int(now - self.timeLastAmpsOfferedChanged)) +
+                                	' < 60 or time - self.timeReportedAmpsActualChangedSignificantly ' +
+                              	  	str(int(now - self.timeReportedAmpsActualChangedSignificantly)) +
+                               		' < 60 or self.reportedAmpsActual ' + str(self.reportedAmpsActual) +
+                                	' < 4')
+                        	if(maxAmpsToDivideAmongSlaves < 1):
+                                	desiredAmpsOffered = 0
                         
-                        else: desiredAmpsOffered = minAmpsToOffer
+                        	else: desiredAmpsOffered = minAmpsToOffer
                         
         else:
             # We can tell the TWC how much power to use in 0.01A increments, but
