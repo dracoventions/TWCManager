@@ -665,9 +665,9 @@ def num_cars_charging_now():
     carsCharging = 0
     for slaveTWC in slaveTWCRoundRobin:
         if(slaveTWC.reportedAmpsActual >= 1.0):
-                carsCharging += slaveTWC.reportedAmpsActual
-                if(debugLevel >= 10):
-                    print("BUGFIX: Number of cars charging now: " + str(carsCharging))
+		carsCharging += 1
+    if(debugLevel >= 10):
+        print("BUGFIX: Number of cars charging now: " + str(carsCharging))
     return carsCharging
 
 
