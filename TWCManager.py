@@ -1925,7 +1925,7 @@ class TWCSlave:
                     or (hourNow < scheduledAmpsEndHour and
                     (scheduledAmpsDaysBitmap & (1 << yesterday)))):
                         
-			blnUseScheduledAmps = 1
+                        blnUseScheduledAmps = 1
 
                         if(debugLevel >= 10):
                             print(time_now() + ': BUGFIX: blnUseScheduledAmps = 1 (23h period)')	
@@ -1935,9 +1935,9 @@ class TWCSlave:
                 # 1-hour period between 7am and 8am.
                 if(hourNow >= scheduledAmpsStartHour
                    and hourNow < scheduledAmpsEndHour
-                   and (scheduledAmpsDaysBitmap & (1 << ltNow.tm_wday))
-                ):
-                   blnUseScheduledAmps = 1
+                   and (scheduledAmpsDaysBitmap & (1 << ltNow.tm_wday))):
+                   
+                    blnUseScheduledAmps = 1
 
                     if(debugLevel >= 10):
                         print(time_now() + ': BUGFIX: blnUseScheduledAmps = 1 (7 to 8)')
