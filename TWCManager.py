@@ -1861,8 +1861,14 @@ class TWCSlave:
         self.timeLastRx = now
 
         self.reportedAmpsMax = ((heartbeatData[1] << 8) + heartbeatData[2]) / 100
+	# enter MQTT msg
+	
         self.reportedAmpsActual = ((heartbeatData[3] << 8) + heartbeatData[4]) / 100
+	# enter MQTT msg
+	
         self.reportedState = heartbeatData[0]
+	# enter MQTT msg
+	
 
         # self.lastAmpsOffered is initialized to -1.
         # If we find it at that value, set it to the current value reported by the
@@ -2370,7 +2376,7 @@ class TWCSlave:
         global debugLevel
 
         if(debugLevel >= 10):
-            print("set_last_amps_offered(TWCID=" + hex_str(self.TWCID) +
+            print("set_last_amps_offered (TWCID=" + hex_str(self.TWCID) +
                   ", desiredAmpsOffered=" + str(desiredAmpsOffered) + ")")
 
         if(desiredAmpsOffered != self.lastAmpsOffered):
