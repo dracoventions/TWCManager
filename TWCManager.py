@@ -1909,15 +1909,10 @@ class TWCSlave:
         if(debugLevel >= 10):
             print(time_now() + ': BUGFIX: blnUseScheduledAmps = 0')
 
-        if(scheduledAmpsMax > 0
-             and
-           scheduledAmpsStartHour > -1
-             and
-           scheduledAmpsEndHour > -1
-             and
-           scheduledAmpsDaysBitmap > 0
-        ):
-            if(scheduledAmpsStartHour > scheduledAmpsEndHour):
+        if(scheduledAmpsMax > 0 and scheduledAmpsStartHour > -1
+            and scheduledAmpsEndHour > -1 and scheduledAmpsDaysBitmap > 0):
+		
+                if(scheduledAmpsStartHour > scheduledAmpsEndHour):
                 # We have a time like 8am to 7am which we must interpret as the
                 # 23-hour period after 8am or before 7am. Since this case always
                 # crosses midnight, we only ensure that scheduledAmpsDaysBitmap
@@ -1925,20 +1920,16 @@ class TWCSlave:
                 # scheduledAmpsDaysBitmap says only schedule on Monday, 8am to
                 # 7am, we apply scheduledAmpsMax from Monday at 8am to Monday at
                 # 11:59pm, and on Tuesday at 12am to Tuesday at 6:59am.
-                if(
-                   (
-                     hourNow >= scheduledAmpsStartHour
-                       and
-                     (scheduledAmpsDaysBitmap & (1 << ltNow.tm_wday))
-                   )
-                     or
-                   (
-                     hourNow < scheduledAmpsEndHour
-                       and
-                     (scheduledAmpsDaysBitmap & (1 << yesterday))
-                   )
-                ):
-                   blnUseScheduledAmps = 1
+                if((hourNow >= scheduledAmpsStartHour 
+		    and (scheduledAmpsDaysBitmap & (1 << ltNow.tm_wday)))
+                    or (hourNow < scheduledAmpsEndHour and
+                    (scheduledAmpsDaysBitmap & (1 << yesterday)))):
+                        
+			blnUseScheduledAmps = 1
+
+                        if(debugLevel >= 10):
+                            print(time_now() + ': BUGFIX: blnUseScheduledAmps = 1 (23h period)')	
+			
             else:
                 # We have a time like 7am to 8am which we must interpret as the
                 # 1-hour period between 7am and 8am.
@@ -1948,8 +1939,8 @@ class TWCSlave:
                 ):
                    blnUseScheduledAmps = 1
 
-        if(debugLevel >= 10):
-            print(time_now() + ': BUGFIX: blnUseScheduledAmps = 1')
+                    if(debugLevel >= 10):
+                        print(time_now() + ': BUGFIX: blnUseScheduledAmps = 1 (7 to 8)')
 
         if(chargeNowTimeEnd > 0 and chargeNowTimeEnd < now):
             # We're beyond the one-day period where we want to charge at
