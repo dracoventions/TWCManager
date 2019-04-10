@@ -2068,6 +2068,7 @@ class TWCSlave:
                                         + " (self.minAmpsTWCSupports)")
                                 desiredAmpsOffered = self.minAmpsTWCSupports
                 else:
+			desiredAmpsOffered = 0
                 # There is not enough power available to give each car
                 # minAmpsToOffer, so don't offer power to any cars. Alternately,
                 # we could charge one car at a time and switch cars
@@ -2102,8 +2103,6 @@ class TWCSlave:
                                 + str(maxAmpsToDivideAmongSlaves)
                                 + " / numCarsCharging " + str(numCarsCharging)
                                 + " < minAmpsToOffer " + str(minAmpsToOffer))
-                    desiredAmpsOffered = 0
-            
 
             if(
                    self.lastAmpsOffered > 0
