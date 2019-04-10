@@ -1912,7 +1912,7 @@ class TWCSlave:
         if(scheduledAmpsMax > 0 and scheduledAmpsStartHour > -1
             and scheduledAmpsEndHour > -1 and scheduledAmpsDaysBitmap > 0):
 		
-                if(scheduledAmpsStartHour > scheduledAmpsEndHour):
+            if(scheduledAmpsStartHour > scheduledAmpsEndHour):
                 # We have a time like 8am to 7am which we must interpret as the
                 # 23-hour period after 8am or before 7am. Since this case always
                 # crosses midnight, we only ensure that scheduledAmpsDaysBitmap
