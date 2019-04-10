@@ -659,6 +659,17 @@ def total_amps_actual_all_twcs():
         print("Total amps all slaves are using: " + str(totalAmps))
     return totalAmps
 
+def num_cars_charging_now():
+    global debugLevel, slaveTWCRoundRobin
+         
+    carsCharging = 0
+    for slaveTWC in slaveTWCRoundRobin:
+        if(slaveTWC.reportedAmpsActual >= 1.0):
+                carsCharging += slaveTWC.reportedAmpsActual
+                if(debugLevel >= 10):
+                    print("BUGFIX: Number of cars charging now: " + str(carsCharging))
+    return carsCharging
+
 
 def car_api_available(email = None, password = None, charge = None):
     global debugLevel, carApiLastErrorTime, carApiErrorRetryMins, \
@@ -1894,8 +1905,7 @@ class TWCSlave:
 
         # Check if it's time to resume tracking green energy.
         if(nonScheduledAmpsMax != -1 and hourResumeTrackGreenEnergy > -1
-           and hourResumeTrackGreenEnergy == hourNow
-        ):
+           and hourResumeTrackGreenEnergy == hourNow):
             nonScheduledAmpsMax = -1
             save_settings()
 
@@ -1964,9 +1974,9 @@ class TWCSlave:
                 maxAmpsToDivideAmongSlaves = nonScheduledAmpsMax
 
                 if(debugLevel >= 10):
-                    print(time_now() + ': BUGFIX: nonScheduledAmpsMax = -1')
+                    print(time_now() + ': BUGFIX: maxAmpsToDivideAmongSlaves = nonScheduledAmpsMax')
 
-            elif(now - timeLastGreenEnergyCheck > 60):
+            elif(now - timeLastGreenEnergyCheck > 30):
                 timeLastGreenEnergyCheck = now
 
                 # Don't bother to check solar generation before 6am or after
@@ -2001,16 +2011,16 @@ class TWCSlave:
             maxAmpsToDivideAmongSlaves = wiringMaxAmpsAllTWCs
 
         # Determine how many cars are charging and how many amps they're using
-        numCarsCharging = 1
+        numCarsCharging = num_cars_charging_now()
         desiredAmpsOffered = maxAmpsToDivideAmongSlaves
+        
         for slaveTWC in slaveTWCRoundRobin:
             if(slaveTWC.TWCID != self.TWCID):
                 # To avoid exceeding maxAmpsToDivideAmongSlaves, we must
                 # subtract the actual amps being used by this TWC from the amps
                 # we will offer.
                 desiredAmpsOffered -= slaveTWC.reportedAmpsActual
-                if(slaveTWC.reportedAmpsActual >= 1.0):
-                    numCarsCharging += 1
+                
 
         # Allocate this slave a fraction of maxAmpsToDivideAmongSlaves divided
         # by the number of cars actually charging.
