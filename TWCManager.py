@@ -2062,11 +2062,11 @@ class TWCSlave:
                 # wiringMaxAmpsAllTWCs for a few seconds, but I don't think
                 # exceeding by up to minAmpsTWCSupports for such a short period
                 # of time will cause problems.
-                        if(debugLevel >= 10):
-                                print("desiredAmpsOffered TWC" + hex_str(self.TWCID) + " increased from " + str(desiredAmpsOffered)
-                                + " to " + str(self.minAmpsTWCSupports)
-                                + " (self.minAmpsTWCSupports)")
-                        desiredAmpsOffered = self.minAmpsTWCSupports
+                                if(debugLevel >= 10):
+                                        print("desiredAmpsOffered TWC" + hex_str(self.TWCID) + " increased from " + str(desiredAmpsOffered)
+                                        + " to " + str(self.minAmpsTWCSupports)
+                                        + " (self.minAmpsTWCSupports)")
+                                desiredAmpsOffered = self.minAmpsTWCSupports
                 else:
                 # There is not enough power available to give each car
                 # minAmpsToOffer, so don't offer power to any cars. Alternately,
