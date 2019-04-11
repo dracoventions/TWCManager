@@ -126,6 +126,9 @@ import paho.mqtt.client as mqtt
 # Configuration parameters
 #
 
+mqttBrokerIP = '192.168.86.97'
+
+
 # Most users will have only one ttyUSB adapter plugged in and the default value
 # of '/dev/ttyUSB0' below will work. If not, run 'dmesg |grep ttyUSB' on the
 # command line to find your rs485 adapter and put its ttyUSB# value in the
@@ -657,6 +660,9 @@ def total_amps_actual_all_twcs():
         totalAmps += slaveTWC.reportedAmpsActual
     if(debugLevel >= 10):
         print("Total amps all slaves are using: " + str(totalAmps))
+        
+    publish.single("TWC/totalAmps", payload=totalAmps, hostname=mqttBrokerIP)
+    
     return totalAmps
 
 def num_cars_charging_now():
@@ -668,6 +674,9 @@ def num_cars_charging_now():
                 carsCharging += 1
     if(debugLevel >= 10):
         print("BUGFIX: Number of cars charging now: " + str(carsCharging))
+    
+    publish.single("TWC/carsCharging", payload=carsCharging, hostname=mqttBrokerIP)
+
     return carsCharging
 
 
@@ -1872,13 +1881,13 @@ class TWCSlave:
         self.timeLastRx = now
 
         self.reportedAmpsMax = ((heartbeatData[1] << 8) + heartbeatData[2]) / 100
-	# enter MQTT msg
-	
+	    publish.single("TWC/ampsMax" + self.TWCID, payload=self.reportedAmpsMax , hostname=mqttBrokerIP)
+    
         self.reportedAmpsActual = ((heartbeatData[3] << 8) + heartbeatData[4]) / 100
-	# enter MQTT msg
+        publish.single("TWC/power" + self.TWCID, payload=self.reportedAmpsActual , hostname=mqttBrokerIP)
 	
         self.reportedState = heartbeatData[0]
-	# enter MQTT msg
+        publish.single("TWC/state" + self.TWCID, payload=self.reportedState , hostname=mqttBrokerIP)
 	
 
         # self.lastAmpsOffered is initialized to -1.
@@ -2427,6 +2436,7 @@ class TWCSlave:
 #
 # Begin global vars
 #
+
 
 data = ''
 dataLen = 0
