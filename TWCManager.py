@@ -2138,7 +2138,10 @@ class TWCSlave:
                               str(int(now - self.timeReportedAmpsActualChangedSignificantly)) +
                               ' < 60 or self.reportedAmpsActual ' + str(self.reportedAmpsActual) +
                               ' < 4')
-                    desiredAmpsOffered = minAmpsToOffer
+                    if(maxAmpsToDivideAmongSlaves < 1):
+                        desiredAmosOffered = 0
+                    else:
+                        desiredAmpsOffered = minAmpsToOffer
         else:
             # We can tell the TWC how much power to use in 0.01A increments, but
             # the car will only alter its power in larger increments (somewhere
