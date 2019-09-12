@@ -1,8 +1,8 @@
 install:
 
 	sudo apt-get install -y lighttpd php7.0-cgi screen git python3-pip
-	python3-pip install pyserial
-	python3-pip install sysv_ipc
+	pip3 install pyserial
+	pip3 install sysv_ipc
 	sudo lighty-enable-mod fastcgi-php ; exit 0
 	sudo service lighttpd force-reload
 	
@@ -11,3 +11,4 @@ install:
 	sudo usermod -a -G www-data pi
 	
 	sudo cp HTML/* /var/www/html/
+	cp TWCManager.py /usr/bin/
