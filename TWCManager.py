@@ -111,6 +111,7 @@ import re
 import subprocess
 import queue
 import random
+import requests
 import math
 import struct
 import sys
@@ -118,7 +119,6 @@ import traceback
 import sysv_ipc
 import json
 from datetime import datetime
-from requests import get
 import threading
 
 
@@ -221,6 +221,9 @@ onlyChargeMultiCarsAtHome = True
 # North American 240V grid. In other words, during car charging, you want your
 # utility meter to show a value close to 0kW meaning no energy is being sent to
 # or from the grid.
+
+# If you are able to obtain consumption details from HomeAssistant, this value is
+# not needed and can be set to 0
 greenEnergyAmpsOffset = 0
 
 # Choose how much debugging info to output.
@@ -279,6 +282,9 @@ hassAPIKey = "ABCDE"
 hassEntityConsumption = "sensor.meter_power_live"
 hassEntityGeneration = "sensor.inverter_power_live"
 
+hassEntityMinAmps = "sensor.twtc_min_amps"
+hassEntityMaxAmps = "sensor.twtc_max_amps"
+
 #
 # End configuration parameters
 #
@@ -290,11 +296,30 @@ hassEntityGeneration = "sensor.inverter_power_live"
 # Begin functions
 #
 
-def time_now():
-    global displayMilliseconds
-    return(datetime.now().strftime("%H:%M:%S" + (
-        ".%f" if displayMilliseconds else "")))
+def hass_api_get(entity):
+    global hassServer, hassPort, hassAPIKey
+    url = "http://" + hassServer + ":" + hassPort + "/api/states/" + entity
+    headers = {
+        'Authorization': 'Bearer ' + hassAPIKey,
+        'content-type': 'application/json'
+    }
+    httpResponse = requests.get(url, headers=headers)
+    jsonResponse = httpResponse.json() if httpResponse and httpResponse.status_code == 200 else None
 
+    if jsonResponse:
+        return jsonResponse["state"]
+    else:
+        return false
+
+def hass_api_set(entity, state):
+    global hassServer, hassPort, hassAPIKey
+    url = "http://" + hassServer + ":" + hassPort + "/api/states/" + entity
+    headers = {
+        'Authorization': 'Bearer ' + hassAPIKey,
+        'content-type': 'application/json'
+    }
+    requests.post(url, json={"state":state})
+    
 def hex_str(s:str):
     return " ".join("{:02X}".format(ord(c)) for c in s)
 
@@ -311,6 +336,10 @@ def run_process(cmd):
 
     return result
 
+def time_now():
+    global displayMilliseconds
+    return(datetime.now().strftime("%H:%M:%S" + (
+        ".%f" if displayMilliseconds else "")))
 
 def load_settings():
     global debugLevel, settingsFileName, nonScheduledAmpsMax, scheduledAmpsMax, \
@@ -1285,25 +1314,11 @@ def check_green_energy():
     #
     greenEnergyConsumptionVal = 0
     if hassEntityConsumption:
-        url = "http://" + hassServer + ":" + hassPort + "/api/states/" + hassEntityConsumption
-        headers = {
-            'Authorization': 'Bearer ' + hassAPIKey,
-            'content-type': 'application/json'
-        }
-        greenEnergyConsumptionResponse = get(url, headers=headers)
-        greenEnergyConsumption = greenEnergyConsumptionResponse.json() if greenEnergyConsumptionResponse and greenEnergyConsumptionResponse.status_code == 200 else None
-        greenEnergyConsumptionVal = greenEnergyConsumption["state"]
-        
+        greenEnergyConsumptionVal = hass_api_get(hassEntityConsumption)
+    
     greenEnergyGenerationVal = 0
     if hassEntityGeneration:
-        url = "http://" + hassServer + ":" + hassPort + "/api/states/" + hassEntityGeneration
-        headers = {
-            'Authorization': 'Bearer ' + hassAPIKey,
-            'content-type': 'application/json'
-        }
-        greenEnergyGenerationResponse = get(url, headers=headers)
-        greenEnergyGeneration = greenEnergyGenerationResponse.json() if greenEnergyGenerationResponse and greenEnergyGenerationResponse.status_code == 200 else None
-        greenEnergyGenerationVal = greenEnergyGeneration["state"]
+        greenEnergyGenerationVal = hass_api_get(hassEntityGeneration)
 
     # Calculate our current consumption in watts
     solarW = int(float(greenEnergyGeneration) - float(greenEnergyConsumptionVal))
@@ -1323,7 +1338,7 @@ def check_green_energy():
     # that many amps.
     maxAmpsToDivideAmongSlaves = (solarW / 240) + \
                                   greenEnergyAmpsOffset
-
+    
     if(debugLevel >= 1):
         print("%s: Solar generating %dW so limit car charging to:\n" \
              "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
@@ -1332,6 +1347,10 @@ def check_green_energy():
              minAmpsPerTWC))
 
     backgroundTasksLock.release()
+
+    # Update HASS sensors with min/max amp values
+    hass_api_set(hassEntityMinAmps, minAmpsPerTWC)
+    hass_api_set(hassEntityMaxAmps, maxAmpsToDivideAmongSlaves)
 
 #
 # End functions
