@@ -118,6 +118,7 @@ import traceback
 import sysv_ipc
 import json
 from datetime import datetime
+from requests import get
 import threading
 
 
@@ -263,6 +264,20 @@ fakeTWCID = bytearray(b'\x77\x77')
 # These shouldn't need to be changed.
 masterSign = bytearray(b'\x77')
 slaveSign = bytearray(b'\x77')
+
+# HomeAssistant Server IP Address and Port
+hassServer = "192.168.28.9"
+hassPort = "8123"
+
+# To obtain a HASS API key, via the HASS web interface, click on your user profile, and
+# add a Long-Lived Access Token. Place it in the following variable:
+hassAPIKey = "ABCDE"
+
+# Entity IDs for HomeAsssistant sensors
+# If you don't have any of these sensors, comment them out and they will not be
+# used to calculate the maximum available amperage.
+hassEntityConsumption = "sensor.meter_power_live"
+hassEntityGeneration = "sensor.inverter_power_live"
 
 #
 # End configuration parameters
@@ -1023,7 +1038,9 @@ def car_api_charge(charge):
 
     startOrStop = 'start' if charge else 'stop'
     result = 'success'
-
+    if(debugLevel >= 8):
+        print("startOrStop is set to " + str(startOrStop))
+        
     for vehicle in carApiVehicles:
         if(charge and vehicle.stopAskingToStartCharging):
             if(debugLevel >= 8):
@@ -1103,7 +1120,7 @@ def car_api_charge(charge):
 
             try:
                 if(debugLevel >= 4):
-                    print(time_now() + ': Car API ' + startOrStop + \
+                    print(time_now() + ': Car API TWC ID: ' + str(vehicle.ID) + ": " + startOrStop + \
                           ' charge response', apiResponseDict, '\n')
                 # Responses I've seen in apiResponseDict:
                 # Car is done charging:
@@ -1259,64 +1276,62 @@ def check_green_energy():
     global debugLevel, maxAmpsToDivideAmongSlaves, greenEnergyAmpsOffset, \
            minAmpsPerTWC, backgroundTasksLock
 
-    # I check solar panel generation using an API exposed by The
-    # Energy Detective (TED). It's a piece of hardware available
-    # at http://www. theenergydetective.com
-    # You may also be able to find a way to query a solar system
-    # on the roof using an API provided by your solar installer.
-    # Most of those systems only update the amount of power the
-    # system is producing every 15 minutes at most, but that's
-    # fine for tweaking your car charging.
+    # Check solar panel generation using an API exposed by
+    # the HomeAssistant API.
     #
-    # In the worst case, you could skip finding realtime green
-    # energy data and simply direct the car to charge at certain
-    # rates at certain times of day that typically have certain
-    # levels of solar or wind generation. To do so, use the hour
-    # and min variables as demonstrated just above this line:
-    #   backgroundTasksQueue.put({'cmd':'checkGreenEnergy')
+    # You may need to customize the sensor entity_id values
+    # to match those used in your environment. This is configured
+    # in the config section at the top of this file.
     #
-    # The curl command used below can be used to communicate
-    # with almost any web API, even ones that require POST
-    # values or authentication. The -s option prevents curl from
-    # displaying download stats. -m 60 prevents the whole
-    # operation from taking over 60 seconds.
-    greenEnergyData = run_process('curl -s -m 60 "http://192.168.13.58/history/export.csv?T=1&D=0&M=1&C=1"')
+    greenEnergyConsumptionVal = 0
+    if hassEntityConsumption:
+        url = "http://" + hassServer + ":" + hassPort + "/api/states/" + hassEntityConsumption
+        headers = {
+            'Authorization': 'Bearer ' + hassAPIKey,
+            'content-type': 'application/json'
+        }
+        greenEnergyConsumptionResponse = get(url, headers=headers)
+        greenEnergyConsumption = greenEnergyConsumptionResponse.json() if greenEnergyConsumptionResponse and greenEnergyConsumptionResponse.status_code == 200 else None
+        greenEnergyConsumptionVal = greenEnergyConsumption["state"]
+        
+    greenEnergyGenerationVal = 0
+    if hassEntityGeneration:
+        url = "http://" + hassServer + ":" + hassPort + "/api/states/" + hassEntityGeneration
+        headers = {
+            'Authorization': 'Bearer ' + hassAPIKey,
+            'content-type': 'application/json'
+        }
+        greenEnergyGenerationResponse = get(url, headers=headers)
+        greenEnergyGeneration = greenEnergyGenerationResponse.json() if greenEnergyGenerationResponse and greenEnergyGenerationResponse.status_code == 200 else None
+        greenEnergyGenerationVal = greenEnergyGeneration["state"]
 
-    # In case, greenEnergyData will contain something like this:
-    #   MTU, Time, Power, Cost, Voltage
-    #   Solar,11/11/2017 14:20:43,-2.957,-0.29,124.3
-    # The only part we care about is -2.957 which is negative
-    # kW currently being generated. When 0kW is generated, the
-    # negative disappears so we make it optional in the regex
-    # below.
-    m = re.search(b'^Solar,[^,]+,-?([^, ]+),', greenEnergyData, re.MULTILINE)
-    if(m):
-        solarW = int(float(m.group(1)) * 1000)
+    # Calculate our current consumption in watts
+    solarW = int(float(greenEnergyGeneration) - float(greenEnergyConsumptionVal))
 
-        # Use backgroundTasksLock to prevent changing maxAmpsToDivideAmongSlaves
-        # if the main thread is in the middle of examining and later using
-        # that value.
-        backgroundTasksLock.acquire()
+    # Generation may be below zero if consumption is greater than generation
+    if solarW < 0:
+        solarW = 0
 
-        # Watts = Volts * Amps
-        # Car charges at 240 volts in North America so we figure
-        # out how many amps * 240 = solarW and limit the car to
-        # that many amps.
-        maxAmpsToDivideAmongSlaves = (solarW / 240) + \
-                                      greenEnergyAmpsOffset
+    # Use backgroundTasksLock to prevent changing maxAmpsToDivideAmongSlaves
+    # if the main thread is in the middle of examining and later using
+    # that value.
+    backgroundTasksLock.acquire()
 
-        if(debugLevel >= 1):
-            print("%s: Solar generating %dW so limit car charging to:\n" \
-                 "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
-                 (time_now(), solarW, (solarW / 240),
-                 greenEnergyAmpsOffset, maxAmpsToDivideAmongSlaves,
-                 minAmpsPerTWC))
+    # Watts = Volts * Amps
+    # Car charges at 240 volts in North America so we figure
+    # out how many amps * 240 = solarW and limit the car to
+    # that many amps.
+    maxAmpsToDivideAmongSlaves = (solarW / 240) + \
+                                  greenEnergyAmpsOffset
 
-        backgroundTasksLock.release()
-    else:
-        print(time_now() +
-            " ERROR: Can't determine current solar generation from:\n" +
-            str(greenEnergyData))
+    if(debugLevel >= 1):
+        print("%s: Solar generating %dW so limit car charging to:\n" \
+             "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
+             (time_now(), solarW, (solarW / 240),
+             greenEnergyAmpsOffset, maxAmpsToDivideAmongSlaves,
+             minAmpsPerTWC))
+
+    backgroundTasksLock.release()
 
 #
 # End functions
@@ -1989,7 +2004,7 @@ class TWCSlave:
             desiredAmpsOffered = fairShareAmps
 
         if(debugLevel >= 10):
-            print("desiredAmpsOffered reduced from " + str(maxAmpsToDivideAmongSlaves)
+            print("desiredAmpsOffered TWC: " + hex_str(self.TWCID) + " reduced from " + str(maxAmpsToDivideAmongSlaves)
                   + " to " + str(desiredAmpsOffered)
                   + " with " + str(numCarsCharging)
                   + " cars charging.")
@@ -2020,7 +2035,7 @@ class TWCSlave:
                 # exceeding by up to minAmpsTWCSupports for such a short period
                 # of time will cause problems.
                 if(debugLevel >= 10):
-                    print("desiredAmpsOffered increased from " + str(desiredAmpsOffered)
+                    print("desiredAmpsOffered TWC: " + hex_str(self.TWCID) + " increased from " + str(desiredAmpsOffered)
                           + " to " + str(self.minAmpsTWCSupports)
                           + " (self.minAmpsTWCSupports)")
                 desiredAmpsOffered = self.minAmpsTWCSupports
@@ -2054,7 +2069,7 @@ class TWCSlave:
                 # and start charging. Without energy saver mode, the car should
                 # begin charging within about 10 seconds of changing this value.
                 if(debugLevel >= 10):
-                    print("desiredAmpsOffered reduced to 0 from " + str(desiredAmpsOffered)
+                    print("desiredAmpsOffered TWC: " + hex_str(self.TWCID) + " reduced to 0 from " + str(desiredAmpsOffered)
                           + " because maxAmpsToDivideAmongSlaves "
                           + str(maxAmpsToDivideAmongSlaves)
                           + " / numCarsCharging " + str(numCarsCharging)
@@ -2131,7 +2146,7 @@ class TWCSlave:
                     # for a minute. This lets the owner quickly see that TWCManager
                     # is working properly each time they return home and plug in.
                     if(debugLevel >= 10):
-                        print("Don't stop charging yet because: " +
+                        print("Don't stop charging TWC: " + hex_str(self.TWCID) + " yet because: " +
                               'time - self.timeLastAmpsOfferedChanged ' +
                               str(int(now - self.timeLastAmpsOfferedChanged)) +
                               ' < 60 or time - self.timeReportedAmpsActualChangedSignificantly ' +
@@ -2159,7 +2174,7 @@ class TWCSlave:
                 # on. See reasoning above where I don't turn the charger off
                 # till it's been on at least 60 seconds.
                 if(debugLevel >= 10):
-                    print("Don't start charging yet because: " +
+                    print("Don't start charging TWC: " + hex_str(self.TWCID) + " yet because: " +
                           'self.lastAmpsOffered ' +
                           str(self.lastAmpsOffered) + " == 0 " +
                           'and time - self.timeLastAmpsOfferedChanged ' +
