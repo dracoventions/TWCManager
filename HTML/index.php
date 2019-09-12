@@ -339,8 +339,8 @@
                     }
 
                     // Display info about each TWC being managed.
-                    for($i = 0; $i < $status[$statusIdx]; $i++) {
-                        $subStatus = explode('~', $status[$statusIdx + 1]);
+                    for($i = 1; $i <= $status[$statusIdx]; $i++) {
+                        $subStatus = explode('~', $status[$statusIdx + $i]);
                         $twcModelMaxAmps = $subStatus[1];
                         print("<strong>TWC " . $subStatus[0] . ':</strong> ');
                         if($subStatus[2] < 1.0) {
