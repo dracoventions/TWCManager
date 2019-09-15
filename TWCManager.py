@@ -113,6 +113,7 @@ import queue
 import random
 import requests
 import math
+import paho.mqtt.client as mqtt
 import struct
 import sys
 import traceback
@@ -120,7 +121,6 @@ import sysv_ipc
 import json
 from datetime import datetime
 import threading
-
 
 ##########################
 #
@@ -658,6 +658,17 @@ def master_id_conflict():
     print(time_now() + ": Master's TWCID matches our fake slave's TWCID.  " \
         "Picked new random TWCID %02X%02X with sign %02X" % \
         (fakeTWCID[0], fakeTWCID[1], slaveSign[0]))
+
+def num_cars_charging_now():
+    global debugLevel, slaveTWCRoundRobin
+
+    carsCharging = 0
+    for slaveTWC in slaveTWCRoundRobin:
+        if(slaveTWC.reportedAmpsActual >= 1.0):
+            carsCharging += 1
+            if(debugLevel >= 10):
+                print("BUGFIX: Number of cars charging now: " + str(carsCharging))
+    return carsCharging
 
 def new_slave(newSlaveID, maxAmps):
     global slaveTWCs, slaveTWCRoundRobin
@@ -1336,15 +1347,12 @@ def check_green_energy():
     # Car charges at 240 volts in North America so we figure
     # out how many amps * 240 = solarW and limit the car to
     # that many amps.
-    maxAmpsToDivideAmongSlaves = (solarW / 240) + \
-                                  greenEnergyAmpsOffset
+    maxAmpsToDivideAmongSlaves = (solarW / 240) + greenEnergyAmpsOffset
     
     if(debugLevel >= 1):
         print("%s: Solar generating %dW so limit car charging to:\n" \
              "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
-             (time_now(), solarW, (solarW / 240),
-             greenEnergyAmpsOffset, maxAmpsToDivideAmongSlaves,
-             minAmpsPerTWC))
+             (time_now(), solarW, (solarW / 240), greenEnergyAmpsOffset, maxAmpsToDivideAmongSlaves, minAmpsPerTWC))
 
     backgroundTasksLock.release()
 
@@ -1537,8 +1545,7 @@ class TWCSlave:
                 (self.TWCID[0], self.TWCID[1], heartbeatData[0],
                 (((heartbeatData[3] << 8) + heartbeatData[4]) / 100),
                 (((heartbeatData[1] << 8) + heartbeatData[2]) / 100),
-                heartbeatData[5], heartbeatData[6]
-                )
+                heartbeatData[5], heartbeatData[6])
             if(self.protocolVersion == 2):
                 debugOutput += (" %02X%02X" % (heartbeatData[7], heartbeatData[8]))
             debugOutput += "  M"
@@ -1573,12 +1580,8 @@ class TWCSlave:
                     debugOutputCompare = debugOutputCompare[0:m2.start(1)] + \
                         self.lastHeartbeatDebugOutput[m1.start(1):m1.end(1)] + \
                         debugOutputCompare[m2.end(1):]
-            if(
-                debugOutputCompare != self.lastHeartbeatDebugOutput
-                or abs(ampsUsed - lastAmpsUsed) >= 1.0
-                or time.time() - self.timeLastHeartbeatDebugOutput > 600
-                or debugLevel >= 11
-            ):
+            if (debugOutputCompare != self.lastHeartbeatDebugOutput or abs(ampsUsed - lastAmpsUsed) >= 1.0
+                or time.time() - self.timeLastHeartbeatDebugOutput > 600 or debugLevel >= 11):
                 print(time_now() + debugOutput)
                 self.lastHeartbeatDebugOutput = debugOutput
                 self.timeLastHeartbeatDebugOutput = time.time()
@@ -1898,8 +1901,7 @@ class TWCSlave:
         # Also update self.reportedAmpsActualSignificantChangeMonitor if it's
         # still set to its initial value of -1.
         if(self.reportedAmpsActualSignificantChangeMonitor < 0
-           or abs(self.reportedAmpsActual - self.reportedAmpsActualSignificantChangeMonitor) > 0.8
-        ):
+           or abs(self.reportedAmpsActual - self.reportedAmpsActualSignificantChangeMonitor) > 0.8):
             self.timeReportedAmpsActualChangedSignificantly = now
             self.reportedAmpsActualSignificantChangeMonitor = self.reportedAmpsActual
 
@@ -1911,22 +1913,15 @@ class TWCSlave:
 
         # Check if it's time to resume tracking green energy.
         if(nonScheduledAmpsMax != -1 and hourResumeTrackGreenEnergy > -1
-           and hourResumeTrackGreenEnergy == hourNow
-        ):
+           and hourResumeTrackGreenEnergy == hourNow):
             nonScheduledAmpsMax = -1
             save_settings()
 
         # Check if we're within the hours we must use scheduledAmpsMax instead
         # of nonScheduledAmpsMax
         blnUseScheduledAmps = 0
-        if(scheduledAmpsMax > 0
-             and
-           scheduledAmpsStartHour > -1
-             and
-           scheduledAmpsEndHour > -1
-             and
-           scheduledAmpsDaysBitmap > 0
-        ):
+        if(scheduledAmpsMax > 0 and scheduledAmpsStartHour > -1
+             and scheduledAmpsEndHour > -1 and scheduledAmpsDaysBitmap > 0):
             if(scheduledAmpsStartHour > scheduledAmpsEndHour):
                 # We have a time like 8am to 7am which we must interpret as the
                 # 23-hour period after 8am or before 7am. Since this case always
@@ -1935,27 +1930,14 @@ class TWCSlave:
                 # scheduledAmpsDaysBitmap says only schedule on Monday, 8am to
                 # 7am, we apply scheduledAmpsMax from Monday at 8am to Monday at
                 # 11:59pm, and on Tuesday at 12am to Tuesday at 6:59am.
-                if(
-                   (
-                     hourNow >= scheduledAmpsStartHour
-                       and
-                     (scheduledAmpsDaysBitmap & (1 << ltNow.tm_wday))
-                   )
-                     or
-                   (
-                     hourNow < scheduledAmpsEndHour
-                       and
-                     (scheduledAmpsDaysBitmap & (1 << yesterday))
-                   )
-                ):
+                if((hourNow >= scheduledAmpsStartHour and (scheduledAmpsDaysBitmap & (1 << ltNow.tm_wday)))
+                     or (hourNow < scheduledAmpsEndHour and (scheduledAmpsDaysBitmap & (1 << yesterday)))):
                    blnUseScheduledAmps = 1
             else:
                 # We have a time like 7am to 8am which we must interpret as the
                 # 1-hour period between 7am and 8am.
-                if(hourNow >= scheduledAmpsStartHour
-                   and hourNow < scheduledAmpsEndHour
-                   and (scheduledAmpsDaysBitmap & (1 << ltNow.tm_wday))
-                ):
+                if(hourNow >= scheduledAmpsStartHour and hourNow < scheduledAmpsEndHour
+                   and (scheduledAmpsDaysBitmap & (1 << ltNow.tm_wday))):
                    blnUseScheduledAmps = 1
 
         if(chargeNowTimeEnd > 0 and chargeNowTimeEnd < now):
@@ -2005,14 +1987,16 @@ class TWCSlave:
             maxAmpsToDivideAmongSlaves = wiringMaxAmpsAllTWCs
 
         # Determine how many cars are charging and how many amps they're using
-        numCarsCharging = 1
+        numCarsCharging = num_cars_charging_now()
         desiredAmpsOffered = maxAmpsToDivideAmongSlaves
-        for slaveTWC in slaveTWCRoundRobin:
-            if(slaveTWC.TWCID != self.TWCID):
-                # To avoid exceeding maxAmpsToDivideAmongSlaves, we must
-                # subtract the actual amps being used by this TWC from the amps
-                # we will offer.
-                desiredAmpsOffered -= slaveTWC.reportedAmpsActual
+        
+        if (numCarsCharging > 0):
+            for slaveTWC in slaveTWCRoundRobin:
+                if(slaveTWC.TWCID != self.TWCID):
+                    # To avoid exceeding maxAmpsToDivideAmongSlaves, we must
+                    # subtract the actual amps being used by this TWC from the amps
+                    # we will offer.
+                    desiredAmpsOffered -= slaveTWC.reportedAmpsActual
                 if(slaveTWC.reportedAmpsActual >= 1.0):
                     numCarsCharging += 1
 
@@ -2096,16 +2080,9 @@ class TWCSlave:
                 desiredAmpsOffered = 0
 
             if(
-                   self.lastAmpsOffered > 0
-                     and
-                   (
-                     now - self.timeLastAmpsOfferedChanged < 60
-                       or
+                   self.lastAmpsOffered > 0 and (now - self.timeLastAmpsOfferedChanged < 60 or
                      now - self.timeReportedAmpsActualChangedSignificantly < 60
-                       or
-                     self.reportedAmpsActual < 4.0
-                   )
-                ):
+                       or self.reportedAmpsActual < 4.0)):
                     # We were previously telling the car to charge but now we want
                     # to tell it to stop. However, it's been less than a minute
                     # since we told it to charge or since the last significant
@@ -2186,9 +2163,7 @@ class TWCSlave:
             # stick with whole amps.
             desiredAmpsOffered = int(desiredAmpsOffered)
 
-            if(self.lastAmpsOffered == 0
-               and now - self.timeLastAmpsOfferedChanged < 60
-            ):
+            if(self.lastAmpsOffered == 0 and now - self.timeLastAmpsOfferedChanged < 60):
                 # Keep charger off for at least 60 seconds before turning back
                 # on. See reasoning above where I don't turn the charger off
                 # till it's been on at least 60 seconds.
@@ -2219,7 +2194,8 @@ class TWCSlave:
                 # slow enough to respond that even with 10s at 21A the most I've
                 # seen it actually draw starting at 6A is 13A.
                 if(debugLevel >= 10):
-                    print('desiredAmpsOffered=' + str(desiredAmpsOffered) +
+                    print('TWCID=' + hex_str(self.TWCID) +
+                          ' desiredAmpsOffered=' + str(desiredAmpsOffered) +
                           ' spikeAmpsToCancel6ALimit=' + str(spikeAmpsToCancel6ALimit) +
                           ' self.lastAmpsOffered=' + str(self.lastAmpsOffered) +
                           ' self.reportedAmpsActual=' + str(self.reportedAmpsActual) +
@@ -2229,13 +2205,8 @@ class TWCSlave:
                 if(
                     # If we just moved from a lower amp limit to
                     # a higher one less than spikeAmpsToCancel6ALimit.
-                   (
-                     desiredAmpsOffered < spikeAmpsToCancel6ALimit
-                       and
-                     desiredAmpsOffered > self.lastAmpsOffered
-                   )
-                      or
-                   (
+                   (desiredAmpsOffered < spikeAmpsToCancel6ALimit and
+                     desiredAmpsOffered > self.lastAmpsOffered) or (
                      # ...or if we've been offering the car more amps than it's
                      # been using for at least 10 seconds, then we'll change the
                      # amps we're offering it. For some reason, the change in
@@ -2243,8 +2214,7 @@ class TWCSlave:
                      #
                      # First, check that the car is drawing enough amps to be
                      # charging...
-                     self.reportedAmpsActual > 2.0
-                       and
+                     self.reportedAmpsActual > 2.0 and
                      # ...and car is charging at under spikeAmpsToCancel6ALimit.
                      # I think I've seen cars get stuck between spikeAmpsToCancel6ALimit
                      # and lastAmpsOffered, but more often a car will be limited
@@ -2255,15 +2225,13 @@ class TWCSlave:
                      # spikeAmpsToCancel6ALimit, I may need to implement a
                      # counter that tries spikeAmpsToCancel6ALimit only a
                      # certain number of times per hour.
-                     (self.reportedAmpsActual <= spikeAmpsToCancel6ALimit)
-                       and
+                     (self.reportedAmpsActual <= spikeAmpsToCancel6ALimit) and
                      # ...and car is charging at over two amps under what we
                      # want it to charge at. I have to use 2 amps because when
                      # offered, say 40A, the car charges at ~38.76A actual.
                      # Using a percentage instead of 2.0A doesn't work because
                      # 38.58/40 = 95.4% but 5.14/6 = 85.6%
-                     (self.lastAmpsOffered - self.reportedAmpsActual) > 2.0
-                       and
+                     (self.lastAmpsOffered - self.reportedAmpsActual) > 2.0 and
                      # ...and car hasn't changed its amp draw significantly in
                      # over 10 seconds, meaning it's stuck at its current amp
                      # draw.
@@ -2346,9 +2314,7 @@ class TWCSlave:
         # desiredAmpsOffered == 0. In that case, slave's response should always
         # look like this:
         #   S 032e 0.25/0.00A: 03 0000 0019 0000 M: 05 0000 0000 0000
-        if(self.reportedAmpsMax != desiredAmpsOffered
-           or desiredAmpsOffered == 0
-        ):
+        if(self.reportedAmpsMax != desiredAmpsOffered or desiredAmpsOffered == 0):
             desiredHundredthsOfAmps = int(desiredAmpsOffered * 100)
             self.masterHeartbeatData = bytearray([(0x09 if self.protocolVersion == 2 else 0x05),
               (desiredHundredthsOfAmps >> 8) & 0xFF,
