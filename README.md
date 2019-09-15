@@ -21,3 +21,5 @@ cd TWCManager && make install
 # Attribution
 * Original TWCManager distribution by [cdragon](https://github.com/cdragon/TWCManager)
 * Integrated improvements from [flodom's](https://github.com/flodorn/TWCManager) TWCManager fork. 
+    * Support for multiple vehicles on multiple chargers
+    * Support for publishing status to MQTT topics
