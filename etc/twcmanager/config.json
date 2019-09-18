@@ -1,0 +1,17 @@
+{
+    "config":{
+        "rs485Adapter": "/dev/ttyUSB0"
+        "wiringMaxAmpsAllTWCs": 40,
+        "wiringMaxAmpsPerTWC": 40,
+        "minAmpsPerTWC": 12,
+        "onlyChargeMultiCarsAtHome": true
+    },
+    "sources":{
+        "fronius": [
+          "enabled": true ],
+        "hass": [ 
+          "enabled": true ],
+        "mqtt": [
+          "enabled" :true ],
+    }
+}
