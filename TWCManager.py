@@ -18,19 +18,6 @@
 # to increase the use of green energy sources by controlling the time and power
 # level of car charging.
 #
-# WARNING:
-# Misuse of the protocol described in this software can direct a Tesla Wall
-# Charger to supply more current to a car than the charger wiring was designed
-# for. This will trip a circuit breaker or may start a fire in the unlikely
-# event that the circuit breaker fails.
-# This software was not written or designed with the benefit of information from
-# Tesla and there is always a small possibility that some unforeseen aspect of
-# its operation could damage a Tesla vehicle or a Tesla Wall Charger. All
-# efforts have been made to avoid such damage and this software is in active use
-# on the author's own vehicle and TWC.
-#
-# In short, USE THIS SOFTWARE AT YOUR OWN RISK.
-#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -40,20 +27,21 @@
 #
 # For more information, please visit http://unlicense.org
 
-import serial
-import time
-import re
-import subprocess
-import queue
-import random
-import requests
+import commentjson
+import json
 import math
 import paho.mqtt.client as mqtt
+import queue
+import random
+import re
+import requests
+import serial
+import subprocess
 import struct
 import sys
-import traceback
 import sysv_ipc
-import json
+import time
+import traceback
 from datetime import datetime
 import threading
 
@@ -61,38 +49,7 @@ import threading
 # Load Configuration File
 config = None
 with open('/etc/twcmanager/config.json') as jsonconfig:
-    config = json.load(jsonconfig)
-
-# When you have more than one vehicle associated with the Tesla car API and
-# onlyChargeMultiCarsAtHome = True, cars will only be controlled by the API when
-# parked at home. For example, when one vehicle is plugged in at home and
-# another is plugged in at a remote location and you've set TWCManager to stop
-# charging at the current time, only the one plugged in at home will be stopped
-# from charging using the car API.
-# Unfortunately, bugs in the car GPS system may cause a car to not be reported
-# as at home even if it is, in which case the car might not be charged when you
-# expect it to be. If you encounter that problem with multiple vehicles, you can
-# set onlyChargeMultiCarsAtHome = False, but you may encounter the problem of
-# a car not at home being stopped from charging by the API.
-onlyChargeMultiCarsAtHome = True
-
-# After determining how much green energy is available for charging, we add
-# greenEnergyAmpsOffset to the value. This is most often given a negative value
-# equal to the average amount of power consumed by everything other than car
-# charging. For example, if your house uses an average of 2.8A to power
-# computers, lights, etc while you expect the car to be charging, set
-# greenEnergyAmpsOffset = -2.8.
-#
-# If you have solar panels, look at your utility meter while your car charges.
-# If it says you're using 0.67kW, that means you should set
-# greenEnergyAmpsOffset = -0.67kW * 1000 / 240V = -2.79A assuming you're on the
-# North American 240V grid. In other words, during car charging, you want your
-# utility meter to show a value close to 0kW meaning no energy is being sent to
-# or from the grid.
-
-# If you are able to obtain consumption details from HomeAssistant, this value is
-# not needed and can be set to 0
-greenEnergyAmpsOffset = 0
+    config = commentjson.load(jsonconfig)
 
 # Choose how much debugging info to output.
 # 0 is no output other than errors.
@@ -932,7 +889,7 @@ def car_api_charge(charge):
     # queue_background_task({'cmd':'charge', 'charge':<True/False>})
     global debugLevel, carApiLastErrorTime, carApiErrorRetryMins, \
            carApiTransientErrors, carApiVehicles, carApiLastStartOrStopChargeTime, \
-           homeLat, homeLon, onlyChargeMultiCarsAtHome
+           homeLat, homeLon, config
 
     now = time.time()
     apiResponseDict = {}
@@ -973,7 +930,7 @@ def car_api_charge(charge):
         # more than once per minute.
         carApiLastStartOrStopChargeTime = now
 
-        if(onlyChargeMultiCarsAtHome and len(carApiVehicles) > 1):
+        if(config.onlyChargeMultiCarsAtHome and len(carApiVehicles) > 1):
             # When multiple cars are enrolled in the car API, only start/stop
             # charging cars parked at home.
 
@@ -1190,8 +1147,7 @@ def background_tasks_thread():
         backgroundTasksQueue.task_done()
 
 def check_green_energy():
-    global debugLevel, maxAmpsToDivideAmongSlaves, greenEnergyAmpsOffset, \
-           config, backgroundTasksLock
+    global debugLevel, maxAmpsToDivideAmongSlaves, config, backgroundTasksLock
 
     # Check solar panel generation using an API exposed by
     # the HomeAssistant API.
@@ -1224,12 +1180,12 @@ def check_green_energy():
     # Car charges at 240 volts in North America so we figure
     # out how many amps * 240 = solarW and limit the car to
     # that many amps.
-    maxAmpsToDivideAmongSlaves = (solarW / 240) + greenEnergyAmpsOffset
+    maxAmpsToDivideAmongSlaves = (solarW / 240) + config.greenEnergyAmpsOffset
     
     if(debugLevel >= 1):
         print("%s: Solar generating %dW so limit car charging to:\n" \
              "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
-             (time_now(), solarW, (solarW / 240), greenEnergyAmpsOffset, maxAmpsToDivideAmongSlaves, config.minAmpsPerTWC))
+             (time_now(), solarW, (solarW / 240), config.greenEnergyAmpsOffset, maxAmpsToDivideAmongSlaves, config.minAmpsPerTWC))
 
     backgroundTasksLock.release()
 
@@ -1756,8 +1712,7 @@ class TWCSlave:
         # Handle heartbeat message received from real slave TWC.
         global debugLevel, nonScheduledAmpsMax, \
                maxAmpsToDivideAmongSlaves, config, \
-               timeLastGreenEnergyCheck, greenEnergyAmpsOffset, \
-               slaveTWCRoundRobin, spikeAmpsToCancel6ALimit, \
+               timeLastGreenEnergyCheck, slaveTWCRoundRobin, spikeAmpsToCancel6ALimit, \
                chargeNowAmps, chargeNowTimeEnd
 
         now = time.time()
@@ -2647,7 +2602,7 @@ while True:
                         + ', wiringMaxAmpsAllTWCs=' + str(config.wiringMaxAmpsAllTWCs)
                         + ', wiringMaxAmpsPerTWC=' + str(config.wiringMaxAmpsPerTWC)
                         + ', minAmpsPerTWC=' + str(config.minAmpsPerTWC)
-                        + ', greenEnergyAmpsOffset=' + str(greenEnergyAmpsOffset)
+                        + ', greenEnergyAmpsOffset=' + str(config.greenEnergyAmpsOffset)
                         + ', debugLevel=' + str(debugLevel)
                         + '\n')
                     webResponseMsg += (
