@@ -40,71 +40,6 @@
 #
 # For more information, please visit http://unlicense.org
 
-################################################################################
-# What's TWCManager good for?
-#
-# This script (TWCManager) pretends to be a Tesla Wall Charger (TWC) set to
-# master mode. When wired to the IN or OUT pins of real TWC units set to slave
-# mode (rotary switch position F), TWCManager can tell them to limit car
-# charging to any whole amp value between 5A and the max rating of the charger.
-# Charging can also be stopped so the car goes to sleep.
-#
-# This level of control is useful for having TWCManager track the real-time
-# availability of green energy sources and direct the slave TWCs to use near the
-# exact amount of energy available. This saves energy compared to sending the
-# green energy off to a battery for later car charging or off to the grid where
-# some of it is lost in transmission.
-#
-# TWCManager can also be set up to only allow charging during certain hours,
-# stop charging if a grid overload or "save power day" is detected, reduce
-# charging on one TWC when a "more important" one is plugged in, or whatever
-# else you might want to do.
-#
-# One thing TWCManager does not have direct access to is the battery charge
-# percentage of each plugged-in car. There are hints on forums that some TWCs
-# do report battery state, but we have yet to see a TWC send such a message.
-# It's possible the feature exists in TWCs with newer firmware.
-# This is unfortunate, but if you own a Tesla vehicle being charged, people have
-# figured out how to get its charge state by contacting Tesla's servers using
-# the same password you use in the Tesla phone app. Be very careful not to
-# expose that password because it allows unlocking and starting the car.
-
-################################################################################
-# Overview of protocol TWCs use to load share
-#
-# A TWC set to slave mode (rotary switch position F) sends a linkready message
-# every 10 seconds.
-# The message contains a unique 4-byte id that identifies that particular slave
-# as the sender of the message.
-#
-# A TWC set to master mode sees a linkready message. In response, it sends a
-# heartbeat message containing the slave's 4-byte id as the intended recipient
-# of the message.
-# The master's 4-byte id is included as the sender of the message.
-#
-# Slave sees a heartbeat message from master directed to its unique 4-byte id
-# and responds with its own heartbeat message containing the master's 4-byte id
-# as the intended recipient of the message.
-# The slave's 4-byte id is included as the sender of the message.
-#
-# Master sends a heartbeat to a slave around once per second and expects a
-# response heartbeat from the slave.
-# Slaves do not send heartbeats without seeing one from a master first. If
-# heartbeats stop coming from master, slave resumes sending linkready every 10
-# seconds.
-# If slaves stop replying to heartbeats from master, master stops sending
-# heartbeats after about 26 seconds.
-#
-# Heartbeat messages contain a data block used to negotiate the amount of power
-# available to each slave and to the master.
-# The first byte is a status indicating things like is TWC plugged in, does it
-# want power, is there an error, etc.
-# Next two bytes indicate the amount of power requested or the amount allowed in
-# 0.01 amp increments.
-# Next two bytes indicate the amount of power being used to charge the car, also in
-# 0.01 amp increments.
-# Remaining bytes always contain a value of 0.
-
 import serial
 import time
 import re
@@ -123,77 +58,10 @@ from datetime import datetime
 import threading
 
 ##########################
-#
-# Configuration parameters
-#
-
-# Most users will have only one ttyUSB adapter plugged in and the default value
-# of '/dev/ttyUSB0' below will work. If not, run 'dmesg |grep ttyUSB' on the
-# command line to find your rs485 adapter and put its ttyUSB# value in the
-# parameter below.
-# If you're using a non-USB adapter like an RS485 shield, the value may need to
-# be something like '/dev/serial0'.
-rs485Adapter = '/dev/ttyUSB0'
-
-# Set wiringMaxAmpsAllTWCs to the maximum number of amps your charger wiring
-# can handle. I default this to a low 6A which should be safe with the minimum
-# standard of wiring in the areas of the world that I'm aware of.
-# Most U.S. chargers will be wired to handle at least 40A and sometimes 80A,
-# whereas EU chargers will handle at most 32A (using 3 AC lines instead of 2 so
-# the total power they deliver is similar).
-# Setting wiringMaxAmpsAllTWCs too high will trip the circuit breaker on your
-# charger at best or START A FIRE if the circuit breaker malfunctions.
-# Keep in mind that circuit breakers are designed to handle only 80% of their
-# max power rating continuously, so if your charger has a 50A circuit breaker,
-# put 50 * 0.8 = 40 here.
-# 40 amp breaker * 0.8 = 32 here.
-# 30 amp breaker * 0.8 = 24 here.
-# 100 amp breaker * 0.8 = 80 here.
-# IF YOU'RE NOT SURE WHAT TO PUT HERE, ASK THE ELECTRICIAN WHO INSTALLED YOUR
-# CHARGER.
-wiringMaxAmpsAllTWCs = 40
-
-# If all your chargers share a single circuit breaker, set wiringMaxAmpsPerTWC
-# to the same value as wiringMaxAmpsAllTWCs.
-# Rarely, each TWC will be wired to its own circuit breaker. If you're
-# absolutely sure your chargers each have a separate breaker, put the value of
-# that breaker * 0.8 here, and put the sum of all breakers * 0.8 as the value of
-# wiringMaxAmpsAllTWCs.
-# For example, if you have two TWCs each with a 50A breaker, set
-# wiringMaxAmpsPerTWC = 50 * 0.8 = 40 and wiringMaxAmpsAllTWCs = 40 + 40 = 80.
-wiringMaxAmpsPerTWC = 40
-
-# https://teslamotorsclub.com/tmc/threads/model-s-gen2-charger-efficiency-testing.78740/#post-1844789
-# says you're using 10.85% more power (91.75/82.77=1.1085) charging at 5A vs 40A,
-# 2.48% more power at 10A vs 40A, and 1.9% more power at 20A vs 40A.  This is
-# using a car with 2nd generation onboard AC/DC converter (VINs ending in 20000
-# and higher).
-# https://teslamotorsclub.com/tmc/threads/higher-amp-charging-is-more-efficient.24972/
-# says that cars using a 1st generation charger may use up to 30% more power
-# at 6A vs 40A!  However, the data refers to 120V 12A charging vs 240V 40A
-# charging. 120V 12A is technically the same power as 240V 6A, but the car
-# batteries need 400V DC to charge and a lot more power is wasted converting
-# 120V AC to 400V DC than 240V AC to 400V DC.
-#
-# The main point is 6A charging wastes a lot of power, so we default to charging
-# at a minimum of 12A by setting minAmpsPerTWC to 12. I picked 12A instead of 10A
-# because there is a theory that multiples of 3A are most efficient, though I
-# couldn't find any data showing that had been tested.
-#
-# Most EU chargers are connected to 230V, single-phase power which means 12A is
-# about the same power as in US chargers. If you have three-phase power, you can
-# lower minAmpsPerTWC to 6 and still be charging with more power than 12A on
-# single-phase.  For example, 12A * 230V * 1 = 2760W for single-phase power, while
-# 6A * 230V * 3 = 4140W for three-phase power. Consult an electrician if this
-# doesn't make sense.
-#
-# https://forums.tesla.com/forum/forums/charging-lowest-amperage-purposely
-# says another reason to charge at higher power is to preserve battery life.
-# The best charge rate is the capacity of the battery pack / 2.  Home chargers
-# can't reach that rate, so charging as fast as your wiring supports is best
-# from that standpoint.  It's not clear how much damage charging at slower
-# rates really does.
-minAmpsPerTWC = 12
+# Load Configuration File
+config = None
+with open('/etc/twcmanager/config.json') as jsonconfig:
+    config = json.load(jsonconfig)
 
 # When you have more than one vehicle associated with the Tesla car API and
 # onlyChargeMultiCarsAtHome = True, cars will only be controlled by the API when
@@ -712,7 +580,7 @@ def delete_slave(deleteSlaveID):
         pass
 
 def total_amps_actual_all_twcs():
-    global debugLevel, slaveTWCRoundRobin, wiringMaxAmpsAllTWCs
+    global debugLevel, slaveTWCRoundRobin, config
 
     totalAmps = 0
     for slaveTWC in slaveTWCRoundRobin:
@@ -1323,7 +1191,7 @@ def background_tasks_thread():
 
 def check_green_energy():
     global debugLevel, maxAmpsToDivideAmongSlaves, greenEnergyAmpsOffset, \
-           minAmpsPerTWC, backgroundTasksLock
+           config, backgroundTasksLock
 
     # Check solar panel generation using an API exposed by
     # the HomeAssistant API.
@@ -1361,12 +1229,12 @@ def check_green_energy():
     if(debugLevel >= 1):
         print("%s: Solar generating %dW so limit car charging to:\n" \
              "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
-             (time_now(), solarW, (solarW / 240), greenEnergyAmpsOffset, maxAmpsToDivideAmongSlaves, minAmpsPerTWC))
+             (time_now(), solarW, (solarW / 240), greenEnergyAmpsOffset, maxAmpsToDivideAmongSlaves, config.minAmpsPerTWC))
 
     backgroundTasksLock.release()
 
     # Update HASS sensors with min/max amp values
-    hass_api_set(hassEntityMinAmps, minAmpsPerTWC)
+    hass_api_set(hassEntityMinAmps, config.minAmpsPerTWC)
     hass_api_set(hassEntityMaxAmps, maxAmpsToDivideAmongSlaves)
 
 #
@@ -1540,7 +1408,7 @@ class TWCSlave:
     timeLastAmpsOfferedChanged = time.time()
     lastHeartbeatDebugOutput = ''
     timeLastHeartbeatDebugOutput = 0
-    wiringMaxAmps = wiringMaxAmpsPerTWC
+    wiringMaxAmps = config.wiringMaxAmpsPerTWC
 
     def __init__(self, TWCID, maxAmps):
         self.TWCID = TWCID
@@ -1887,10 +1755,10 @@ class TWCSlave:
     def receive_slave_heartbeat(self, heartbeatData):
         # Handle heartbeat message received from real slave TWC.
         global debugLevel, nonScheduledAmpsMax, \
-               maxAmpsToDivideAmongSlaves, wiringMaxAmpsAllTWCs, \
+               maxAmpsToDivideAmongSlaves, config, \
                timeLastGreenEnergyCheck, greenEnergyAmpsOffset, \
                slaveTWCRoundRobin, spikeAmpsToCancel6ALimit, \
-               chargeNowAmps, chargeNowTimeEnd, minAmpsPerTWC
+               chargeNowAmps, chargeNowTimeEnd
 
         now = time.time()
         self.timeLastRx = now
@@ -1991,15 +1859,15 @@ class TWCSlave:
         # is safe to use but before we've used it.
         backgroundTasksLock.acquire()
 
-        if(maxAmpsToDivideAmongSlaves > wiringMaxAmpsAllTWCs):
+        if(maxAmpsToDivideAmongSlaves > config.wiringMaxAmpsAllTWCs):
             # Never tell the slaves to draw more amps than the physical charger
             # wiring can handle.
             if(debugLevel >= 1):
                 print(time_now() +
                     " ERROR: maxAmpsToDivideAmongSlaves " + str(maxAmpsToDivideAmongSlaves) +
-                    " > wiringMaxAmpsAllTWCs " + str(wiringMaxAmpsAllTWCs) +
+                    " > wiringMaxAmpsAllTWCs " + str(config.wiringMaxAmpsAllTWCs) +
                     ".\nSee notes above wiringMaxAmpsAllTWCs in the 'Configuration parameters' section.")
-            maxAmpsToDivideAmongSlaves = wiringMaxAmpsAllTWCs
+            maxAmpsToDivideAmongSlaves = config.wiringMaxAmpsAllTWCs
 
         # Determine how many cars are charging and how many amps they're using
         numCarsCharging = num_cars_charging_now()
@@ -2029,7 +1897,7 @@ class TWCSlave:
 
         backgroundTasksLock.release()
 
-        minAmpsToOffer = minAmpsPerTWC
+        minAmpsToOffer = config.minAmpsPerTWC
         if(self.minAmpsTWCSupports > minAmpsToOffer):
             minAmpsToOffer = self.minAmpsTWCSupports
 
@@ -2361,12 +2229,12 @@ class TWCSlave:
             # minus amps this TWC is using, plus amps this TWC wants to use.
             totalAmpsAllTWCs = total_amps_actual_all_twcs() \
                   - self.reportedAmpsActual + self.lastAmpsOffered
-            if(totalAmpsAllTWCs > wiringMaxAmpsAllTWCs):
+            if(totalAmpsAllTWCs > config.wiringMaxAmpsAllTWCs):
                 # totalAmpsAllTWCs would exceed wiringMaxAmpsAllTWCs if we
                 # allowed this TWC to use desiredAmpsOffered.  Instead, try
                 # offering as many amps as will increase total_amps_actual_all_twcs()
                 # up to wiringMaxAmpsAllTWCs.
-                self.lastAmpsOffered = int(wiringMaxAmpsAllTWCs -
+                self.lastAmpsOffered = int(config.wiringMaxAmpsAllTWCs -
                                           (total_amps_actual_all_twcs() - self.reportedAmpsActual))
 
                 if(self.lastAmpsOffered < self.minAmpsTWCSupports):
@@ -2484,7 +2352,7 @@ backgroundTasksCmds = {}
 backgroundTasksLock = threading.Lock()
 
 ser = None
-ser = serial.Serial(rs485Adapter, baud, timeout=0)
+ser = serial.Serial(config.rs485adapter, baud, timeout=0)
 
 #
 # End global vars
@@ -2678,8 +2546,8 @@ while True:
 
                     webResponseMsg = (
                         "%.2f" % (maxAmpsToDivideAmongSlaves) +
-                        '`' + "%.2f" % (wiringMaxAmpsAllTWCs) +
-                        '`' + "%.2f" % (minAmpsPerTWC) +
+                        '`' + "%.2f" % (config.wiringMaxAmpsAllTWCs) +
+                        '`' + "%.2f" % (config.minAmpsPerTWC) +
                         '`' + "%.2f" % (chargeNowAmps) +
                         '`' + str(nonScheduledAmpsMax) +
                         '`' + str(scheduledAmpsMax) +
@@ -2764,7 +2632,7 @@ while True:
                         else:
                             overrideMasterHeartbeatData = b''
                 elif(webMsg == b'chargeNow'):
-                    chargeNowAmps = wiringMaxAmpsAllTWCs
+                    chargeNowAmps = config.wiringMaxAmpsAllTWCs
                     chargeNowTimeEnd = now + 60*60*24
                 elif(webMsg == b'chargeNowCancel'):
                     chargeNowAmps = 0
@@ -2774,11 +2642,11 @@ while True:
                     # using a web page:
                     # http://(Pi address)/index.php?submit=1&dumpState=1
                     webResponseMsg = ('time=' + str(now) + ', fakeMaster='
-                        + str(fakeMaster) + ', rs485Adapter=' + rs485Adapter
+                        + str(fakeMaster) + ', rs485Adapter=' + config.rs485adapter
                         + ', baud=' + str(baud)
-                        + ', wiringMaxAmpsAllTWCs=' + str(wiringMaxAmpsAllTWCs)
-                        + ', wiringMaxAmpsPerTWC=' + str(wiringMaxAmpsPerTWC)
-                        + ', minAmpsPerTWC=' + str(minAmpsPerTWC)
+                        + ', wiringMaxAmpsAllTWCs=' + str(config.wiringMaxAmpsAllTWCs)
+                        + ', wiringMaxAmpsPerTWC=' + str(config.wiringMaxAmpsPerTWC)
+                        + ', minAmpsPerTWC=' + str(config.minAmpsPerTWC)
                         + ', greenEnergyAmpsOffset=' + str(greenEnergyAmpsOffset)
                         + ', debugLevel=' + str(debugLevel)
                         + '\n')
@@ -3062,7 +2930,7 @@ while True:
                     # slaveTWC.wiringMaxAmps to be greater than maxAmps.
                     if(slaveTWC.wiringMaxAmps > maxAmps):
                         print("\n\n!!! DANGER DANGER !!!\nYou have set wiringMaxAmpsPerTWC to "
-                              + str(wiringMaxAmpsPerTWC)
+                              + str(config.wiringMaxAmpsPerTWC)
                               + " which is greater than the max "
                               + str(maxAmps) + " amps your charger says it can handle.  " \
                               "Please review instructions in the source code and consult an " \
