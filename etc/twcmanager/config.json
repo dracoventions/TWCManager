@@ -1,17 +1,82 @@
 {
-    "config":{
-        "rs485Adapter": "/dev/ttyUSB0"
-        "wiringMaxAmpsAllTWCs": 40,
-        "wiringMaxAmpsPerTWC": 40,
+    "config": {
+        # Most users will have only one ttyUSB adapter plugged in and the default value
+        # of '/dev/ttyUSB0' below will work. If not, run 'dmesg |grep ttyUSB' on the
+        # command line to find your rs485 adapter and put its ttyUSB# value in the
+        # parameter below.
+        # If you're using a non-USB adapter like an RS485 shield, the value may need to
+        # be something like '/dev/serial0'.
+        "rs485adapter": "/dev/ttyUSB0",
+        
+        # Set wiringMaxAmpsAllTWCs to the maximum number of amps your charger wiring
+        # can handle. I default this to a low 6A which should be safe with the minimum
+        # standard of wiring in the areas of the world that I'm aware of.
+        # Most U.S. chargers will be wired to handle at least 40A and sometimes 80A,
+        # whereas EU chargers will handle at most 32A (using 3 AC lines instead of 2 so
+        # the total power they deliver is similar).
+        # Setting wiringMaxAmpsAllTWCs too high will trip the circuit breaker on your
+        # charger at best or START A FIRE if the circuit breaker malfunctions.
+        # Keep in mind that circuit breakers are designed to handle only 80% of their
+        # max power rating continuously, so if your charger has a 50A circuit breaker,
+        # put 50 * 0.8 = 40 here.
+        # 40 amp breaker * 0.8 = 32 here.
+        # 30 amp breaker * 0.8 = 24 here.
+        # 100 amp breaker * 0.8 = 80 here.
+        # IF YOU'RE NOT SURE WHAT TO PUT HERE, ASK THE ELECTRICIAN WHO INSTALLED YOUR
+        # CHARGER.
+        "wiringMaxAmpsAllTWCs": 6,
+        
+        # If all your chargers share a single circuit breaker, set wiringMaxAmpsPerTWC
+        # to the same value as wiringMaxAmpsAllTWCs.
+        # Rarely, each TWC will be wired to its own circuit breaker. If you're
+        # absolutely sure your chargers each have a separate breaker, put the value of
+        # that breaker * 0.8 here, and put the sum of all breakers * 0.8 as the value of
+        # wiringMaxAmpsAllTWCs.
+        # For example, if you have two TWCs each with a 50A breaker, set
+        # wiringMaxAmpsPerTWC = 50 * 0.8 = 40 and wiringMaxAmpsAllTWCs = 40 + 40 = 80.
+        "wiringMaxAmpsPerTWC": 6,
+        
+        # https://teslamotorsclub.com/tmc/threads/model-s-gen2-charger-efficiency-testing.78740/#post-1844789
+        # says you're using 10.85% more power (91.75/82.77=1.1085) charging at 5A vs 40A,
+        # 2.48% more power at 10A vs 40A, and 1.9% more power at 20A vs 40A.  This is
+        # using a car with 2nd generation onboard AC/DC converter (VINs ending in 20000
+        # and higher).
+        # https://teslamotorsclub.com/tmc/threads/higher-amp-charging-is-more-efficient.24972/
+        # says that cars using a 1st generation charger may use up to 30% more power
+        # at 6A vs 40A!  However, the data refers to 120V 12A charging vs 240V 40A
+        # charging. 120V 12A is technically the same power as 240V 6A, but the car
+        # batteries need 400V DC to charge and a lot more power is wasted converting
+        # 120V AC to 400V DC than 240V AC to 400V DC.
+        #
+        # The main point is 6A charging wastes a lot of power, so we default to charging
+        # at a minimum of 12A by setting minAmpsPerTWC to 12. I picked 12A instead of 10A
+        # because there is a theory that multiples of 3A are most efficient, though I
+        # couldn't find any data showing that had been tested.
+        #
+        # Most EU chargers are connected to 230V, single-phase power which means 12A is
+        # about the same power as in US chargers. If you have three-phase power, you can
+        # lower minAmpsPerTWC to 6 and still be charging with more power than 12A on
+        # single-phase.  For example, 12A * 230V * 1 = 2760W for single-phase power, while
+        # 6A * 230V * 3 = 4140W for three-phase power. Consult an electrician if this
+        # doesn't make sense.
+        #
+        # https://forums.tesla.com/forum/forums/charging-lowest-amperage-purposely
+        # says another reason to charge at higher power is to preserve battery life.
+        # The best charge rate is the capacity of the battery pack / 2.  Home chargers
+        # can't reach that rate, so charging as fast as your wiring supports is best
+        # from that standpoint.  It's not clear how much damage charging at slower
+        # rates really does.
         "minAmpsPerTWC": 12,
-        "onlyChargeMultiCarsAtHome": true
+        "onlyChargeMultiCarsAtHome": true,
+        "greenEnergyAmpsOffset": 0,
+        "debugLevel": 11
     },
     "sources":{
-        "fronius": [
-          "enabled": true ],
-        "hass": [ 
-          "enabled": true ],
-        "mqtt": [
-          "enabled" :true ],
+        "Fronius": {
+          "enabled": true },
+        "HASS": { 
+          "enabled": true },
+        "MQTT": {
+          "enabled" :true },
     }
 }
