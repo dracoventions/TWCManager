@@ -28,7 +28,7 @@ This can save around 6kWh per month when used to track a local green energy sour
 Due to hardware limitations, TWCManager will not work with Tesla's older High Power Wall Connectors (HPWCs) that were discontinued around April 2016.
 
 ## Installation
-See **TWCManager Installation.pdf** for how to install and use.
+See docs/**TWCManager Installation.pdf** for how to install and use.
 
 ### Clone GIT Repository and copy files
 ```
