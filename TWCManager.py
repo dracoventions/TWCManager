@@ -31,7 +31,6 @@ import commentjson
 import json
 import os.path
 import math
-import paho.mqtt.client as mqtt
 import queue
 import random
 import re
