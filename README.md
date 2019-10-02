@@ -10,7 +10,7 @@
 
 It is important to read and understand the following warnings before using this tool:
 
-*This fork has not been tested yet as I am waiting on my own hardware to be installed. My recommendation at this point would be to use the cdragon port if your need is urgent, or to give it a week or two (by mid October) whilst I fully test the HomeAssistant integration.*
+**WARNING WARNING: This fork has not been tested yet as I am waiting on my own hardware to be installed. My recommendation at this point would be to use the cdragon port if your need is urgent, or to give it a week or two (by mid October) whilst I fully test the HomeAssistant integration.**
 
 * Misuse of the protocol described in this software can direct a Tesla Wall Charger to supply more current to a car than the charger wiring was designed for.
 * This will trip a circuit breaker or may start a fire in the unlikely event that the circuit breaker fails.
