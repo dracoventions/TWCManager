@@ -46,6 +46,7 @@ import traceback
 from datetime import datetime
 import threading
 from lib.TWCManager.EMS import Fronius
+from lib.TWCManager.Status import MQTTStatus
 
 ##########################
 # Load Configuration File
@@ -96,11 +97,6 @@ hassEntityGeneration = "sensor.inverter_power_live"
 
 hassEntityMinAmps = "sensor.twtc_min_amps"
 hassEntityMaxAmps = "sensor.twtc_max_amps"
-
-# MQTT Support
-# Comment this out if you don't want to publish to MQTT topics
-mqttBrokerIP = '192.168.1.1'
-mqttTopicPrefix = 'TWC'
 
 #
 # End configuration parameters
@@ -481,7 +477,7 @@ def master_id_conflict():
         (fakeTWCID[0], fakeTWCID[1], slaveSign[0]))
 
 def num_cars_charging_now():
-    global config, slaveTWCRoundRobin
+    global config, mqttstatus, slaveTWCRoundRobin
 
     carsCharging = 0
     for slaveTWC in slaveTWCRoundRobin:
@@ -489,8 +485,7 @@ def num_cars_charging_now():
             carsCharging += 1
             if(config['config']['debugLevel'] >= 10):
                 print("BUGFIX: Number of cars charging now: " + str(carsCharging))
-                if (mqttBrokerIP):
-                    publish.single(mqttTopicPrefix+"/carsCharging", payload=carsCharging, hostname=mqttBrokerIP)
+                mqttstatus.setStatus("carsCharging", carsCharging)
     return carsCharging
 
 def new_slave(newSlaveID, maxAmps):
@@ -535,8 +530,7 @@ def total_amps_actual_all_twcs():
         totalAmps += slaveTWC.reportedAmpsActual
     if(config['config']['debugLevel'] >= 10):
         print("Total amps all slaves are using: " + str(totalAmps))
-        if (mqttBrokerIP):
-            publish.single(mqttTopicPrefix+"/totalAmps", payload=totalAmps, hostname=mqttBrokerIP)
+        mqttstatus.setStatus("totalAmps", totalAmps)
     return totalAmps
 
 
@@ -1703,20 +1697,17 @@ class TWCSlave:
         # Handle heartbeat message received from real slave TWC.
         global nonScheduledAmpsMax, maxAmpsToDivideAmongSlaves, config, \
                timeLastGreenEnergyCheck, slaveTWCRoundRobin, spikeAmpsToCancel6ALimit, \
-               chargeNowAmps, chargeNowTimeEnd
+               chargeNowAmps, chargeNowTimeEnd, mqttstatus
 
         now = time.time()
         self.timeLastRx = now
 
         self.reportedAmpsMax = ((heartbeatData[1] << 8) + heartbeatData[2]) / 100
-        if (mqttBrokerIP):
-            publish.single(mqttTopicPrefix+"/ampsMax" + self.TWCID, payload=self.reportedAmpsMax , hostname=mqttBrokerIP)
+        mqttstatus.setStatus("ampsMax" + self.TWCID, reportedAmpsMax)
         self.reportedAmpsActual = ((heartbeatData[3] << 8) + heartbeatData[4]) / 100
-        if (mqttBrokerIP):
-            publish.single(mqttTopicPrefix+"/power" + self.TWCID, payload=self.reportedAmpsActual , hostname=mqttBrokerIP)
+        mqttstatus.setStatus("power" + self.TWCID, reportedAmpsActual)
         self.reportedState = heartbeatData[0]
-        if (mqttBrokerIP):
-            publish.single(mqttTopicPrefix+"/state" + self.TWCID, payload=self.reportedState , hostname=mqttBrokerIP)
+        mqttstatus.setStatus("state" + self.TWCID, self.reportedState)
 
         # self.lastAmpsOffered is initialized to -1.
         # If we find it at that value, set it to the current value reported by the
@@ -2372,6 +2363,9 @@ if(webIPCqueue == None):
 print("TWC Manager starting as fake %s with id %02X%02X and sign %02X" \
     % ( ("Master" if config['config']['fakeMaster'] else "Slave"), \
     ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(slaveSign)))
+
+# Create mqtt status plugin instance
+mqttstatus = MQTTStatus(config['status']['MQTT']['enabled'], config['status']['MQTT']['brokerIP'], config['status']['MQTT']['topicPrefix'])
 
 while True:
     try:
