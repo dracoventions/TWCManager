@@ -51,11 +51,16 @@ import threading
 config = None
 jsonconfig = None
 if (os.path.isfile('/etc/twcmanager/config.json')):
-    open('/etc/twcmanager/config.json') as jsonconfig
+    jsonconfig = open('/etc/twcmanager/config.json')
 else:
     if (os.path.isfile('config.json')):
-    open('config.json') as jsonconfig
-config = commentjson.load(jsonconfig)
+        jsonconfig = open('config.json')
+
+if (jsonconfig):
+    config = commentjson.load(jsonconfig)
+else:
+    print("Unable to find a configuration file.")
+    sys.exit()
 
 # All TWCs ship with a random two-byte TWCID. We default to using 0x7777 as our
 # fake TWC ID. There is a 1 in 64535 chance that this ID will match each real
@@ -1772,7 +1777,7 @@ class TWCSlave:
             # We're still in the one-day period where we want to charge at
             # chargeNowAmps, ignoring all other charging criteria.
             maxAmpsToDivideAmongSlaves = chargeNowAmps
-            if(config.debugLevel >= 10):
+            if(config['config']['debugLevel'] >= 10):
                 print(time_now() + ': Charge at chargeNowAmps %.2f' % (chargeNowAmps))
         elif(blnUseScheduledAmps):
             # We're within the scheduled hours that we need to provide a set
@@ -1798,15 +1803,15 @@ class TWCSlave:
         # is safe to use but before we've used it.
         backgroundTasksLock.acquire()
 
-        if(maxAmpsToDivideAmongSlaves > config.wiringMaxAmpsAllTWCs):
+        if(maxAmpsToDivideAmongSlaves > config['config']['ringMaxAmpsAllTWCs']
             # Never tell the slaves to draw more amps than the physical charger
             # wiring can handle.
-            if(config.debugLevel >= 1):
+            if(config['config']['debugLevel'] >= 1):
                 print(time_now() +
                     " ERROR: maxAmpsToDivideAmongSlaves " + str(maxAmpsToDivideAmongSlaves) +
-                    " > wiringMaxAmpsAllTWCs " + str(config.wiringMaxAmpsAllTWCs) +
+                    " > wiringMaxAmpsAllTWCs " + str(config['config']['wiringMaxAmpsAllTWCs']) +
                     ".\nSee notes above wiringMaxAmpsAllTWCs in the 'Configuration parameters' section.")
-            maxAmpsToDivideAmongSlaves = config.wiringMaxAmpsAllTWCs
+            maxAmpsToDivideAmongSlaves = config['config']['wiringMaxAmpsAllTWCs']
 
         # Determine how many cars are charging and how many amps they're using
         numCarsCharging = num_cars_charging_now()
@@ -1836,7 +1841,7 @@ class TWCSlave:
 
         backgroundTasksLock.release()
 
-        minAmpsToOffer = config.minAmpsPerTWC
+        minAmpsToOffer = config['config']['minAmpsPerTWC']
         if(self.minAmpsTWCSupports > minAmpsToOffer):
             minAmpsToOffer = self.minAmpsTWCSupports
 
@@ -1859,7 +1864,7 @@ class TWCSlave:
                 # wiringMaxAmpsAllTWCs for a few seconds, but I don't think
                 # exceeding by up to minAmpsTWCSupports for such a short period
                 # of time will cause problems.
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("desiredAmpsOffered TWC: " + hex_str(self.TWCID) + " increased from " + str(desiredAmpsOffered)
                           + " to " + str(self.minAmpsTWCSupports)
                           + " (self.minAmpsTWCSupports)")
@@ -2101,7 +2106,7 @@ class TWCSlave:
                     # limits more often than every 5 seconds. This has the side
                     # effect of holding spikeAmpsToCancel6ALimit set earlier for
                     # 5 seconds to make sure the car sees it.
-                    if(config.debugLevel >= 10):
+                    if(config['config']['debugLevel'] >= 10):
                         print('Reduce amps: time - self.timeLastAmpsOfferedChanged ' +
                             str(int(now - self.timeLastAmpsOfferedChanged)))
                     if(now - self.timeLastAmpsOfferedChanged < 5):
@@ -2168,12 +2173,12 @@ class TWCSlave:
             # minus amps this TWC is using, plus amps this TWC wants to use.
             totalAmpsAllTWCs = total_amps_actual_all_twcs() \
                   - self.reportedAmpsActual + self.lastAmpsOffered
-            if(totalAmpsAllTWCs > config.wiringMaxAmpsAllTWCs):
+            if(totalAmpsAllTWCs > config['config']['wiringMaxAmpsAllTWCs']):
                 # totalAmpsAllTWCs would exceed wiringMaxAmpsAllTWCs if we
                 # allowed this TWC to use desiredAmpsOffered.  Instead, try
                 # offering as many amps as will increase total_amps_actual_all_twcs()
                 # up to wiringMaxAmpsAllTWCs.
-                self.lastAmpsOffered = int(config.wiringMaxAmpsAllTWCs -
+                self.lastAmpsOffered = int(config['config']['wiringMaxAmpsAllTWCs'] -
                                           (total_amps_actual_all_twcs() - self.reportedAmpsActual))
 
                 if(self.lastAmpsOffered < self.minAmpsTWCSupports):
@@ -2291,7 +2296,7 @@ backgroundTasksCmds = {}
 backgroundTasksLock = threading.Lock()
 
 ser = None
-ser = serial.Serial(config.rs485adapter, config['config']['baud'], timeout=0)
+ser = serial.Serial(config['config']['rs485adapter'], config['config']['baud'], timeout=0)
 
 #
 # End global vars
@@ -2364,7 +2369,7 @@ if(webIPCqueue == None):
 
 
 print("TWC Manager starting as fake %s with id %02X%02X and sign %02X" \
-    % ( ("Master" if config.fakeMaster else "Slave"), \
+    % ( ("Master" if config['config']['fakeMaster'] else "Slave"), \
     ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(slaveSign)))
 
 while True:
@@ -2383,7 +2388,7 @@ while True:
 
         now = time.time()
 
-        if(config.fakeMaster == 1):
+        if(config['config']['fakeMaster'] == 1):
             # A real master sends 5 copies of linkready1 and linkready2 whenever
             # it starts up, which we do here.
             # It doesn't seem to matter if we send these once per second or once
@@ -2438,7 +2443,7 @@ while True:
             # I've also verified that masters don't care if we stop sending link
             # ready as long as we send status updates in response to master's
             # status updates.
-            if(config.fakeMaster != 2 and time.time() - timeLastTx >= 10.0):
+            if(config['config']['fakeMaster'] != 2 and time.time() - timeLastTx >= 10.0):
                 if(config['config']['debugLevel'] >= 1):
                     print("Advertise fake slave %02X%02X with sign %02X is " \
                           "ready to link once per 10 seconds as long as master " \
@@ -2485,8 +2490,8 @@ while True:
 
                     webResponseMsg = (
                         "%.2f" % (maxAmpsToDivideAmongSlaves) +
-                        '`' + "%.2f" % (config.wiringMaxAmpsAllTWCs) +
-                        '`' + "%.2f" % (config.minAmpsPerTWC) +
+                        '`' + "%.2f" % (config['config']['wiringMaxAmpsAllTWCs']) +
+                        '`' + "%.2f" % (config['config']['minAmpsPerTWC']) +
                         '`' + "%.2f" % (chargeNowAmps) +
                         '`' + str(nonScheduledAmpsMax) +
                         '`' + str(scheduledAmpsMax) +
@@ -2571,7 +2576,7 @@ while True:
                         else:
                             overrideMasterHeartbeatData = b''
                 elif(webMsg == b'chargeNow'):
-                    chargeNowAmps = config.wiringMaxAmpsAllTWCs
+                    chargeNowAmps = config['config']['wiringMaxAmpsAllTWCs']
                     chargeNowTimeEnd = now + 60*60*24
                 elif(webMsg == b'chargeNowCancel'):
                     chargeNowAmps = 0
@@ -2581,12 +2586,12 @@ while True:
                     # using a web page:
                     # http://(Pi address)/index.php?submit=1&dumpState=1
                     webResponseMsg = ('time=' + str(now) + ', fakeMaster='
-                        + str(config.fakeMaster) + ', rs485Adapter=' + config.rs485adapter
+                        + str(config['config']['fakeMaster']) + ', rs485Adapter=' + config['config']['rs485adapter']
                         + ', baud=' + str(config['config']['baud'])
-                        + ', wiringMaxAmpsAllTWCs=' + str(config.wiringMaxAmpsAllTWCs)
-                        + ', wiringMaxAmpsPerTWC=' + str(config.wiringMaxAmpsPerTWC)
-                        + ', minAmpsPerTWC=' + str(config.minAmpsPerTWC)
-                        + ', greenEnergyAmpsOffset=' + str(config.greenEnergyAmpsOffset)
+                        + ', wiringMaxAmpsAllTWCs=' + str(config['config']['wiringMaxAmpsAllTWCs'])
+                        + ', wiringMaxAmpsPerTWC=' + str(config['config']['wiringMaxAmpsPerTWC'])
+                        + ', minAmpsPerTWC=' + str(config['config']['minAmpsPerTWC'])
+                        + ', greenEnergyAmpsOffset=' + str(config['config']['greenEnergyAmpsOffset'])
                         + ', debugLevel=' + str(config['config']['debugLevel'])
                         + '\n')
                     webResponseMsg += (
@@ -2784,7 +2789,7 @@ while True:
                     (checksum, checksumExpected, hex_str(msg)))
                 continue
 
-            if(config.fakeMaster == 1):
+            if(config['config']['fakeMaster'] == 1):
                 ############################
                 # Pretend to be a master TWC
 
@@ -2869,7 +2874,7 @@ while True:
                     # slaveTWC.wiringMaxAmps to be greater than maxAmps.
                     if(slaveTWC.wiringMaxAmps > maxAmps):
                         print("\n\n!!! DANGER DANGER !!!\nYou have set wiringMaxAmpsPerTWC to "
-                              + str(config.wiringMaxAmpsPerTWC)
+                              + str(config['config']['wiringMaxAmpsPerTWC'])
                               + " which is greater than the max "
                               + str(maxAmps) + " amps your charger says it can handle.  " \
                               "Please review instructions in the source code and consult an " \
