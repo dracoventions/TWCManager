@@ -12,3 +12,7 @@ install:
 	
 	sudo cp HTML/* /var/www/html/
 	cp TWCManager.py /usr/bin/
+
+	# Create configuration directory
+	mkdir /etc/twcmanager
+	cp etc/twcmanager/config.json /etc/twcmanager/
