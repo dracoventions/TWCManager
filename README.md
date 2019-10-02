@@ -45,7 +45,7 @@ See docs/**TWCManager Installation.pdf** for how to install and use.
 
 ### Install necessary python modules
 ```
-pip3 install commentjson paho-mqtt serial sysv_ipc
+pip3 install commentjson paho-mqtt pyserial sysv_ipc
 ```
 
 ### Clone GIT Repository and copy files
