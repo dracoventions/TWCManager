@@ -39,7 +39,14 @@ This can save around 6kWh per month when used to track a local green energy sour
 * Integrations (HomeAssistant and Fronius) are in development and have not been fully tested yet. Expect this project to involve significant changes between now (September 2019) and end of October 2019.
 
 ## Installation
+
+### Physical installation
 See docs/**TWCManager Installation.pdf** for how to install and use.
+
+### Install necessary python modules
+```
+pip3 install commentjson paho-mqtt serial sysv_ipc
+```
 
 ### Clone GIT Repository and copy files
 ```
