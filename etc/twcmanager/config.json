@@ -1,5 +1,9 @@
 {
     "config": {
+        # The settings path will store the dynamic settings which are defined via the web
+        # interface
+        "settingsPath": "/etc/twcmanager",
+        
         # Most users will have only one ttyUSB adapter plugged in and the default value
         # of '/dev/ttyUSB0' below will work. If not, run 'dmesg |grep ttyUSB' on the
         # command line to find your rs485 adapter and put its ttyUSB# value in the
