@@ -118,14 +118,21 @@
         #   Set fakeMaster = 2 to display received RS-485 messages but not send any
         #                      unless you use the debugging web interface
         #                      (index.php?debugTWC=1) to send messages.
-        "fakeMaster": 1
+        "fakeMaster": 1,
+        
+        # TWC's rs485 port runs at 9600 baud which has been verified with an
+        # oscilloscope. Don't change this unless something changes in future hardware.
+        "baud": 9600
     },
     "sources":{
         "Fronius": {
-          "enabled": true },
+          "enabled": true 
+        },
         "HASS": { 
-          "enabled": true },
+          "enabled": true 
+        },
         "MQTT": {
-          "enabled" :true },
+          "enabled" :true 
+        },
     }
 }
