@@ -1,10 +1,11 @@
 # MQTT Status Output
+# Publishes the provided key and value pair to the provided topic prefix
 
 class MQTTStatus:
 
   import paho.mqtt.client as mqtt
   
-  status = false
+  status = False
   serverIP = None
   topicPrefix = None
   
