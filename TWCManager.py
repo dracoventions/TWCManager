@@ -484,7 +484,7 @@ def num_cars_charging_now():
             carsCharging += 1
             if(config['config']['debugLevel'] >= 10):
                 print("BUGFIX: Number of cars charging now: " + str(carsCharging))
-                mqttstatus.setStatus("carsCharging", carsCharging)
+                mqttstatus.setStatus(hex_str(self.TWCID), "carsCharging", carsCharging)
     return carsCharging
 
 def new_slave(newSlaveID, maxAmps):
@@ -529,7 +529,7 @@ def total_amps_actual_all_twcs():
         totalAmps += slaveTWC.reportedAmpsActual
     if(config['config']['debugLevel'] >= 10):
         print("Total amps all slaves are using: " + str(totalAmps))
-        mqttstatus.setStatus("totalAmps", totalAmps)
+        mqttstatus.setStatus(hex_str(self.TWCID), "totalAmps", totalAmps)
     return totalAmps
 
 
@@ -1702,11 +1702,10 @@ class TWCSlave:
         self.timeLastRx = now
 
         self.reportedAmpsMax = ((heartbeatData[1] << 8) + heartbeatData[2]) / 100
-        mqttstatus.setStatus("ampsMax" + self.TWCID, reportedAmpsMax)
+        mqttstatus.setStatus(hex_str(self.TWCID), "ampsMax", self.reportedAmpsMax)
         self.reportedAmpsActual = ((heartbeatData[3] << 8) + heartbeatData[4]) / 100
-        mqttstatus.setStatus("power" + self.TWCID, reportedAmpsActual)
         self.reportedState = heartbeatData[0]
-        mqttstatus.setStatus("state" + self.TWCID, self.reportedState)
+        mqttstatus.setStatus(hex_str(self.TWCID), "state", self.reportedState)
 
         # self.lastAmpsOffered is initialized to -1.
         # If we find it at that value, set it to the current value reported by the
@@ -1722,7 +1721,8 @@ class TWCSlave:
            or abs(self.reportedAmpsActual - self.reportedAmpsActualSignificantChangeMonitor) > 0.8):
             self.timeReportedAmpsActualChangedSignificantly = now
             self.reportedAmpsActualSignificantChangeMonitor = self.reportedAmpsActual
-
+            mqttstatus.setStatus(hex_str(self.TWCID), "power", self.reportedAmpsActual)
+            
         ltNow = time.localtime()
         hourNow = ltNow.tm_hour + (ltNow.tm_min / 60)
         yesterday = ltNow.tm_wday - 1
