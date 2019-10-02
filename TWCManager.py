@@ -44,8 +44,8 @@ import time
 import traceback
 from datetime import datetime
 import threading
-from lib.TWCManager.EMS import Fronius
-from lib.TWCManager.Status import MQTTStatus
+from lib.TWCManager.EMS.Fronius import Fronius
+from lib.TWCManager.Status.MQTTStatus import MQTTStatus
 
 ##########################
 # Load Configuration File
@@ -154,14 +154,14 @@ def time_now():
         ".%f" if config['config']['displayMilliseconds'] else "")))
 
 def load_settings():
-    global config, settingsFileName, nonScheduledAmpsMax, scheduledAmpsMax, \
+    global config, nonScheduledAmpsMax, scheduledAmpsMax, \
            scheduledAmpsStartHour, scheduledAmpsEndHour, \
            scheduledAmpsDaysBitmap, hourResumeTrackGreenEnergy, kWhDelivered, \
            carApiBearerToken, carApiRefreshToken, carApiTokenExpireTime, \
            homeLat, homeLon
 
     try:
-        fh = open(settingsFileName, 'r')
+        fh = open(config['config']['settingsPath'] + "TWCManager.settings", 'r')
 
         for line in fh:
             m = re.search(r'^\s*nonScheduledAmpsMax\s*=\s*([-0-9.]+)', line, re.MULTILINE)
@@ -256,13 +256,13 @@ def load_settings():
         pass
 
 def save_settings():
-    global config, settingsFileName, nonScheduledAmpsMax, scheduledAmpsMax, \
+    global config, nonScheduledAmpsMax, scheduledAmpsMax, \
            scheduledAmpsStartHour, scheduledAmpsEndHour, \
            scheduledAmpsDaysBitmap, hourResumeTrackGreenEnergy, kWhDelivered, \
            carApiBearerToken, carApiRefreshToken, carApiTokenExpireTime, \
            homeLat, homeLon
 
-    fh = open(settingsFileName, 'w')
+    fh = open(config['config']['settingsPath'] + "TWCManager.settings", 'w')
     fh.write('nonScheduledAmpsMax=' + str(nonScheduledAmpsMax) +
             '\nscheduledAmpsMax=' + str(scheduledAmpsMax) +
             '\nscheduledAmpsStartHour=' + str(scheduledAmpsStartHour) +
@@ -2246,7 +2246,6 @@ timeLastkWhSaved = time.time()
 # TWCManagerSettings.txt. This gives us a path that will always locate
 # TWCManagerSettings.txt in the same directory as the script even when pwd does
 # not match the script directory.
-settingsFileName = re.sub(r'/[^/]+$', r'/TWCManagerSettings.txt', __file__)
 nonScheduledAmpsMax = -1
 timeLastHeartbeatDebugOutput = 0
 
