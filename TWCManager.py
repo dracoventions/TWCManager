@@ -51,10 +51,6 @@ config = None
 with open('/etc/twcmanager/config.json') as jsonconfig:
     config = commentjson.load(jsonconfig)
 
-# TWC's rs485 port runs at 9600 baud which has been verified with an
-# oscilloscope. Don't change this unless something changes in future hardware.
-baud = 9600
-
 # All TWCs ship with a random two-byte TWCID. We default to using 0x7777 as our
 # fake TWC ID. There is a 1 in 64535 chance that this ID will match each real
 # TWC on the network, in which case you should pick a different random id below.
@@ -148,7 +144,7 @@ def run_process(cmd):
 def time_now():
     global config
     return(datetime.now().strftime("%H:%M:%S" + (
-        ".%f" if config.displayMilliseconds else "")))
+        ".%f" if config['config']['displayMilliseconds'] else "")))
 
 def load_settings():
     global config, settingsFileName, nonScheduledAmpsMax, scheduledAmpsMax, \
@@ -164,84 +160,84 @@ def load_settings():
             m = re.search(r'^\s*nonScheduledAmpsMax\s*=\s*([-0-9.]+)', line, re.MULTILINE)
             if(m):
                 nonScheduledAmpsMax = int(m.group(1))
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("load_settings: nonScheduledAmpsMax set to " + str(nonScheduledAmpsMax))
                 continue
 
             m = re.search(r'^\s*scheduledAmpsMax\s*=\s*([-0-9.]+)', line, re.MULTILINE)
             if(m):
                 scheduledAmpsMax = int(m.group(1))
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("load_settings: scheduledAmpsMax set to " + str(scheduledAmpsMax))
                 continue
 
             m = re.search(r'^\s*scheduledAmpsStartHour\s*=\s*([-0-9.]+)', line, re.MULTILINE)
             if(m):
                 scheduledAmpsStartHour = float(m.group(1))
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("load_settings: scheduledAmpsStartHour set to " + str(scheduledAmpsStartHour))
                 continue
 
             m = re.search(r'^\s*scheduledAmpsEndHour\s*=\s*([-0-9.]+)', line, re.MULTILINE)
             if(m):
                 scheduledAmpsEndHour = float(m.group(1))
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("load_settings: scheduledAmpsEndHour set to " + str(scheduledAmpsEndHour))
                 continue
 
             m = re.search(r'^\s*scheduledAmpsDaysBitmap\s*=\s*([-0-9.]+)', line, re.MULTILINE)
             if(m):
                 scheduledAmpsDaysBitmap = int(m.group(1))
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("load_settings: scheduledAmpsDaysBitmap set to " + str(scheduledAmpsDaysBitmap))
                 continue
 
             m = re.search(r'^\s*hourResumeTrackGreenEnergy\s*=\s*([-0-9.]+)', line, re.MULTILINE)
             if(m):
                 hourResumeTrackGreenEnergy = float(m.group(1))
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("load_settings: hourResumeTrackGreenEnergy set to " + str(hourResumeTrackGreenEnergy))
                 continue
 
             m = re.search(r'^\s*kWhDelivered\s*=\s*([-0-9.]+)', line, re.MULTILINE)
             if(m):
                 kWhDelivered = float(m.group(1))
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("load_settings: kWhDelivered set to " + str(kWhDelivered))
                 continue
 
             m = re.search(r'^\s*carApiBearerToken\s*=\s*(.+)', line, re.MULTILINE)
             if(m):
                 carApiBearerToken = m.group(1)
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("load_settings: carApiBearerToken set to " + str(carApiBearerToken))
                 continue
 
             m = re.search(r'^\s*carApiRefreshToken\s*=\s*(.+)', line, re.MULTILINE)
             if(m):
                 carApiRefreshToken = m.group(1)
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("load_settings: carApiRefreshToken set to " + str(carApiRefreshToken))
                 continue
 
             m = re.search(r'^\s*carApiTokenExpireTime\s*=\s*(.+)', line, re.MULTILINE)
             if(m):
                 carApiTokenExpireTime = float(m.group(1))
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("load_settings: carApiTokenExpireTime set to " + str(carApiTokenExpireTime))
                 continue
 
             m = re.search(r'^\s*homeLat\s*=\s*(.+)', line, re.MULTILINE)
             if(m):
                 homeLat = float(m.group(1))
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("load_settings: homeLat set to " + str(homeLat))
                 continue
 
             m = re.search(r'^\s*homeLon\s*=\s*(.+)', line, re.MULTILINE)
             if(m):
                 homeLon = float(m.group(1))
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("load_settings: homeLon set to " + str(homeLon))
                 continue
 
@@ -321,7 +317,7 @@ def send_msg(msg):
 
     msg = bytearray(b'\xc0' + msg + b'\xc0')
 
-    if(config.debugLevel >= 9):
+    if(config['config']['debugLevel'] >= 9):
         print("Tx@" + time_now() + ": " + hex_str(msg))
 
     ser.write(msg)
@@ -368,7 +364,7 @@ def unescape_msg(msg:bytearray, msgLen):
 def send_master_linkready1():
     global config
     
-    if(config.debugLevel >= 1):
+    if(config['config']['debugLevel'] >= 1):
         print(time_now() + ": Send master linkready1")
 
     # When master is powered on or reset, it sends 5 to 7 copies of this
@@ -423,7 +419,7 @@ def send_master_linkready1():
 def send_master_linkready2():
     global config
     
-    if(config.debugLevel >= 1):
+    if(config['config']['debugLevel'] >= 1):
         print(time_now() + ": Send master linkready2")
 
     # This linkready2 message is also sent 5 times when master is booted/reset
@@ -479,7 +475,7 @@ def num_cars_charging_now():
     for slaveTWC in slaveTWCRoundRobin:
         if(slaveTWC.reportedAmpsActual >= 1.0):
             carsCharging += 1
-            if(config.debugLevel >= 10):
+            if(config['config']['debugLevel'] >= 10):
                 print("BUGFIX: Number of cars charging now: " + str(carsCharging))
                 if (mqttBrokerIP):
                     publish.single(mqttTopicPrefix+"/carsCharging", payload=carsCharging, hostname=mqttBrokerIP)
@@ -525,7 +521,7 @@ def total_amps_actual_all_twcs():
     totalAmps = 0
     for slaveTWC in slaveTWCRoundRobin:
         totalAmps += slaveTWC.reportedAmpsActual
-    if(config.debugLevel >= 10):
+    if(config['config']['debugLevel'] >= 10):
         print("Total amps all slaves are using: " + str(totalAmps))
         if (mqttBrokerIP):
             publish.single(mqttTopicPrefix+"/totalAmps", payload=totalAmps, hostname=mqttBrokerIP)
@@ -552,7 +548,7 @@ def car_api_available(email = None, password = None, charge = None):
         # enough to clear the blacklist. So at this point it seems Tesla has
         # accepted that third party apps use the API and deals with bad behavior
         # automatically.
-        if(config.debugLevel >= 11):
+        if(config['config']['debugLevel'] >= 11):
             print(time_now() + ': Car API disabled for ' +
                   str(int(carApiErrorRetryMins*60 - (now - carApiLastErrorTime))) +
                   ' more seconds due to recent error.')
@@ -582,7 +578,7 @@ def car_api_available(email = None, password = None, charge = None):
                   '\' "https://owner-api.teslamotors.com/oauth/token"'
 
         if(cmd != None):
-            if(config.debugLevel >= 2):
+            if(config['config']['debugLevel'] >= 2):
                 # Hide car password in output
                 cmdRedacted = re.sub(r'("password": )"[^"]+"', r'\1[HIDDEN]', cmd)
                 print(time_now() + ': Car API cmd', cmdRedacted)
@@ -596,7 +592,7 @@ def car_api_available(email = None, password = None, charge = None):
             pass
 
         try:
-            if(config.debugLevel >= 4):
+            if(config['config']['debugLevel'] >= 4):
                 print(time_now() + ': Car API auth response', apiResponseDict, '\n')
             carApiBearerToken = apiResponseDict['access_token']
             carApiRefreshToken = apiResponseDict['refresh_token']
@@ -619,7 +615,7 @@ def car_api_available(email = None, password = None, charge = None):
             cmd = 'curl -s -m 60 -H "accept: application/json" -H "Authorization:Bearer ' + \
                   carApiBearerToken + \
                   '" "https://owner-api.teslamotors.com/api/1/vehicles"'
-            if(config.debugLevel >= 8):
+            if(config['config']['debugLevel'] >= 8):
                 print(time_now() + ': Car API cmd', cmd)
             try:
                 apiResponseDict = json.loads(run_process(cmd).decode('ascii'))
@@ -627,7 +623,7 @@ def car_api_available(email = None, password = None, charge = None):
                 pass
 
             try:
-                if(config.debugLevel >= 4):
+                if(config['config']['debugLevel'] >= 4):
                     print(time_now() + ': Car API vehicle list', apiResponseDict, '\n')
 
                 for i in range(0, apiResponseDict['count']):
@@ -655,7 +651,7 @@ def car_api_available(email = None, password = None, charge = None):
                     # It's been under carApiErrorRetryMins minutes since the car
                     # API generated an error on this vehicle. Don't send it more
                     # commands yet.
-                    if(config.debugLevel >= 8):
+                    if(config['config']['debugLevel'] >= 8):
                         print(time_now() + ": Don't send commands to vehicle " + str(vehicle.ID)
                               + " because it returned an error in the last "
                               + str(carApiErrorRetryMins) + " minutes.")
@@ -665,7 +661,7 @@ def car_api_available(email = None, password = None, charge = None):
                     continue
 
                 if(now - vehicle.lastWakeAttemptTime <= vehicle.delayNextWakeAttempt):
-                    if(config.debugLevel >= 10):
+                    if(config['config']['debugLevel'] >= 10):
                         print(time_now() + ": car_api_available returning False because we are still delaying "
                               + str(delayNextWakeAttempt) + " seconds after the last failed wake attempt.")
                     return False
@@ -677,7 +673,7 @@ def car_api_available(email = None, password = None, charge = None):
                       carApiBearerToken + \
                       '" "https://owner-api.teslamotors.com/api/1/vehicles/' + \
                       str(vehicle.ID) + '/wake_up"'
-                if(config.debugLevel >= 8):
+                if(config['config']['debugLevel'] >= 8):
                     print(time_now() + ': Car API cmd', cmd)
 
                 try:
@@ -687,7 +683,7 @@ def car_api_available(email = None, password = None, charge = None):
 
                 state = 'error'
                 try:
-                    if(config.debugLevel >= 4):
+                    if(config['config']['debugLevel'] >= 4):
                         print(time_now() + ': Car API wake car response', apiResponseDict, '\n')
 
                     state = apiResponseDict['response']['state']
@@ -819,7 +815,7 @@ def car_api_available(email = None, password = None, charge = None):
                             # later.
                             vehicle.delayNextWakeAttempt = 15*60;
 
-                    if(config.debugLevel >= 1):
+                    if(config['config']['debugLevel'] >= 1):
                         if(state == 'error'):
                             print(time_now() + ": Car API wake car failed with unknown response.  " \
                                 "Will try again in "
@@ -842,7 +838,7 @@ def car_api_available(email = None, password = None, charge = None):
                           str(apiResponseDict)))
 
     if(now - carApiLastErrorTime < carApiErrorRetryMins*60 or carApiBearerToken == ''):
-        if(config.debugLevel >= 8):
+        if(config['config']['debugLevel'] >= 8):
             print(time_now() + ": car_api_available returning False because of recent carApiLasterrorTime "
                 + str(now - carApiLastErrorTime) + " or empty carApiBearerToken '"
                 + carApiBearerToken + "'")
@@ -884,18 +880,18 @@ def car_api_charge(charge):
 
     if(now - carApiLastStartOrStopChargeTime < 60):
         # Don't start or stop more often than once a minute
-        if(config.debugLevel >= 8):
+        if(config['config']['debugLevel'] >= 8):
             print(time_now() + ': car_api_charge return because under 60 sec since last carApiLastStartOrStopChargeTime')
         return 'error'
 
     if(car_api_available(charge = charge) == False):
-        if(config.debugLevel >= 8):
+        if(config['config']['debugLevel'] >= 8):
             print(time_now() + ': car_api_charge return because car_api_available() == False')
         return 'error'
 
     startOrStop = 'start' if charge else 'stop'
     result = 'success'
-    if(config.debugLevel >= 8):
+    if(config['config']['debugLevel'] >= 8):
         print("startOrStop is set to " + str(startOrStop))
         
     for vehicle in carApiVehicles:
@@ -922,7 +918,7 @@ def car_api_charge(charge):
                 continue
 
             if(homeLat == 10000):
-                if(config.debugLevel >= 1):
+                if(config['config']['debugLevel'] >= 1):
                     print(time_now() + ": Home location for vehicles has never been set.  " +
                         "We'll assume home is where we found the first vehicle currently parked.  " +
                         "Home set to lat=" + str(vehicle.lat) + ", lon=" +
@@ -948,7 +944,7 @@ def car_api_charge(charge):
             if(abs(homeLat - vehicle.lat) > 0.0289
                or abs(homeLon - vehicle.lon) > 0.0289):
                 # Vehicle is not at home, so don't change its charge state.
-                if(config.debugLevel >= 1):
+                if(config['config']['debugLevel'] >= 1):
                     print(time_now() + ': Vehicle ID ' + str(vehicle.ID) +
                           ' is not at home.  Do not ' + startOrStop + ' charge.')
                 continue
@@ -967,7 +963,7 @@ def car_api_charge(charge):
 
         # Retry up to 3 times on certain errors.
         for retryCount in range(0, 3):
-            if(config.debugLevel >= 8):
+            if(config['config']['debugLevel'] >= 8):
                 print(time_now() + ': Car API cmd', cmd)
 
             try:
@@ -976,7 +972,7 @@ def car_api_charge(charge):
                 pass
 
             try:
-                if(config.debugLevel >= 4):
+                if(config['config']['debugLevel'] >= 4):
                     print(time_now() + ': Car API TWC ID: ' + str(vehicle.ID) + ": " + startOrStop + \
                           ' charge response', apiResponseDict, '\n')
                 # Responses I've seen in apiResponseDict:
@@ -1009,7 +1005,7 @@ def car_api_charge(charge):
                                 # it's worth re-trying in 1 minute rather than
                                 # waiting carApiErrorRetryMins minutes for retry
                                 # in the standard error handler.
-                                if(config.debugLevel >= 1):
+                                if(config['config']['debugLevel'] >= 1):
                                     print(time_now() + ": Car API returned '"
                                           + error
                                           + "' when trying to start charging.  Try again in 1 minute.")
@@ -1041,7 +1037,7 @@ def car_api_charge(charge):
                             # Remember, this only means at least one car in the
                             # list wants us to stop asking and we don't know
                             # which car in the list is connected to our TWC.
-                            if(config.debugLevel >= 1):
+                            if(config['config']['debugLevel'] >= 1):
                                 print(time_now() + ': Vehicle ' + str(vehicle.ID)
                                       + ' is done charging or already trying to charge.  Stop asking to start charging.')
                             vehicle.stopAskingToStartCharging = True
@@ -1080,7 +1076,7 @@ def car_api_charge(charge):
                 vehicle.lastErrorTime = now
             break
 
-    if(config.debugLevel >= 1 and carApiLastStartOrStopChargeTime == now):
+    if(config['config']['debugLevel'] >= 1 and carApiLastStartOrStopChargeTime == now):
         print(time_now() + ': Car API ' + startOrStop + ' charge result: ' + result)
 
     return result
@@ -1165,7 +1161,7 @@ def check_green_energy():
     # that many amps.
     maxAmpsToDivideAmongSlaves = (solarW / 240) + config.greenEnergyAmpsOffset
     
-    if(config.debugLevel >= 1):
+    if(config['config']['debugLevel'] >= 1):
         print("%s: Solar generating %dW so limit car charging to:\n" \
              "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
              (time_now(), solarW, (solarW / 240), config.greenEnergyAmpsOffset, maxAmpsToDivideAmongSlaves, config.minAmpsPerTWC))
@@ -1208,7 +1204,7 @@ class CarApiVehicle:
         if(time.time() - self.lastErrorTime < carApiErrorRetryMins*60):
             # It's been under carApiErrorRetryMins minutes since the car API
             # generated an error on this vehicle. Return that car is not ready.
-            if(config.debugLevel >= 8):
+            if(config['config']['debugLevel'] >= 8):
                 print(time_now() + ': Vehicle ' + str(self.ID)
                     + ' not ready because of recent lastErrorTime '
                     + str(self.lastErrorTime))
@@ -1221,7 +1217,7 @@ class CarApiVehicle:
             # was issued.  Times I've tested: 1:35, 1:57, 2:30
             return True
 
-        if(config.debugLevel >= 8):
+        if(config['config']['debugLevel'] >= 8):
             print(time_now() + ': Vehicle ' + str(self.ID)
                 + " not ready because it wasn't woken in the last 2 minutes.")
         return False
@@ -1241,7 +1237,7 @@ class CarApiVehicle:
 
         # Retry up to 3 times on certain errors.
         for retryCount in range(0, 3):
-            if(config.debugLevel >= 8):
+            if(config['config']['debugLevel'] >= 8):
                 print(time_now() + ': Car API cmd', cmd)
             try:
                 apiResponseDict = json.loads(run_process(cmd).decode('ascii'))
@@ -1253,7 +1249,7 @@ class CarApiVehicle:
                 pass
 
             try:
-                if(config.debugLevel >= 4):
+                if(config['config']['debugLevel'] >= 4):
                     print(time_now() + ': Car API vehicle GPS location', apiResponseDict, '\n')
 
                 if('error' in apiResponseDict):
@@ -1265,7 +1261,7 @@ class CarApiVehicle:
                             # it's worth re-trying in 1 minute rather than
                             # waiting carApiErrorRetryMins minutes for retry
                             # in the standard error handler.
-                            if(config.debugLevel >= 1):
+                            if(config['config']['debugLevel'] >= 1):
                                 print(time_now() + ": Car API returned '"
                                       + error
                                       + "' when trying to get GPS location.  Try again in 1 minute.")
@@ -1291,7 +1287,7 @@ class CarApiVehicle:
                 # This catches cases like trying to access
                 # apiResponseDict['response'] when 'response' doesn't exist in
                 # apiResponseDict.
-                if(config.debugLevel >= 1):
+                if(config['config']['debugLevel'] >= 1):
                     print(time_now() + ": ERROR: Can't get GPS location of vehicle " + str(self.ID) + \
                           ".  Will try again later.")
                 self.lastErrorTime = time.time()
@@ -1397,7 +1393,7 @@ class TWCSlave:
                         self.lastHeartbeatDebugOutput[m1.start(1):m1.end(1)] + \
                         debugOutputCompare[m2.end(1):]
             if (debugOutputCompare != self.lastHeartbeatDebugOutput or abs(ampsUsed - lastAmpsUsed) >= 1.0
-                or time.time() - self.timeLastHeartbeatDebugOutput > 600 or config.debugLevel >= 11):
+                or time.time() - self.timeLastHeartbeatDebugOutput > 600 or config['config']['debugLevel'] >= 11):
                 print(time_now() + debugOutput)
                 self.lastHeartbeatDebugOutput = debugOutput
                 self.timeLastHeartbeatDebugOutput = time.time()
@@ -1826,7 +1822,7 @@ class TWCSlave:
         if(desiredAmpsOffered > fairShareAmps):
             desiredAmpsOffered = fairShareAmps
 
-        if(config.debugLevel >= 10):
+        if(config['config']['debugLevel'] >= 10):
             print("desiredAmpsOffered TWC: " + hex_str(self.TWCID) + " reduced from " + str(maxAmpsToDivideAmongSlaves)
                   + " to " + str(desiredAmpsOffered)
                   + " with " + str(numCarsCharging)
@@ -1891,7 +1887,7 @@ class TWCSlave:
                 # also wakes it) and next time it wakes, it will see there's power
                 # and start charging. Without energy saver mode, the car should
                 # begin charging within about 10 seconds of changing this value.
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("desiredAmpsOffered TWC: " + hex_str(self.TWCID) + " reduced to 0 from " + str(desiredAmpsOffered)
                           + " because maxAmpsToDivideAmongSlaves "
                           + str(maxAmpsToDivideAmongSlaves)
@@ -1961,7 +1957,7 @@ class TWCSlave:
                     # unplugged, the charge port will turn green and start charging
                     # for a minute. This lets the owner quickly see that TWCManager
                     # is working properly each time they return home and plug in.
-                    if(config.debugLevel >= 10):
+                    if(config['config']['debugLevel'] >= 10):
                         print("Don't stop charging TWC: " + hex_str(self.TWCID) + " yet because: " +
                               'time - self.timeLastAmpsOfferedChanged ' +
                               str(int(now - self.timeLastAmpsOfferedChanged)) +
@@ -1987,7 +1983,7 @@ class TWCSlave:
                 # Keep charger off for at least 60 seconds before turning back
                 # on. See reasoning above where I don't turn the charger off
                 # till it's been on at least 60 seconds.
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("Don't start charging TWC: " + hex_str(self.TWCID) + " yet because: " +
                           'self.lastAmpsOffered ' +
                           str(self.lastAmpsOffered) + " == 0 " +
@@ -2013,7 +2009,7 @@ class TWCSlave:
                 # spikeAmpsToCancel6ALimit of power draw. In fact, the car is
                 # slow enough to respond that even with 10s at 21A the most I've
                 # seen it actually draw starting at 6A is 13A.
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print('TWCID=' + hex_str(self.TWCID) +
                           ' desiredAmpsOffered=' + str(desiredAmpsOffered) +
                           ' spikeAmpsToCancel6ALimit=' + str(spikeAmpsToCancel6ALimit) +
@@ -2074,7 +2070,7 @@ class TWCSlave:
                         # spikeAmpsToCancel6ALimit as the first value it saw.
                         # The car limited itself to 6A indefinitely. In this
                         # case, the fix is to offer it lower amps.
-                        if(config.debugLevel >= 1):
+                        if(config['config']['debugLevel'] >= 1):
                             print(time_now() + ': Car stuck when offered spikeAmpsToCancel6ALimit.  Offering 2 less.')
                         desiredAmpsOffered = spikeAmpsToCancel6ALimit - 2.0
                     elif(now - self.timeLastAmpsOfferedChanged > 5):
@@ -2146,7 +2142,7 @@ class TWCSlave:
         if(len(overrideMasterHeartbeatData) >= 7):
             self.masterHeartbeatData = overrideMasterHeartbeatData
 
-        if(config.debugLevel >= 1):
+        if(config['config']['debugLevel'] >= 1):
             self.print_status(heartbeatData)
 
 
@@ -2154,7 +2150,7 @@ class TWCSlave:
         # self.lastAmpsOffered should only be changed using this sub.
         global config
 
-        if(config.debugLevel >= 10):
+        if(config['config']['debugLevel'] >= 10):
             print("set_last_amps_offered(TWCID=" + hex_str(self.TWCID) +
                   ", desiredAmpsOffered=" + str(desiredAmpsOffered) + ")")
 
@@ -2189,7 +2185,7 @@ class TWCSlave:
                 # when two 80A TWCs share a 125A line.  Therefore, don't print
                 # an error.
                 self.lastAmpsOffered = self.wiringMaxAmps
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("Offering slave TWC %02X%02X %.1fA instead of " \
                         "%.1fA to avoid overloading the TWC rated at %.1fA." % (
                         self.TWCID[0], self.TWCID[1], self.lastAmpsOffered,
@@ -2289,7 +2285,7 @@ backgroundTasksCmds = {}
 backgroundTasksLock = threading.Lock()
 
 ser = None
-ser = serial.Serial(config.rs485adapter, baud, timeout=0)
+ser = serial.Serial(config.rs485adapter, config['config']['baud'], timeout=0)
 
 #
 # End global vars
@@ -2437,7 +2433,7 @@ while True:
             # ready as long as we send status updates in response to master's
             # status updates.
             if(config.fakeMaster != 2 and time.time() - timeLastTx >= 10.0):
-                if(config.debugLevel >= 1):
+                if(config['config']['debugLevel'] >= 1):
                     print("Advertise fake slave %02X%02X with sign %02X is " \
                           "ready to link once per 10 seconds as long as master " \
                           "hasn't sent a heartbeat in the last 10 seconds." % \
@@ -2463,7 +2459,7 @@ while True:
                 webMsgID = unpacked[1]
                 webMsg = webMsgRaw[0][6:len(webMsgRaw[0])]
 
-                if(config.debugLevel >= 1):
+                if(config['config']['debugLevel'] >= 1):
                     webMsgRedacted = webMsg
 
                     # Hide car password in web request to send password to Tesla
@@ -2580,12 +2576,12 @@ while True:
                     # http://(Pi address)/index.php?submit=1&dumpState=1
                     webResponseMsg = ('time=' + str(now) + ', fakeMaster='
                         + str(config.fakeMaster) + ', rs485Adapter=' + config.rs485adapter
-                        + ', baud=' + str(baud)
+                        + ', baud=' + str(config['config']['baud'])
                         + ', wiringMaxAmpsAllTWCs=' + str(config.wiringMaxAmpsAllTWCs)
                         + ', wiringMaxAmpsPerTWC=' + str(config.wiringMaxAmpsPerTWC)
                         + ', minAmpsPerTWC=' + str(config.minAmpsPerTWC)
                         + ', greenEnergyAmpsOffset=' + str(config.greenEnergyAmpsOffset)
-                        + ', debugLevel=' + str(config.debugLevel)
+                        + ', debugLevel=' + str(config['config']['debugLevel'])
                         + '\n')
                     webResponseMsg += (
                         'carApiStopAskingToStartCharging=' + str(carApiStopAskingToStartCharging)
@@ -2606,12 +2602,12 @@ while True:
                 elif(webMsg[0:14] == b'setDebugLevel='):
                     m = re.search(b'([-0-9]+)', webMsg[14:len(webMsg)], re.MULTILINE)
                     if(m):
-                        config.debugLevel = int(m.group(1))
+                        config['config']['debugLevel'] = int(m.group(1))
                 else:
                     print(time_now() + ": Unknown IPC request from web server: " + str(webMsg))
 
                 if(len(webResponseMsg) > 0):
-                    if(config.debugLevel >= 5):
+                    if(config['config']['debugLevel'] >= 5):
                         print(time_now() + ": Web query response: '" + webResponseMsg + "'")
 
                     try:
@@ -2657,7 +2653,7 @@ while True:
                     # No message data waiting but we've received a partial
                     # message that we should wait to finish receiving.
                     if(now - timeMsgRxStart >= 2.0):
-                        if(config.debugLevel >= 9):
+                        if(config['config']['debugLevel'] >= 9):
                             print(time_now() + ": Msg timeout (" + hex_str(ignoredData) +
                                   ') ' + hex_str(msg[0:msgLen]))
                         msgLen = 0
@@ -2680,7 +2676,7 @@ while True:
             if(msgLen == 0 and data[0] != 0xc0):
                 # We expect to find these non-c0 bytes between messages, so
                 # we don't print any warning at standard debug levels.
-                if(config.debugLevel >= 11):
+                if(config['config']['debugLevel'] >= 11):
                     print("Ignoring byte %02X between messages." % (data[0]))
                 ignoredData += data
                 continue
@@ -2694,7 +2690,7 @@ while True:
                 # happen every once in awhile but there may be a problem
                 # such as incorrect termination or bias resistors on the
                 # rs485 wiring if you see it frequently.
-                if(config.debugLevel >= 10):
+                if(config['config']['debugLevel'] >= 10):
                     print("Found end of message before full-length message received.  " \
                           "Discard and wait for new message.")
 
@@ -2757,7 +2753,7 @@ while True:
             ):
                 lastTWCResponseMsg = msg
 
-            if(config.debugLevel >= 9):
+            if(config['config']['debugLevel'] >= 9):
                 print("Rx@" + time_now() + ": (" + hex_str(ignoredData) + ') ' \
                       + hex_str(msg) + "")
 
@@ -2810,7 +2806,7 @@ while True:
                     sign = msgMatch.group(2)
                     maxAmps = ((msgMatch.group(3)[0] << 8) + msgMatch.group(3)[1]) / 100
 
-                    if(config.debugLevel >= 1):
+                    if(config['config']['debugLevel'] >= 1):
                         print(time_now() + ": %.2f amp slave TWC %02X%02X is ready to link.  Sign: %s" % \
                             (maxAmps, senderID[0], senderID[1],
                             hex_str(sign)))
@@ -2858,7 +2854,7 @@ while True:
                             slaveTWC.protocolVersion = 2
                             slaveTWC.minAmpsTWCSupports = 6
 
-                        if(config.debugLevel >= 1):
+                        if(config['config']['debugLevel'] >= 1):
                             print(time_now() + ": Set slave TWC %02X%02X protocolVersion to %d, minAmpsTWCSupports to %d." % \
                                  (senderID[0], senderID[1], slaveTWC.protocolVersion, slaveTWC.minAmpsTWCSupports))
 
@@ -2921,7 +2917,7 @@ while True:
                         # I'm not sure why it sent 0000 and it only happened
                         # once so far, so it could have been corruption in the
                         # data or an unusual case.
-                        if(config.debugLevel >= 1):
+                        if(config['config']['debugLevel'] >= 1):
                             print(time_now() + ": WARNING: Slave TWC %02X%02X status data: " \
                                   "%s sent to unknown TWC %02X%02X." % \
                                 (senderID[0], senderID[1],
@@ -2956,7 +2952,7 @@ while True:
                     receiverID = msgMatch.group(2)
                     data = msgMatch.group(3)
 
-                    if(config.debugLevel >= 1):
+                    if(config['config']['debugLevel'] >= 1):
                         print(time_now() + ": Slave TWC %02X%02X unexpectedly reported kWh and voltage data: %s." % \
                             (senderID[0], senderID[1],
                             hex_str(data)))
@@ -2979,7 +2975,7 @@ while True:
                         senderID = msgMatch.group(1)
                         data = msgMatch.group(2)
 
-                        if(config.debugLevel >= 1):
+                        if(config['config']['debugLevel'] >= 1):
                             print(time_now() + ": Slave TWC %02X%02X reported VIN data: %s." % \
                                 (senderID[0], senderID[1], hex_str(data)))
                         
@@ -3012,7 +3008,7 @@ while True:
                     # This message seems to always contain seven 00 bytes in its
                     # data area. If we ever get this message with non-00 data
                     # we'll print it as an unexpected message.
-                    if(config.debugLevel >= 1):
+                    if(config['config']['debugLevel'] >= 1):
                         print(time_now() + ": Master TWC %02X%02X Linkready1.  Sign: %s" % \
                             (senderID[0], senderID[1], hex_str(sign)))
 
@@ -3039,7 +3035,7 @@ while True:
                     # data area. If we ever get this message with non-00 data
                     # we'll print it as an unexpected message.
 
-                    if(config.debugLevel >= 1):
+                    if(config['config']['debugLevel'] >= 1):
                         print(time_now() + ": Master TWC %02X%02X Linkready2.  Sign: %s" % \
                             (senderID[0], senderID[1], hex_str(sign)))
 
@@ -3065,7 +3061,7 @@ while True:
                     if(receiverID != fakeTWCID):
                         # This message was intended for another slave.
                         # Ignore it.
-                        if(config.debugLevel >= 11):
+                        if(config['config']['debugLevel'] >= 11):
                             print(time_now() + ": Master %02X%02X sent " \
                                 "heartbeat message %s to receiver %02X%02X " \
                                 "that isn't our fake slave." % \
@@ -3079,7 +3075,7 @@ while True:
                     timeLastkWhDelivered = now
                     if(time.time() - timeLastkWhSaved >= 300.0):
                         timeLastkWhSaved = now
-                        if(config.debugLevel >= 9):
+                        if(config['config']['debugLevel'] >= 9):
                             print(time_now() + ": Fake slave has delivered %.3fkWh" % \
                                (kWhDelivered))
                         save_settings()
@@ -3160,7 +3156,7 @@ while True:
                     # as there's no point in playing a fake master with no
                     # slaves around.
                     foundMsgMatch = True
-                    if(config.debugLevel >= 1):
+                    if(config['config']['debugLevel'] >= 1):
                         print(time_now() + ": Received 2-hour idle message from Master.")
                 else:
                     msgMatch = re.search(b'\A\xfd\xe2(..)(.)(..)\x00\x00\x00\x00\x00\x00.+\Z', msg, re.DOTALL)
@@ -3171,7 +3167,7 @@ while True:
                     senderID = msgMatch.group(1)
                     sign = msgMatch.group(2)
                     maxAmps = ((msgMatch.group(3)[0] << 8) + msgMatch.group(3)[1]) / 100
-                    if(config.debugLevel >= 1):
+                    if(config['config']['debugLevel'] >= 1):
                         print(time_now() + ": %.2f amp slave TWC %02X%02X is ready to link.  Sign: %s" % \
                             (maxAmps, senderID[0], senderID[1],
                             hex_str(sign)))
@@ -3222,7 +3218,7 @@ while True:
                                 (senderID[0], senderID[1]))
                         continue
 
-                    if(config.debugLevel >= 8):
+                    if(config['config']['debugLevel'] >= 8):
                         print(time_now() + ": VRQ from %02X%02X to %02X%02X" % \
                             (senderID[0], senderID[1], receiverID[0], receiverID[1]))
 
@@ -3260,7 +3256,7 @@ while True:
                                 (senderID[0], senderID[1]))
                         continue
 
-                    if(config.debugLevel >= 1):
+                    if(config['config']['debugLevel'] >= 1):
                         print(time_now() + ": VRS %02X%02X: %dkWh %dV %dV %dV" % \
                             (senderID[0], senderID[1],
                             kWhCounter, voltsPhaseA, voltsPhaseB, voltsPhaseC))
