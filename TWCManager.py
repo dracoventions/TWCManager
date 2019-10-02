@@ -45,6 +45,7 @@ import time
 import traceback
 from datetime import datetime
 import threading
+from lib.TWCManager.EMS import Fronius
 
 ##########################
 # Load Configuration File
@@ -1803,7 +1804,7 @@ class TWCSlave:
         # is safe to use but before we've used it.
         backgroundTasksLock.acquire()
 
-        if(maxAmpsToDivideAmongSlaves > config['config']['ringMaxAmpsAllTWCs']
+        if(maxAmpsToDivideAmongSlaves > config['config']['wiringMaxAmpsAllTWCs']):
             # Never tell the slaves to draw more amps than the physical charger
             # wiring can handle.
             if(config['config']['debugLevel'] >= 1):
