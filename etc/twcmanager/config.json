@@ -109,7 +109,7 @@
         "debugLevel": 11,
 
         # Choose whether to display milliseconds after time on each line of debug info.
-        "displayMilliseconds": False,
+        "displayMilliseconds": false,
 
         # Normally we fake being a TWC Master using fakeMaster = 1.
         # Two other settings are available, but are only useful for debugging and
@@ -133,6 +133,6 @@
         },
         "MQTT": {
           "enabled" :true 
-        },
+        }
     }
 }
