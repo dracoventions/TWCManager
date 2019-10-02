@@ -134,5 +134,15 @@
         "MQTT": {
           "enabled" :true 
         }
+    },
+    
+    # Status plugins allow us to export status detail out of TWCManager.
+    # This will use interfaces such as MQTT or HomeAssistant API to update status for charging, power draw, etc.
+    "status": {
+        "MQTT": {
+            "enabled": true,
+            "brokerIP": "192.168.1.1",
+            "topicPrefix": "TWC"
+        } 
     }
 }
