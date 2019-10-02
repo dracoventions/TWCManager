@@ -29,6 +29,7 @@
 
 import commentjson
 import json
+import os.path
 import math
 import paho.mqtt.client as mqtt
 import queue
@@ -48,8 +49,13 @@ import threading
 ##########################
 # Load Configuration File
 config = None
-with open('/etc/twcmanager/config.json') as jsonconfig:
-    config = commentjson.load(jsonconfig)
+jsonconfig = None
+if (os.path.isfile('/etc/twcmanager/config.json')):
+    open('/etc/twcmanager/config.json') as jsonconfig
+else:
+    if (os.path.isfile('config.json')):
+    open('config.json') as jsonconfig
+config = commentjson.load(jsonconfig)
 
 # All TWCs ship with a random two-byte TWCID. We default to using 0x7777 as our
 # fake TWC ID. There is a 1 in 64535 chance that this ID will match each real
