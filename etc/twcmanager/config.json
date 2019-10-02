@@ -98,7 +98,27 @@
         # If you are able to obtain consumption details from HomeAssistant, this value is
         # not needed and can be set to 0
         "greenEnergyAmpsOffset": 0,
-        "debugLevel": 11
+                
+        # Choose how much debugging info to output.
+        # 0 is no output other than errors.
+        # 1 is just the most useful info.
+        # 2-8 add debugging info
+        # 9 includes raw RS-485 messages transmitted and received (2-3 per sec)
+        # 10 is all info.
+        # 11 is more than all info.  ;)
+        "debugLevel": 11,
+
+        # Choose whether to display milliseconds after time on each line of debug info.
+        "displayMilliseconds": False,
+
+        # Normally we fake being a TWC Master using fakeMaster = 1.
+        # Two other settings are available, but are only useful for debugging and
+        # experimenting:
+        #   Set fakeMaster = 0 to fake being a TWC Slave instead of Master.
+        #   Set fakeMaster = 2 to display received RS-485 messages but not send any
+        #                      unless you use the debugging web interface
+        #                      (index.php?debugTWC=1) to send messages.
+        "fakeMaster": 1
     },
     "sources":{
         "Fronius": {
