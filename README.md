@@ -6,6 +6,14 @@
 * When wired to the IN or OUT pins of real TWC units set to slave mode (rotary switch position F), TWCManager can tell them to limit car charging to any whole amp value between 5A and the max rating of the charger. Charging can also be stopped so the car goes to sleep.
 * This level of control is useful for having TWCManager track the real-time availability of green energy sources and direct the slave TWCs to use near the exact amount of energy available. This saves energy compared to sending the green energy off to a battery for later car charging or off to the grid where some of it is lost in transmission (and costs are greater than charging off generated solar).
 
+## Interfaces
+
+Currently, the following interfaces are complete, planned or in development:
+
+  * Fronius - Direct fronius sensor access *not started*
+  * HomeAssistant - Allows fetching solar generation and usage statistics from HomeAssistant sensors *in development*
+  * Powerwall2 - *planned/under assessment*
+
 ## Warnings
 
 It is important to read and understand the following warnings before using this tool:
