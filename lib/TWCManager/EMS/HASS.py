@@ -22,7 +22,7 @@ class HASS:
     
   def getConsumption(self):
     
-    if (! self.status):
+    if (not self.status):
       return 0
     
     # Perform updates if necessary
@@ -33,7 +33,7 @@ class HASS:
 
   def getGeneration(self):
     
-    if (! self.status):
+    if (not self.status):
       return 0
     
     # Perform updates if necessary
@@ -64,4 +64,12 @@ class HASS:
 
   def update(self):
     # Update
-    return False
+    if ((gmtime() - self.lastFetch) > self.cacheTime):
+      # Cache has expired. Fetch values from HomeAssistant sensor.
+      
+      # Update last fetch time
+      self.lastFetch = gmtime()
+      return True
+    else:
+      # Cache time has not elapsed since last fetch, serve from cache.
+      return
