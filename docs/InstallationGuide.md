@@ -19,6 +19,14 @@ Pros
 Cons
   * There is some visible external egress of these wires to connect to the controlling device.
 
+### RS-485 Connection
+
+Once you have removed the Tesla Wall Charger cover, you should see a set of 4 headers for RS-485 communication, in the centre of the unit. The header is highlighted in the following picture. Note that in the picture, one of the two RS-485 wires has already been attached.
+
+![RS-485 Header Location](interface.jpg)
+
+You may connect your RS-485 wires to either the In or the Out (but not both) header pins. To do this, you'll need a 3mm flat-head screwdriver. Strip approximately 3mm of insulation from the wires that you will be connecting, and feed them from the bottom of the RS-485 headers into the positive or negative terminals for either the In or Out headers.
+
 ## Expert Installation
 
 The Expert Installation approach is not recommended for most users due to the inherent difficulty of the installation process, and the inherent risk of inadvertent contact with a live component within the TWC chassis.
