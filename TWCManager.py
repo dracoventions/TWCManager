@@ -115,13 +115,20 @@ def hass_api_get(entity):
         'Authorization': 'Bearer ' + hassAPIKey,
         'content-type': 'application/json'
     }
-    httpResponse = requests.get(url, headers=headers)
+
+    try:
+        httpResponse = requests.get(url, headers=headers)
+    except requests.exceptions.ConnectionError as e: 
+        print("Error connecting to HomeAssistant")
+        print("Exception Details: " + e)
+        return 0
+
     jsonResponse = httpResponse.json() if httpResponse and httpResponse.status_code == 200 else None
 
     if jsonResponse:
         return jsonResponse["state"]
     else:
-        return false
+        return 0
 
 def hass_api_set(entity, state):
     global hassServer, hassPort, hassAPIKey
@@ -484,7 +491,7 @@ def num_cars_charging_now():
             carsCharging += 1
             if(config['config']['debugLevel'] >= 10):
                 print("BUGFIX: Number of cars charging now: " + str(carsCharging))
-                mqttstatus.setStatus(hex_str(self.TWCID), "carsCharging", carsCharging)
+                mqttstatus.setStatus(hex_str(slaveTWC.TWCID), "carsCharging", carsCharging)
     return carsCharging
 
 def new_slave(newSlaveID, maxAmps):
@@ -1149,7 +1156,7 @@ def check_green_energy():
         greenEnergyGenerationVal = hass_api_get(hassEntityGeneration)
 
     # Calculate our current consumption in watts
-    solarW = int(float(greenEnergyGeneration) - float(greenEnergyConsumptionVal))
+    solarW = int(float(greenEnergyGenerationVal) - float(greenEnergyConsumptionVal))
 
     # Generation may be below zero if consumption is greater than generation
     if solarW < 0:
@@ -1818,14 +1825,14 @@ class TWCSlave:
                 if(slaveTWC.reportedAmpsActual >= 1.0):
                     numCarsCharging += 1
 
-        # Allocate this slave a fraction of maxAmpsToDivideAmongSlaves divided
-        # by the number of cars actually charging.
-        fairShareAmps = int(maxAmpsToDivideAmongSlaves / numCarsCharging)
-        if(desiredAmpsOffered > fairShareAmps):
-            desiredAmpsOffered = fairShareAmps
+            # Allocate this slave a fraction of maxAmpsToDivideAmongSlaves divided
+            # by the number of cars actually charging.
+            fairShareAmps = int(maxAmpsToDivideAmongSlaves / numCarsCharging)
+            if(desiredAmpsOffered > fairShareAmps):
+                desiredAmpsOffered = fairShareAmps
 
-        if(config['config']['debugLevel'] >= 10):
-            print("desiredAmpsOffered TWC: " + hex_str(self.TWCID) + " reduced from " + str(maxAmpsToDivideAmongSlaves)
+            if(config['config']['debugLevel'] >= 10):
+                print("desiredAmpsOffered TWC: " + hex_str(self.TWCID) + " reduced from " + str(maxAmpsToDivideAmongSlaves)
                   + " to " + str(desiredAmpsOffered)
                   + " with " + str(numCarsCharging)
                   + " cars charging.")
@@ -1837,6 +1844,9 @@ class TWCSlave:
             minAmpsToOffer = self.minAmpsTWCSupports
 
         if(desiredAmpsOffered < minAmpsToOffer):
+          if(config['config']['debugLevel'] >= 10):
+            print("desiredAmpsOffered (" + str(desiredAmpsOffered) + ") < minAmpsToOffer:" + str(minAmpsToOffer))
+          if(numCarsCharging > 0):
             if(maxAmpsToDivideAmongSlaves / numCarsCharging > minAmpsToOffer):
                 # There is enough power available to give each car
                 # minAmpsToOffer, but currently-charging cars are leaving us

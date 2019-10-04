@@ -16,7 +16,19 @@ class MQTTStatus:
     
   def setStatus(self, twcid, key, value):
     if (self.status):
-        client = mqtt.Client("P1")
+      try:
+        client = self.mqtt.Client("P1")
         client.connect(self.serverIP)
+      except ConnectionRefusedError as e:
+        print("Error connecting to MQTT Broker")
+        print(e)
+        return false
+
+      try:
         client.publish(self.topicPrefix+ "/" + twcid + "/" + key, payload=value)
-        client.disconnect()
+      except e:
+        print("Error publishing MQTT Topic Status")
+        print(e)
+        return false
+
+      client.disconnect()
