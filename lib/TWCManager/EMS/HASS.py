@@ -65,11 +65,11 @@ class HASS:
 
   def update(self):
     # Update
-    if ((self.time.gmtime() - self.lastFetch) > self.cacheTime):
+    if ((int(self.time.time()) - self.lastFetch) > self.cacheTime):
       # Cache has expired. Fetch values from HomeAssistant sensor.
       
       # Update last fetch time
-      self.lastFetch = self.time.gmtime()
+      self.lastFetch = int(self.time.time())
       return True
     else:
       # Cache time has not elapsed since last fetch, serve from cache.
