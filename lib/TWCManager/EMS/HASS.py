@@ -21,9 +21,24 @@ class HASS:
     self.debugLevel = debugLevel
     
   def getConsumption(self):
+    
+    if (! self.status):
+      return 0
+    
+    # Perform updates if necessary
+    self.update()
+    
+    # Fetch current value
     return self.consumedW
 
   def getGeneration(self):
+    
+    if (! self.status):
+      return 0
+    
+    # Perform updates if necessary
+    self.update()
+    
     return self.generatedW
   
   def getAPIValue(self, entity):
@@ -49,3 +64,4 @@ class HASS:
 
   def update(self):
     # Update
+    return False
