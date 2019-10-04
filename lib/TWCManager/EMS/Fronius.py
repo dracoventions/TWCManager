@@ -11,10 +11,10 @@ class Fronius:
   def __init__(self, serverIP):
     self.serverIP = serverIP
 
-  def getConsumed(self):
+  def getConsumption(self):
     return self.consumedW
 
-  def getGenerated(self):
+  def getGeneration(self):
     return self.generatedW
     
   def getInverterData(self):
