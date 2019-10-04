@@ -109,28 +109,6 @@ hassEntityMaxAmps = "sensor.twtc_max_amps"
 # Begin functions
 #
 
-def hass_api_get(entity):
-    global hassServer, hassPort, hassAPIKey
-    url = "http://" + hassServer + ":" + hassPort + "/api/states/" + entity
-    headers = {
-        'Authorization': 'Bearer ' + hassAPIKey,
-        'content-type': 'application/json'
-    }
-
-    try:
-        httpResponse = requests.get(url, headers=headers)
-    except requests.exceptions.ConnectionError as e: 
-        print("Error connecting to HomeAssistant")
-        print(e)
-        return 0
-
-    jsonResponse = httpResponse.json() if httpResponse and httpResponse.status_code == 200 else None
-
-    if jsonResponse:
-        return jsonResponse["state"]
-    else:
-        return 0
-
 def hex_str(s:str):
     return " ".join("{:02X}".format(ord(c)) for c in s)
 
@@ -1135,7 +1113,7 @@ def background_tasks_thread():
         backgroundTasksQueue.task_done()
 
 def check_green_energy():
-    global maxAmpsToDivideAmongSlaves, config, backgroundTasksLock
+    global maxAmpsToDivideAmongSlaves, config, hass, backgroundTasksLock
 
     # Check solar panel generation using an API exposed by
     # the HomeAssistant API.
@@ -1146,13 +1124,9 @@ def check_green_energy():
     #
     greenEnergyConsumptionVal = 0
     greenEnergyConsumptionVal += hass.getConsumption()
-    if hassEntityConsumption:
-        greenEnergyConsumptionVal = hass_api_get(hassEntityConsumption)
     
     greenEnergyGenerationVal = 0
-    greenEnergyGenerationVal += hass.getConsumption()
-    if hassEntityGeneration:
-        greenEnergyGenerationVal = hass_api_get(hassEntityGeneration)
+    greenEnergyGenerationVal += hass.getGeneration()
 
     # Calculate our current consumption in watts
     solarW = int(float(greenEnergyGenerationVal) - float(greenEnergyConsumptionVal))
@@ -2373,6 +2347,9 @@ if(webIPCqueue == None):
 print("TWC Manager starting as fake %s with id %02X%02X and sign %02X" \
     % ( ("Master" if config['config']['fakeMaster'] else "Slave"), \
     ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(slaveSign)))
+
+# Create hass EMS plugin instance
+hass = HASS(config['sources']['HASS']['enabled'], config['sources']['HASS']['serverIP'],config['sources']['HASS']['serverPort'],config['sources']['HASS']['apiKey'],config['config']['debugLevel'])
 
 # Create hass status plugin instance
 hassstatus = HASSStatus(config['status']['HASS']['enabled'], config['status']['HASS']['serverIP'],config['status']['HASS']['serverPort'],config['status']['HASS']['apiKey'],config['config']['debugLevel'])
