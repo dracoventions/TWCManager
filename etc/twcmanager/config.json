@@ -143,6 +143,15 @@
     # Status plugins allow us to export status detail out of TWCManager.
     # This will use interfaces such as MQTT or HomeAssistant API to update status for charging, power draw, etc.
     "status": {
+        "HASS": {
+            "enabled": true,
+            "serverIP": "192.168.1.1",
+            "serverPort": "8123",
+
+      # To obtain a HASS API key, via browser, click on your user profile, and
+      # add a Long-Lived Access Token. Place it in the following variable:
+            "apiKey": "ABC123"
+        },
         "MQTT": {
             "enabled": true,
             "brokerIP": "192.168.1.1",

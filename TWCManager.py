@@ -45,6 +45,7 @@ import traceback
 from datetime import datetime
 import threading
 from lib.TWCManager.EMS.Fronius import Fronius
+from lib.TWCManager.Status.HASSStatus import HASSStatus
 from lib.TWCManager.Status.MQTTStatus import MQTTStatus
 
 ##########################
@@ -84,7 +85,7 @@ slaveSign = bytearray(b'\x77')
 hassServer = "192.168.28.9"
 hassPort = "8123"
 
-# To obtain a HASS API key, via the HASS web interface, click on your user profile, and
+# To obtain a HASS API key, via browser, click on your user profile, and
 # add a Long-Lived Access Token. Place it in the following variable:
 hassAPIKey = "ABCDE"
 
@@ -130,21 +131,6 @@ def hass_api_get(entity):
     else:
         return 0
 
-def hass_api_set(entity, state):
-    global hassServer, hassPort, hassAPIKey
-    url = "http://" + hassServer + ":" + hassPort + "/api/states/" + entity
-    headers = {
-        'Authorization': 'Bearer ' + hassAPIKey,
-        'content-type': 'application/json'
-    }
-
-    try:
-        requests.post(url, json={"state":state})
-    except requests.exceptions.ConnectionError as e:
-        print("Error connecting to HomeAssistant")
-        print(e)
-        return False
-    
 def hex_str(s:str):
     return " ".join("{:02X}".format(ord(c)) for c in s)
 
@@ -489,7 +475,7 @@ def master_id_conflict():
         (fakeTWCID[0], fakeTWCID[1], slaveSign[0]))
 
 def num_cars_charging_now():
-    global config, mqttstatus, slaveTWCRoundRobin
+    global config, hassstatus, mqttstatus, slaveTWCRoundRobin
 
     carsCharging = 0
     for slaveTWC in slaveTWCRoundRobin:
@@ -497,6 +483,7 @@ def num_cars_charging_now():
             carsCharging += 1
             if(config['config']['debugLevel'] >= 10):
                 print("BUGFIX: Number of cars charging now: " + str(carsCharging))
+                hassstatus.setStatus(slaveTWC.TWCID, "carsCharging", carsCharging)
                 mqttstatus.setStatus(hex_str(slaveTWC.TWCID), "carsCharging", carsCharging)
     return carsCharging
 
@@ -540,10 +527,12 @@ def total_amps_actual_all_twcs():
     totalAmps = 0
     for slaveTWC in slaveTWCRoundRobin:
         totalAmps += slaveTWC.reportedAmpsActual
+        hassstatus.setStatus(slaveTWC.TWCID, "ampsInUse", slaveTWC.reportedAmpsActual)
         mqttstatus.setStatus(hex_str(slaveTWC.TWCID), "ampsInUse", slaveTWC.reportedAmpsActual)
 
     if(config['config']['debugLevel'] >= 10):
         print("Total amps all slaves are using: " + str(totalAmps))
+        hassstatus.setStatus("All", "totalAmpsInUse", totalAmps)
         mqttstatus.setStatus("All", "totalAmpsInUse", totalAmps)
     return totalAmps
 
@@ -1711,15 +1700,17 @@ class TWCSlave:
         # Handle heartbeat message received from real slave TWC.
         global nonScheduledAmpsMax, maxAmpsToDivideAmongSlaves, config, \
                timeLastGreenEnergyCheck, slaveTWCRoundRobin, spikeAmpsToCancel6ALimit, \
-               chargeNowAmps, chargeNowTimeEnd, mqttstatus
+               chargeNowAmps, chargeNowTimeEnd, hassstatus, mqttstatus
 
         now = time.time()
         self.timeLastRx = now
 
         self.reportedAmpsMax = ((heartbeatData[1] << 8) + heartbeatData[2]) / 100
+        hassstatus.setStatus(self.TWCID, "ampsMax", self.reportedAmpsMax)
         mqttstatus.setStatus(hex_str(self.TWCID), "ampsMax", self.reportedAmpsMax)
         self.reportedAmpsActual = ((heartbeatData[3] << 8) + heartbeatData[4]) / 100
         self.reportedState = heartbeatData[0]
+        hassstatus.setStatus(self.TWCID, "state", self.reportedState)
         mqttstatus.setStatus(hex_str(self.TWCID), "state", self.reportedState)
 
         # self.lastAmpsOffered is initialized to -1.
@@ -1736,6 +1727,7 @@ class TWCSlave:
            or abs(self.reportedAmpsActual - self.reportedAmpsActualSignificantChangeMonitor) > 0.8):
             self.timeReportedAmpsActualChangedSignificantly = now
             self.reportedAmpsActualSignificantChangeMonitor = self.reportedAmpsActual
+            hassstatus.setStatus(self.TWCID, "power", self.reportedAmpsActual)
             mqttstatus.setStatus(hex_str(self.TWCID), "power", self.reportedAmpsActual)
             
         ltNow = time.localtime()
@@ -2379,6 +2371,9 @@ if(webIPCqueue == None):
 print("TWC Manager starting as fake %s with id %02X%02X and sign %02X" \
     % ( ("Master" if config['config']['fakeMaster'] else "Slave"), \
     ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(slaveSign)))
+
+# Create hass status plugin instance
+hassstatus = HASSStatus(config['status']['HASS']['enabled'], config['status']['HASS']['serverIP'],config['status']['HASS']['serverPort'],config['status']['HASS']['apiKey'],config['config']['debugLevel'])
 
 # Create mqtt status plugin instance
 mqttstatus = MQTTStatus(config['status']['MQTT']['enabled'], config['status']['MQTT']['brokerIP'], config['status']['MQTT']['topicPrefix'])
