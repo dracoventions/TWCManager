@@ -40,8 +40,7 @@ This can save around 6kWh per month when used to track a local green energy sour
 
 ## Installation
 
-### Physical installation
-See docs/**TWCManager Installation.pdf** for how to install and use.
+All installation documentation (Physical and Software) is contained in the documentation repository [Here](docs/README.md)
 
 ### Install necessary python modules
 ```
