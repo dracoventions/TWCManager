@@ -10,9 +10,11 @@
 
 Currently, the following interfaces are complete, planned or in development:
 
-  * Fronius - Direct fronius sensor access *not started*
-  * HomeAssistant - Allows fetching solar generation and usage statistics from HomeAssistant sensors *in development*
-  * Powerwall2 - *planned/under assessment*
+| Platform     | Status      | Details                 |
+| ------------ | ----------- | ----------------------- |
+| Fronius Inverter | Not Started | Expected by Mid-October 2019 |
+| HomeAssistant    | In Development | Allows fetching generation and consumption from HomeAssistant sensors |
+| Tesla Powerwall2 | Planned        | Expected by Mid-October 2019 |
 
 ## Warnings
 
@@ -34,11 +36,12 @@ This can save around 6kWh per month when used to track a local green energy sour
 
 ## Limitations
 * Due to hardware limitations, TWCManager will not work with Tesla's older High Power Wall Connectors (HPWCs) that were discontinued around April 2016.
-* Integrations (HomeAssistant and Fronius) are in development and have not been fully tested yet. Expect this project to involve significant changes between now (September 2019) and end of October 2019.
+* Interfaces (HomeAssistant and Fronius) are in development and have not been fully tested yet. 
+* There is currently no way to configure how TWCManager deals with more than one interface platform. Currently, TWCManager will add together the values (generation and consumption) for all configured integrations.
 
 ## Installation
 
-All installation documentation (Physical and Software) is contained in the documentation repository [Here](docs/README.md)
+All installation documentation (Physical and Software) is contained in the documentation repository [here](docs/README.md)
 
 # Attribution
 * Original TWCManager distribution by [cdragon](https://github.com/cdragon/TWCManager)
