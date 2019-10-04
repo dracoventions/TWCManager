@@ -1145,10 +1145,12 @@ def check_green_energy():
     # in the config section at the top of this file.
     #
     greenEnergyConsumptionVal = 0
+    greenEnergyConsumptionVal += hass.getConsumption()
     if hassEntityConsumption:
         greenEnergyConsumptionVal = hass_api_get(hassEntityConsumption)
     
     greenEnergyGenerationVal = 0
+    greenEnergyGenerationVal += hass.getConsumption()
     if hassEntityGeneration:
         greenEnergyGenerationVal = hass_api_get(hassEntityGeneration)
 
