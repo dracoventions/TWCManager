@@ -27,6 +27,14 @@ Once you have removed the Tesla Wall Charger cover, you should see a set of 4 he
 
 You may connect your RS-485 wires to either the In or the Out (but not both) header pins. To do this, you'll need a 3mm flat-head screwdriver. Strip approximately 3mm of insulation from the wires that you will be connecting, and feed them from the bottom of the RS-485 headers into the positive or negative terminals for either the In or Out headers.
 
+### Rotary Switch
+
+Identify the Rotary Switch, which is to the left of the RS-485 header. 
+
+![Rotary Switch Location](rotary-switch.png)
+
+This switch controls the amperage of the Tesla Wall Charger. 
+
 ## Expert Installation
 
 The Expert Installation approach is not recommended for most users due to the inherent difficulty of the installation process, and the inherent risk of inadvertent contact with a live component within the TWC chassis.
