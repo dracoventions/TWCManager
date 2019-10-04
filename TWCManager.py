@@ -120,7 +120,7 @@ def hass_api_get(entity):
         httpResponse = requests.get(url, headers=headers)
     except requests.exceptions.ConnectionError as e: 
         print("Error connecting to HomeAssistant")
-        print("Exception Details: " + e)
+        print(e)
         return 0
 
     jsonResponse = httpResponse.json() if httpResponse and httpResponse.status_code == 200 else None
@@ -137,7 +137,13 @@ def hass_api_set(entity, state):
         'Authorization': 'Bearer ' + hassAPIKey,
         'content-type': 'application/json'
     }
-    requests.post(url, json={"state":state})
+
+    try:
+        requests.post(url, json={"state":state})
+    except requests.exceptions.ConnectionError as e:
+        print("Error connecting to HomeAssistant")
+        print(e)
+        return False
     
 def hex_str(s:str):
     return " ".join("{:02X}".format(ord(c)) for c in s)
@@ -534,9 +540,11 @@ def total_amps_actual_all_twcs():
     totalAmps = 0
     for slaveTWC in slaveTWCRoundRobin:
         totalAmps += slaveTWC.reportedAmpsActual
+        mqttstatus.setStatus(hex_str(slaveTWC.TWCID), "ampsInUse", slaveTWC.reportedAmpsActual)
+
     if(config['config']['debugLevel'] >= 10):
         print("Total amps all slaves are using: " + str(totalAmps))
-        mqttstatus.setStatus(hex_str(self.TWCID), "totalAmps", totalAmps)
+        mqttstatus.setStatus("All", "totalAmpsInUse", totalAmps)
     return totalAmps
 
 
