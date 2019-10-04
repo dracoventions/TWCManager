@@ -14,7 +14,7 @@ class MQTTStatus:
     self.serverIP = serverIP
     self.topicPrefix = topicPrefix
     
-  def setStatus(twcid, key, value):
+  def setStatus(self, twcid, key, value):
     if (self.status):
         client = mqtt.Client("P1")
         client.connect(self.serverIP)
