@@ -18,8 +18,6 @@ Currently, the following interfaces are complete, planned or in development:
 
 It is important to read and understand the following warnings before using this tool:
 
-**WARNING WARNING: This fork has not been tested yet as I am waiting on my own hardware to be installed. My recommendation at this point would be to use the cdragon port if your need is urgent, or to give it a week or two (by mid October) whilst I fully test the HomeAssistant integration.**
-
 * Misuse of the protocol described in this software can direct a Tesla Wall Charger to supply more current to a car than the charger wiring was designed for.
 * This will trip a circuit breaker or may start a fire in the unlikely event that the circuit breaker fails.
 * This software was not written or designed with the benefit of information from Tesla and there is always a small possibility that some unforeseen aspect of its operation could damage a Tesla vehicle or a Tesla Wall Charger.
@@ -41,17 +39,6 @@ This can save around 6kWh per month when used to track a local green energy sour
 ## Installation
 
 All installation documentation (Physical and Software) is contained in the documentation repository [Here](docs/README.md)
-
-### Install necessary python modules
-```
-pip3 install commentjson paho-mqtt pyserial sysv_ipc
-```
-
-### Clone GIT Repository and copy files
-```
-git clone https://github.com/ngardiner/TWCManager
-cd TWCManager && make install
-```
 
 # Attribution
 * Original TWCManager distribution by [cdragon](https://github.com/cdragon/TWCManager)

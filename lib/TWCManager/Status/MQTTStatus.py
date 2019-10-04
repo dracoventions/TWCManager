@@ -25,7 +25,7 @@ class MQTTStatus:
         return false
 
       try:
-        client.publish(self.topicPrefix+ "/" + twcid + "/" + key, payload=value)
+        client.publish(self.topicPrefix+ "/" + str(twcid.decode("utf-8")) + "/" + key, payload=value)
       except e:
         print("Error publishing MQTT Topic Status")
         print(e)

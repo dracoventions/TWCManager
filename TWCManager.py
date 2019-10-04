@@ -484,7 +484,7 @@ def num_cars_charging_now():
             if(config['config']['debugLevel'] >= 10):
                 print("BUGFIX: Number of cars charging now: " + str(carsCharging))
                 hassstatus.setStatus(slaveTWC.TWCID, "carsCharging", carsCharging)
-                mqttstatus.setStatus(hex_str(slaveTWC.TWCID), "carsCharging", carsCharging)
+                mqttstatus.setStatus(slaveTWC.TWCID, "carsCharging", carsCharging)
     return carsCharging
 
 def new_slave(newSlaveID, maxAmps):
@@ -528,12 +528,12 @@ def total_amps_actual_all_twcs():
     for slaveTWC in slaveTWCRoundRobin:
         totalAmps += slaveTWC.reportedAmpsActual
         hassstatus.setStatus(slaveTWC.TWCID, "ampsInUse", slaveTWC.reportedAmpsActual)
-        mqttstatus.setStatus(hex_str(slaveTWC.TWCID), "ampsInUse", slaveTWC.reportedAmpsActual)
+        mqttstatus.setStatus(slaveTWC.TWCID, "ampsInUse", slaveTWC.reportedAmpsActual)
 
     if(config['config']['debugLevel'] >= 10):
         print("Total amps all slaves are using: " + str(totalAmps))
-        hassstatus.setStatus("All", "totalAmpsInUse", totalAmps)
-        mqttstatus.setStatus("All", "totalAmpsInUse", totalAmps)
+        hassstatus.setStatus(bytes("all", 'UTF-8'), "totalAmpsInUse", totalAmps)
+        mqttstatus.setStatus(bytes("all", 'UTF-8'), "totalAmpsInUse", totalAmps)
     return totalAmps
 
 
@@ -1707,11 +1707,11 @@ class TWCSlave:
 
         self.reportedAmpsMax = ((heartbeatData[1] << 8) + heartbeatData[2]) / 100
         hassstatus.setStatus(self.TWCID, "ampsMax", self.reportedAmpsMax)
-        mqttstatus.setStatus(hex_str(self.TWCID), "ampsMax", self.reportedAmpsMax)
+        mqttstatus.setStatus(self.TWCID, "ampsMax", self.reportedAmpsMax)
         self.reportedAmpsActual = ((heartbeatData[3] << 8) + heartbeatData[4]) / 100
         self.reportedState = heartbeatData[0]
         hassstatus.setStatus(self.TWCID, "state", self.reportedState)
-        mqttstatus.setStatus(hex_str(self.TWCID), "state", self.reportedState)
+        mqttstatus.setStatus(self.TWCID, "state", self.reportedState)
 
         # self.lastAmpsOffered is initialized to -1.
         # If we find it at that value, set it to the current value reported by the
@@ -1728,7 +1728,7 @@ class TWCSlave:
             self.timeReportedAmpsActualChangedSignificantly = now
             self.reportedAmpsActualSignificantChangeMonitor = self.reportedAmpsActual
             hassstatus.setStatus(self.TWCID, "power", self.reportedAmpsActual)
-            mqttstatus.setStatus(hex_str(self.TWCID), "power", self.reportedAmpsActual)
+            mqttstatus.setStatus(self.TWCID, "power", self.reportedAmpsActual)
             
         ltNow = time.localtime()
         hourNow = ltNow.tm_hour + (ltNow.tm_min / 60)

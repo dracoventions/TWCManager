@@ -6,6 +6,17 @@ Please see the [Installation Guide](InstallationGuide.md) for detailed informati
 
 ## Software Installation
 
+### Install necessary python modules
+```
+pip3 install commentjson paho-mqtt pyserial sysv_ipc
+```
+
+### Clone GIT Repository and copy files
+```
+git clone https://github.com/ngardiner/TWCManager
+cd TWCManager && make install
+```
+
 ## Frequently Asked Questions
 
 ### How many units can be set up in this fashion?
