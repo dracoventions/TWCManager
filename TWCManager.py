@@ -461,7 +461,7 @@ def num_cars_charging_now():
             carsCharging += 1
             if(config['config']['debugLevel'] >= 10):
                 print("BUGFIX: Number of cars charging now: " + str(carsCharging))
-                hassstatus.setStatus(slaveTWC.TWCID, "carsCharging", carsCharging)
+                hassstatus.setStatus(slaveTWC.TWCID, "cars_charging", carsCharging)
                 mqttstatus.setStatus(slaveTWC.TWCID, "carsCharging", carsCharging)
     return carsCharging
 
@@ -505,12 +505,12 @@ def total_amps_actual_all_twcs():
     totalAmps = 0
     for slaveTWC in slaveTWCRoundRobin:
         totalAmps += slaveTWC.reportedAmpsActual
-        hassstatus.setStatus(slaveTWC.TWCID, "ampsInUse", slaveTWC.reportedAmpsActual)
+        hassstatus.setStatus(slaveTWC.TWCID, "amps_in_use", slaveTWC.reportedAmpsActual)
         mqttstatus.setStatus(slaveTWC.TWCID, "ampsInUse", slaveTWC.reportedAmpsActual)
 
     if(config['config']['debugLevel'] >= 10):
         print("Total amps all slaves are using: " + str(totalAmps))
-        hassstatus.setStatus(bytes("all", 'UTF-8'), "totalAmpsInUse", totalAmps)
+        hassstatus.setStatus(bytes("all", 'UTF-8'), "total_amps_in_use", totalAmps)
         mqttstatus.setStatus(bytes("all", 'UTF-8'), "totalAmpsInUse", totalAmps)
     return totalAmps
 
@@ -1154,8 +1154,10 @@ def check_green_energy():
     backgroundTasksLock.release()
 
     # Update HASS sensors with min/max amp values
-    hass_api_set(hassEntityMinAmps, config['config']['minAmpsPerTWC'])
-    hass_api_set(hassEntityMaxAmps, maxAmpsToDivideAmongSlaves)
+    hassstatus.setStatus(bytes("config", 'UTF-8'), "min_amps_per_twc", config['config']['minAmpsPerTWC'])
+    mqttstatus.setStatus(bytes("config", 'UTF-8'), "minAmpsPerTWC", config['config']['minAmpsPerTWC'])
+    hassstatus.setStatus(bytes("all", 'UTF-8'), "max_amps_for_slaves", maxAmpsToDivideAmongSlaves)
+    mqttstatus.setStatus(bytes("all", 'UTF-8'), "maxAmpsForSlaves", maxAmpsToDivideAmongSlaves)
 
 #
 # End functions
@@ -1682,7 +1684,7 @@ class TWCSlave:
         self.timeLastRx = now
 
         self.reportedAmpsMax = ((heartbeatData[1] << 8) + heartbeatData[2]) / 100
-        hassstatus.setStatus(self.TWCID, "ampsMax", self.reportedAmpsMax)
+        hassstatus.setStatus(self.TWCID, "amps_max", self.reportedAmpsMax)
         mqttstatus.setStatus(self.TWCID, "ampsMax", self.reportedAmpsMax)
         self.reportedAmpsActual = ((heartbeatData[3] << 8) + heartbeatData[4]) / 100
         self.reportedState = heartbeatData[0]
