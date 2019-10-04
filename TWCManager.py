@@ -34,7 +34,6 @@ import math
 import queue
 import random
 import re
-import requests
 import serial
 import subprocess
 import struct
@@ -45,6 +44,7 @@ import traceback
 from datetime import datetime
 import threading
 from lib.TWCManager.EMS.Fronius import Fronius
+from lib.TWCManager.EMS.HASS import HASS
 from lib.TWCManager.Status.HASSStatus import HASSStatus
 from lib.TWCManager.Status.MQTTStatus import MQTTStatus
 
@@ -2347,6 +2347,9 @@ if(webIPCqueue == None):
 print("TWC Manager starting as fake %s with id %02X%02X and sign %02X" \
     % ( ("Master" if config['config']['fakeMaster'] else "Slave"), \
     ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(slaveSign)))
+
+# Create fronius EMS plugin instance
+fronius = Fronius(config['sources']['HASS']['enabled'])
 
 # Create hass EMS plugin instance
 hass = HASS(config['sources']['HASS']['enabled'], config['sources']['HASS']['serverIP'],config['sources']['HASS']['serverPort'],config['sources']['HASS']['apiKey'],config['config']['debugLevel'])
