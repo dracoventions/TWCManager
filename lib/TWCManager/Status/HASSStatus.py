@@ -36,7 +36,7 @@ class HASSStatus:
 
       try:
           self.debugLog(8, "Sending POST request to HomeAssistant for sensor " + sensor + "(value " + str(value) + ").")
-          self.requests.post(url, json={"state":value}, timeout=self.timeout)
+          self.requests.post(url, json={"state":value}, timeout=self.timeout, headers=headers)
       except self.requests.exceptions.ConnectionError as e:
           self.debugLog(4, "Error connecting to HomeAssistant to publish sensor values")
           self.debugLog(10, str(e))
