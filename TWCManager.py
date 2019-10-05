@@ -2335,16 +2335,16 @@ print("TWC Manager starting as fake %s with id %02X%02X and sign %02X" \
     ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(slaveSign)))
 
 # Create fronius EMS plugin instance
-fronius = Fronius(debugLevel, config['sources']['Fronius'])
+fronius = Fronius(config['config']['debugLevel'], config['sources']['Fronius'])
 
 # Create hass EMS plugin instance
-hass = HASS(debugLevel, config['sources']['HASS'])
+hass = HASS(config['config']['debugLevel'], config['sources']['HASS'])
 
 # Create hass status plugin instance
-hassstatus = HASSStatus(config['status']['HASS']['enabled'], config['status']['HASS']['serverIP'],config['status']['HASS']['serverPort'],config['status']['HASS']['apiKey'],config['config']['debugLevel'])
+hassstatus = HASSStatus(config['config']['debugLevel'],config['status']['HASS']['enabled'], config['status']['HASS']['serverIP'],config['status']['HASS']['serverPort'],config['status']['HASS']['apiKey'])
 
 # Create mqtt status plugin instance
-mqttstatus = MQTTStatus(config['status']['MQTT']['enabled'], config['status']['MQTT']['brokerIP'], config['status']['MQTT']['topicPrefix'])
+mqttstatus = MQTTStatus(config['config']['debugLevel'],config['status']['MQTT']['enabled'], config['status']['MQTT']['brokerIP'], config['status']['MQTT']['topicPrefix'])
 
 while True:
     try:
