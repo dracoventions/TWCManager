@@ -3,27 +3,27 @@ class HASS:
   import requests
   import time
   
-  apiKey               = None
-  cacheTime            = 60
-  consumedW            = 0
-  debugLevel           = 0
-  generatedW           = 0
+  apiKey                = None
+  cacheTime             = 60
+  consumedW             = 0
+  debugLevel            = 0
+  generatedW            = 0
   hassEntityConsumption = None
-  hassEntityGeneration = None
-  lastFetch            = 0
-  status               = False
-  serverIP             = None
-  serverPort           = 8123
-  timeout              = 2
+  hassEntityGeneration  = None
+  lastFetch             = 0
+  status                = False
+  serverIP              = None
+  serverPort            = 8123
+  timeout               = 2
   
   def __init__(self, debugLevel, config):
-    self.status              = config['enabled']
-    self.serverIP            = config['serverIP']
-    self.serverPort          = config['serverPort']
-    self.apikey              = config['apiKey']
-    self.debugLevel          = debugLevel
+    self.status                = config['enabled']
+    self.serverIP              = config['serverIP']
+    self.serverPort            = config['serverPort']
+    self.apikey                = config['apiKey']
+    self.debugLevel            = debugLevel
     self.hassEntityConsumption = config['hassEntityConsumption']
-    self.hassEntityGeneration = config['hassEntityGeneration']
+    self.hassEntityGeneration  = config['hassEntityGeneration']
     
   def getConsumption(self):
     
@@ -77,7 +77,7 @@ class HASS:
           testvalue = getAPIValue(self.hassEntityConsumption)
           print("TEST TEST TEST TEST " + testvalue)
 
-        if (self.hassEntityGeneration):
+      if (self.hassEntityGeneration):
           testvalue = getAPIValue(self.hassEntityGeneration)
           print("TEST TEST TEST TEST " + testvalue)
 
