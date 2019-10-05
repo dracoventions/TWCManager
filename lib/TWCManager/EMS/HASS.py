@@ -17,13 +17,13 @@ class HASS:
   timeout               = 2
   
   def __init__(self, debugLevel, config):
-    self.status                = config['enabled']
-    self.serverIP              = config['serverIP']
-    self.serverPort            = config['serverPort']
-    self.apikey                = config['apiKey']
+    self.status                = config,get('enabled', False)
+    self.serverIP              = config.get('serverIP', None)
+    self.serverPort            = config.get('serverPort', 8123)
+    self.apikey                = config.get('apiKey',None)
     self.debugLevel            = debugLevel
-    self.hassEntityConsumption = config['hassEntityConsumption']
-    self.hassEntityGeneration  = config['hassEntityGeneration']
+    self.hassEntityConsumption = config.get('hassEntityConsumption', None)
+    self.hassEntityGeneration  = config.get('hassEntityGeneration', None)
     
   def getConsumption(self):
     
