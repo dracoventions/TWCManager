@@ -5,13 +5,15 @@ class MQTTStatus:
 
   import paho.mqtt.client as mqtt
   
-  status = False
-  serverIP = None
-  topicPrefix = None
+  debugLevel    = 0
+  status        = False
+  serverIP      = None
+  topicPrefix   = None
   
-  def __init__(self, status, serverIP, topicPrefix):
-    self.status = status
-    self.serverIP = serverIP
+  def __init__(self, debugLevel, status, serverIP, topicPrefix):
+    self.debugLevel  = debugLevel
+    self.status      = status
+    self.serverIP    = serverIP
     self.topicPrefix = topicPrefix
     
   def setStatus(self, twcid, key, value):
