@@ -1,5 +1,8 @@
 class HASS:
 
+  # HomeAssistant EMS Module
+  # Fetches Consumption and Generation details from HomeAssistant
+  
   import requests
   import time
   
@@ -61,8 +64,8 @@ class HASS:
     }
 
     try:
-        httpResponse = requests.get(url, headers=headers)
-    except requests.exceptions.ConnectionError as e: 
+        httpResponse = self.requests.get(url, headers=headers)
+    except self.requests.exceptions.ConnectionError as e: 
         self.debugLog(4, "Error connecting to HomeAssistant to publish sensor values")
         self.debugLog(10, str(e))
         return 0
@@ -80,15 +83,16 @@ class HASS:
       # Cache has expired. Fetch values from HomeAssistant sensor.
             
       if (self.hassEntityConsumption):
-          testvalue = self.getAPIValue(self.hassEntityConsumption)
-          self.debugLog(10, "HASS getConsumption returns " + str(testvalue))
-          self.consumedW = float(testvalue)
+          apivalue = self.getAPIValue(self.hassEntityConsumption)
+          self.debugLog(10, "HASS getConsumption returns " + str(apivalue))
+          self.consumedW = float(apivalue)
       else:
           self.debugLog(10, "HASS Consumption Entity Not Supplied. Not Querying")
 
       if (self.hassEntityGeneration):
-          testvalue = self.getAPIValue(self.hassEntityGeneration)
-          self.debugLog(10, "HASS getGeneration returns " + str(testvalue))
+          apivalue = self.getAPIValue(self.hassEntityGeneration)
+          self.debugLog(10, "HASS getGeneration returns " + str(apivalue))
+          self.generatedW = float(apivalue)
       else:
           self.debugLog(10, "HASS Generation Entity Not Supplied. Not Querying")
 
