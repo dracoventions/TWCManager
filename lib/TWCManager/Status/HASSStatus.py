@@ -12,11 +12,11 @@ class HASSStatus:
   serverPort   = 8123
   timeout      = 2
   
-  def __init__(self, debugLevel, status, serverIP, serverPort, apiKey):
-    self.status      = status
-    self.serverIP    = serverIP
-    self.serverPort  = serverPort
-    self.apiKey      = apiKey
+  def __init__(self, debugLevel, config):
+    self.status      = config.get('enabled', False)
+    self.serverIP    = config.get('serverIP', None)
+    self.serverPort  = config.get('serverPort', 8123)
+    self.apiKey      = config.get('apiKey', None)
     self.debugLevel  = debugLevel
 
   def debugLog(self, minlevel, message):
