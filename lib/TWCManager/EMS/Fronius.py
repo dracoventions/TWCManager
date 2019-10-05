@@ -3,13 +3,15 @@
 class Fronius:
 
   consumedW   = 0
+  debugLevel  = 0
   generatedW  = 0
   importW     = 0
   exportW     = 0
   voltage     = 0
 
-  def __init__(self, serverIP):
-    self.serverIP = serverIP
+  def __init__(self, debugLevel, config):
+    self.debugLevel = debugLevel
+    self.serverIP   = config['serverIP']
 
   def getConsumption(self):
     return self.consumedW
