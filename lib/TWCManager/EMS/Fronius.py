@@ -11,7 +11,7 @@ class Fronius:
 
   def __init__(self, debugLevel, config):
     self.debugLevel = debugLevel
-    self.serverIP   = config['serverIP']
+    self.serverIP   = config.get(serverIP,'')
 
   def getConsumption(self):
     return self.consumedW
