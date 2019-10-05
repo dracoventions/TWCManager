@@ -20,7 +20,7 @@ class HASS:
     self.status                = config.get('enabled', False)
     self.serverIP              = config.get('serverIP', None)
     self.serverPort            = config.get('serverPort', 8123)
-    self.apikey                = config.get('apiKey',None)
+    self.apiKey                = config.get('apiKey', None)
     self.debugLevel            = debugLevel
     self.hassEntityConsumption = config.get('hassEntityConsumption', None)
     self.hassEntityGeneration  = config.get('hassEntityGeneration', None)
@@ -81,13 +81,14 @@ class HASS:
             
       if (self.hassEntityConsumption):
           testvalue = self.getAPIValue(self.hassEntityConsumption)
-          self.debugLog(10, "TEST TEST TEST TEST " + str(testvalue))
+          self.debugLog(10, "HASS getConsumption returns " + str(testvalue))
+          self.consumedW = float(testvalue)
       else:
           self.debugLog(10, "HASS Consumption Entity Not Supplied. Not Querying")
 
       if (self.hassEntityGeneration):
           testvalue = self.getAPIValue(self.hassEntityGeneration)
-          self.debugLog(10, "TEST TEST TEST TEST " + str(testvalue))
+          self.debugLog(10, "HASS getGeneration returns " + str(testvalue))
       else:
           self.debugLog(10, "HASS Generation Entity Not Supplied. Not Querying")
 
