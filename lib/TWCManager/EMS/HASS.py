@@ -17,14 +17,18 @@ class HASS:
   timeout               = 2
   
   def __init__(self, debugLevel, config):
-    self.status                = config,get('enabled', False)
+    self.status                = config.get('enabled', False)
     self.serverIP              = config.get('serverIP', None)
     self.serverPort            = config.get('serverPort', 8123)
     self.apikey                = config.get('apiKey',None)
     self.debugLevel            = debugLevel
     self.hassEntityConsumption = config.get('hassEntityConsumption', None)
     self.hassEntityGeneration  = config.get('hassEntityGeneration', None)
-    
+
+  def debugLog(self, minlevel, message):
+    if (self.debugLevel >= minlevel):
+      print("debugLog: (" + str(minlevel) + ") " + message)
+      
   def getConsumption(self):
     
     if (not self.status):
@@ -57,8 +61,8 @@ class HASS:
     try:
         httpResponse = requests.get(url, headers=headers)
     except requests.exceptions.ConnectionError as e: 
-        print("Error connecting to HomeAssistant")
-        print(e)
+        self.debugLog(4, "Error connecting to HomeAssistant to publish sensor values")
+        self.debugLog(10, str(e))
         return 0
 
     jsonResponse = httpResponse.json() if httpResponse and httpResponse.status_code == 200 else None
