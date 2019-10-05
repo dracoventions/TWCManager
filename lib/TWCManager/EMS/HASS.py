@@ -80,14 +80,14 @@ class HASS:
       # Cache has expired. Fetch values from HomeAssistant sensor.
             
       if (self.hassEntityConsumption):
-          testvalue = getAPIValue(self.hassEntityConsumption)
-          print("TEST TEST TEST TEST " + testvalue)
+          testvalue = self.getAPIValue(self.hassEntityConsumption)
+          self.debugLog(10, "TEST TEST TEST TEST " + str(testvalue))
       else:
           self.debugLog(10, "HASS Consumption Entity Not Supplied. Not Querying")
 
       if (self.hassEntityGeneration):
-          testvalue = getAPIValue(self.hassEntityGeneration)
-          print("TEST TEST TEST TEST " + testvalue)
+          testvalue = self.getAPIValue(self.hassEntityGeneration)
+          self.debugLog(10, "TEST TEST TEST TEST " + str(testvalue))
       else:
           self.debugLog(10, "HASS Generation Entity Not Supplied. Not Querying")
 
