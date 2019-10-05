@@ -2,19 +2,34 @@
 
 ## How it works
 
+* In order to allow multiple Tesla Wall Connector (TWC) units to operate on a single power circuit, Tesla provides a Load-Sharing protocol to interconnect the Tesla Wall Connector units together, and to direct those units to charge at a specific rate based on the number of cars charging simtultaneously.
 * This script (TWCManager) pretends to be a Tesla Wall Charger (TWC) set to master mode.
 * When wired to the IN or OUT pins of real TWC units set to slave mode (rotary switch position F), TWCManager can tell them to limit car charging to any whole amp value between 5A and the max rating of the charger. Charging can also be stopped so the car goes to sleep.
 * This level of control is useful for having TWCManager track the real-time availability of green energy sources and direct the slave TWCs to use near the exact amount of energy available. This saves energy compared to sending the green energy off to a battery for later car charging or off to the grid where some of it is lost in transmission (and costs are greater than charging off generated solar).
+* TWCManager provides built-in interfaces to several different Green Energy interfaces, to allow this tracking. Please see the table below.
 
 ## Interfaces
 
-Currently, the following interfaces are complete, planned or in development:
+To enable TWCManager to gather the solar generation information that it requires to adjust the charging rate, we provide Interfaces to allow information to be retrieved (EMS Interfaces) and Interfaces to allow us to provide information to external systems to inform them of current charging output and number of cars currently charging.
 
-| Platform     | Status      | Details                 |
-| ------------ | ----------- | ----------------------- |
+### EMS Interfaces
+
+EMS Interfaces read solar generation and/or consumption values from an external system. Current EMS interfaces are:
+
+| Platform         | Status      | Details                 |
+| ---------------- | ----------- | ----------------------- |
 | Fronius Inverter | Not Started | Expected by Mid-October 2019 |
 | HomeAssistant    | In Development | Allows fetching generation and consumption from HomeAssistant sensors |
 | Tesla Powerwall2 | Planned        | Expected by Mid-October 2019 |
+
+### Status Interfaces
+
+Status interfaces publish TWCManager status information to external systems. Current Status interfaces are:
+
+| Platform         | Status      | Details                 |
+| ---------------- | ----------- | ----------------------- |
+| HomeAssistant    | In Development | Provides HASS sensors to monitor TWCManager State |
+| MQTT             | In Development | Publishes MQTT topics to monitor TWCManager State |
 
 ## Warnings
 
@@ -31,7 +46,6 @@ It is important to read and understand the following warnings before using this 
 * Lets you control the amount of power delivered by a Tesla Wall Connector (TWC) to the car it's charging.
 This can save around 6kWh per month when used to track a local green energy source like solar panels on your roof.  It can also avoid drawing grid energy for those without net metering or limit charging to times of day when prices are cheapest.
 * Whilst the TWCManager application cannot read the charge state of connected vehicles, using the Tesla API we can pull the charge status of a vehicle.
-* Integrates with HomeAssistant to read sensor data from Solar sensors, allowing both generation and consumption to be tracked and used in calculating charging rate
 * Integrates with HomeAssistant to report TWC sensor data back to HomeAssistant for display or use in automations.
 
 ## Limitations
