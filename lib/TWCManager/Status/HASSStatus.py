@@ -5,19 +5,19 @@ class HASSStatus:
 
   import requests
   
-  apiKey = None
-  debugLevel = 0
-  status = False
-  serverIP = None
-  serverPort = 8123
-  timeout = 2
+  apiKey       = None
+  debugLevel   = 0
+  status       = False
+  serverIP     = None
+  serverPort   = 8123
+  timeout      = 2
   
-  def __init__(self, status, serverIP, serverPort, apiKey, debugLevel):
-    self.status = status
-    self.serverIP = serverIP
-    self.serverPort = serverPort
-    self.apiKey = apiKey
-    self.debugLevel = debugLevel
+  def __init__(self, debugLevel, status, serverIP, serverPort, apiKey):
+    self.status      = status
+    self.serverIP    = serverIP
+    self.serverPort  = serverPort
+    self.apiKey      = apiKey
+    self.debugLevel  = debugLevel
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
