@@ -32,6 +32,7 @@ class HASS:
   def getConsumption(self):
     
     if (not self.status):
+      self.debugLog(10, "HASS EMS Module Disabled. Skipping getConsumption")
       return 0
     
     # Perform updates if necessary
@@ -43,6 +44,7 @@ class HASS:
   def getGeneration(self):
     
     if (not self.status):
+      self.debugLog(10, "HASS EMS Module Disabled. Skipping getConsumption")
       return 0
     
     # Perform updates if necessary
@@ -80,10 +82,14 @@ class HASS:
       if (self.hassEntityConsumption):
           testvalue = getAPIValue(self.hassEntityConsumption)
           print("TEST TEST TEST TEST " + testvalue)
+      else:
+          self.debugLog(10, "HASS Consumption Entity Not Supplied. Not Querying")
 
       if (self.hassEntityGeneration):
           testvalue = getAPIValue(self.hassEntityGeneration)
           print("TEST TEST TEST TEST " + testvalue)
+      else:
+          self.debugLog(10, "HASS Generation Entity Not Supplied. Not Querying")
 
       # Update last fetch time
       self.lastFetch = int(self.time.time())
