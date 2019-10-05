@@ -3,25 +3,25 @@ class HASS:
   import requests
   import time
   
-  apiKey      = None
-  cacheTime   = 60
-  consumedW   = 0
-  debugLevel  = 0
-  generatedW  = 0
+  apiKey               = None
+  cacheTime            = 60
+  consumedW            = 0
+  debugLevel           = 0
+  generatedW           = 0
   hassEntityConsumption = None
   hassEntityGeneration = None
-  lastFetch   = 0
-  status      = False
-  serverIP    = None
-  serverPort  = 8123
-  timeout     = 2
+  lastFetch            = 0
+  status               = False
+  serverIP             = None
+  serverPort           = 8123
+  timeout              = 2
   
-  def __init__(self, **config):
-    self.status         = config['status']
-    self.serverIP       = config['serverIP']
-    self.serverPort     = config['serverPort']
-    self.apikey         = config['apiKey']
-    self.debugLevel     = config['debugLevel']
+  def __init__(self, debugLevel, config):
+    self.status              = config['enabled']
+    self.serverIP            = config['serverIP']
+    self.serverPort          = config['serverPort']
+    self.apikey              = config['apiKey']
+    self.debugLevel          = debugLevel
     self.hassEntityConsumption = config['hassEntityConsumption']
     self.hassEntityGeneration = config['hassEntityGeneration']
     
@@ -33,7 +33,7 @@ class HASS:
     # Perform updates if necessary
     self.update()
     
-    # Fetch current value
+    # Return consumption value
     return self.consumedW
 
   def getGeneration(self):
@@ -44,6 +44,7 @@ class HASS:
     # Perform updates if necessary
     self.update()
     
+    # Return generation value
     return self.generatedW
   
   def getAPIValue(self, entity):
