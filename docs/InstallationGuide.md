@@ -11,13 +11,25 @@ The installation does not require a great amount of electrical skill or competen
 
 ## Basic Installation
 
-The basic installation approach consists of a pair of wires being installed into the RS-485 sockets of the Tesla Wall Charger, with an external device providing an RS-485 interface on which TWCManager communicates with
+The basic installation approach consists of a pair of wires being installed into the RS-485 sockets of the Tesla Wall Charger, with an external device providing an RS-485 interface on which TWCManager communicates with the TWC to limit the charge based on the current Generation and Consumption rates of your solar installation.
 
 Pros
   * Simpler installation, only requires feeding some wires through an existing entry point into the TWC.
+  * Significantly less risk, as the advanced connection relies on storing a Raspberry Pi controller inside of the TWC and powering it from the LED display on the charger.
 
 Cons
   * There is some visible external egress of these wires to connect to the controlling device.
+
+### Tools Required
+
+You will need:
+
+  * Some wire - 22 AWG guage wire is recommended.
+  * An RS-485 interface. The easiest way to achieve this is a USB to RS-485 adapter. If using this adapter, I can recommend a USB-RS485-WE-1800-BT adapter, which both my and cdragon's installations have used. This has a FTDI chip and has been extremely stable in my testing.
+  * A computer to run TWCManager on. A Raspberry Pi Zero W is recommended, as it has a low energy consumption. 
+  * TT10 and TT20 "security" Torx Screw bits. The Tesla Wall Connector comes with a set of these torx bits included, it is in a package with some rubber grommets for the Wall Connector:
+  
+![Torx Screws](torxscrews.jpg)
 
 ### RS-485 Connection
 
@@ -26,6 +38,13 @@ Once you have removed the Tesla Wall Charger cover, you should see a set of 4 he
 ![RS-485 Header Location](interface.jpg)
 
 You may connect your RS-485 wires to either the In or the Out (but not both) header pins. To do this, you'll need a 3mm flat-head screwdriver. Strip approximately 3mm of insulation from the wires that you will be connecting, and feed them from the bottom of the RS-485 headers into the positive or negative terminals for either the In or Out headers.
+
+Generally, the wires that you connect will be the following colours:
+
+  * Positive: Orange or Red
+  * Negative: Yellow or Black
+  
+Please check carefully with the documentation for your RS-485 interface. If you get this wiring wrong, it's possible that you'll feed power to the RS-485 header, potentially damaging the TWC.
 
 ### Rotary Switch
 
