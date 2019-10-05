@@ -8,18 +8,22 @@ class HASS:
   consumedW   = 0
   debugLevel  = 0
   generatedW  = 0
+  hassEntityConsumption = None
+  hassEntityGeneration = None
   lastFetch   = 0
   status      = False
   serverIP    = None
   serverPort  = 8123
   timeout     = 2
   
-  def __init__(self, status, serverIP, serverPort, apiKey, debugLevel):
-    self.status = status
-    self.serverIP = serverIP
-    self.serverPort = serverPort
-    self.apikey = apiKey
-    self.debugLevel = debugLevel
+  def __init__(self, **config):
+    self.status         = config['status']
+    self.serverIP       = config['serverIP']
+    self.serverPort     = config['serverPort']
+    self.apikey         = config['apiKey']
+    self.debugLevel     = config['debugLevel']
+    self.hassEntityConsumption = config['hassEntityConsumption']
+    self.hassEntityGeneration = config['hassEntityGeneration']
     
   def getConsumption(self):
     
@@ -67,7 +71,15 @@ class HASS:
     # Update
     if ((int(self.time.time()) - self.lastFetch) > self.cacheTime):
       # Cache has expired. Fetch values from HomeAssistant sensor.
-      
+            
+      if (self.hassEntityConsumption):
+          testvalue = getAPIValue(self.hassEntityConsumption)
+          print("TEST TEST TEST TEST " + testvalue)
+
+        if (self.hassEntityGeneration):
+          testvalue = getAPIValue(self.hassEntityGeneration)
+          print("TEST TEST TEST TEST " + testvalue)
+
       # Update last fetch time
       self.lastFetch = int(self.time.time())
       return True
