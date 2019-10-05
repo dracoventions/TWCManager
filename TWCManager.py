@@ -81,22 +81,6 @@ fakeTWCID = bytearray(b'\x77\x77')
 masterSign = bytearray(b'\x77')
 slaveSign = bytearray(b'\x77')
 
-# HomeAssistant Server IP Address and Port
-hassServer = "192.168.28.9"
-hassPort = "8123"
-
-# To obtain a HASS API key, via browser, click on your user profile, and
-# add a Long-Lived Access Token. Place it in the following variable:
-hassAPIKey = "ABCDE"
-
-# Entity IDs for HomeAsssistant sensors
-# If you don't have any of these sensors, comment them out and they will not be
-# used to calculate the maximum available amperage.
-hassEntityConsumption = "sensor.meter_power_live"
-hassEntityGeneration = "sensor.inverter_power_live"
-
-hassEntityMinAmps = "sensor.twtc_min_amps"
-hassEntityMaxAmps = "sensor.twtc_max_amps"
 
 #
 # End configuration parameters
@@ -2354,7 +2338,7 @@ print("TWC Manager starting as fake %s with id %02X%02X and sign %02X" \
 fronius = Fronius(config['sources']['HASS']['enabled'])
 
 # Create hass EMS plugin instance
-hass = HASS(config['sources']['HASS']['enabled'], config['sources']['HASS']['serverIP'],config['sources']['HASS']['serverPort'],config['sources']['HASS']['apiKey'],config['config']['debugLevel'])
+hass = HASS(config['sources']['HASS'])
 
 # Create hass status plugin instance
 hassstatus = HASSStatus(config['status']['HASS']['enabled'], config['status']['HASS']['serverIP'],config['status']['HASS']['serverPort'],config['status']['HASS']['apiKey'],config['config']['debugLevel'])
