@@ -2341,7 +2341,7 @@ fronius = Fronius(config['config']['debugLevel'], config['sources']['Fronius'])
 hass = HASS(config['config']['debugLevel'], config['sources']['HASS'])
 
 # Create hass status plugin instance
-hassstatus = HASSStatus(config['config']['debugLevel'],config['status']['HASS']['enabled'], config['status']['HASS']['serverIP'],config['status']['HASS']['serverPort'],config['status']['HASS']['apiKey'])
+hassstatus = HASSStatus(config['config']['debugLevel'],config['status']['HASS'])
 
 # Create mqtt status plugin instance
 mqttstatus = MQTTStatus(config['config']['debugLevel'],config['status']['MQTT']['enabled'], config['status']['MQTT']['brokerIP'], config['status']['MQTT']['topicPrefix'])
