@@ -2335,10 +2335,10 @@ print("TWC Manager starting as fake %s with id %02X%02X and sign %02X" \
     ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(slaveSign)))
 
 # Create fronius EMS plugin instance
-fronius = Fronius(config['sources']['HASS']['enabled'])
+fronius = Fronius(debugLevel, config['sources']['Fronius'])
 
 # Create hass EMS plugin instance
-hass = HASS(config['sources']['HASS'])
+hass = HASS(debugLevel, config['sources']['HASS'])
 
 # Create hass status plugin instance
 hassstatus = HASSStatus(config['status']['HASS']['enabled'], config['status']['HASS']['serverIP'],config['status']['HASS']['serverPort'],config['status']['HASS']['apiKey'],config['config']['debugLevel'])
