@@ -57,7 +57,7 @@ class MQTTStatus:
         try:
           client = self.mqtt.Client("P1")
           client.on_connect = self.mqttConnected
-          client.connect(self.serverIP)
+          client.connect_async(self.serverIP)
           self.connectionState = 1
           client.loop_start()
         except ConnectionRefusedError as e:
