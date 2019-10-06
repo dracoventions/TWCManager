@@ -3,10 +3,13 @@
 
 class HASSStatus:
 
+  import time
   import requests
   
-  apiKey       = None
-  debugLevel   = 0
+  apiKey           = None
+  debugLevel       = 0
+  msgRate          = {}
+  msgRatePerSensor = 60
   status       = False
   serverIP     = None
   serverPort   = 8123
@@ -27,6 +30,19 @@ class HASSStatus:
     sensor = "sensor.twcmanager_" + str(twcid.decode("utf-8")) + "_" + key
 
     if (self.status):
+
+      # Perform rate limiting first (as there are some very chatty topics).
+      # For each message that comes through, we take the sensor name and check
+      # when we last updated it. If it was less than msgRatePerSensor
+      # seconds ago, we dampen it.
+      if (sensor in self.msgRate):
+        if ((self.time.time() - self.msgRate[sensor]) < self.msgRatePerSensor):
+          return True
+        else:
+          self.msgRate[sensor] = self.time.time()
+      else:
+        self.msgRate[sensor] = self.time.time()
+
       url = "http://" + self.serverIP + ":" + self.serverPort 
       url = url + "/api/states/" + sensor
       headers = {
