@@ -2209,7 +2209,7 @@ chargeNowTimeEnd = 0
 
 spikeAmpsToCancel6ALimit = 16
 timeLastGreenEnergyCheck = 0
-hourResumeTrackGreenEnergy = 8
+hourResumeTrackGreenEnergy = -1
 kWhDelivered = 119
 timeLastkWhDelivered = time.time()
 timeLastkWhSaved = time.time()
