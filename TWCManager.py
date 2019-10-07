@@ -484,7 +484,7 @@ def delete_slave(deleteSlaveID):
         pass
 
 def total_amps_actual_all_twcs():
-    global config, slaveTWCRoundRobin, config
+    global config, master, slaveTWCRoundRobin, config
 
     totalAmps = 0
     for slaveTWC in slaveTWCRoundRobin:
@@ -496,6 +496,7 @@ def total_amps_actual_all_twcs():
         print("Total amps all slaves are using: " + str(totalAmps))
         hassstatus.setStatus(bytes("all", 'UTF-8'), "total_amps_in_use", totalAmps)
         mqttstatus.setStatus(bytes("all", 'UTF-8'), "totalAmpsInUse", totalAmps)
+    master.setTotalAmpsInUse(totalAmps)
     return totalAmps
 
 
@@ -1097,7 +1098,7 @@ def background_tasks_thread():
         backgroundTasksQueue.task_done()
 
 def check_green_energy():
-    global maxAmpsToDivideAmongSlaves, config, hass, backgroundTasksLock
+    global maxAmpsToDivideAmongSlaves, config, hass, backgroundTasksLock, master
 
     # Check solar panel generation using an API exposed by
     # the HomeAssistant API.
@@ -1108,11 +1109,12 @@ def check_green_energy():
     #
     greenEnergyConsumptionVal = 0
     greenEnergyConsumptionVal += hass.getConsumption()
+    greenEnergyConsumptionVal -= (master.getTotalAmpsInUse() * 240)
     
     greenEnergyGenerationVal = 0
     greenEnergyGenerationVal += hass.getGeneration()
 
-    # Calculate our current consumption in watts
+    # Calculate our current generation and consumption in watts
     solarW = int(float(greenEnergyGenerationVal) - float(greenEnergyConsumptionVal))
 
     # Generation may be below zero if consumption is greater than generation
@@ -1272,7 +1274,19 @@ class CarApiVehicle:
 #
 ##############################
 
+class TWCMaster:
 
+  totalAmpsInUse = 0
+  TWCID = None
+
+  def __init__(self, TWCID):
+    self.TWCID = TWCID
+
+  def getTotalAmpsInUse(self):
+    return self.totalAmpsInUse
+
+  def setTotalAmpsInUse(self, amps):
+    self.totalAmpsInUse = amps
 
 ##############################
 #
@@ -2333,6 +2347,9 @@ if(webIPCqueue == None):
 print("TWC Manager starting as fake %s with id %02X%02X and sign %02X" \
     % ( ("Master" if config['config']['fakeMaster'] else "Slave"), \
     ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(slaveSign)))
+
+# Instantiate a master object
+master = TWCMaster(fakeTWCID)
 
 # Create fronius EMS plugin instance
 fronius = Fronius(config['config']['debugLevel'], config['sources']['Fronius'])
