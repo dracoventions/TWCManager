@@ -1107,35 +1107,20 @@ def check_green_energy():
     # to match those used in your environment. This is configured
     # in the config section at the top of this file.
     #
-    greenEnergyConsumptionVal = 0
-    greenEnergyConsumptionVal += hass.getConsumption()
-    greenEnergyConsumptionVal -= (master.getTotalAmpsInUse() * 240)
-    
-    greenEnergyGenerationVal = 0
-    greenEnergyGenerationVal += hass.getGeneration()
-
-    # Calculate our current generation and consumption in watts
-    solarW = int(float(greenEnergyGenerationVal) - float(greenEnergyConsumptionVal))
-
-    # Generation may be below zero if consumption is greater than generation
-    if solarW < 0:
-        solarW = 0
+    master.setConsumption('Manual', (config['config']['greenEnergyAmpsOffset'] * 240))
+    master.setConsumption('HomeAssistant', hass.getConsumption())
+    master.setGeneration('HomeAssistant', hass.getGeneration())
 
     # Use backgroundTasksLock to prevent changing maxAmpsToDivideAmongSlaves
     # if the main thread is in the middle of examining and later using
     # that value.
     backgroundTasksLock.acquire()
-
-    # Watts = Volts * Amps
-    # Car charges at 240 volts in North America so we figure
-    # out how many amps * 240 = solarW and limit the car to
-    # that many amps.
-    maxAmpsToDivideAmongSlaves = (solarW / 240) + config['config']['greenEnergyAmpsOffset']
+    maxAmpsToDivideAmongSlaves = master.getMaxAmpsToDivideAmongSlaves()
     
     if(config['config']['debugLevel'] >= 1):
-        print("%s: Solar generating %dW so limit car charging to:\n" \
-             "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
-             (time_now(), solarW, (solarW / 240), config['config']['greenEnergyAmpsOffset'], maxAmpsToDivideAmongSlaves, config['config']['minAmpsPerTWC']))
+        print("%s: Solar generating %dW, Consumption %dW, Charger Load %dW" % (time_now(), master.getGeneration(), master.getConsumption(), master.getChargerLoad()))
+        print("          Limiting car charging to %.2fA - %.2fA = %.2fA." % ((master.getGeneration() / 240), (master.getConsumption() / 240), maxAmpsToDivideAmongSlaves))
+        print("          Charge when above %.0fA (minAmpsPerTWC)." % (config['config']['minAmpsPerTWC']))
 
     backgroundTasksLock.release()
 
@@ -1276,14 +1261,88 @@ class CarApiVehicle:
 
 class TWCMaster:
 
-  totalAmpsInUse = 0
-  TWCID = None
+  consumptionValues   = {}
+  generationValues    = {}
+  subtractChargerLoad = False
+  totalAmpsInUse      = 0
+  TWCID               = None
 
-  def __init__(self, TWCID):
+  def __init__(self, TWCID, config):
     self.TWCID = TWCID
+    self.subtractChargerLoad = config['config']['subtractChargerLoad']
+
+  def getChargerLoad(self):
+    # Calculate in watts the load that the charger is generating so
+    # that we can exclude it from the consumption if necessary
+    return (self.getTotalAmpsInUse() * 240)
+
+  def getConsumption(self):
+    consumptionVal = 0
+
+    for key in self.consumptionValues:
+      consumptionVal += self.consumptionValues[key]
+
+    if (consumptionVal < 0):
+      consumptionVal = 0
+
+    return float(consumptionVal)
+
+  def getGeneration(self):
+    generationVal = 0
+
+    # Currently, our only logic is to add all of the values together
+    for key in self.generationValues:
+      generationVal += self.generationValues[key]
+
+    if (generationVal < 0):
+      generationVal = 0
+
+    return float(generationVal)
+
+  def getGenerationOffset(self):
+    # Returns the number of watts to subtract from the solar generation stats
+    # This is consumption + charger load if subtractChargerLoad is enabled
+    # Or simply consumption if subtractChargerLoad is disabled
+    generationOffset = float(0)
+    generationOffset = self.getConsumption()
+    if (self.subtractChargerLoad):
+      generationOffset =- self.getChargerLoad()
+    if generationOffset < 0:
+      generationOffset = 0
+    return float(generationOffset)
+
+  def getMaxAmpsToDivideAmongSlaves(self):
+    # Watts = Volts * Amps
+    # Car charges at 240 volts in North America so we figure
+    # out how many amps * 240 = solarW and limit the car to
+    # that many amps.
+
+    # Calculate our current generation and consumption in watts
+    solarW = int(self.getGeneration() - self.getGenerationOffset())
+
+    # Generation may be below zero if consumption is greater than generation
+    if solarW < 0:
+        solarW = 0
+
+    # Watts = Volts * Amps
+    # Car charges at 240 volts in North America so we figure
+    # out how many amps * 240 = solarW and limit the car to
+    # that many amps.
+    maxAmpsToDivideAmongSlaves = (solarW / 240)
+    return maxAmpsToDivideAmongSlaves
 
   def getTotalAmpsInUse(self):
+    # Returns the number of amps currently in use by all TWCs
     return self.totalAmpsInUse
+
+  def setConsumption(self, source, value):
+    # Accepts consumption values from one or more data sources
+    # For now, this gives a sum value of all, but in future we could
+    # average across sources perhaps, or do a primary/secondary priority
+    self.consumptionValues[source] = value
+
+  def setGeneration(self, source, value):
+    self.generationValues[source] = value
 
   def setTotalAmpsInUse(self, amps):
     self.totalAmpsInUse = amps
@@ -2349,7 +2408,7 @@ print("TWC Manager starting as fake %s with id %02X%02X and sign %02X" \
     ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(slaveSign)))
 
 # Instantiate a master object
-master = TWCMaster(fakeTWCID)
+master = TWCMaster(fakeTWCID, config)
 
 # Create fronius EMS plugin instance
 fronius = Fronius(config['config']['debugLevel'], config['sources']['Fronius'])
