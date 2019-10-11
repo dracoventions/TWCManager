@@ -13,19 +13,26 @@ class MQTTStatus:
   msgQueueMax     = 16
   msgRate         = {}
   msgRatePerTopic = 60
+  password        = None
   status          = False
   serverIP        = None
   topicPrefix     = None
+  username        = None
   
-  def __init__(self, debugLevel, status, serverIP, topicPrefix):
+  def __init__(self, debugLevel, config):
     self.debugLevel  = debugLevel
-    self.status      = status
-    self.serverIP    = serverIP
-    self.topicPrefix = topicPrefix
+    self.status      = config.get('status', False)
+    self.serverIP    = config.get('serverIP', None)
+    self.topicPrefix = config.get('topicPrefix', None)
+    self.username    = config.get('username', None)
+    self.password    = config.get('password', None)
+
+  def debugLog(self, minlevel, message):
+    if (self.debugLevel >= minlevel):
+      print("debugLog: (" + str(minlevel) + ") " + message)
     
   def setStatus(self, twcid, key, value):
     if (self.status):
-
       topic = self.topicPrefix+ "/" + str(twcid.decode("utf-8"))
       topic = topic + "/" + key
 
@@ -56,14 +63,20 @@ class MQTTStatus:
       if (self.connectionState == 0):
         try:
           client = self.mqtt.Client("P1")
+          if (self.username and self.password):
+            client.username_pw_set(self.username, self.password)
           client.on_connect = self.mqttConnected
           client.connect_async(self.serverIP)
           self.connectionState = 1
           client.loop_start()
         except ConnectionRefusedError as e:
-          print("Error connecting to MQTT Broker")
-          print(e)
-          return false
+          self.debugLog(4, "Error connecting to MQTT Broker to publish topic values")
+          self.debugLog(10, str(e))
+          return False
+        except OSError as e:
+          self.debugLog(4, "Error connecting to MQTT Broker to publish topic values")
+          self.debugLog(10, str(e))
+          return False
 
   def mqttConnected(self, client, userdata, flags, rc):
     # This callback function is called once the MQTT client successfully
@@ -77,9 +90,9 @@ class MQTTStatus:
       try:
         client.publish(msg[topic], payload=msg[payload])
       except e:
-        print("Error publishing MQTT Topic Status")
-        print(e)
-        return false
+        self.debugLog(4, "Error publishing MQTT Topic Status")
+        self.debugLog(10, str(e))
+        return False
 
     client.loop_stop()
     self.connectionState = 0

@@ -123,7 +123,7 @@ def load_settings():
            homeLat, homeLon
 
     try:
-        fh = open(config['config']['settingsPath'] + "TWCManager.settings", 'r')
+        fh = open(config['config']['settingsPath'] + "/TWCManager.settings", 'r')
 
         for line in fh:
             m = re.search(r'^\s*nonScheduledAmpsMax\s*=\s*([-0-9.]+)', line, re.MULTILINE)
@@ -224,7 +224,7 @@ def save_settings():
            carApiBearerToken, carApiRefreshToken, carApiTokenExpireTime, \
            homeLat, homeLon
 
-    fh = open(config['config']['settingsPath'] + "TWCManager.settings", 'w')
+    fh = open(config['config']['settingsPath'] + "/TWCManager.settings", 'w')
     fh.write('nonScheduledAmpsMax=' + str(nonScheduledAmpsMax) +
             '\nscheduledAmpsMax=' + str(scheduledAmpsMax) +
             '\nscheduledAmpsStartHour=' + str(scheduledAmpsStartHour) +
@@ -2164,10 +2164,6 @@ kWhDelivered = 119
 timeLastkWhDelivered = time.time()
 timeLastkWhSaved = time.time()
 
-# __FILE__ contains the path to the running script. Replace the script name with
-# TWCManagerSettings.txt. This gives us a path that will always locate
-# TWCManagerSettings.txt in the same directory as the script even when pwd does
-# not match the script directory.
 nonScheduledAmpsMax = -1
 timeLastHeartbeatDebugOutput = 0
 
@@ -2222,7 +2218,6 @@ ser = serial.Serial(config['config']['rs485adapter'], config['config']['baud'], 
 #
 
 load_settings()
-
 
 # Create a background thread to handle tasks that take too long on the main
 # thread.  For a primer on threads in Python, see:
@@ -2297,7 +2292,7 @@ hass = HASS(config['config']['debugLevel'], config['sources']['HASS'])
 hassstatus = HASSStatus(config['config']['debugLevel'],config['status']['HASS'])
 
 # Create mqtt status plugin instance
-mqttstatus = MQTTStatus(config['config']['debugLevel'],config['status']['MQTT']['enabled'], config['status']['MQTT']['brokerIP'], config['status']['MQTT']['topicPrefix'])
+mqttstatus = MQTTStatus(config['config']['debugLevel'],config['status']['MQTT'])
 
 while True:
     try:
