@@ -45,6 +45,7 @@ from datetime import datetime
 import threading
 from lib.TWCManager.EMS.Fronius import Fronius
 from lib.TWCManager.EMS.HASS import HASS
+from lib.TWCManager.EMS.TED import TED
 from lib.TWCManager.Status.HASSStatus import HASSStatus
 from lib.TWCManager.Status.MQTTStatus import MQTTStatus
 from lib.TWCManager.Vehicle.TeslaAPI import CarApi
@@ -1107,6 +1108,7 @@ def check_green_energy():
     master.setGeneration('Fronius', fronius.getGeneration())
     master.setConsumption('HomeAssistant', hass.getConsumption())
     master.setGeneration('HomeAssistant', hass.getGeneration())
+    master.setGeneration('TED', ted.getGeneration())
 
     # Use backgroundTasksLock to prevent changing maxAmpsToDivideAmongSlaves
     # if the main thread is in the middle of examining and later using
@@ -2192,6 +2194,15 @@ ser = serial.Serial(config['config']['rs485adapter'], config['config']['baud'], 
 # Begin main program
 #
 
+# Instantiate necessary classes
+master = TWCMaster(fakeTWCID, config)
+carapi = CarApi(config)
+fronius = Fronius(config['config']['debugLevel'], config['sources']['Fronius'])
+hass = HASS(config['config']['debugLevel'], config['sources']['HASS'])
+hassstatus = HASSStatus(config['config']['debugLevel'],config['status']['HASS'])
+mqttstatus = MQTTStatus(config['config']['debugLevel'],config['status']['MQTT'])
+ted = TED(config['config']['debugLevel'], config['sources']['TED'])
+
 load_settings()
 
 # Create a background thread to handle tasks that take too long on the main
@@ -2253,14 +2264,6 @@ if(webIPCqueue == None):
 print("TWC Manager starting as fake %s with id %02X%02X and sign %02X" \
     % ( ("Master" if config['config']['fakeMaster'] else "Slave"), \
     ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(slaveSign)))
-
-# Instantiate necessary classes
-master = TWCMaster(fakeTWCID, config)
-carapi = CarApi(config)
-fronius = Fronius(config['config']['debugLevel'], config['sources']['Fronius'])
-hass = HASS(config['config']['debugLevel'], config['sources']['HASS'])
-hassstatus = HASSStatus(config['config']['debugLevel'],config['status']['HASS'])
-mqttstatus = MQTTStatus(config['config']['debugLevel'],config['status']['MQTT'])
 
 while True:
     try:
