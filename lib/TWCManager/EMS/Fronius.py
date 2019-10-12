@@ -94,12 +94,25 @@ class Fronius:
 
       inverterData = self.getInverterData()
       if (inverterData):
-        self.generatedW = inverterData['Body']['Data']['PAC']['Value']
-        self.voltage = inverterData['Body']['Data']['UAC']['Value']
+        try:
+          self.generatedW = inverterData['Body']['Data']['PAC']['Value']
+        except (KeyError, TypeError) as e:
+          self.debugLog(4, "Exception during parsing Inveter Data (PAC)")
+          self.debugLog(10, e)
+
+        try:
+          self.voltage = inverterData['Body']['Data']['UAC']['Value']
+        except (KeyError, TypeError) as e:
+          self.debugLog(4, "Exception during parsing Inveter Data (UAC)")
+          self.debugLog(10, e)
 
       meterData = self.getMeterData()
       if (meterData):
-        self.consumedW = float(meterData['Body']['Data']['PowerReal_P_Sum'])
+        try:
+          self.consumedW = float(meterData['Body']['Data']['PowerReal_P_Sum'])
+        except (KeyError, TypeError) as e:
+          self.debugLog(4, "Exception during parsing Meter Data (Consumption)")
+          self.debugLog(10, e)
 
       # Update last fetch time
       if (self.fetchFailed is not True):
