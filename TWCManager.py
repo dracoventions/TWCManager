@@ -331,7 +331,7 @@ def unescape_msg(msg:bytearray, msgLen):
 
 def send_master_linkready1():
     global config
-    
+
     if(config['config']['debugLevel'] >= 1):
         print(time_now() + ": Send master linkready1")
 
@@ -386,7 +386,7 @@ def send_master_linkready1():
 
 def send_master_linkready2():
     global config
-    
+
     if(config['config']['debugLevel'] >= 1):
         print(time_now() + ": Send master linkready2")
 
@@ -860,7 +860,7 @@ def car_api_charge(charge):
     result = 'success'
     if(config['config']['debugLevel'] >= 8):
         print("startOrStop is set to " + str(startOrStop))
-        
+
     for vehicle in carapi.getCarApiVehicles():
         if(charge and vehicle.stopAskingToStartCharging):
             if(config['config']['debugLevel'] >= 8):
@@ -1113,7 +1113,7 @@ def check_green_energy():
     # that value.
     backgroundTasksLock.acquire()
     maxAmpsToDivideAmongSlaves = master.getMaxAmpsToDivideAmongSlaves()
-    
+
     if(config['config']['debugLevel'] >= 1):
         print("%s: Solar generating %dW, Consumption %dW, Charger Load %dW" % (time_now(), master.getGeneration(), master.getConsumption(), master.getChargerLoad()))
         print("          Limiting car charging to %.2fA - %.2fA = %.2fA." % ((master.getGeneration() / 240), (master.getConsumption() / 240), maxAmpsToDivideAmongSlaves))
@@ -1638,7 +1638,7 @@ class TWCSlave:
             self.reportedAmpsActualSignificantChangeMonitor = self.reportedAmpsActual
             hassstatus.setStatus(self.TWCID, "power", self.reportedAmpsActual)
             mqttstatus.setStatus(self.TWCID, "power", self.reportedAmpsActual)
-            
+
         ltNow = time.localtime()
         hourNow = ltNow.tm_hour + (ltNow.tm_min / 60)
         yesterday = ltNow.tm_wday - 1
@@ -1723,7 +1723,7 @@ class TWCSlave:
         # Determine how many cars are charging and how many amps they're using
         numCarsCharging = num_cars_charging_now()
         desiredAmpsOffered = maxAmpsToDivideAmongSlaves
-        
+
         if (numCarsCharging > 0):
             for slaveTWC in slaveTWCRoundRobin:
                 if(slaveTWC.TWCID != self.TWCID):
@@ -2857,7 +2857,7 @@ while True:
                         print(time_now() + ": Slave TWC %02X%02X unexpectedly reported kWh and voltage data: %s." % \
                             (senderID[0], senderID[1],
                             hex_str(data)))
-                        
+
                 else:
                     msgMatch = re.search(b'\A\xfd\xee(..)(.+?).\Z', msg, re.DOTALL)
                 if(msgMatch and foundMsgMatch == False):
@@ -2868,8 +2868,8 @@ while True:
                         # message from Master in this format:
                         #   FB EE <Master TWCID> <Slave TWCID> 00 00 00 00 00 00 00 00 00
 
-                        # Response message is FD EE <Slave TWCID> VV VV VV VV VV VV VV where VV is an ascii character code 
-                        # representing a letter or number. VV will be all zero when car CAN communication is disabled 
+                        # Response message is FD EE <Slave TWCID> VV VV VV VV VV VV VV where VV is an ascii character code
+                        # representing a letter or number. VV will be all zero when car CAN communication is disabled
                         # (DIP switch 2 down) or when a non-Tesla vehicle is plugged in using something like a JDapter.
 
                         foundMsgMatch = True
