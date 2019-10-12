@@ -600,7 +600,7 @@ def car_api_available(email = None, password = None, charge = None):
                     print(time_now() + ': Car API vehicle list', apiResponseDict, '\n')
 
                 for i in range(0, apiResponseDict['count']):
-                    carApiVehicles.append(CarApiVehicle(apiResponseDict['response'][i]['id']))
+                    carApiVehicles.append(CarApiVehicle(apiResponseDict['response'][i]['id'], config))
             except (KeyError, TypeError):
                 # This catches cases like trying to access
                 # apiResponseDict['response'] when 'response' doesn't exist in
