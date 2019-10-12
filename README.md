@@ -16,20 +16,26 @@ To enable TWCManager to gather the solar generation information that it requires
 
 EMS Interfaces read solar generation and/or consumption values from an external system. Current EMS interfaces are:
 
-| Platform         | Status      | Details                 |
-| ---------------- | ----------- | ----------------------- |
-| Fronius Inverter | Not Started | Expected by Mid-October 2019 |
-| HomeAssistant    | Available   | Allows fetching generation and consumption from HomeAssistant sensors |
-| Tesla Powerwall2 | Planned     | Expected by Mid-October 2019 |
+| Platform         | Status        | Details                 |
+| ---------------- | ------------- | ----------------------- |
+| Fronius Inverter | Available v1.1.0 (Soon) | Expected in next release |
+| HomeAssistant    | Available v1.0.1 | Allows fetching generation and consumption from HomeAssistant sensors |
+| Tesla Powerwall2 | Planned        | Expected by Mid-October 2019 |
 
 ### Status Interfaces
 
 Status interfaces publish TWCManager status information to external systems. Current Status interfaces are:
 
-| Platform         | Status      | Details                 |
-| ---------------- | ----------- | ----------------------- |
-| HomeAssistant    | Available   | Provides HASS sensors to monitor TWCManager State |
-| MQTT             | In Development | Publishes MQTT topics to monitor TWCManager State |
+| Platform         | Status           | Details                 |
+| ---------------- | ---------------- | ----------------------- |
+| HomeAssistant    | Available v1.0.1 | Provides HASS sensors to monitor TWCManager State |
+| MQTT             | Available v1.0.1 | Publishes MQTT topics to monitor TWCManager State |
+
+### Vehicle Interfaces
+
+| Platform    | Status           | Details                 |
+| ----------- | ---------------- | ----------------------- |
+| TeslaAPI    | Available v1.0.0 | Allows start/stop charging via Tesla API |
 
 ## Warnings
 
@@ -59,6 +65,7 @@ All installation documentation (Physical and Software) is contained in the docum
 
 # Attribution
 * Original TWCManager distribution by [cdragon](https://github.com/cdragon/TWCManager)
+   * The effort by @cdragon cannot be understated, if you would like to read more about the intense hardware hacking that was done to make this project a reality, read this [thread](https://teslamotorsclub.com/tmc/threads/new-wall-connector-load-sharing-protocol.72830).
 * Integrated improvements from [flodom's](https://github.com/flodorn/TWCManager) TWCManager fork. 
     * Support for multiple vehicles on multiple chargers
     * Support for publishing status to MQTT topics
