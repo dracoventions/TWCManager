@@ -99,7 +99,7 @@
         # utility meter to show a value close to 0kW meaning no energy is being sent to
         # or from the grid.
 
-        # If you are able to obtain consumption details, this value is
+        # If you are able to obtain consumption details from HomeAssistant, this value is
         # not needed and can be set to 0
         "greenEnergyAmpsOffset": 0,
 
@@ -154,7 +154,7 @@
       # The HASS module allows fetching of consumption and generation statistics from HomeAssistant sensors.
             "enabled": true,
 
-       # The IP address and port of the HomeAssistant front-end 
+      # The IP address and port of the HomeAssistant front-end 
             "serverIP": "192.168.1.1",
             "serverPort": "8123",
             
@@ -171,8 +171,8 @@
             "hassEntityGeneration":  "sensor.inverter_power_live"
         },
         "MQTT": {
-       # MQTT Sensor support for reading generation or consumption data. 
-       # This is not yet available. 
+      # MQTT Sensor support for reading generation or consumption data. 
+      # This is not yet available. 
           "enabled" :true 
         }
     },
