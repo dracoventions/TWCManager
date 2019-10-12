@@ -31,6 +31,18 @@ You will need:
   
 ![Torx Screws](torxscrews.jpg)
 
+### Remove the Cover
+
+The first step is to remove the silver/grey TWC charger cover. This is held in by a Torx TT10 (the smaller bit) screw at the bottom of the unit. Loosen this screw and remove it carefully, as there are no spares provided with the unit. Be careful! This component is quite brittle. My electrician managed to crack mine when applying a little too much force.
+
+![TWC Cover](twccover.png)
+
+### Opening the Charger
+
+Behind the TWC cover is another cover, which isolates all of the live components from the user. Once you open this cover, the wires covering live voltage will be exposed, so please **ensure the unit is isolated** at this point. This cover is held in place with Torx TT20 screws (the larger bit). **It is recommended that you be very careful removing these screws** as there are no spares provided, and they have a special coating on the back which acts as a waterproof gasket to ensure no water ingress to the unit. This is especially important in an outdoor installation.
+
+![TWC Internal Cover](twcinternalcover.png)
+
 ### RS-485 Connection
 
 Once you have removed the Tesla Wall Charger cover, you should see a set of 4 headers for RS-485 communication, in the centre of the unit. The header is highlighted in the following picture. Note that in the picture, one of the two RS-485 wires has already been attached.

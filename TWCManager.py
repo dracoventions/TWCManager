@@ -450,7 +450,7 @@ def num_cars_charging_now():
     return carsCharging
 
 def new_slave(newSlaveID, maxAmps):
-    global slaveTWCs, slaveTWCRoundRobin
+    global slaveTWCs, slaveTWCRoundRobin, carapi
 
     try:
         slaveTWC = slaveTWCs[newSlaveID]
@@ -967,7 +967,7 @@ def car_api_charge(charge):
                     if('error' in apiResponseDict):
                         foundKnownError = False
                         error = apiResponseDict['error']
-                        for knownError in carapi.GetCarApiTransientErrors():
+                        for knownError in carapi.getCarApiTransientErrors():
                             if(knownError == error[0:len(knownError)]):
                                 # I see these errors often enough that I think
                                 # it's worth re-trying in 1 minute rather than
