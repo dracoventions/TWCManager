@@ -5,16 +5,16 @@ class HASSStatus:
 
   import time
   import requests
-  
+
   apiKey           = None
   debugLevel       = 0
   msgRate          = {}
   msgRatePerSensor = 60
-  status       = False
-  serverIP     = None
-  serverPort   = 8123
-  timeout      = 2
-  
+  status           = False
+  serverIP         = None
+  serverPort       = 8123
+  timeout          = 2
+
   def __init__(self, debugLevel, config):
     self.status      = config.get('enabled', False)
     self.serverIP    = config.get('serverIP', None)
@@ -43,7 +43,7 @@ class HASSStatus:
       else:
         self.msgRate[sensor] = self.time.time()
 
-      url = "http://" + self.serverIP + ":" + self.serverPort 
+      url = "http://" + self.serverIP + ":" + self.serverPort
       url = url + "/api/states/" + sensor
       headers = {
           'Authorization': 'Bearer ' + self.apiKey,
@@ -54,14 +54,14 @@ class HASSStatus:
           self.debugLog(8, "Sending POST request to HomeAssistant for sensor " + sensor + "(value " + str(value) + ").")
           self.requests.post(url, json={"state":value}, timeout=self.timeout, headers=headers)
       except self.requests.exceptions.ConnectionError as e:
-          self.debugLog(4, "Error connecting to HomeAssistant to publish sensor values")
-          self.debugLog(10, str(e))
-          return False
+        self.debugLog(4, "Error connecting to HomeAssistant to publish sensor values")
+        self.debugLog(10, str(e))
+        return False
       except self.requests.exceptions.ReadTimeout as e:
-          self.debugLog(4, "Error connecting to HomeAssistant to publish sensor values")
-          self.debugLog(10, str(e))
-          return False
+        self.debugLog(4, "Error connecting to HomeAssistant to publish sensor values")
+        self.debugLog(10, str(e))
+        return False
       except Exception as e:
-          self.debugLog(4, "Error during publishing HomeAssistant sensor values")
-          self.debugLog(10, str(e))
-          return False
+        self.debugLog(4, "Error during publishing HomeAssistant sensor values")
+        self.debugLog(10, str(e))
+        return False
