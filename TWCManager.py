@@ -120,7 +120,7 @@ def load_settings():
     global config, nonScheduledAmpsMax, scheduledAmpsMax, \
            scheduledAmpsStartHour, scheduledAmpsEndHour, \
            scheduledAmpsDaysBitmap, hourResumeTrackGreenEnergy, kWhDelivered, \
-           carapi, carApiTokenExpireTime, homeLat, homeLon
+           carapi, homeLat, homeLon
 
     try:
         fh = open(config['config']['settingsPath'] + "/TWCManager.settings", 'r')
@@ -191,9 +191,9 @@ def load_settings():
 
             m = re.search(r'^\s*carApiTokenExpireTime\s*=\s*(.+)', line, re.MULTILINE)
             if(m):
-                carApiTokenExpireTime = float(m.group(1))
+                carapi.setCarApiTokenExpireTime(float(m.group(1)))
                 if(config['config']['debugLevel'] >= 10):
-                    print("load_settings: carApiTokenExpireTime set to " + str(carApiTokenExpireTime))
+                    print("load_settings: carApiTokenExpireTime set to " + str(m.group(1)))
                 continue
 
             m = re.search(r'^\s*homeLat\s*=\s*(.+)', line, re.MULTILINE)
@@ -221,7 +221,7 @@ def save_settings():
     global config, nonScheduledAmpsMax, scheduledAmpsMax, \
            scheduledAmpsStartHour, scheduledAmpsEndHour, \
            scheduledAmpsDaysBitmap, hourResumeTrackGreenEnergy, kWhDelivered, \
-           carapi, carApiTokenExpireTime, homeLat, homeLon
+           carapi, homeLat, homeLon
 
     fh = open(config['config']['settingsPath'] + "/TWCManager.settings", 'w')
     fh.write('nonScheduledAmpsMax=' + str(nonScheduledAmpsMax) +
@@ -233,7 +233,7 @@ def save_settings():
             '\nkWhDelivered=' + str(kWhDelivered) +
             '\ncarApiBearerToken=' + str(carapi.getCarApiBearerToken()) +
             '\ncarApiRefreshToken=' + str(carapi.getCarApiRefreshToken()) +
-            '\ncarApiTokenExpireTime=' + str(int(carApiTokenExpireTime)) +
+            '\ncarApiTokenExpireTime=' + str(int(carapi.getCarApiTokenExpireTime())) +
             '\nhomeLat=' + str(homeLat) +
             '\nhomeLon=' + str(homeLon)
             )
@@ -501,7 +501,7 @@ def total_amps_actual_all_twcs():
 
 
 def car_api_available(email = None, password = None, charge = None):
-    global config, carapi, carApiTokenExpireTime
+    global config, carapi
 
     now = time.time()
     apiResponseDict = {}
@@ -525,7 +525,7 @@ def car_api_available(email = None, password = None, charge = None):
         return False
 
     # Tesla car API info comes from https://timdorr.docs.apiary.io/
-    if(carapi.getCarApiBearerToken() == '' or carApiTokenExpireTime - now < 30*24*60*60):
+    if(carapi.getCarApiBearerToken() == '' or carapi.getCarApiTokenExpireTime() - now < 30*24*60*60):
         cmd = None
         apiResponse = b''
 
@@ -566,7 +566,7 @@ def car_api_available(email = None, password = None, charge = None):
                 print(time_now() + ': Car API auth response', apiResponseDict, '\n')
             carapi.setCarApiBearerToken(apiResponseDict['access_token'])
             carapi.setCarApiRefreshToken(apiResponseDict['refresh_token'])
-            carApiTokenExpireTime = now + apiResponseDict['expires_in']
+            carapi.setCarApiTokenExpireTime(now + apiResponseDict['expires_in'])
         except KeyError:
             print(time_now() + ": ERROR: Can't access Tesla car via API.  Please log in again via web interface.")
             carapi.updateCarApiLastErrorTime()
@@ -2489,7 +2489,7 @@ while True:
                         'carApiStopAskingToStartCharging=' + str(carApiStopAskingToStartCharging)
                         + '\ncarApiLastStartOrStopChargeTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carapi.getLastStartOrStopChargeTime())))
                         + '\ncarApiLastErrorTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carapi.getCarApiLastErrorTime())))
-                        + '\ncarApiTokenExpireTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carApiTokenExpireTime)))
+                        + '\ncarApiTokenExpireTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carapi.getCarApiTokenExpireTime())))
                         + '\n'
                         )
 
