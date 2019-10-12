@@ -1109,6 +1109,8 @@ def check_green_energy():
     # in the config section at the top of this file.
     #
     master.setConsumption('Manual', (config['config']['greenEnergyAmpsOffset'] * 240))
+    master.setConsumption('Fronius', fronius.getConsumption())
+    master.setGeneration('Fronius', fronius.getGeneration())
     master.setConsumption('HomeAssistant', hass.getConsumption())
     master.setGeneration('HomeAssistant', hass.getGeneration())
 
@@ -1157,7 +1159,7 @@ class TWCMaster:
     consumptionVal = 0
 
     for key in self.consumptionValues:
-      consumptionVal += self.consumptionValues[key]
+      consumptionVal += float(self.consumptionValues[key])
 
     if (consumptionVal < 0):
       consumptionVal = 0
@@ -1169,7 +1171,7 @@ class TWCMaster:
 
     # Currently, our only logic is to add all of the values together
     for key in self.generationValues:
-      generationVal += self.generationValues[key]
+      generationVal += float(self.generationValues[key])
 
     if (generationVal < 0):
       generationVal = 0
@@ -1180,11 +1182,10 @@ class TWCMaster:
     # Returns the number of watts to subtract from the solar generation stats
     # This is consumption + charger load if subtractChargerLoad is enabled
     # Or simply consumption if subtractChargerLoad is disabled
-    generationOffset = float(0)
     generationOffset = self.getConsumption()
     if (self.subtractChargerLoad):
-      generationOffset =- self.getChargerLoad()
-    if generationOffset < 0:
+      generationOffset -= self.getChargerLoad()
+    if (generationOffset < 0):
       generationOffset = 0
     return float(generationOffset)
 
@@ -1195,7 +1196,7 @@ class TWCMaster:
     # that many amps.
 
     # Calculate our current generation and consumption in watts
-    solarW = int(self.getGeneration() - self.getGenerationOffset())
+    solarW = float(self.getGeneration() - self.getGenerationOffset())
 
     # Generation may be below zero if consumption is greater than generation
     if solarW < 0:

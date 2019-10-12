@@ -6,6 +6,8 @@ class MQTTStatus:
   import time
   import paho.mqtt.client as mqtt
   
+  brokerIP        = None
+  brokerPort      = 1883
   connectionState = 0
   debugLevel      = 0
   msgQueue        = []
@@ -15,21 +17,21 @@ class MQTTStatus:
   msgRatePerTopic = 60
   password        = None
   status          = False
-  serverIP        = None
+  serverTLS       = False
   topicPrefix     = None
   username        = None
   
   def __init__(self, debugLevel, config):
     self.debugLevel  = debugLevel
-    self.status      = config.get('status', False)
-    self.serverIP    = config.get('serverIP', None)
+    self.status      = config.get('enabled', False)
+    self.brokerIP    = config.get('brokerIP', None)
     self.topicPrefix = config.get('topicPrefix', None)
     self.username    = config.get('username', None)
     self.password    = config.get('password', None)
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
-      print("debugLog: (" + str(minlevel) + ") " + message)
+      print("MQTTStatus: (" + str(minlevel) + ") " + message)
     
   def setStatus(self, twcid, key, value):
     if (self.status):
@@ -61,12 +63,13 @@ class MQTTStatus:
 
       # Now, we attempt to establish a connection to the MQTT broker
       if (self.connectionState == 0):
+        self.debugLog(10, "MQTT Status: Attempting to Connect")
         try:
-          client = self.mqtt.Client("P1")
+          client = self.mqtt.Client()
           if (self.username and self.password):
             client.username_pw_set(self.username, self.password)
           client.on_connect = self.mqttConnected
-          client.connect_async(self.serverIP)
+          client.connect_async(self.brokerIP, port=self.brokerPort, keepalive=30)
           self.connectionState = 1
           client.loop_start()
         except ConnectionRefusedError as e:
@@ -83,17 +86,21 @@ class MQTTStatus:
     # connects to the MQTT server. It will then publish all queued messages
     # to the server, and then disconnect.
 
+    self.debugLog(10, "Connected to MQTT Broker with RC: " + str(rc))
+    self.debugLog(11, "Copy Message Buffer")
     self.msgQueueBuffer = self.msgQueue.copy()
+    self.debugLog(11, "Clear Message Buffer")
     self.msgQueue.clear()
 
     for msg in self.msgQueueBuffer:
+      self.debugLog(8, "Publishing MQTT Topic " + str(msg['topic']))
       try:
-        client.publish(msg[topic], payload=msg[payload])
+        pub = client.publish(msg['topic'], payload=msg['payload'], qos=0)
       except e:
         self.debugLog(4, "Error publishing MQTT Topic Status")
         self.debugLog(10, str(e))
-        return False
 
     client.loop_stop()
+    self.msgQueueBuffer.clear()
     self.connectionState = 0
     client.disconnect()
