@@ -151,7 +151,10 @@
           "enabled": false 
         },
         "HASS": { 
+      # The HASS module allows fetching of consumption and generation statistics from HomeAssistant sensors.
             "enabled": true,
+
+       # The IP address and port of the HomeAssistant front-end 
             "serverIP": "192.168.1.1",
             "serverPort": "8123",
             
@@ -168,6 +171,8 @@
             "hassEntityGeneration":  "sensor.inverter_power_live"
         },
         "MQTT": {
+       # MQTT Sensor support for reading generation or consumption data. 
+       # This is not yet available. 
           "enabled" :true 
         }
     },
@@ -176,6 +181,7 @@
     # This will use interfaces such as MQTT or HomeAssistant API to update status for charging, power draw, etc.
     "status": {
         "HASS": {
+       # Enabling the HASS status plugin will push TWCManager sensor values to a HomeAssistant server.
             "enabled": true,
             "serverIP": "192.168.1.1",
             "serverPort": "8123",
@@ -188,6 +194,11 @@
             "enabled": true,
             "brokerIP": "192.168.1.1",
             "topicPrefix": "TWC"
+
+       # Username and password are optional. If your broker requires a username and password to authenticate
+       # clients, set them here. Otherwise, leave them commented out 
+          #  "username": "mqttuser", 
+          #  "password": "mqttpass" 
         } 
     }
 }
