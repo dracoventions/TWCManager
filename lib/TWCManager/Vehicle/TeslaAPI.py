@@ -48,6 +48,9 @@ class CarApi:
   def getCarApiTransientErrors(self):
     return self.carApiTransientErrors
 
+  def getCarApiTokenExpireTime(self):
+    return self.carApiTokenExpireTime
+
   def getLastStartOrStopChargeTime(self):
     return int(self.carApiLastStartOrStopChargeTime)
 
@@ -65,6 +68,10 @@ class CarApi:
 
   def setCarApiRefreshToken(self, token):
     self.carApiRefreshToken = token
+    return True
+
+  def setCarApiTokenExpireTime(self, value):
+    self.carApiTokenExpireTime = value
     return True
 
   def updateApiLastErrorTime(self):
