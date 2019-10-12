@@ -256,7 +256,7 @@ def send_msg(msg):
     # Send msg on the RS485 network. We'll escape bytes with a special meaning,
     # add a CRC byte to the message end, and add a C0 byte to the start and end
     # to mark where it begins and ends.
-    global ser, timeLastTx, slaveTWCRoundRobin, config
+    global ser, timeLastTx, config
 
     msg = bytearray(msg)
     checksum = 0
@@ -446,8 +446,8 @@ def num_cars_charging_now():
             carsCharging += 1
             if(config['config']['debugLevel'] >= 10):
                 print("BUGFIX: Number of cars charging now: " + str(carsCharging))
-                hassstatus.setStatus(slaveTWC.TWCID, "cars_charging", carsCharging)
-                mqttstatus.setStatus(slaveTWC.TWCID, "carsCharging", carsCharging)
+            hassstatus.setStatus(slaveTWC.TWCID, "cars_charging", carsCharging)
+            mqttstatus.setStatus(slaveTWC.TWCID, "carsCharging", carsCharging)
     return carsCharging
 
 def new_slave(newSlaveID, maxAmps):
