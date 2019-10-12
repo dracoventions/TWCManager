@@ -460,7 +460,7 @@ def new_slave(newSlaveID, maxAmps):
     except KeyError:
         pass
 
-    slaveTWC = TWCSlave(newSlaveID, maxAmps, carapi)
+    slaveTWC = TWCSlave(newSlaveID, maxAmps, config, carapi)
     slaveTWCs[newSlaveID] = slaveTWC
     slaveTWCRoundRobin.append(slaveTWC)
 
@@ -494,11 +494,10 @@ def total_amps_actual_all_twcs():
 
     if(config['config']['debugLevel'] >= 10):
         print("Total amps all slaves are using: " + str(totalAmps))
-        hassstatus.setStatus(bytes("all", 'UTF-8'), "total_amps_in_use", totalAmps)
-        mqttstatus.setStatus(bytes("all", 'UTF-8'), "totalAmpsInUse", totalAmps)
+    hassstatus.setStatus(bytes("all", 'UTF-8'), "total_amps_in_use", totalAmps)
+    mqttstatus.setStatus(bytes("all", 'UTF-8'), "totalAmpsInUse", totalAmps)
     master.setTotalAmpsInUse(totalAmps)
     return totalAmps
-
 
 def car_api_available(email = None, password = None, charge = None):
     global config, carapi
@@ -604,7 +603,7 @@ def car_api_available(email = None, password = None, charge = None):
                 # apiResponseDict.
                 print(time_now() + ": ERROR: Can't get list of vehicles via Tesla car API.  Will try again in "
                       + str(carapi.getCarApiErrorRetryMins()) + " minutes.")
-                carapi.updateApiLastErrorTime()
+                carapi.updateCarApiLastErrorTime()
                 return False
 
         if(carapi.getVehicleCount() > 0):
@@ -1263,7 +1262,7 @@ class TWCSlave:
     timeLastHeartbeatDebugOutput = 0
     wiringMaxAmps = config['config']['wiringMaxAmpsPerTWC']
 
-    def __init__(self, TWCID, maxAmps, carapi):
+    def __init__(self, TWCID, maxAmps, config, carapi):
         self.carapi = carapi
         self.TWCID  = TWCID
         self.maxAmps = maxAmps
