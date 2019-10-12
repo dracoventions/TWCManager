@@ -120,7 +120,7 @@ def load_settings():
     global config, nonScheduledAmpsMax, scheduledAmpsMax, \
            scheduledAmpsStartHour, scheduledAmpsEndHour, \
            scheduledAmpsDaysBitmap, hourResumeTrackGreenEnergy, kWhDelivered, \
-           carApiBearerToken, carApiRefreshToken, carApiTokenExpireTime, \
+           carapi, carApiRefreshToken, carApiTokenExpireTime, \
            homeLat, homeLon
 
     try:
@@ -178,9 +178,9 @@ def load_settings():
 
             m = re.search(r'^\s*carApiBearerToken\s*=\s*(.+)', line, re.MULTILINE)
             if(m):
-                carApiBearerToken = m.group(1)
+                carapi.setCarApiBearerToken(m.group(1))
                 if(config['config']['debugLevel'] >= 10):
-                    print("load_settings: carApiBearerToken set to " + str(carApiBearerToken))
+                    print("load_settings: carApiBearerToken set to " + str(m.group(1)))
                 continue
 
             m = re.search(r'^\s*carApiRefreshToken\s*=\s*(.+)', line, re.MULTILINE)
@@ -222,7 +222,7 @@ def save_settings():
     global config, nonScheduledAmpsMax, scheduledAmpsMax, \
            scheduledAmpsStartHour, scheduledAmpsEndHour, \
            scheduledAmpsDaysBitmap, hourResumeTrackGreenEnergy, kWhDelivered, \
-           carApiBearerToken, carApiRefreshToken, carApiTokenExpireTime, \
+           carapi, carApiRefreshToken, carApiTokenExpireTime, \
            homeLat, homeLon
 
     fh = open(config['config']['settingsPath'] + "/TWCManager.settings", 'w')
@@ -233,7 +233,7 @@ def save_settings():
             '\nscheduledAmpsDaysBitmap=' + str(scheduledAmpsDaysBitmap) +
             '\nhourResumeTrackGreenEnergy=' + str(hourResumeTrackGreenEnergy) +
             '\nkWhDelivered=' + str(kWhDelivered) +
-            '\ncarApiBearerToken=' + str(carApiBearerToken) +
+            '\ncarApiBearerToken=' + str(carapi.getCarApiBearerToken()) +
             '\ncarApiRefreshToken=' + str(carApiRefreshToken) +
             '\ncarApiTokenExpireTime=' + str(int(carApiTokenExpireTime)) +
             '\nhomeLat=' + str(homeLat) +
@@ -504,8 +504,7 @@ def total_amps_actual_all_twcs():
 
 def car_api_available(email = None, password = None, charge = None):
     global config, carApiLastErrorTime, carApiErrorRetryMins, \
-           carapi, carApiBearerToken, carApiRefreshToken, \
-           carApiTokenExpireTime
+           carapi, carApiRefreshToken, carApiTokenExpireTime
 
     now = time.time()
     apiResponseDict = {}
@@ -529,7 +528,7 @@ def car_api_available(email = None, password = None, charge = None):
         return False
 
     # Tesla car API info comes from https://timdorr.docs.apiary.io/
-    if(carApiBearerToken == '' or carApiTokenExpireTime - now < 30*24*60*60):
+    if(carapi.getCarApiBearerToken() == '' or carApiTokenExpireTime - now < 30*24*60*60):
         cmd = None
         apiResponse = b''
 
@@ -568,7 +567,7 @@ def car_api_available(email = None, password = None, charge = None):
         try:
             if(config['config']['debugLevel'] >= 4):
                 print(time_now() + ': Car API auth response', apiResponseDict, '\n')
-            carApiBearerToken = apiResponseDict['access_token']
+            carapi.setCarApiBearerToken(apiResponseDict['access_token'])
             carApiRefreshToken = apiResponseDict['refresh_token']
             carApiTokenExpireTime = now + apiResponseDict['expires_in']
         except KeyError:
@@ -579,15 +578,15 @@ def car_api_available(email = None, password = None, charge = None):
             # on web interface. I feel this is safer than trying to log in every
             # ten minutes with a bad token because Tesla might decide to block
             # remote access to your car after too many authorization errors.
-            carApiBearerToken = ''
+            carapi.setCarApiBearerToken()
             carApiRefreshToken = ''
 
         save_settings()
 
-    if(carApiBearerToken != ''):
+    if(carapi.getCarApiBearerToken() != ''):
         if(carapi.getVehicleCount() < 1):
             cmd = 'curl -s -m 60 -H "accept: application/json" -H "Authorization:Bearer ' + \
-                  carApiBearerToken + \
+                  carapi.getCarApiBearerToken() + \
                   '" "https://owner-api.teslamotors.com/api/1/vehicles"'
             if(config['config']['debugLevel'] >= 8):
                 print(time_now() + ': Car API cmd', cmd)
@@ -811,11 +810,11 @@ def car_api_available(email = None, password = None, charge = None):
                           ((now - vehicle.firstWakeAttemptTime) / 60 / 60),
                           str(apiResponseDict)))
 
-    if(now - carApiLastErrorTime < carApiErrorRetryMins*60 or carApiBearerToken == ''):
+    if(now - carApiLastErrorTime < carApiErrorRetryMins*60 or carapi.getCarApiBearerToken() == ''):
         if(config['config']['debugLevel'] >= 8):
             print(time_now() + ": car_api_available returning False because of recent carApiLasterrorTime "
                 + str(now - carApiLastErrorTime) + " or empty carApiBearerToken '"
-                + carApiBearerToken + "'")
+                + carapi.getCarApiBearerToken() + "'")
         return False
 
     if(config['config']['debugLevel'] >= 8):
@@ -930,7 +929,7 @@ def car_api_charge(charge):
             time.sleep(5)
 
         cmd = 'curl -s -m 60 -X POST -H "accept: application/json" -H "Authorization:Bearer ' + \
-              carApiBearerToken + \
+              carapi.getCarApiBearerToken() + \
               '" "https://owner-api.teslamotors.com/api/1/vehicles/' + \
             str(vehicle.ID) + '/command/charge_' + startOrStop + '"'
 
@@ -2379,7 +2378,7 @@ while True:
                 numPackets = 0
                 if(webMsg == b'getStatus'):
                     needCarApiBearerToken = False
-                    if(carApiBearerToken == ''):
+                    if(carapi.getCarApiBearerToken == ''):
                         for i in range(0, len(slaveTWCRoundRobin)):
                             if(slaveTWCRoundRobin[i].protocolVersion == 2):
                                 needCarApiBearerToken = True

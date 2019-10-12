@@ -103,7 +103,7 @@ class CarApiVehicle:
         apiResponseDict = {}
 
         cmd = 'curl -s -m 60 -H "accept: application/json" -H "Authorization:Bearer ' + \
-              carApiBearerToken + \
+              self.carapi.getCarApiBearerToken() + \
               '" "https://owner-api.teslamotors.com/api/1/vehicles/' + \
               str(self.ID) + '/data_request/drive_state"'
 
