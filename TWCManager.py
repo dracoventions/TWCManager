@@ -501,12 +501,12 @@ def total_amps_actual_all_twcs():
 
 
 def car_api_available(email = None, password = None, charge = None):
-    global config, carApiLastErrorTime, carapi, carApiTokenExpireTime
+    global config, carapi, carApiTokenExpireTime
 
     now = time.time()
     apiResponseDict = {}
 
-    if(now - carApiLastErrorTime < (carapi.getCarApiErrorRetryMins()*60)):
+    if(now - carapi.getCarApiLastErrorTime() < (carapi.getCarApiErrorRetryMins()*60)):
         # It's been under carApiErrorRetryMins minutes since the car API
         # generated an error. To keep strain off Tesla's API servers, wait
         # carApiErrorRetryMins mins till we try again. This delay could be
@@ -520,7 +520,7 @@ def car_api_available(email = None, password = None, charge = None):
         # automatically.
         if(config['config']['debugLevel'] >= 11):
             print(time_now() + ': Car API disabled for ' +
-                  str(int(carapi.getCarApiErrorRetryMins()*60 - (now - carApiLastErrorTime))) +
+                  str(int(carapi.getCarApiErrorRetryMins()*60 - (now - carapi.getCarApiLastErrorTime()))) +
                   ' more seconds due to recent error.')
         return False
 
@@ -569,7 +569,7 @@ def car_api_available(email = None, password = None, charge = None):
             carApiTokenExpireTime = now + apiResponseDict['expires_in']
         except KeyError:
             print(time_now() + ": ERROR: Can't access Tesla car via API.  Please log in again via web interface.")
-            carApiLastErrorTime = now
+            carapi.updateCarApiLastErrorTime()
             # Instead of just setting carApiLastErrorTime, erase tokens to
             # prevent further authorization attempts until user enters password
             # on web interface. I feel this is safer than trying to log in every
@@ -604,7 +604,7 @@ def car_api_available(email = None, password = None, charge = None):
                 # apiResponseDict.
                 print(time_now() + ": ERROR: Can't get list of vehicles via Tesla car API.  Will try again in "
                       + str(carapi.getCarApiErrorRetryMins()) + " minutes.")
-                carApiLastErrorTime = now
+                carapi.updateApiLastErrorTime()
                 return False
 
         if(carapi.getVehicleCount() > 0):
@@ -807,10 +807,10 @@ def car_api_available(email = None, password = None, charge = None):
                           ((now - vehicle.firstWakeAttemptTime) / 60 / 60),
                           str(apiResponseDict)))
 
-    if(now - carApiLastErrorTime < (carapi.getCarApiErrorRetryMins()*60) or carapi.getCarApiBearerToken() == ''):
+    if(now - carapi.getCarApiLastErrorTime() < (carapi.getCarApiErrorRetryMins()*60) or carapi.getCarApiBearerToken() == ''):
         if(config['config']['debugLevel'] >= 8):
             print(time_now() + ": car_api_available returning False because of recent carApiLasterrorTime "
-                + str(now - carApiLastErrorTime) + " or empty carApiBearerToken '"
+                + str(now - carapi.getCarApiLastErrorTime()) + " or empty carApiBearerToken '"
                 + carapi.getCarApiBearerToken() + "'")
         return False
 
@@ -836,7 +836,7 @@ def car_api_available(email = None, password = None, charge = None):
 def car_api_charge(charge):
     # Do not call this function directly.  Call by using background thread:
     # queue_background_task({'cmd':'charge', 'charge':<True/False>})
-    global carApiLastErrorTime, carapi, homeLat, homeLon, config
+    global carapi, homeLat, homeLon, config
 
     now = time.time()
     apiResponseDict = {}
@@ -1068,7 +1068,7 @@ def queue_background_task(task):
 
 
 def background_tasks_thread():
-    global backgroundTasksQueue, backgroundTasksCmds, carApiLastErrorTime
+    global carapi, backgroundTasksQueue, backgroundTasksCmds
 
     while True:
         task = backgroundTasksQueue.get()
@@ -1079,7 +1079,7 @@ def background_tasks_thread():
             # too frequently.
             car_api_charge(task['charge'])
         elif(task['cmd'] == 'carApiEmailPassword'):
-            carApiLastErrorTime = 0
+            carapi.updateCarApiLastErrorTime()
             car_api_available(task['email'], task['password'])
         elif(task['cmd'] == 'checkGreenEnergy'):
             check_green_energy()
@@ -2488,7 +2488,7 @@ while True:
                     webResponseMsg += (
                         'carApiStopAskingToStartCharging=' + str(carApiStopAskingToStartCharging)
                         + '\ncarApiLastStartOrStopChargeTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carapi.getLastStartOrStopChargeTime())))
-                        + '\ncarApiLastErrorTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carApiLastErrorTime)))
+                        + '\ncarApiLastErrorTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carapi.getCarApiLastErrorTime())))
                         + '\ncarApiTokenExpireTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carApiTokenExpireTime)))
                         + '\n'
                         )
