@@ -6,6 +6,7 @@ class TED:
     # Energy Detective (TED). It's a piece of hardware available
     # at http://www.theenergydetective.com
 
+  import re
   import requests
   import time
 
@@ -87,7 +88,12 @@ class TED:
       url = url + "/history/export.csv?T=1&D=0&M=1&C=1"
 
       value = self.getTEDValue(url)
-      m = re.search(b'^Solar,[^,]+,-?([^, ]+),', value, re.MULTILINE)
+      m = None
+      if (value):
+        m = self.re.search(b'^Solar,[^,]+,-?([^, ]+),', value, self.re.MULTILINE)
+      else:
+        self.debugLog(5, "Failed to find value in response from TED")
+        self.fetchFailed = True
 
       if(m):
         self.generatedW = int(float(m.group(1)) * 1000)
