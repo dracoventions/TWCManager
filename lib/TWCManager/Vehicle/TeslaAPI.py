@@ -36,9 +36,15 @@ class CarApi:
   def getCarApiTransientErrors(self):
     return self.carApiTransientErrors
 
+  def getLastStartOrStopChargeTime(self):
+    return int(self.carApiLastStartOrStopChargeTime)
+
   def getVehicleCount(self):
     # Returns the number of currently tracked vehicles
     return int(len(self.carApiVehicles))
+
+  def updateLastStartOrStopChargeTime(self):
+    self.carApiLastStartOrStopChargeTime = now
 
 class CarApiVehicle:
 

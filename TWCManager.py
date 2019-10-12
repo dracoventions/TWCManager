@@ -841,8 +841,7 @@ def car_api_charge(charge):
     # Do not call this function directly.  Call by using background thread:
     # queue_background_task({'cmd':'charge', 'charge':<True/False>})
     global carApiLastErrorTime, carApiErrorRetryMins, \
-           carapi, carApiLastStartOrStopChargeTime, \
-           homeLat, homeLon, config
+           carapi, homeLat, homeLon, config
 
     now = time.time()
     apiResponseDict = {}
@@ -852,7 +851,7 @@ def car_api_charge(charge):
         for vehicle in carapi.getCarApiVehicles():
             vehicle.stopAskingToStartCharging = False
 
-    if(now - carApiLastStartOrStopChargeTime < 60):
+    if(now - carapi.getLastStartOrStopChargeTime() < 60):
         # Don't start or stop more often than once a minute
         if(config['config']['debugLevel'] >= 8):
             print(time_now() + ': car_api_charge return because under 60 sec since last carApiLastStartOrStopChargeTime')
@@ -881,7 +880,7 @@ def car_api_charge(charge):
         # Only update carApiLastStartOrStopChargeTime if car_api_available() managed
         # to wake cars.  Setting this prevents any command below from being sent
         # more than once per minute.
-        carApiLastStartOrStopChargeTime = now
+        carapi.updateLastStartOrStopChargeTime()
 
         if(config['config']['onlyChargeMultiCarsAtHome'] and carapi.getVehicleCount() > 1):
             # When multiple cars are enrolled in the car API, only start/stop
@@ -1050,7 +1049,7 @@ def car_api_charge(charge):
                 vehicle.lastErrorTime = now
             break
 
-    if(config['config']['debugLevel'] >= 1 and carApiLastStartOrStopChargeTime == now):
+    if(config['config']['debugLevel'] >= 1 and carapi.getLastStartOrStopChargeTime() == now):
         print(time_now() + ': Car API ' + startOrStop + ' charge result: ' + result)
 
     return result
@@ -2493,7 +2492,7 @@ while True:
                         + '\n')
                     webResponseMsg += (
                         'carApiStopAskingToStartCharging=' + str(carApiStopAskingToStartCharging)
-                        + '\ncarApiLastStartOrStopChargeTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carApiLastStartOrStopChargeTime)))
+                        + '\ncarApiLastStartOrStopChargeTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carapi.getLastStartOrStopChargeTime())))
                         + '\ncarApiLastErrorTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carApiLastErrorTime)))
                         + '\ncarApiTokenExpireTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carApiTokenExpireTime)))
                         + '\n'
