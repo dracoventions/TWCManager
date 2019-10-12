@@ -3,12 +3,12 @@ class CarApi:
   import time
 
   carApiLastErrorTime = 0
-  carApiBearerToken = ''
-  carApiRefreshToken = ''
+  carApiBearerToken   = ''
+  carApiRefreshToken  = ''
   carApiTokenExpireTime = time.time()
   carApiLastStartOrStopChargeTime = 0
-  carApiVehicles = []
-  config         = None
+  carApiVehicles      = []
+  config              = None
 
   # Transient errors are ones that usually disappear if we retry the car API
   # command a minute or less later.
@@ -33,6 +33,15 @@ class CarApi:
     self.carApiVehicles.append(CarApiVehicle(json, self, self.config))
     return True
 
+  def getCarApiBearerToken(self):
+    return self.carApiBearerToken
+
+  def getCarApiErrorRetryMins(self):
+    return self.carApiErrorRetryMins
+
+  def getCarApiRefreshToken(self):
+    return self.carApiRefreshToken
+
   def getCarApiTransientErrors(self):
     return self.carApiTransientErrors
 
@@ -43,8 +52,21 @@ class CarApi:
     # Returns the number of currently tracked vehicles
     return int(len(self.carApiVehicles))
 
+  def setCarApiBearerToken(self, token):
+    self.carApiBearerToken = token
+    return True
+
+  def setCarApiErrorRetryMins(self, mins):
+    self.carApiErrorRetryMins = mins
+    return True
+
+  def setCarApiRefreshToken(self, token):
+    self.carApiRefreshToken = token
+    return True
+
   def updateLastStartOrStopChargeTime(self):
     self.carApiLastStartOrStopChargeTime = now
+    return True
 
 class CarApiVehicle:
 
@@ -74,9 +96,9 @@ class CarApiVehicle:
         print("TeslaAPI: (" + str(minlevel) + ") " + message)
 
     def ready(self):
-        global carApiLastErrorTime, carApiErrorRetryMins
+        global carApiLastErrorTime
 
-        if(self.time.time() - self.lastErrorTime < carApiErrorRetryMins*60):
+        if(self.time.time() - self.lastErrorTime < (self.carApiErrorRetryMins*60)):
             # It's been under carApiErrorRetryMins minutes since the car API
             # generated an error on this vehicle. Return that car is not ready.
             debugLog(8, ': Vehicle ' + str(self.ID)
