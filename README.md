@@ -18,9 +18,10 @@ EMS Interfaces read solar generation and/or consumption values from an external 
 
 | Platform         | Status        | Details                 |
 | ---------------- | ------------- | ----------------------- |
-| Fronius Inverter | Available v1.1.0 (Soon) | Expected in next release |
+| Fronius Inverter | Available v1.1.0 | Allows fetching generation and consumption from Fronius Inverter API |
 | HomeAssistant    | Available v1.0.1 | Allows fetching generation and consumption from HomeAssistant sensors |
 | Tesla Powerwall2 | Planned        | Expected by Mid-October 2019 |
+| The Energy Detective | Available v1.1.2 | Support for TED (The Energy Detective) |
 
 ### Status Interfaces
 

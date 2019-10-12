@@ -11,6 +11,7 @@ This document shows the changes per release
 ### New Features
 
   * Improvements to HomeAssistant EMS module to avoid setting Consumption/Generation values to zero as a result of a connection failure, and better exception handling in general for the module.
+  * Added EMS support for TED (The Energy Detective)
 
 ## v1.1.0 - 2019-10-12
 
