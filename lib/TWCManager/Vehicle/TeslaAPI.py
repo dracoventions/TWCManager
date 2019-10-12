@@ -39,6 +39,9 @@ class CarApi:
   def getCarApiErrorRetryMins(self):
     return self.carApiErrorRetryMins
 
+  def getCarApiLastErrorTime(self):
+    return self.carApiLastErrorTime
+
   def getCarApiRefreshToken(self):
     return self.carApiRefreshToken
 
@@ -62,6 +65,10 @@ class CarApi:
 
   def setCarApiRefreshToken(self, token):
     self.carApiRefreshToken = token
+    return True
+
+  def updateApiLastErrorTime(self):
+    self.carApiLastErrorTime = now
     return True
 
   def updateLastStartOrStopChargeTime(self):
@@ -96,8 +103,6 @@ class CarApiVehicle:
         print("TeslaAPI: (" + str(minlevel) + ") " + message)
 
     def ready(self):
-        global carApiLastErrorTime
-
         if(self.time.time() - self.lastErrorTime < (self.carApiErrorRetryMins*60)):
             # It's been under carApiErrorRetryMins minutes since the car API
             # generated an error on this vehicle. Return that car is not ready.
@@ -117,8 +122,6 @@ class CarApiVehicle:
         return False
 
     def update_location(self):
-        global carApiLastErrorTime
-
         if(self.ready() == False):
             return False
 
