@@ -29,8 +29,16 @@ class CarApi:
   def __init__(self, config):
     self.config = config
 
+  def addVehicle(self, json):
+    self.carApiVehicles.append(CarApiVehicle(json, self, self.config))
+    return True
+
   def getCarApiTransientErrors(self):
     return self.carApiTransientErrors
+
+  def getVehicleCount(self):
+    # Returns the number of currently tracked vehicles
+    return int(len(self.carApiVehicles))
 
 class CarApiVehicle:
 

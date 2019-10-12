@@ -2499,7 +2499,7 @@ while True:
                         + '\n'
                         )
 
-                    for vehicle in carapi.getCarApiVehicles:
+                    for vehicle in carapi.getCarApiVehicles():
                         webResponseMsg += str(vehicle.__dict__) + '\n'
 
                     webResponseMsg += 'slaveTWCRoundRobin:\n'
