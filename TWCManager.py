@@ -484,7 +484,7 @@ def delete_slave(deleteSlaveID):
         pass
 
 def total_amps_actual_all_twcs():
-    global config, master, slaveTWCRoundRobin, config
+    global config, master, slaveTWCRoundRobin
 
     totalAmps = 0
     for slaveTWC in slaveTWCRoundRobin:
@@ -640,7 +640,7 @@ def car_api_available(email = None, password = None, charge = None):
                 # wake the car, or it's never been woken. Wake it.
                 vehicle.lastWakeAttemptTime = now
                 cmd = 'curl -s -m 60 -X POST -H "accept: application/json" -H "Authorization:Bearer ' + \
-                      carApiBearerToken + \
+                      carapi.getCarApiBearerToken() + \
                       '" "https://owner-api.teslamotors.com/api/1/vehicles/' + \
                       str(vehicle.ID) + '/wake_up"'
                 if(config['config']['debugLevel'] >= 8):
@@ -2374,7 +2374,7 @@ while True:
                 numPackets = 0
                 if(webMsg == b'getStatus'):
                     needCarApiBearerToken = False
-                    if(carapi.getCarApiBearerToken == ''):
+                    if(carapi.getCarApiBearerToken() == ''):
                         for i in range(0, len(slaveTWCRoundRobin)):
                             if(slaveTWCRoundRobin[i].protocolVersion == 2):
                                 needCarApiBearerToken = True
