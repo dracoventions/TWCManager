@@ -2,12 +2,17 @@
 
 This document shows the changes per release
 
-## Current Head
+## v1.2.0 - Current Test Branch
 
-  * Improvements to HomeAssistant EMS module to avoid setting Consumption/Generation values to zero as a result of a connection failure, and better exception handling in general for the module.
   * Separation of Slave TWC code from Master TWC code - this adds stability by removing a large number of global variables and reduces complexity for future feature improvements.
 
-## v1.1.0 - Current testing branch
+## v1.1.2 - Current Dev Branch
+
+### New Features
+
+  * Improvements to HomeAssistant EMS module to avoid setting Consumption/Generation values to zero as a result of a connection failure, and better exception handling in general for the module.
+
+## v1.1.0 - 2019-10-12
 
 ### New Features
 
