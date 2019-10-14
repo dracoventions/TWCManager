@@ -13,7 +13,7 @@ This document shows the changes per release
   * Improvements to HomeAssistant EMS module to avoid setting Consumption/Generation values to zero as a result of a connection failure, and better exception handling in general for the module.
   * Added EMS support for TED (The Energy Detective)
   * Added Control module support with a first control module for MQTT, with initial commands to stop the TWCManager daemon and start charging immediately.
-  * Improvements to the MQTT and HASS topic/sensor names for Slave TWCs.
+  * Improvements to the MQTT and HASS topic/sensor names for Slave TWCs. (4 byte instead of 2 byte)
 
 ## v1.1.0 - 2019-10-12
 
