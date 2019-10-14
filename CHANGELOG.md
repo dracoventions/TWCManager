@@ -6,7 +6,12 @@ This document shows the changes per release
 
   * Separation of Slave TWC code from Master TWC code - this adds stability by removing a large number of global variables and reduces complexity for future feature improvements.
 
-## v1.1.2 - Current Dev Branch
+## v1.1.3 - Current Dev Branch
+
+### New Features
+
+
+## v1.1.2 - 2019-10-14
 
 ### New Features
 

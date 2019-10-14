@@ -47,6 +47,7 @@ from lib.TWCManager.Control.MQTTControl import MQTTControl
 from lib.TWCManager.EMS.Fronius import Fronius
 from lib.TWCManager.EMS.HASS import HASS
 from lib.TWCManager.EMS.TED import TED
+from lib.TWCManager.EMS.TeslaPowerwall2 import TeslaPowerwall2
 from lib.TWCManager.Status.HASSStatus import HASSStatus
 from lib.TWCManager.Status.MQTTStatus import MQTTStatus
 from lib.TWCManager.TWCMaster import TWCMaster
