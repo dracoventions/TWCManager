@@ -35,7 +35,14 @@ class MQTTStatus:
     
   def setStatus(self, twcid, key, value):
     if (self.status):
-      topic = self.topicPrefix+ "/" + str(twcid.decode("utf-8"))
+
+      # Format TWCID nicely
+      twident = None
+      if (len(twcid) == 2):
+        twident = "%02X%02X" % (twcid[0], twcid[1])
+      else:
+        twident = str(twcid.decode("utf-8"))
+      topic = self.topicPrefix+ "/" + twident
       topic = topic + "/" + key
 
       # Perform rate limiting first (as there are some very chatty topics).

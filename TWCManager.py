@@ -43,11 +43,13 @@ import time
 import traceback
 from datetime import datetime
 import threading
+from lib.TWCManager.Control.MQTTControl import MQTTControl
 from lib.TWCManager.EMS.Fronius import Fronius
 from lib.TWCManager.EMS.HASS import HASS
 from lib.TWCManager.EMS.TED import TED
 from lib.TWCManager.Status.HASSStatus import HASSStatus
 from lib.TWCManager.Status.MQTTStatus import MQTTStatus
+from lib.TWCManager.TWCMaster import TWCMaster
 from lib.TWCManager.Vehicle.TeslaAPI import CarApi
 from lib.TWCManager.Vehicle.TeslaAPI import CarApiVehicle
 
@@ -177,7 +179,7 @@ def load_settings():
                 continue
 
             m = re.search(r'^\s*carApiBearerToken\s*=\s*(.+)', line, re.MULTILINE)
-            if(m):
+            if(m and m.group(1)):
                 carapi.setCarApiBearerToken(m.group(1))
                 if(config['config']['debugLevel'] >= 10):
                     print("load_settings: carApiBearerToken set to " + str(m.group(1)))
@@ -575,8 +577,8 @@ def car_api_available(email = None, password = None, charge = None):
             # on web interface. I feel this is safer than trying to log in every
             # ten minutes with a bad token because Tesla might decide to block
             # remote access to your car after too many authorization errors.
-            carapi.setCarApiBearerToken()
-            carapi.setCarApiRefreshToken()
+            carapi.setCarApiBearerToken("")
+            carapi.setCarApiRefreshToken("")
 
         save_settings()
 
@@ -1134,93 +1136,6 @@ def check_green_energy():
 #
 ##############################
 
-class TWCMaster:
-
-  consumptionValues   = {}
-  generationValues    = {}
-  subtractChargerLoad = False
-  totalAmpsInUse      = 0
-  TWCID               = None
-
-  def __init__(self, TWCID, config):
-    self.TWCID = TWCID
-    self.subtractChargerLoad = config['config']['subtractChargerLoad']
-
-  def getChargerLoad(self):
-    # Calculate in watts the load that the charger is generating so
-    # that we can exclude it from the consumption if necessary
-    return (self.getTotalAmpsInUse() * 240)
-
-  def getConsumption(self):
-    consumptionVal = 0
-
-    for key in self.consumptionValues:
-      consumptionVal += float(self.consumptionValues[key])
-
-    if (consumptionVal < 0):
-      consumptionVal = 0
-
-    return float(consumptionVal)
-
-  def getGeneration(self):
-    generationVal = 0
-
-    # Currently, our only logic is to add all of the values together
-    for key in self.generationValues:
-      generationVal += float(self.generationValues[key])
-
-    if (generationVal < 0):
-      generationVal = 0
-
-    return float(generationVal)
-
-  def getGenerationOffset(self):
-    # Returns the number of watts to subtract from the solar generation stats
-    # This is consumption + charger load if subtractChargerLoad is enabled
-    # Or simply consumption if subtractChargerLoad is disabled
-    generationOffset = self.getConsumption()
-    if (self.subtractChargerLoad):
-      generationOffset -= self.getChargerLoad()
-    if (generationOffset < 0):
-      generationOffset = 0
-    return float(generationOffset)
-
-  def getMaxAmpsToDivideAmongSlaves(self):
-    # Watts = Volts * Amps
-    # Car charges at 240 volts in North America so we figure
-    # out how many amps * 240 = solarW and limit the car to
-    # that many amps.
-
-    # Calculate our current generation and consumption in watts
-    solarW = float(self.getGeneration() - self.getGenerationOffset())
-
-    # Generation may be below zero if consumption is greater than generation
-    if solarW < 0:
-        solarW = 0
-
-    # Watts = Volts * Amps
-    # Car charges at 240 volts in North America so we figure
-    # out how many amps * 240 = solarW and limit the car to
-    # that many amps.
-    maxAmpsToDivideAmongSlaves = (solarW / 240)
-    return maxAmpsToDivideAmongSlaves
-
-  def getTotalAmpsInUse(self):
-    # Returns the number of amps currently in use by all TWCs
-    return self.totalAmpsInUse
-
-  def setConsumption(self, source, value):
-    # Accepts consumption values from one or more data sources
-    # For now, this gives a sum value of all, but in future we could
-    # average across sources perhaps, or do a primary/secondary priority
-    self.consumptionValues[source] = value
-
-  def setGeneration(self, source, value):
-    self.generationValues[source] = value
-
-  def setTotalAmpsInUse(self, amps):
-    self.totalAmpsInUse = amps
-
 ##############################
 #
 # Begin TWCSlave class
@@ -1611,7 +1526,7 @@ class TWCSlave:
         # Handle heartbeat message received from real slave TWC.
         global nonScheduledAmpsMax, maxAmpsToDivideAmongSlaves, config, \
                timeLastGreenEnergyCheck, slaveTWCRoundRobin, spikeAmpsToCancel6ALimit, \
-               chargeNowAmps, chargeNowTimeEnd, hassstatus, mqttstatus
+               master, hassstatus, mqttstatus
 
         now = time.time()
         self.timeLastRx = now
@@ -1676,18 +1591,17 @@ class TWCSlave:
                    and (scheduledAmpsDaysBitmap & (1 << ltNow.tm_wday))):
                    blnUseScheduledAmps = 1
 
-        if(chargeNowTimeEnd > 0 and chargeNowTimeEnd < now):
+        if(master.checkChargeNowTime() == 0):
             # We're beyond the one-day period where we want to charge at
             # chargeNowAmps, so reset the chargeNow variables.
-            chargeNowAmps = 0
-            chargeNowTimeEnd = 0
+            master.resetChargeNowAmps()
 
-        if(chargeNowTimeEnd > 0 and chargeNowAmps > 0):
+        if(master.checkChargeNowTime() == 1):
             # We're still in the one-day period where we want to charge at
             # chargeNowAmps, ignoring all other charging criteria.
-            maxAmpsToDivideAmongSlaves = chargeNowAmps
+            maxAmpsToDivideAmongSlaves = master.getChargeNowAmps()
             if(config['config']['debugLevel'] >= 10):
-                print(time_now() + ': Charge at chargeNowAmps %.2f' % (chargeNowAmps))
+                print(time_now() + ': Charge at chargeNowAmps %.2f' % (master.getChargeNowAmps()))
         elif(blnUseScheduledAmps):
             # We're within the scheduled hours that we need to provide a set
             # number of amps.
@@ -1733,8 +1647,8 @@ class TWCSlave:
                     # subtract the actual amps being used by this TWC from the amps
                     # we will offer.
                     desiredAmpsOffered -= slaveTWC.reportedAmpsActual
-                if(slaveTWC.reportedAmpsActual >= 1.0):
-                    numCarsCharging += 1
+                    if(slaveTWC.reportedAmpsActual >= 1.0):
+                        numCarsCharging += 1
 
             # Allocate this slave a fraction of maxAmpsToDivideAmongSlaves divided
             # by the number of cars actually charging.
@@ -2153,9 +2067,6 @@ scheduledAmpsStartHour = -1
 scheduledAmpsEndHour = -1
 scheduledAmpsDaysBitmap = 0x7F
 
-chargeNowAmps = 0
-chargeNowTimeEnd = 0
-
 spikeAmpsToCancel6ALimit = 16
 timeLastGreenEnergyCheck = 0
 hourResumeTrackGreenEnergy = -1
@@ -2197,6 +2108,7 @@ ser = serial.Serial(config['config']['rs485adapter'], config['config']['baud'], 
 # Instantiate necessary classes
 master = TWCMaster(fakeTWCID, config)
 carapi = CarApi(config)
+mqttcontrol = MQTTControl(config['config']['debugLevel'], config['control']['MQTT'], master)
 fronius = Fronius(config['config']['debugLevel'], config['sources']['Fronius'])
 hass = HASS(config['config']['debugLevel'], config['sources']['HASS'])
 hassstatus = HASSStatus(config['config']['debugLevel'],config['status']['HASS'])
@@ -2385,7 +2297,7 @@ while True:
                         "%.2f" % (maxAmpsToDivideAmongSlaves) +
                         '`' + "%.2f" % (config['config']['wiringMaxAmpsAllTWCs']) +
                         '`' + "%.2f" % (config['config']['minAmpsPerTWC']) +
-                        '`' + "%.2f" % (chargeNowAmps) +
+                        '`' + "%.2f" % (master.getChargeNowAmps()) +
                         '`' + str(nonScheduledAmpsMax) +
                         '`' + str(scheduledAmpsMax) +
                         '`' + "%02d:%02d" % (int(scheduledAmpsStartHour),
@@ -2469,11 +2381,10 @@ while True:
                         else:
                             overrideMasterHeartbeatData = b''
                 elif(webMsg == b'chargeNow'):
-                    chargeNowAmps = config['config']['wiringMaxAmpsAllTWCs']
-                    chargeNowTimeEnd = now + 60*60*24
+                    master.setChargeNowAmps(config['config']['wiringMaxAmpsAllTWCs'])
+                    master.setChargeNowTimeEnd(60*60*24)
                 elif(webMsg == b'chargeNowCancel'):
-                    chargeNowAmps = 0
-                    chargeNowTimeEnd = 0
+                    master.resetChargeNowAmps()
                 elif(webMsg == b'dumpState'):
                     # dumpState commands are used for debugging. They are called
                     # using a web page:

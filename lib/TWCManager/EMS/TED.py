@@ -32,7 +32,7 @@ class TED:
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
-      print("Fronius: (" + str(minlevel) + ") " + message)
+      print("TED: (" + str(minlevel) + ") " + message)
 
   def getConsumption(self):
 
@@ -43,13 +43,8 @@ class TED:
     # Perform updates if necessary
     self.update()
 
-    # Return consumption value. Fronius consumption is either negative
-    # (export to grid) or positive (import from grid). We add generation
-    # value to make it the delta between this and current consumption
-    if ((self.consumedW < 0) or (self.consumedW > 0)):
-      return float(self.generatedW + self.consumedW)
-    else:
-      return float(0)
+    # I don't believe this is implemented
+    return float(0)
 
   def getGeneration(self):
 
@@ -65,13 +60,13 @@ class TED:
 
   def getTEDValue(self, url):
 
-    # Fetch the specified URL from the Fronius Inverter and return the data
+    # Fetch the specified URL from TED and return the data
     self.fetchFailed = False
 
     try:
         r = self.requests.get(url, timeout=self.timeout)
     except self.requests.exceptions.ConnectionError as e:
-        self.debugLog(4, "Error connecting to Fronius Inverter to fetch sensor value")
+        self.debugLog(4, "Error connecting to TED to fetch solar data")
         self.debugLog(10, str(e))
         self.fetchFailed = True
         return False

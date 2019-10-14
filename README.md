@@ -12,6 +12,12 @@
 
 To enable TWCManager to gather the solar generation information that it requires to adjust the charging rate, we provide Interfaces to allow information to be retrieved (EMS Interfaces) and Interfaces to allow us to provide information to external systems to inform them of current charging output and number of cars currently charging.
 
+### Control Interfaces
+
+| Platform         | Status           | Details                 |
+| ---------------- | ---------------- | ----------------------- |
+| MQTT             | Available v1.1.2 | Allows control via MQTT |
+
 ### EMS Interfaces
 
 EMS Interfaces read solar generation and/or consumption values from an external system. Current EMS interfaces are:

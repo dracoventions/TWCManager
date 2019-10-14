@@ -58,9 +58,12 @@ class CarApi:
     # Returns the number of currently tracked vehicles
     return int(len(self.carApiVehicles))
 
-  def setCarApiBearerToken(self, token):
-    self.carApiBearerToken = token
-    return True
+  def setCarApiBearerToken(self, token=None):
+    if token:
+      self.carApiBearerToken = token
+      return True
+    else:
+      return False
 
   def setCarApiErrorRetryMins(self, mins):
     self.carApiErrorRetryMins = mins
@@ -74,12 +77,12 @@ class CarApi:
     self.carApiTokenExpireTime = value
     return True
 
-  def updateApiLastErrorTime(self):
-    self.carApiLastErrorTime = now
+  def updateCarApiLastErrorTime(self):
+    self.carApiLastErrorTime = self.time.time()
     return True
 
   def updateLastStartOrStopChargeTime(self):
-    self.carApiLastStartOrStopChargeTime = now
+    self.carApiLastStartOrStopChargeTime = self.time.time()
     return True
 
 class CarApiVehicle:
