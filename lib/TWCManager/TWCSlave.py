@@ -57,7 +57,6 @@ class TWCSlave:
         print("TWCSlave: (" + str(minlevel) + ") " + message)
 
     def print_status(self, heartbeatData):
-        global masterTWCID
 
         try:
             debugOutput = ": SHB %02X%02X: %02X %05.2f/%05.2fA %02X%02X" % \
@@ -70,7 +69,7 @@ class TWCSlave:
             debugOutput += "  M"
 
             if(not self.config['config']['fakeMaster']):
-                debugOutput += " %02X%02X" % (masterTWCID[0], masterTWCID[1])
+                debugOutput += " %02X%02X" % (self.master.getMasterTWCID()[0], self.master.getMasterTWCID()[1])
 
             debugOutput += ": %02X %05.2f/%05.2fA %02X%02X" % \
                     (self.masterHeartbeatData[0],
@@ -395,7 +394,6 @@ class TWCSlave:
 
     def receive_slave_heartbeat(self, heartbeatData):
         # Handle heartbeat message received from real slave TWC.
-        global spikeAmpsToCancel6ALimit
 
         now = self.time.time()
         self.timeLastRx = now
@@ -505,12 +503,12 @@ class TWCSlave:
 
             # Allocate this slave a fraction of maxAmpsToDivideAmongSlaves divided
             # by the number of cars actually charging.
-            fairShareAmps = int(maxAmpsToDivideAmongSlaves / numCarsCharging)
+            fairShareAmps = int(self.master.getMaxAmpsToDivideAmongSlaves() / numCarsCharging)
             if(desiredAmpsOffered > fairShareAmps):
                 desiredAmpsOffered = fairShareAmps
 
             if(self.config['config']['debugLevel'] >= 10):
-                print("desiredAmpsOffered TWC: " + hex_str(self.TWCID) + " reduced from " + str(maxAmpsToDivideAmongSlaves)
+                print("desiredAmpsOffered TWC: " + hex_str(self.TWCID) + " reduced from " + str(self.master.getMaxAmpsToDivideAmongSlaves())
                   + " to " + str(desiredAmpsOffered)
                   + " with " + str(numCarsCharging)
                   + " cars charging.")
@@ -523,7 +521,7 @@ class TWCSlave:
           if(self.config['config']['debugLevel'] >= 10):
             print("desiredAmpsOffered (" + str(desiredAmpsOffered) + ") < minAmpsToOffer:" + str(minAmpsToOffer))
           if(numCarsCharging > 0):
-            if(maxAmpsToDivideAmongSlaves / numCarsCharging > minAmpsToOffer):
+            if(self.master.getMaxAmpsToDivideAmongSlaves() / numCarsCharging > minAmpsToOffer):
                 # There is enough power available to give each car
                 # minAmpsToOffer, but currently-charging cars are leaving us
                 # less power than minAmpsToOffer to give this car.
@@ -578,7 +576,7 @@ class TWCSlave:
                 if(self.config['config']['debugLevel'] >= 10):
                     print("desiredAmpsOffered TWC: " + hex_str(self.TWCID) + " reduced to 0 from " + str(desiredAmpsOffered)
                           + " because maxAmpsToDivideAmongSlaves "
-                          + str(maxAmpsToDivideAmongSlaves)
+                          + str(self.master.getMaxAmpsToDivideAmongSlaves())
                           + " / numCarsCharging " + str(numCarsCharging)
                           + " < minAmpsToOffer " + str(minAmpsToOffer))
                 desiredAmpsOffered = 0
@@ -653,7 +651,7 @@ class TWCSlave:
                               str(int(now - self.timeReportedAmpsActualChangedSignificantly)) +
                               ' < 60 or self.reportedAmpsActual ' + str(self.reportedAmpsActual) +
                               ' < 4')
-                    if(maxAmpsToDivideAmongSlaves < 1):
+                    if(self.master.getMaxAmpsToDivideAmongSlaves() < 1):
                         desiredAmosOffered = 0
                     else:
                         desiredAmpsOffered = minAmpsToOffer
@@ -700,7 +698,7 @@ class TWCSlave:
                 if(self.config['config']['debugLevel'] >= 10):
                     print('TWCID=' + hex_str(self.TWCID) +
                           ' desiredAmpsOffered=' + str(desiredAmpsOffered) +
-                          ' spikeAmpsToCancel6ALimit=' + str(spikeAmpsToCancel6ALimit) +
+                          ' spikeAmpsToCancel6ALimit=' + str(self.master.getSpikeAmps()) +
                           ' self.lastAmpsOffered=' + str(self.lastAmpsOffered) +
                           ' self.reportedAmpsActual=' + str(self.reportedAmpsActual) +
                           ' now - self.timeReportedAmpsActualChangedSignificantly=' +
@@ -709,7 +707,7 @@ class TWCSlave:
                 if(
                     # If we just moved from a lower amp limit to
                     # a higher one less than spikeAmpsToCancel6ALimit.
-                   (desiredAmpsOffered < spikeAmpsToCancel6ALimit and
+                   (desiredAmpsOffered < self.master.getSpikeAmps() and
                      desiredAmpsOffered > self.lastAmpsOffered) or (
                      # ...or if we've been offering the car more amps than it's
                      # been using for at least 10 seconds, then we'll change the
@@ -729,7 +727,7 @@ class TWCSlave:
                      # spikeAmpsToCancel6ALimit, I may need to implement a
                      # counter that tries spikeAmpsToCancel6ALimit only a
                      # certain number of times per hour.
-                     (self.reportedAmpsActual <= spikeAmpsToCancel6ALimit) and
+                     (self.reportedAmpsActual <= self.master.getSpikeAmps()) and
                      # ...and car is charging at over two amps under what we
                      # want it to charge at. I have to use 2 amps because when
                      # offered, say 40A, the car charges at ~38.76A actual.
@@ -748,7 +746,7 @@ class TWCSlave:
                     # checks, we'll set lastAmpsOffered = desiredAmpsOffered and
                     # timeLastAmpsOfferedChanged if the value of lastAmpsOffered was
                     # actually changed.
-                    if(self.lastAmpsOffered == spikeAmpsToCancel6ALimit
+                    if(self.lastAmpsOffered == self.master.getSpikeAmps()
                        and now - self.timeLastAmpsOfferedChanged > 10):
                         # We've been offering the car spikeAmpsToCancel6ALimit
                         # for over 10 seconds but it's still drawing at least
@@ -760,12 +758,12 @@ class TWCSlave:
                         # case, the fix is to offer it lower amps.
                         if(self.config['config']['debugLevel'] >= 1):
                             print(self.master.time_now() + ': Car stuck when offered spikeAmpsToCancel6ALimit.  Offering 2 less.')
-                        desiredAmpsOffered = spikeAmpsToCancel6ALimit - 2.0
+                        desiredAmpsOffered = (self.master.getSpikeAmps() - 2.0)
                     elif(now - self.timeLastAmpsOfferedChanged > 5):
                         # self.lastAmpsOffered hasn't gotten the car to draw
                         # enough amps for over 5 seconds, so try
                         # spikeAmpsToCancel6ALimit
-                        desiredAmpsOffered = spikeAmpsToCancel6ALimit
+                        desiredAmpsOffered = self.master.getSpikeAmps()
                     else:
                         # Otherwise, don't change the value of lastAmpsOffered.
                         desiredAmpsOffered = self.lastAmpsOffered

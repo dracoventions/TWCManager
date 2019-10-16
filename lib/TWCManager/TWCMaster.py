@@ -19,6 +19,7 @@ class TWCMaster:
   consumptionValues   = {}
   generationValues    = {}
   hassstatus          = None
+  masterTWCID         = ''
   maxAmpsToDivideAmongSlaves = 0
   mqttstatus          = None
   nonScheduledAmpsMax = -1
@@ -27,6 +28,7 @@ class TWCMaster:
   ser                 = None
   slaveTWCs           = {}
   slaveTWCRoundRobin  = []
+  spikeAmpsToCancel6ALimit = 16
   subtractChargerLoad = False
   timeLastTx          = 0
   TWCID               = None
@@ -41,7 +43,8 @@ class TWCMaster:
   slaveSign = bytearray(b'\x77')
 
 
-  def __init__(self, TWCID, config):
+  def __init__(self, TWCID, config, carapi):
+    self.carapi = carapi
     self.config = config
     self.TWCID  = TWCID
     self.subtractChargerLoad = config['config']['subtractChargerLoad']
@@ -85,6 +88,11 @@ class TWCMaster:
   def getChargeNowAmps(self):
     return (self.chargeNowAmps)
 
+  def getMasterTWCID(self):
+    # This is called when TWCManager is in Slave mode, to track the
+    # master's TWCID
+    return self.masterTWCID
+
   def gethassstatus(self):
     return self.hassstatus
 
@@ -102,6 +110,9 @@ class TWCMaster:
 
   def getSlaveSign(self):
     return self.slaveSign
+
+  def getSpikeAmps(self):
+    return self.spikeAmpsToCancel6ALimit
 
   def getTimeLastTx(self):
     return self.timeLastTx
@@ -434,6 +445,11 @@ class TWCMaster:
     # Stores the hassstatus object
     self.hassstatus = hass
 
+  def setMasterTWCID(self, twcid):
+    # This is called when TWCManager is in Slave mode, to track the
+    # master's TWCID
+    self.masterTWCID = twcid
+
   def setmqttstatus(self, mqtt):
     # Stores the mqttstatus object
     self.mqttstatus = mqtt
@@ -476,6 +492,9 @@ class TWCMaster:
 
   def setScheduledAmpsMax(self, amps):
     self.scheduledAmpsMax = amps
+
+  def setSpikeAmps(self, amps):
+    self.spikeAmpsToCancel6ALimit = amps
 
   def time_now(self):
     return(datetime.now().strftime("%H:%M:%S" + (

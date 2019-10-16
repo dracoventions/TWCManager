@@ -19,10 +19,11 @@ class HTTPControl:
 class HTTPControlHandler(BaseHTTPRequestHandler):
 
   def do_GET(self):
-    print(urllib.parse.urlparse(self.path))
     url = urllib.parse.urlparse(self.path)
+    #ParseResult(scheme='', netloc='', path='/', params='', query='', fragment='')
+    print(url.path)
 
-    if (url == '/'):
+    if (url.path == '/'):
       self.send_response(200)
       self.send_header('Content-type','text/html')
       self.end_headers()

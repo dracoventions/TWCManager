@@ -899,7 +899,6 @@ msg = bytearray()
 msgLen = 0
 lastTWCResponseMsg = None
 
-masterTWCID = ''
 slaveHeartbeatData = bytearray([0x01,0x0F,0xA0,0x0F,0xA0,0x00,0x00,0x00,0x00])
 numInitMsgsToSend = 10
 msgRxCount = 0
@@ -910,7 +909,6 @@ scheduledAmpsStartHour = -1
 scheduledAmpsEndHour = -1
 scheduledAmpsDaysBitmap = 0x7F
 
-spikeAmpsToCancel6ALimit = 16
 hourResumeTrackGreenEnergy = -1
 kWhDelivered = 119
 timeLastkWhDelivered = time.time()
@@ -940,8 +938,8 @@ homeLon = 10000
 #
 
 # Instantiate necessary classes
-master = TWCMaster(fakeTWCID, config)
 carapi = CarApi(config)
+master = TWCMaster(fakeTWCID, config, carapi)
 httpcontrol = HTTPControl()
 mqttcontrol = MQTTControl(config['config']['debugLevel'], config['control']['MQTT'], master)
 fronius = Fronius(config['config']['debugLevel'], config['sources']['Fronius'])
@@ -1467,12 +1465,12 @@ while True:
                         # charging limit imposed in an Oct 2017 Tesla car
                         # firmware update. See notes where
                         # spikeAmpsToCancel6ALimit is used.
-                        spikeAmpsToCancel6ALimit = 21
+                        master.setSpikeAmps(21)
                     else:
                         # EU chargers need a spike to only 16A.  This value
                         # comes from a forum post and has not been directly
                         # tested.
-                        spikeAmpsToCancel6ALimit = 16
+                        master.setSpikeAmps(16)
 
                     if(senderID == fakeTWCID):
                         print(time_now + ": Slave TWC %02X%02X reports same TWCID as master.  " \
@@ -1653,8 +1651,7 @@ while True:
                     foundMsgMatch = True
                     senderID = msgMatch.group(1)
                     sign = msgMatch.group(2)
-
-                    masterTWCID = senderID
+                    master.setMasterTWCID(senderID)
 
                     # This message seems to always contain seven 00 bytes in its
                     # data area. If we ever get this message with non-00 data
@@ -1679,8 +1676,7 @@ while True:
                     foundMsgMatch = True
                     senderID = msgMatch.group(1)
                     sign = msgMatch.group(2)
-
-                    masterTWCID = senderID
+                    master.setMasterTWCID(senderID)
 
                     # This message seems to always contain seven 00 bytes in its
                     # data area. If we ever get this message with non-00 data
@@ -1700,8 +1696,7 @@ while True:
                     senderID = msgMatch.group(1)
                     receiverID = msgMatch.group(2)
                     heartbeatData = msgMatch.group(3)
-
-                    masterTWCID = senderID
+                    master.setMasterTWCID(senderID)
                     try:
                         slaveTWC = slaveTWCs[receiverID]
                     except KeyError:

@@ -58,6 +58,9 @@ class CarApi:
     # Returns the number of currently tracked vehicles
     return int(len(self.carApiVehicles))
 
+  def getCarApiVehicles(self):
+    return self.carApiVehicles
+
   def setCarApiBearerToken(self, token=None):
     if token:
       self.carApiBearerToken = token
