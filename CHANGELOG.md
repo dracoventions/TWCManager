@@ -10,6 +10,11 @@ This document shows the changes per release
 
 ### New Features
 
+  * Added new HTTP Control Module for (limited) in-built HTTP control of TWCManager.
+  * Separation of Slave TWC code from Master TWC code - this adds stability by r
+emoving a large number of global variables and reduces complexity for future fea
+ture improvements.
+  * WILL I FINISH: Powerwall 2
 
 ## v1.1.2 - 2019-10-14
 
