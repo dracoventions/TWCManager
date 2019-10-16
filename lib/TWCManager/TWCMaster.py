@@ -19,6 +19,7 @@ class TWCMaster:
   consumptionValues   = {}
   generationValues    = {}
   hassstatus          = None
+  maxAmpsToDivideAmongSlaves = 0
   mqttstatus          = None
   nonScheduledAmpsMax = -1
   overrideMasterHeartbeatData = b''
@@ -28,7 +29,6 @@ class TWCMaster:
   slaveTWCRoundRobin  = []
   subtractChargerLoad = False
   timeLastTx          = 0
-  totalAmpsInUse      = 0
   TWCID               = None
 
 # TWCs send a seemingly-random byte after their 2-byte TWC id in a number of
@@ -38,6 +38,8 @@ class TWCMaster:
 # be chosen. I picked 77 because it's easy to recognize when looking at logs.
 # These shouldn't need to be changed.
   masterSign = bytearray(b'\x77')
+  slaveSign = bytearray(b'\x77')
+
 
   def __init__(self, TWCID, config):
     self.config = config
@@ -86,6 +88,9 @@ class TWCMaster:
   def gethassstatus(self):
     return self.hassstatus
 
+  def getMaxAmpsToDivideAmongSlaves(self):
+    return self.maxAmpsToDivideAmongSlaves
+
   def getmqttstatus(self):
     return self.mqttstatus
 
@@ -94,6 +99,9 @@ class TWCMaster:
 
   def getScheduledAmpsMax(self):
     return self.scheduledAmpsMax
+
+  def getSlaveSign(self):
+    return self.slaveSign
 
   def getTimeLastTx(self):
     return self.timeLastTx
@@ -153,7 +161,7 @@ class TWCMaster:
   def getMasterHeartbeatOverride(self):
     return self.overrideMasterHeartbeatData
 
-  def getMaxAmpsToDivideAmongSlaves(self):
+  def getMaxAmpsToDivideGreenEnergy(self):
     # Watts = Volts * Amps
     # Car charges at 240 volts in North America so we figure
     # out how many amps * 240 = solarW and limit the car to
@@ -170,8 +178,8 @@ class TWCMaster:
     # Car charges at 240 volts in North America so we figure
     # out how many amps * 240 = solarW and limit the car to
     # that many amps.
-    maxAmpsToDivideAmongSlaves = (solarW / 240)
-    return maxAmpsToDivideAmongSlaves
+    maxAmpsToDivide = (solarW / 240)
+    return maxAmpsToDivide
 
   def getSerial(self):
     return self.ser
@@ -191,7 +199,31 @@ class TWCMaster:
 
   def getTotalAmpsInUse(self):
     # Returns the number of amps currently in use by all TWCs
-    return self.totalAmpsInUse
+    totalAmps = 0
+    for slaveTWC in self.getSlaveTWCs():
+        totalAmps += slaveTWC.reportedAmpsActual
+        self.hassstatus.setStatus(slaveTWC.TWCID, "amps_in_use", slaveTWC.reportedAmpsActual)
+        self.mqttstatus.setStatus(slaveTWC.TWCID, "ampsInUse", slaveTWC.reportedAmpsActual)
+
+    if(self.config['config']['debugLevel'] >= 10):
+        print("Total amps all slaves are using: " + str(totalAmps))
+    self.hassstatus.setStatus(bytes("all", 'UTF-8'), "total_amps_in_use", totalAmps)
+    self.mqttstatus.setStatus(bytes("all", 'UTF-8'), "totalAmpsInUse", totalAmps)
+    return totalAmps
+
+  def master_id_conflict():
+    # We're playing fake slave, and we got a message from a master with our TWCID.
+    # By convention, as a slave we must change our TWCID because a master will not.
+    self.TWCID[0] = random.randint(0, 0xFF)
+    self.TWCID[1] = random.randint(0, 0xFF)
+
+    # Real slaves change their sign during a conflict, so we do too.
+    self.slaveSign[0] = random.randint(0, 0xFF)
+
+    print(time_now() + ": Master's TWCID matches our fake slave's TWCID.  " \
+        "Picked new random TWCID %02X%02X with sign %02X" % \
+        (self.TWCID[0], self.TWCID[1], self.slaveSign[0]))
+
 
   def newSlave(self, newSlaveID, maxAmps):
     try:
@@ -366,6 +398,21 @@ class TWCMaster:
 
     self.timeLastTx = time.time()
 
+  def send_slave_linkready():
+    # In the message below, \x1F\x40 (hex 0x1f40 or 8000 in base 10) refers to
+    # this being a max 80.00Amp charger model.
+    # EU chargers are 32A and send 0x0c80 (3200 in base 10).
+    #
+    # I accidentally changed \x1f\x40 to \x2e\x69 at one point, which makes the
+    # master TWC immediately start blinking its red LED 6 times with top green
+    # LED on. Manual says this means "The networked Wall Connectors have
+    # different maximum current capabilities".
+    msg = bytearray(b'\xFD\xE2') + self.TWCID + self.laveSign + bytearray(b'\x1F\x40\x00\x00\x00\x00\x00\x00')
+    if(self.protocolVersion == 2):
+        msg += bytearray(b'\x00\x00')
+
+    send_msg(msg)
+
   def setChargeNowAmps(self, amps):
     # Accepts a number of amps to define the amperage at which we
     # should charge
@@ -391,14 +438,44 @@ class TWCMaster:
     # Stores the mqttstatus object
     self.mqttstatus = mqtt
 
+  def setMaxAmpsToChargeNowAmps(self):
+    self.setMaxAmpsToDivideAmongSlaves(self.getChargeNowAmps())
+
+  def setMaxAmpsToDivideAmongSlaves(self, amps):
+
+    # Use backgroundTasksLock to prevent changing maxAmpsToDivideAmongSlaves
+    # if the main thread is in the middle of examining and later using
+    # that value.
+    self.getBackgroundTasksLock()
+
+    if(amps > self.config['config']['wiringMaxAmpsAllTWCs']):
+      # Never tell the slaves to draw more amps than the physical charger
+      # wiring can handle.
+      debugLog(1, "ERROR: specified maxAmpsToDivideAmongSlaves " + str(amps) +
+       " > wiringMaxAmpsAllTWCs " + str(self.config['config']['wiringMaxAmpsAllTWCs']) +
+       ".\nSee notes above wiringMaxAmpsAllTWCs in the 'Configuration parameters' section.")
+      amps = self.config['config']['wiringMaxAmpsAllTWCs']
+
+    self.maxAmpsToDivideAmongSlaves = amps
+
+    self.releaseBackgroundTasksLock()
+
+  def setMaxAmpsToGreenEnergyTrack(self):
+    # Set the Max Amps to divide among TWCs to the current Green Energy
+    # generation value
+    self.setMaxAmpsToDivideAmongSlaves(self.getMaxAmpsToDivideGreenEnergy())
+
+  def setMaxAmpsToNonScheduledAmpsMax(self):
+    self.setMaxAmpsToDivideAmongSlaves(self.getNonScheduledAmpsMax())
+
+  def setMaxAmpsToScheduledAmpsMax(self):
+    self.setMaxAmpsToDivideAmongSlaves(self.getScheduledAmpsMax())
+
   def setNonScheduledAmpsMax(self, amps):
     self.nonScheduledAmpsMax = amps
 
   def setScheduledAmpsMax(self, amps):
     self.scheduledAmpsMax = amps
-
-  def setTotalAmpsInUse(self, amps):
-    self.totalAmpsInUse = amps
 
   def time_now(self):
     return(datetime.now().strftime("%H:%M:%S" + (

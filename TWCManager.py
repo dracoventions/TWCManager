@@ -77,9 +77,6 @@ else:
 # conflicts.
 fakeTWCID = bytearray(b'\x77\x77')
 
-slaveSign = bytearray(b'\x77')
-
-
 #
 # End configuration parameters
 #
@@ -279,50 +276,6 @@ def unescape_msg(msg:bytearray, msgLen):
     # Remove leading and trailing C0 byte.
     msg = msg[1:len(msg)-1]
     return msg
-
-def send_slave_linkready():
-    # In the message below, \x1F\x40 (hex 0x1f40 or 8000 in base 10) refers to
-    # this being a max 80.00Amp charger model.
-    # EU chargers are 32A and send 0x0c80 (3200 in base 10).
-    #
-    # I accidentally changed \x1f\x40 to \x2e\x69 at one point, which makes the
-    # master TWC immediately start blinking its red LED 6 times with top green
-    # LED on. Manual says this means "The networked Wall Connectors have
-    # different maximum current capabilities".
-    msg = bytearray(b'\xFD\xE2') + fakeTWCID + slaveSign + bytearray(b'\x1F\x40\x00\x00\x00\x00\x00\x00')
-    if(self.protocolVersion == 2):
-        msg += bytearray(b'\x00\x00')
-
-    send_msg(msg)
-
-def master_id_conflict():
-    # We're playing fake slave, and we got a message from a master with our TWCID.
-    # By convention, as a slave we must change our TWCID because a master will not.
-    fakeTWCID[0] = random.randint(0, 0xFF)
-    fakeTWCID[1] = random.randint(0, 0xFF)
-
-    # Real slaves change their sign during a conflict, so we do too.
-    slaveSign[0] = random.randint(0, 0xFF)
-
-    print(time_now() + ": Master's TWCID matches our fake slave's TWCID.  " \
-        "Picked new random TWCID %02X%02X with sign %02X" % \
-        (fakeTWCID[0], fakeTWCID[1], slaveSign[0]))
-
-def total_amps_actual_all_twcs():
-    global config, master
-
-    totalAmps = 0
-    for slaveTWC in master.getSlaveTWCs():
-        totalAmps += slaveTWC.reportedAmpsActual
-        master.gethassstatus().setStatus(slaveTWC.TWCID, "amps_in_use", slaveTWC.reportedAmpsActual)
-        master.getmqttstatus().setStatus(slaveTWC.TWCID, "ampsInUse", slaveTWC.reportedAmpsActual)
-
-    if(config['config']['debugLevel'] >= 10):
-        print("Total amps all slaves are using: " + str(totalAmps))
-    master.gethassstatus().setStatus(bytes("all", 'UTF-8'), "total_amps_in_use", totalAmps)
-    master.getmqttstatus().setStatus(bytes("all", 'UTF-8'), "totalAmpsInUse", totalAmps)
-    master.setTotalAmpsInUse(totalAmps)
-    return totalAmps
 
 def car_api_available(email = None, password = None, charge = None):
     global config, carapi
@@ -900,7 +853,7 @@ def background_tasks_thread():
         master.doneBackgroundTask()
 
 def check_green_energy():
-    global maxAmpsToDivideAmongSlaves, config, hass, master
+    global config, hass, master
 
     # Check solar panel generation using an API exposed by
     # the HomeAssistant API.
@@ -916,24 +869,18 @@ def check_green_energy():
     master.setGeneration('HomeAssistant', hass.getGeneration())
     master.setGeneration('TED', ted.getGeneration())
 
-    # Use backgroundTasksLock to prevent changing maxAmpsToDivideAmongSlaves
-    # if the main thread is in the middle of examining and later using
-    # that value.
-    master.getBackgroundTasksLock()
-    maxAmpsToDivideAmongSlaves = master.getMaxAmpsToDivideAmongSlaves()
+    master.setMaxAmpsToGreenEnergyTrack()
 
     if(config['config']['debugLevel'] >= 1):
         print("%s: Solar generating %dW, Consumption %dW, Charger Load %dW" % (time_now(), master.getGeneration(), master.getConsumption(), master.getChargerLoad()))
-        print("          Limiting car charging to %.2fA - %.2fA = %.2fA." % ((master.getGeneration() / 240), (master.getConsumption() / 240), maxAmpsToDivideAmongSlaves))
+        print("          Limiting car charging to %.2fA - %.2fA = %.2fA." % ((master.getGeneration() / 240), (master.getConsumption() / 240), master.getMaxAmpsToDivideAmongSlaves()))
         print("          Charge when above %.0fA (minAmpsPerTWC)." % (config['config']['minAmpsPerTWC']))
-
-    master.releaseBackgroundTasksLock()
 
     # Update HASS sensors with min/max amp values
     master.gethassstatus().setStatus(bytes("config", 'UTF-8'), "min_amps_per_twc", config['config']['minAmpsPerTWC'])
     master.getmqttstatus().setStatus(bytes("config", 'UTF-8'), "minAmpsPerTWC", config['config']['minAmpsPerTWC'])
-    master.gethassstatus().setStatus(bytes("all", 'UTF-8'), "max_amps_for_slaves", maxAmpsToDivideAmongSlaves)
-    master.getmqttstatus().setStatus(bytes("all", 'UTF-8'), "maxAmpsForSlaves", maxAmpsToDivideAmongSlaves)
+    master.gethassstatus().setStatus(bytes("all", 'UTF-8'), "max_amps_for_slaves", master.getMaxAmpsToDivideAmongSlaves())
+    master.getmqttstatus().setStatus(bytes("all", 'UTF-8'), "maxAmpsForSlaves", master.getMaxAmpsToDivideAmongSlaves())
 
 #
 # End functions
@@ -959,7 +906,6 @@ msgRxCount = 0
 
 idxSlaveToSendNextHeartbeat = 0
 
-maxAmpsToDivideAmongSlaves = 0
 scheduledAmpsStartHour = -1
 scheduledAmpsEndHour = -1
 scheduledAmpsDaysBitmap = 0x7F
@@ -1064,7 +1010,7 @@ if(webIPCqueue == None):
 
 print("TWC Manager starting as fake %s with id %02X%02X and sign %02X" \
     % ( ("Master" if config['config']['fakeMaster'] else "Slave"), \
-    ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(slaveSign)))
+    ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(master.getSlaveSign())))
 
 while True:
     try:
@@ -1142,8 +1088,8 @@ while True:
                     print("Advertise fake slave %02X%02X with sign %02X is " \
                           "ready to link once per 10 seconds as long as master " \
                           "hasn't sent a heartbeat in the last 10 seconds." % \
-                        (ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(slaveSign)))
-                send_slave_linkready()
+                        (ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(master.getSlaveSign())))
+                master.send_slave_linkready()
 
 
         ########################################################################
@@ -1183,7 +1129,7 @@ while True:
                                 needCarApiBearerToken = True
 
                     webResponseMsg = (
-                        "%.2f" % (maxAmpsToDivideAmongSlaves) +
+                        "%.2f" % (master.getMaxAmpsToDivideAmongSlaves()) +
                         '`' + "%.2f" % (config['config']['wiringMaxAmpsAllTWCs']) +
                         '`' + "%.2f" % (config['config']['minAmpsPerTWC']) +
                         '`' + "%.2f" % (master.getChargeNowAmps()) +
@@ -1718,7 +1664,7 @@ while True:
                             (senderID[0], senderID[1], hex_str(sign)))
 
                     if(senderID == fakeTWCID):
-                        master_id_conflict()
+                        master.master_id_conflict()
 
                     # Other than picking a new fakeTWCID if ours conflicts with
                     # master, it doesn't seem that a real slave will make any
@@ -1745,7 +1691,7 @@ while True:
                             (senderID[0], senderID[1], hex_str(sign)))
 
                     if(senderID == fakeTWCID):
-                        master_id_conflict()
+                        master.master_id_conflict()
                 else:
                     msgMatch = re.search(b'\A\xfb\xe0(..)(..)(.......+?).\Z', msg, re.DOTALL)
                 if(msgMatch and foundMsgMatch == False):

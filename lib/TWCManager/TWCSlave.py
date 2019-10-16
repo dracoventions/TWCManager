@@ -395,7 +395,7 @@ class TWCSlave:
 
     def receive_slave_heartbeat(self, heartbeatData):
         # Handle heartbeat message received from real slave TWC.
-        global maxAmpsToDivideAmongSlaves, spikeAmpsToCancel6ALimit
+        global spikeAmpsToCancel6ALimit
 
         now = self.time.time()
         self.timeLastRx = now
@@ -468,15 +468,15 @@ class TWCSlave:
         if(self.master.checkChargeNowTime() == 1):
             # We're still in the one-day period where we want to charge at
             # chargeNowAmps, ignoring all other charging criteria.
-            maxAmpsToDivideAmongSlaves = self.master.getChargeNowAmps()
+            self.master.setMaxAmpsToChargeNowAmps()
             debugLog(10, 'Charge at chargeNowAmps %.2f' % (chargeNowAmps))
         elif(blnUseScheduledAmps):
             # We're within the scheduled hours that we need to provide a set
             # number of amps.
-            maxAmpsToDivideAmongSlaves = self.master.getScheduledAmpsMax()
+            self.master.setMaxAmpsToScheduledAmpsMax()
         else:
             if(self.master.getNonScheduledAmpsMax() > -1):
-                maxAmpsToDivideAmongSlaves = self.master.getnonScheduledAmpsMax()
+                self.master.setMaxAmpsToNonScheduledAmpsMax()
             elif(now - self.timeLastGreenEnergyCheck > 60):
                 self.timeLastGreenEnergyCheck = self.time.time()
 
@@ -485,27 +485,13 @@ class TWCSlave:
                 # 6am in Jun to almost 7:30am in Nov before the clocks get set
                 # back an hour. Sunset can be ~4:30pm to just after 8pm.
                 if(ltNow.tm_hour < 6 or ltNow.tm_hour >= 20):
-                    maxAmpsToDivideAmongSlaves = 0
+                    self.master.setMaxAmpsToDivideAmongSlaves(0)
                 else:
                     self.master.queue_background_task({'cmd':'checkGreenEnergy'})
 
-        # Use backgroundTasksLock to prevent the background thread from changing
-        # the value of maxAmpsToDivideAmongSlaves after we've checked the value
-        # is safe to use but before we've used it.
-        self.master.getBackgroundTasksLock()
-
-        if(maxAmpsToDivideAmongSlaves > self.config['config']['wiringMaxAmpsAllTWCs']):
-            # Never tell the slaves to draw more amps than the physical charger
-            # wiring can handle.
-            debugLog(1, self.master.time_now() +
-                    " ERROR: maxAmpsToDivideAmongSlaves " + str(maxAmpsToDivideAmongSlaves) +
-                    " > wiringMaxAmpsAllTWCs " + str(self.config['config']['wiringMaxAmpsAllTWCs']) +
-                    ".\nSee notes above wiringMaxAmpsAllTWCs in the 'Configuration parameters' section.")
-            maxAmpsToDivideAmongSlaves = self.config['config']['wiringMaxAmpsAllTWCs']
-
         # Determine how many cars are charging and how many amps they're using
         numCarsCharging = self.master.num_cars_charging_now()
-        desiredAmpsOffered = maxAmpsToDivideAmongSlaves
+        desiredAmpsOffered = self.master.getMaxAmpsToDivideAmongSlaves()
 
         if (numCarsCharging > 0):
             for slaveTWC in self.master.getSlaveTWCs():
@@ -528,8 +514,6 @@ class TWCSlave:
                   + " to " + str(desiredAmpsOffered)
                   + " with " + str(numCarsCharging)
                   + " cars charging.")
-
-        self.master.releaseBackgroundTasksLock()
 
         minAmpsToOffer = self.config['config']['minAmpsPerTWC']
         if(self.minAmpsTWCSupports > minAmpsToOffer):
@@ -862,7 +846,7 @@ class TWCSlave:
 
             # Set totalAmpsAllTWCs to the total amps all TWCs are actually using
             # minus amps this TWC is using, plus amps this TWC wants to use.
-            totalAmpsAllTWCs = total_amps_actual_all_twcs() \
+            totalAmpsAllTWCs = self.master.getTotalAmpsInUse() \
                   - self.reportedAmpsActual + self.lastAmpsOffered
             if(totalAmpsAllTWCs > self.config['config']['wiringMaxAmpsAllTWCs']):
                 # totalAmpsAllTWCs would exceed wiringMaxAmpsAllTWCs if we
@@ -870,7 +854,7 @@ class TWCSlave:
                 # offering as many amps as will increase total_amps_actual_all_twcs()
                 # up to wiringMaxAmpsAllTWCs.
                 self.lastAmpsOffered = int(self.config['config']['wiringMaxAmpsAllTWCs'] -
-                                          (total_amps_actual_all_twcs() - self.reportedAmpsActual))
+                                          (self.master.getTotalAmpsInUse() - self.reportedAmpsActual))
 
                 if(self.lastAmpsOffered < self.minAmpsTWCSupports):
                     # Always offer at least minAmpsTWCSupports amps.
