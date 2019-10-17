@@ -71,8 +71,34 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       #vertical thead,#vertical tbody{
         display:inline-block;
       }
+      
       """
     page += "</style>"
+    return page
+
+  def do_navbar(self):
+    page = """
+    <p>&nbsp;</p>
+    <p>&nbsp;</p>
+    <nav class='navbar fixed-top navbar-dark bg-dark' role='navigation'>
+      <a class='navbar-brand' href='/'>TWCManager</a>
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item active">
+          <a class="nav-link" href="#">Home</a>
+        </li>
+      </ul>
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="#">Link</a>
+        </li>
+      </ul>
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item">
+          <a class="nav-link disabled" href="#">Disabled</a>
+        </li>
+      </ul>
+      <span class="navbar-text">v1.1.3</span>
+    </nav>"""
     return page
 
   def do_GET(self):
@@ -87,10 +113,13 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       # Send the html message
       page = "<html><head>"
       page += "<title>TWCManager</title>"
-      page += "<link rel='icon' type='image/png' href='favicon.png'>"
+      page += "<meta http-equiv='refresh' content='5' />"
       page += "<meta name='viewport' content='width=device-width, initial-scale=1'>"
+      page += "<link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css' integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'>"
       page += self.do_css()
       page += "</head>"
+      page += "<body>"
+      page += self.do_navbar()
       page += "<table border='0' padding='0' margin='0'><tr>"
       page += "<td valign='top'>"
 
@@ -100,7 +129,9 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       page += self.show_status()
       page += self.show_twcs()
 
+      page += "</table>"
       page += "</body>"
+      page += "</table>"
       page += "</html>"
 
       self.wfile.write(page.encode("utf-8"))
@@ -188,7 +219,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     page += "<p>"
     page += "<table>"
     page += "<tr><td>Tesla Account E-Mail:</td>"
-    page += "<td><input type='text' name='email' value='GETEMAILFROMCFG'></td></tr>"
+    page += "<td><input type='text' name='email' value=''></td></tr>"
     page += "<tr><td>Password:</td>"
     page += "<td><input type='password' name='password'></td></tr>"
     page += "<tr><td><input type='submit' name='submit' value='Log In'></td>"
@@ -202,22 +233,53 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
   def show_status(self):
     global master
 
-    page = "<table id='vertical' class='darkTable'>"
-    page += "<thead>"
-    page += "<tr><th>Amps to share across all TWCs:</th></tr>"
-    page += "<tr><th>Current Generation</th></tr>"
-    page += "<tr><th>Current Consumption</th></tr>"
-    page += "<tr><th>Current Charger Load</th></tr>"
-    page += "<tr><th>Number of Cars Charging</th></tr>"
-    page += "</thead>"
-    page += "<tbody>"
-    page += "<tr><td>" + str(master.getMaxAmpsToDivideAmongSlaves()) + "</td></tr>"
-    page += "<tr><td>" + str(master.getGeneration()) + "</td></tr>"
-    page += "<tr><td>" + str(master.getConsumption()) + "</td></tr>"
-    page += "<tr><td>" + str(master.getChargerLoad()) + "</td></tr>"
-    page += "<tr><td>" + str(master.num_cars_charging_now()) + "</td></tr>"
-    page += "</tbody>"
-    page += "</table>"
+    page = "<table width = '100%'><tr width = '100%'><td width='30%'>"
+    page += "<table class='table table-dark' width='50%'>"
+    page += "<tr><th>Amps to share across all TWCs:</th>"
+    page += "<td>" + str(master.getMaxAmpsToDivideAmongSlaves()) + "</td>"
+    page += "<td>amps</td></tr>"
+
+    page += "<tr><th>Current Generation</th>"
+    page += "<td>" + str(master.getGeneration()) + "</td>"
+    page += "<td>watts</td>"
+    genamps = 0
+    if (master.getGeneration()):
+      genamps = (master.getGeneration()/240)
+    page += "<td>" + str(genamps)+"</td><td>amps</td></tr>"
+
+    page += "<tr><th>Current Consumption</th>"
+    page += "<td>" + str(master.getConsumption()) + "</td>"
+    page += "<td>watts</td>"
+    conamps = 0
+    if (master.getConsumption()):
+      conamps = (master.getConsumption()/240)
+    page += "<td>" + str(conamps)+"</td><td>amps</td></tr>"
+
+    page += "<tr><th>Current Charger Load</th>"
+    page += "<td>" + str(master.getChargerLoad()) + "</td>"
+    page += "<td>watts</td>"
+    page += "</tr>"
+
+    page += "<tr><th>Number of Cars Charging</th>"
+    page += "<td>" + str(master.num_cars_charging_now()) + "</td>"
+    page += "<td>cars</td></tr></table></td>"
+
+    page += "<td>"
+    page += "<table class='table table-dark' width='50%'>"
+    page += "<tr><th>Scheduled Charging Amps</th>"
+    page += "<td>" + str(master.getScheduledAmpsMax()) + "</td></tr>"
+
+    page += "<tr><th>Scheduled Charging Start Hour</th>"
+    page += "<td>" + str(master.getScheduledAmpsStartHour()) + "</td></tr>"
+
+    page += "<tr><th>Scheduled Charging End Hour</th>"
+    page += "<td>" + str(master.getScheduledAmpsEndHour()) + "</td>"
+    page += "</tr>"
+
+    page += "<tr><th>Resume Tracking Green Energy at</th>"
+    page += "<td>" + str(master.getHourResumeTrackGreenEnergy()) + "</td>"
+    page += "</tr>"
+    page += "</table></td></tr></table>"
     return page
 
   def show_twcs(self):

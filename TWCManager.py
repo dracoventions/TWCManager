@@ -110,9 +110,7 @@ def time_now():
         ".%f" if config['config']['displayMilliseconds'] else "")))
 
 def load_settings():
-    global config, scheduledAmpsStartHour, scheduledAmpsEndHour, \
-           scheduledAmpsDaysBitmap, hourResumeTrackGreenEnergy, kWhDelivered, \
-           carapi, homeLat, homeLon
+    global config, scheduledAmpsDaysBitmap, kWhDelivered, carapi, homeLat, homeLon
 
     try:
         fh = open(config['config']['settingsPath'] + "/TWCManager.settings", 'r')
@@ -134,16 +132,16 @@ def load_settings():
 
             m = re.search(r'^\s*scheduledAmpsStartHour\s*=\s*([-0-9.]+)', line, re.MULTILINE)
             if(m):
-                scheduledAmpsStartHour = float(m.group(1))
+                master.setScheduledAmpsStartHour(float(m.group(1)))
                 if(config['config']['debugLevel'] >= 10):
-                    print("load_settings: scheduledAmpsStartHour set to " + str(scheduledAmpsStartHour))
+                    print("load_settings: scheduledAmpsStartHour set to " + str(m.group(1)))
                 continue
 
             m = re.search(r'^\s*scheduledAmpsEndHour\s*=\s*([-0-9.]+)', line, re.MULTILINE)
             if(m):
-                scheduledAmpsEndHour = float(m.group(1))
+                master.setScheduledAmpsEndHour(float(m.group(1)))
                 if(config['config']['debugLevel'] >= 10):
-                    print("load_settings: scheduledAmpsEndHour set to " + str(scheduledAmpsEndHour))
+                    print("load_settings: scheduledAmpsEndHour set to " + str(m.group(1)))
                 continue
 
             m = re.search(r'^\s*scheduledAmpsDaysBitmap\s*=\s*([-0-9.]+)', line, re.MULTILINE)
@@ -155,9 +153,9 @@ def load_settings():
 
             m = re.search(r'^\s*hourResumeTrackGreenEnergy\s*=\s*([-0-9.]+)', line, re.MULTILINE)
             if(m):
-                hourResumeTrackGreenEnergy = float(m.group(1))
+                master.setHourResumeTrackGreenEnergy(float(m.group(1)))
                 if(config['config']['debugLevel'] >= 10):
-                    print("load_settings: hourResumeTrackGreenEnergy set to " + str(hourResumeTrackGreenEnergy))
+                    print("load_settings: hourResumeTrackGreenEnergy set to " + str(m.group(1)))
                 continue
 
             m = re.search(r'^\s*kWhDelivered\s*=\s*([-0-9.]+)', line, re.MULTILINE)
@@ -210,17 +208,15 @@ def load_settings():
         pass
 
 def save_settings():
-    global config, scheduledAmpsStartHour, scheduledAmpsEndHour, \
-           scheduledAmpsDaysBitmap, hourResumeTrackGreenEnergy, kWhDelivered, \
-           carapi, homeLat, homeLon
+    global config, scheduledAmpsDaysBitmap, kWhDelivered, carapi, homeLat, homeLon
 
     fh = open(config['config']['settingsPath'] + "/TWCManager.settings", 'w')
     fh.write('nonScheduledAmpsMax=' + str(master.getNonScheduledAmpsMax()) +
             '\nscheduledAmpsMax=' + str(master.getScheduledAmpsMax()) +
-            '\nscheduledAmpsStartHour=' + str(scheduledAmpsStartHour) +
-            '\nscheduledAmpsEndHour=' + str(scheduledAmpsEndHour) +
+            '\nscheduledAmpsStartHour=' + str(master.getScheduledAmpsStartHour()) +
+            '\nscheduledAmpsEndHour=' + str(master.getScheduledAmpsEndHour()) +
             '\nscheduledAmpsDaysBitmap=' + str(scheduledAmpsDaysBitmap) +
-            '\nhourResumeTrackGreenEnergy=' + str(hourResumeTrackGreenEnergy) +
+            '\nhourResumeTrackGreenEnergy=' + str(master.getHourResumeTrackGreenEnergy()) +
             '\nkWhDelivered=' + str(kWhDelivered) +
             '\ncarApiBearerToken=' + str(carapi.getCarApiBearerToken()) +
             '\ncarApiRefreshToken=' + str(carapi.getCarApiRefreshToken()) +
@@ -907,11 +903,8 @@ msgRxCount = 0
 
 idxSlaveToSendNextHeartbeat = 0
 
-scheduledAmpsStartHour = -1
-scheduledAmpsEndHour = -1
 scheduledAmpsDaysBitmap = 0x7F
 
-hourResumeTrackGreenEnergy = -1
 kWhDelivered = 119
 timeLastkWhDelivered = time.time()
 timeLastkWhSaved = time.time()
@@ -1136,13 +1129,13 @@ while True:
                         '`' + "%.2f" % (master.getChargeNowAmps()) +
                         '`' + str(master.getNonScheduledAmpsMax()) +
                         '`' + str(master.getScheduledAmpsMax()) +
-                        '`' + "%02d:%02d" % (int(scheduledAmpsStartHour),
-                                             int((scheduledAmpsStartHour % 1) * 60)) +
-                        '`' + "%02d:%02d" % (int(scheduledAmpsEndHour),
-                                             int((scheduledAmpsEndHour % 1) * 60)) +
+                        '`' + "%02d:%02d" % (int(master.getScheduledAmpsStartHour()),
+                                             int((master.getScheduledAmpsStartHour() % 1) * 60)) +
+                        '`' + "%02d:%02d" % (int(master.getScheduledAmpsEndHour()),
+                                             int((master.getScheduledAmpsEndHour() % 1) * 60)) +
                         '`' + str(scheduledAmpsDaysBitmap) +
-                        '`' + "%02d:%02d" % (int(hourResumeTrackGreenEnergy),
-                                             int((hourResumeTrackGreenEnergy % 1) * 60)) +
+                        '`' + "%02d:%02d" % (int(master.getHourResumeTrackGreenEnergy()),
+                                             int((master.getHourResumeTrackGreenEnergy() % 1) * 60)) +
                         # Send 1 if we need an email/password entered for car api, otherwise send 0
                         '`' + ('1' if needCarApiBearerToken else '0') +
                         '`' + str(master.countSlaveTWC())
@@ -1171,14 +1164,14 @@ while True:
                                   webMsg[17:len(webMsg)], re.MULTILINE)
                     if(m):
                         master.setScheduledAmpsMax(int(m.group(1)))
-                        scheduledAmpsStartHour = int(m.group(2)) + (int(m.group(3)) / 60)
-                        scheduledAmpsEndHour = int(m.group(4)) + (int(m.group(5)) / 60)
+                        master.setScheduledAmpsStartHour(int(m.group(2)) + (int(m.group(3)) / 60))
+                        master.setScheduledAmpsEndHour(int(m.group(4)) + (int(m.group(5)) / 60))
                         scheduledAmpsDaysBitmap = int(m.group(6))
                         save_settings()
                 elif(webMsg[0:30] == b'setResumeTrackGreenEnergyTime='):
                     m = re.search(b'([-0-9]+):([0-9]+)', webMsg[30:len(webMsg)], re.MULTILINE)
                     if(m):
-                        hourResumeTrackGreenEnergy = int(m.group(1)) + (int(m.group(2)) / 60)
+                        master.setHourResumeTrackGreenEnergy(int(m.group(1)) + (int(m.group(2)) / 60))
                         save_settings()
                 elif(webMsg[0:11] == b'sendTWCMsg='):
                     m = re.search(b'([0-9a-fA-F]+)', webMsg[11:len(webMsg)], re.MULTILINE)

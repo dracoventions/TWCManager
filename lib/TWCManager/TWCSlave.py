@@ -429,8 +429,8 @@ class TWCSlave:
             yesterday += 7
 
         # Check if it's time to resume tracking green energy.
-        if(self.master.getNonScheduledAmpsMax() != -1 and hourResumeTrackGreenEnergy > -1
-           and hourResumeTrackGreenEnergy == hourNow):
+        if(self.master.getNonScheduledAmpsMax() != -1 and self.master.getHourResumeTrackGreenEnergy() > -1
+           and self.master.getHourResumeTrackGreenEnergy() == hourNow):
             self.master.setNonScheduledAmpsMax(-1)
             save_settings()
 
@@ -438,8 +438,8 @@ class TWCSlave:
         # of nonScheduledAmpsMax
         blnUseScheduledAmps = 0
         if(self.master.getScheduledAmpsMax() > 0 and scheduledAmpsStartHour > -1
-             and scheduledAmpsEndHour > -1 and scheduledAmpsDaysBitmap > 0):
-            if(scheduledAmpsStartHour > scheduledAmpsEndHour):
+             and self.master.getScheduledAmpsEndHour() > -1 and scheduledAmpsDaysBitmap > 0):
+            if(scheduledAmpsStartHour > self.master.getScheduledAmpsEndHour()):
                 # We have a time like 8am to 7am which we must interpret as the
                 # 23-hour period after 8am or before 7am. Since this case always
                 # crosses midnight, we only ensure that scheduledAmpsDaysBitmap
@@ -448,12 +448,12 @@ class TWCSlave:
                 # 7am, we apply scheduledAmpsMax from Monday at 8am to Monday at
                 # 11:59pm, and on Tuesday at 12am to Tuesday at 6:59am.
                 if((hourNow >= scheduledAmpsStartHour and (scheduledAmpsDaysBitmap & (1 << ltNow.tm_wday)))
-                     or (hourNow < scheduledAmpsEndHour and (scheduledAmpsDaysBitmap & (1 << yesterday)))):
+                     or (hourNow < self.master.getScheduledAmpsEndHour() and (scheduledAmpsDaysBitmap & (1 << yesterday)))):
                    blnUseScheduledAmps = 1
             else:
                 # We have a time like 7am to 8am which we must interpret as the
                 # 1-hour period between 7am and 8am.
-                if(hourNow >= scheduledAmpsStartHour and hourNow < scheduledAmpsEndHour
+                if(hourNow >= scheduledAmpsStartHour and hourNow < self.master.getScheduledAmpsEndHour()
                    and (scheduledAmpsDaysBitmap & (1 << ltNow.tm_wday))):
                    blnUseScheduledAmps = 1
 

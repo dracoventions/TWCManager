@@ -19,12 +19,15 @@ class TWCMaster:
   consumptionValues   = {}
   generationValues    = {}
   hassstatus          = None
+  hourResumeTrackGreenEnergy = -1
   masterTWCID         = ''
   maxAmpsToDivideAmongSlaves = 0
   mqttstatus          = None
   nonScheduledAmpsMax = -1
   overrideMasterHeartbeatData = b''
   scheduledAmpsMax    = -1
+  scheduledAmpsStartHour = -1
+  scheduledAmpsEndHour = -1
   ser                 = None
   slaveTWCs           = {}
   slaveTWCRoundRobin  = []
@@ -89,6 +92,9 @@ class TWCMaster:
   def getChargeNowAmps(self):
     return (self.chargeNowAmps)
 
+  def getHourResumeTrackGreenEnergy(self):
+    return self.hourResumeTrackGreenEnergy
+
   def getMasterTWCID(self):
     # This is called when TWCManager is in Slave mode, to track the
     # master's TWCID
@@ -108,6 +114,12 @@ class TWCMaster:
 
   def getScheduledAmpsMax(self):
     return self.scheduledAmpsMax
+
+  def getScheduledAmpsStartHour(self):
+    return self.scheduledAmpsStartHour
+
+  def getScheduledAmpsEndHour(self):
+    return self.scheduledAmpsEndHour
 
   def getSlaveSign(self):
     return self.slaveSign
@@ -452,6 +464,9 @@ class TWCMaster:
     # Stores the hassstatus object
     self.hassstatus = hass
 
+  def setHourResumeTrackGreenEnergy(self, hour):
+    self.hourResumeTrackGreenEnergy = hour
+
   def setMasterTWCID(self, twcid):
     # This is called when TWCManager is in Slave mode, to track the
     # master's TWCID
@@ -499,6 +514,12 @@ class TWCMaster:
 
   def setScheduledAmpsMax(self, amps):
     self.scheduledAmpsMax = amps
+
+  def setScheduledAmpsStartHour(self, hour):
+    self.scheduledAmpsStartHour = hour
+
+  def setScheduledAmpsEndHour(self, hour):
+    self.scheduledAmpsEndHour = hour
 
   def setSpikeAmps(self, amps):
     self.spikeAmpsToCancel6ALimit = amps
