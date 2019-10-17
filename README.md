@@ -25,6 +25,7 @@ EMS Interfaces read solar generation and/or consumption values from an external 
 
 | Platform         | Status        | Details                 |
 | ---------------- | ------------- | ----------------------- |
+| Dutch SmartMeter | In Development | Supports DSMR Serial Protocol |
 | Fronius Inverter | Available v1.1.0 | Allows fetching generation and consumption from Fronius Inverter API |
 | HomeAssistant    | Available v1.0.1 | Allows fetching generation and consumption from HomeAssistant sensors |
 | Tesla Powerwall2 | Available v1.1.3 | Support for fetching Consumption and Generation from Tesla Powerwall 2 |
