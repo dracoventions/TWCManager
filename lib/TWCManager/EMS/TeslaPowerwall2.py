@@ -13,8 +13,9 @@ class TeslaPowerwall2:
   importW     = 0
   exportW     = 0
   lastFetch   = 0
+  password    = None
   serverIP    = None
-  serverPort  = 80
+  serverPort  = 443
   status      = False
   timeout     = 10
   voltage     = 0
@@ -23,7 +24,8 @@ class TeslaPowerwall2:
     self.debugLevel  = debugLevel
     self.status      = config.get('enabled', False)
     self.serverIP    = config.get('serverIP', None)
-    self.serverPort  = config.get('serverPort','80')
+    self.serverPort  = config.get('serverPort','443')
+    self.password    = config.get('password', None)
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
@@ -38,8 +40,8 @@ class TeslaPowerwall2:
     # Perform updates if necessary
     self.update()
 
-    # I don't believe this is implemented
-    return float(0)
+    # Return consumption value
+    return float(self.consumedW)
 
   def getGeneration(self):
 
@@ -53,13 +55,16 @@ class TeslaPowerwall2:
     # Return generation value
     return float(self.generatedW)
 
-  def getTEDValue(self, url):
+  def getPWValues(self):
 
-    # Fetch the specified URL from TED and return the data
+    # Fetch the specified URL from Powerwall and return the data
     self.fetchFailed = False
 
+    url = "https://" + self.serverIP + ":" + self.serverPort
+    url += "/api/meters/aggregates"
+
     try:
-        r = self.requests.get(url, timeout=self.timeout)
+        r = self.requests.get(url, timeout=self.timeout, verify=False)
     except self.requests.exceptions.ConnectionError as e:
         self.debugLog(4, "Error connecting to Tesla Powerwall 2 to fetch solar data")
         self.debugLog(10, str(e))
@@ -67,26 +72,21 @@ class TeslaPowerwall2:
         return False
 
     r.raise_for_status()
-    return r
+    return r.json()
 
   def update(self):
 
     if ((int(self.time.time()) - self.lastFetch) > self.cacheTime):
       # Cache has expired. Fetch values from Powerwall.
 
-      url = "http://" + self.serverIP + ":" + self.serverPort
-      url = url + "/history/export.csv?T=1&D=0&M=1&C=1"
+      value = self.getPWValues()
 
-      value = self.getTEDValue(url)
-      m = None
       if (value):
-        m = self.re.search(b'^Solar,[^,]+,-?([^, ]+),', value, self.re.MULTILINE)
+        self.generatedW = float(value['solar']['instant_power'])
+        self.consumedW = float(value['load']['instant_power'])
       else:
-        self.debugLog(5, "Failed to find value in response from TED")
+        # Fetch failed to obtain values
         self.fetchFailed = True
-
-      if(m):
-        self.generatedW = int(float(m.group(1)) * 1000)
 
       # Update last fetch time
       if (self.fetchFailed is not True):

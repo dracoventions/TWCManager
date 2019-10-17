@@ -867,6 +867,8 @@ def check_green_energy():
     master.setGeneration('Fronius', fronius.getGeneration())
     master.setConsumption('HomeAssistant', hass.getConsumption())
     master.setGeneration('HomeAssistant', hass.getGeneration())
+    master.setConsumption('Powerwall2', powerwall.getConsumption())
+    master.setGeneration('Powerwall2', powerwall.getGeneration())
     master.setGeneration('TED', ted.getGeneration())
 
     master.setMaxAmpsToGreenEnergyTrack()
@@ -946,6 +948,7 @@ fronius = Fronius(config['config']['debugLevel'], config['sources']['Fronius'])
 hass = HASS(config['config']['debugLevel'], config['sources']['HASS'])
 master.sethassstatus(HASSStatus(config['config']['debugLevel'],config['status']['HASS']))
 master.setmqttstatus(MQTTStatus(config['config']['debugLevel'],config['status']['MQTT']))
+powerwall = TeslaPowerwall2(config['config']['debugLevel'], config['sources']['Powerwall2'])
 ted = TED(config['config']['debugLevel'], config['sources']['TED'])
 
 load_settings()
