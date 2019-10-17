@@ -30,6 +30,7 @@ class TWCMaster:
   slaveTWCRoundRobin  = []
   spikeAmpsToCancel6ALimit = 16
   subtractChargerLoad = False
+  teslaLoginAskLater  = False
   timeLastTx          = 0
   TWCID               = None
 

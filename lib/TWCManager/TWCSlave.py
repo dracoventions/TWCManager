@@ -349,7 +349,6 @@ class TWCSlave:
         #                          telling slaves to limit power to 07 d0
         #                          (20.00A). 01 byte indicates Master is plugged
         #                          in to a car.)
-        global timeLastTx
 
         if(len(self.master.getMasterHeartbeatOverride()) >= 7):
             self.masterHeartbeatData = self.master.getMasterHeartbeatOverride()

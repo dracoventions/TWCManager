@@ -940,7 +940,7 @@ homeLon = 10000
 # Instantiate necessary classes
 carapi = CarApi(config)
 master = TWCMaster(fakeTWCID, config, carapi)
-httpcontrol = HTTPControl()
+httpcontrol = HTTPControl(master)
 mqttcontrol = MQTTControl(config['config']['debugLevel'], config['control']['MQTT'], master)
 fronius = Fronius(config['config']['debugLevel'], config['sources']['Fronius'])
 hass = HASS(config['config']['debugLevel'], config['sources']['HASS'])

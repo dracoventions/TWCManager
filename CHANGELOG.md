@@ -16,6 +16,7 @@ ture improvements.
      * Untested: Web IPC interface
      * TODO: Clean up globals in TWCSlave
      * TODO: Look at globals in TWCManager
+     * TODO: Fix bug - need to subtract charger load from consumption in regular status message IF option is enabled
   * WILL I FINISH: Powerwall 2
 
 ## v1.1.2 - 2019-10-14
