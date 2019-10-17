@@ -5,6 +5,7 @@ This document shows the changes per release
 ## v1.1.4 - Current Dev Branch
 
   * TODO: Some doco around module configuration
+  * TODO: DSMR from https://github.com/dschutterop/dsmr
 
 ## v1.1.3 - 2019-10-17
 
@@ -21,6 +22,7 @@ ture improvements.
      * Untested: TM as Master, Charge Now
      * Untested: Web IPC interface
      * TODO: Clean up globals in TWCSlave
+       * All that is left is the TM as Slave change above
      * TODO: Look at globals in TWCManager
      * TODO: Fix bug - need to subtract charger load from consumption in regular status message IF option is enabled
 

@@ -109,7 +109,7 @@ class TWCSlave:
             # but I may as well leave this here just in case.
             if(len(heartbeatData) != (7 if self.protocolVersion == 1 else 9)):
                 print(self.master.time_now() + ': Error in print_status displaying heartbeatData',
-                      heartbeatData, 'based on msg', hex_str(msg))
+                      heartbeatData, 'based on msg', self.master.hex_str(msg))
             if(len(self.masterHeartbeatData) != (7 if self.protocolVersion == 1 else 9)):
                 print(self.master.time_now() + ': Error in print_status displaying masterHeartbeatData', self.masterHeartbeatData)
 
@@ -466,7 +466,7 @@ class TWCSlave:
             # We're still in the one-day period where we want to charge at
             # chargeNowAmps, ignoring all other charging criteria.
             self.master.setMaxAmpsToChargeNowAmps()
-            debugLog(10, 'Charge at chargeNowAmps %.2f' % (chargeNowAmps))
+            self.debugLog(10, 'Charge at chargeNowAmps %.2f' % (chargeNowAmps))
         elif(blnUseScheduledAmps):
             # We're within the scheduled hours that we need to provide a set
             # number of amps.
@@ -506,8 +506,7 @@ class TWCSlave:
             if(desiredAmpsOffered > fairShareAmps):
                 desiredAmpsOffered = fairShareAmps
 
-            if(self.config['config']['debugLevel'] >= 10):
-                print("desiredAmpsOffered TWC: " + hex_str(self.TWCID) + " reduced from " + str(self.master.getMaxAmpsToDivideAmongSlaves())
+            self.debugLog(10, "desiredAmpsOffered TWC: " + self.master.hex_str(self.TWCID) + " reduced from " + str(self.master.getMaxAmpsToDivideAmongSlaves())
                   + " to " + str(desiredAmpsOffered)
                   + " with " + str(numCarsCharging)
                   + " cars charging.")
@@ -517,8 +516,7 @@ class TWCSlave:
             minAmpsToOffer = self.minAmpsTWCSupports
 
         if(desiredAmpsOffered < minAmpsToOffer):
-          if(self.config['config']['debugLevel'] >= 10):
-            print("desiredAmpsOffered (" + str(desiredAmpsOffered) + ") < minAmpsToOffer:" + str(minAmpsToOffer))
+          self.debugLog(10, "desiredAmpsOffered (" + str(desiredAmpsOffered) + ") < minAmpsToOffer:" + str(minAmpsToOffer))
           if(numCarsCharging > 0):
             if(self.master.getMaxAmpsToDivideAmongSlaves() / numCarsCharging > minAmpsToOffer):
                 # There is enough power available to give each car
@@ -538,8 +536,7 @@ class TWCSlave:
                 # wiringMaxAmpsAllTWCs for a few seconds, but I don't think
                 # exceeding by up to minAmpsTWCSupports for such a short period
                 # of time will cause problems.
-                if(self.config['config']['debugLevel'] >= 10):
-                    print("desiredAmpsOffered TWC: " + hex_str(self.TWCID) + " increased from " + str(desiredAmpsOffered)
+                self.debugLog(10, "desiredAmpsOffered TWC: " + self.master.hex_str(self.TWCID) + " increased from " + str(desiredAmpsOffered)
                           + " to " + str(self.minAmpsTWCSupports)
                           + " (self.minAmpsTWCSupports)")
                 desiredAmpsOffered = self.minAmpsTWCSupports
@@ -572,8 +569,7 @@ class TWCSlave:
                 # also wakes it) and next time it wakes, it will see there's power
                 # and start charging. Without energy saver mode, the car should
                 # begin charging within about 10 seconds of changing this value.
-                if(self.config['config']['debugLevel'] >= 10):
-                    print("desiredAmpsOffered TWC: " + hex_str(self.TWCID) + " reduced to 0 from " + str(desiredAmpsOffered)
+                self.debugLog(10, "desiredAmpsOffered TWC: " + self.master.hex_str(self.TWCID) + " reduced to 0 from " + str(desiredAmpsOffered)
                           + " because maxAmpsToDivideAmongSlaves "
                           + str(self.master.getMaxAmpsToDivideAmongSlaves())
                           + " / numCarsCharging " + str(numCarsCharging)
@@ -642,8 +638,7 @@ class TWCSlave:
                     # unplugged, the charge port will turn green and start charging
                     # for a minute. This lets the owner quickly see that TWCManager
                     # is working properly each time they return home and plug in.
-                    if(self.config['config']['debugLevel'] >= 10):
-                        print("Don't stop charging TWC: " + hex_str(self.TWCID) + " yet because: " +
+                    self.debugLog(10, "Don't stop charging TWC: " + self.master.hex_str(self.TWCID) + " yet because: " +
                               'time - self.timeLastAmpsOfferedChanged ' +
                               str(int(now - self.timeLastAmpsOfferedChanged)) +
                               ' < 60 or time - self.timeReportedAmpsActualChangedSignificantly ' +
@@ -668,8 +663,7 @@ class TWCSlave:
                 # Keep charger off for at least 60 seconds before turning back
                 # on. See reasoning above where I don't turn the charger off
                 # till it's been on at least 60 seconds.
-                if(self.config['config']['debugLevel'] >= 10):
-                    print("Don't start charging TWC: " + hex_str(self.TWCID) + " yet because: " +
+                self.debugLog(10, "Don't start charging TWC: " + self.master.hex_str(self.TWCID) + " yet because: " +
                           'self.lastAmpsOffered ' +
                           str(self.lastAmpsOffered) + " == 0 " +
                           'and time - self.timeLastAmpsOfferedChanged ' +
@@ -694,8 +688,7 @@ class TWCSlave:
                 # spikeAmpsToCancel6ALimit of power draw. In fact, the car is
                 # slow enough to respond that even with 10s at 21A the most I've
                 # seen it actually draw starting at 6A is 13A.
-                if(self.config['config']['debugLevel'] >= 10):
-                    print('TWCID=' + hex_str(self.TWCID) +
+                self.debugLog(10, 'TWCID=' + self.master.hex_str(self.TWCID) +
                           ' desiredAmpsOffered=' + str(desiredAmpsOffered) +
                           ' spikeAmpsToCancel6ALimit=' + str(self.master.getSpikeAmps()) +
                           ' self.lastAmpsOffered=' + str(self.lastAmpsOffered) +
@@ -755,8 +748,7 @@ class TWCSlave:
                         # spikeAmpsToCancel6ALimit as the first value it saw.
                         # The car limited itself to 6A indefinitely. In this
                         # case, the fix is to offer it lower amps.
-                        if(self.config['config']['debugLevel'] >= 1):
-                            print(self.master.time_now() + ': Car stuck when offered spikeAmpsToCancel6ALimit.  Offering 2 less.')
+                        self.debugLog(1, self.master.time_now() + ': Car stuck when offered spikeAmpsToCancel6ALimit.  Offering 2 less.')
                         desiredAmpsOffered = (self.master.getSpikeAmps() - 2.0)
                     elif(now - self.timeLastAmpsOfferedChanged > 5):
                         # self.lastAmpsOffered hasn't gotten the car to draw
@@ -780,8 +772,7 @@ class TWCSlave:
                     # limits more often than every 5 seconds. This has the side
                     # effect of holding spikeAmpsToCancel6ALimit set earlier for
                     # 5 seconds to make sure the car sees it.
-                    if(self.config['config']['debugLevel'] >= 10):
-                        print('Reduce amps: time - self.timeLastAmpsOfferedChanged ' +
+                    self.debugLog(10, 'Reduce amps: time - self.timeLastAmpsOfferedChanged ' +
                             str(int(now - self.timeLastAmpsOfferedChanged)))
                     if(now - self.timeLastAmpsOfferedChanged < 5):
                         desiredAmpsOffered = self.lastAmpsOffered
@@ -833,8 +824,7 @@ class TWCSlave:
     def set_last_amps_offered(self, desiredAmpsOffered):
         # self.lastAmpsOffered should only be changed using this sub.
 
-        if(self.config['config']['debugLevel'] >= 10):
-            print("set_last_amps_offered(TWCID=" + hex_str(self.TWCID) +
+        self.debugLog(10, "set_last_amps_offered(TWCID=" + self.master.hex_str(self.TWCID) +
                   ", desiredAmpsOffered=" + str(desiredAmpsOffered) + ")")
 
         if(desiredAmpsOffered != self.lastAmpsOffered):
@@ -868,8 +858,7 @@ class TWCSlave:
                 # when two 80A TWCs share a 125A line.  Therefore, don't print
                 # an error.
                 self.lastAmpsOffered = self.wiringMaxAmps
-                if(self.config['config']['debugLevel'] >= 10):
-                    print("Offering slave TWC %02X%02X %.1fA instead of " \
+                self.debugLog(10, "Offering slave TWC %02X%02X %.1fA instead of " \
                         "%.1fA to avoid overloading the TWC rated at %.1fA." % (
                         self.TWCID[0], self.TWCID[1], self.lastAmpsOffered,
                         desiredAmpsOffered, self.wiringMaxAmps))

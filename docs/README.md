@@ -6,6 +6,23 @@ Please see the [Installation Guide](InstallationGuide.md) for detailed informati
 
 ## Software Installation
 
+### Install Packages (Debian/Ubuntu/Raspbian)
+```
+sudo apt-get update
+sudo apt-get install -y lighttpd php7.0-cgi screen git python3-pip
+```
+
+### Default to Python3
+
+You may need to set python3 as your default python interpreter version on Debian/Ubuntu. The following command will set python 3.5 as your default interpreter. 
+
+```
+sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
+sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.5 2
+```
+
+You can check that this command has been successful by running ```python --version``` and checking that the version is python3.
+
 ### Install necessary python modules
 ```
 pip3 install commentjson paho-mqtt pyserial sysv_ipc
@@ -15,7 +32,7 @@ pip3 install commentjson paho-mqtt pyserial sysv_ipc
 ```
 git clone https://github.com/ngardiner/TWCManager
 cd TWCManager
-git checkout v1.0.2
+git checkout v1.1.3
 make install
 ```
 

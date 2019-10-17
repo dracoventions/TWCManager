@@ -1,5 +1,6 @@
 install:
 
+	sudo apt-get update
 	sudo apt-get install -y lighttpd php7.0-cgi screen git python3-pip
 	pip3 install pyserial
 	pip3 install sysv_ipc

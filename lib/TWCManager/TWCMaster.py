@@ -223,6 +223,12 @@ class TWCMaster:
     self.mqttstatus.setStatus(bytes("all", 'UTF-8'), "totalAmpsInUse", totalAmps)
     return totalAmps
 
+  def hex_str(self, s:str):
+    return " ".join("{:02X}".format(ord(c)) for c in s)
+
+  def hex_str(self, ba:bytearray):
+    return " ".join("{:02X}".format(c) for c in ba)
+
   def master_id_conflict():
     # We're playing fake slave, and we got a message from a master with our TWCID.
     # By convention, as a slave we must change our TWCID because a master will not.
@@ -252,7 +258,7 @@ class TWCMaster:
 
     if(self.countSlaveTWC() > 3):
         print("WARNING: More than 3 slave TWCs seen on network.  " \
-            "Dropping oldest: " + hex_str(self.getSlaveTWCID(0)) + ".")
+            "Dropping oldest: " + self.hex_str(self.getSlaveTWCID(0)) + ".")
         self.deleteSlaveTWC(self.getSlaveTWCID(0))
 
     return slaveTWC
@@ -404,7 +410,7 @@ class TWCMaster:
     msg = bytearray(b'\xc0' + msg + b'\xc0')
 
     if(self.config['config']['debugLevel'] >= 9):
-        print("Tx@" + self.time_now() + ": " + hex_str(msg))
+        print("Tx@" + self.time_now() + ": " + self.hex_str(msg))
 
     self.ser.write(msg)
 
