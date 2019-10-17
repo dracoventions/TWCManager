@@ -2,22 +2,28 @@
 
 This document shows the changes per release
 
-## v1.1.3 - Current Dev Branch
+## v1.1.4 - Current Dev Branch
+
+  * TODO: Merge with v1.2.x and remove 1.2.x branches for re-merge
+  * TODO: Some doco around module configuration
+
+## v1.1.3 - 2019-10-17
 
   * Added new HTTP Control Module for (limited) in-built HTTP control of TWCManager.
+  * Added new Tesla Powerwall 2 EMS module for solar/consumption tracking.
   * Separation of Slave TWC code from Master TWC code - this adds stability by r
 emoving a large number of global variables and reduces complexity for future fea
 ture improvements.
      * Please Note: This is a major structural change to TWCManager, and is expected to take some time to fully test and validate. A benefit of this change is that now TWCSlave is modular, we can fully implement modular control interfaces.
      * Tested: TM as Master, tracking Green Energy
      * Untested: TM as Slave (low-pri)
+        * Will not work. There's some slave related comms that need to move from TWCManager to TWCMaster
      * Untested: TM as Master, Scheduled Charging
      * Untested: TM as Master, Charge Now
      * Untested: Web IPC interface
      * TODO: Clean up globals in TWCSlave
      * TODO: Look at globals in TWCManager
      * TODO: Fix bug - need to subtract charger load from consumption in regular status message IF option is enabled
-  * WILL I FINISH: Powerwall 2
 
 ## v1.1.2 - 2019-10-14
 
@@ -63,6 +69,5 @@ This module provides HomeAssistant sensor functionality to the TWCManager projec
   
 ### Future Changes
 
-  * Split TWCMaster class for code readability
   * Separate class for serial communications - so TWCMaster and TWCSlave don't both need to speak to the serial port directly
   * Modular serial interface - allow dummy module to be substituted for testing (along with above work)
