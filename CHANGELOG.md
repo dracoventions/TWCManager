@@ -4,7 +4,6 @@ This document shows the changes per release
 
 ## v1.1.4 - Current Dev Branch
 
-  * TODO: Merge with v1.2.x and remove 1.2.x branches for re-merge
   * TODO: Some doco around module configuration
 
 ## v1.1.3 - 2019-10-17

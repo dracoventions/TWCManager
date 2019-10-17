@@ -89,6 +89,12 @@ class HASS:
     else:
         return None
 
+  def setCacheTime(self, cacheTime):
+    self.cacheTime = cacheTime
+
+  def setTimeout(self, timeout):
+    self.timeout = timeout
+
   def update(self):
     # Update function - determine if an update is required
 
