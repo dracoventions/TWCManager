@@ -80,21 +80,32 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     page = """
       // Only refresh the main page if the browser window has focus, and if
       // the input form does not have focus
+      <script language = 'JavaScript'>
+      var formFocus = false;
       var hasFocus= true;
+
+      function formNoFocus() {
+        formFocus = false;
+      }
+
+      function formHasFocus() {
+        formFocus = true;
+      }
 
       window.onblur = function() {
         hasFocus = false;
       }
       window.onfocus = function(){
-        location.reload(true);
+        hasFocus = true;
       }
       setInterval(reload, 5*1000);
       function reload(){
-          if(hasFocus){
+          if(hasFocus && !formFocus){
               location.reload(true);
           }
       }
-    """
+      </script> """
+    return page
 
   def do_navbar(self):
     page = """
@@ -137,6 +148,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       page += "<meta name='viewport' content='width=device-width, initial-scale=1'>"
       page += "<link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css' integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'>"
       page += self.do_css()
+      page += self.do_jsrefresh()
       page += "</head>"
       page += "<body>"
       page += self.do_navbar()
@@ -180,8 +192,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     field_data = self.rfile.read(length)
     self.fields = urllib.parse.parse_qs(str(field_data))
 
-    print(self)
-
     if (url.path == '/tesla-login'):
       # User has submitted Tesla login.
       # Pass it to the dedicated process_teslalogin function
@@ -213,12 +223,9 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       self.send_header('Content-type','text/html')
       self.end_headers()
 
-      print(str(self.fields))
-      print(str(self.fields['email'][0]))
       ret = master.carapi.car_api_available(self.fields['email'][0],self.fields['password'][0])
       page = str(ret)
 
-      page += str(self.fields) + "<br>"
       self.wfile.write(page.encode("utf-8"))
       return
     else:
@@ -241,9 +248,9 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     page += "<p>"
     page += "<table>"
     page += "<tr><td>Tesla Account E-Mail:</td>"
-    page += "<td><input type='text' name='email' value=''></td></tr>"
+    page += "<td><input type='text' name='email' value='' onFocus='formHasFocus()' onBlur='formNoFocus()'></td></tr>"
     page += "<tr><td>Password:</td>"
-    page += "<td><input type='password' name='password'></td></tr>"
+    page += "<td><input type='password' name='password' onFocus='formHasFocus()' onBlur='formNoFocus()'></td></tr>"
     page += "<tr><td><input type='submit' name='submit' value='Log In'></td>"
     page += "<td><input type='submit' name='later' value='Ask Me Later'></td>"
     page += "</tr>"

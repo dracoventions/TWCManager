@@ -2,6 +2,7 @@ class CarApi:
 
   import json
   import re
+  import subprocess
   import time
 
   carApiLastErrorTime = 0
@@ -392,8 +393,8 @@ class CarApi:
   def run_process(self, cmd):
       result = None
       try:
-          result = subprocess.check_output(cmd, shell=True)
-      except subprocess.CalledProcessError:
+          result = self.subprocess.check_output(cmd, shell=True)
+      except self.subprocess.CalledProcessError:
           # We reach this point if the process returns a non-zero exit code.
           result = b''
 
