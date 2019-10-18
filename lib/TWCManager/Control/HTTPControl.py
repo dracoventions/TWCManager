@@ -76,12 +76,33 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     page += "</style>"
     return page
 
+  def do_jsrefresh(self):
+    page = """
+      // Only refresh the main page if the browser window has focus, and if
+      // the input form does not have focus
+      var hasFocus= true;
+
+      window.onblur = function() {
+        hasFocus = false;
+      }
+      window.onfocus = function(){
+        location.reload(true);
+      }
+      setInterval(reload, 5*1000);
+      function reload(){
+          if(hasFocus){
+              location.reload(true);
+          }
+      }
+    """
+
   def do_navbar(self):
     page = """
     <p>&nbsp;</p>
     <p>&nbsp;</p>
     <nav class='navbar fixed-top navbar-dark bg-dark' role='navigation'>
       <a class='navbar-brand' href='/'>TWCManager</a>
+      <link rel='icon' type='image/png' href='https://raw.githubusercontent.com/ngardiner/TWCManager/master/tree/v1.1.4/html/favicon.png'>
       <ul class="navbar-nav mr-auto">
         <li class="nav-item active">
           <a class="nav-link" href="#">Home</a>
@@ -113,7 +134,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       # Send the html message
       page = "<html><head>"
       page += "<title>TWCManager</title>"
-      page += "<meta http-equiv='refresh' content='5' />"
       page += "<meta name='viewport' content='width=device-width, initial-scale=1'>"
       page += "<link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css' integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'>"
       page += self.do_css()

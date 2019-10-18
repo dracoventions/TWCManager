@@ -389,6 +389,16 @@ class CarApi:
   def getCarApiVehicles(self):
     return self.carApiVehicles
 
+  def run_process(self, cmd):
+      result = None
+      try:
+          result = subprocess.check_output(cmd, shell=True)
+      except subprocess.CalledProcessError:
+          # We reach this point if the process returns a non-zero exit code.
+          result = b''
+
+      return result
+
   def setCarApiBearerToken(self, token=None):
     if token:
       self.carApiBearerToken = token
@@ -464,18 +474,8 @@ class CarApiVehicle:
             # was issued.  Times I've tested: 1:35, 1:57, 2:30
             return True
 
-        debugLog(8, ': Vehicle ' + str(self.ID) + " not ready because it wasn't woken in the last 2 minutes.")
+        debugLog(8, 'Vehicle ' + str(self.ID) + " not ready because it wasn't woken in the last 2 minutes.")
         return False
-
-    def run_process(self, cmd):
-        result = None
-        try:
-            result = subprocess.check_output(cmd, shell=True)
-        except subprocess.CalledProcessError:
-            # We reach this point if the process returns a non-zero exit code.
-            result = b''
-
-        return result
 
     def update_location(self):
         if(self.ready() == False):
