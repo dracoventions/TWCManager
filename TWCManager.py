@@ -110,7 +110,7 @@ def time_now():
         ".%f" if config['config']['displayMilliseconds'] else "")))
 
 def load_settings():
-    global config, scheduledAmpsDaysBitmap, carapi, homeLat, homeLon
+    global config, scheduledAmpsDaysBitmap, carapi
 
     try:
         fh = open(config['config']['settingsPath'] + "/TWCManager.settings", 'r')
@@ -158,20 +158,6 @@ def load_settings():
                     print("load_settings: hourResumeTrackGreenEnergy set to " + str(m.group(1)))
                 continue
 
-            m = re.search(r'^\s*homeLat\s*=\s*(.+)', line, re.MULTILINE)
-            if(m):
-                homeLat = float(m.group(1))
-                if(config['config']['debugLevel'] >= 10):
-                    print("load_settings: homeLat set to " + str(homeLat))
-                continue
-
-            m = re.search(r'^\s*homeLon\s*=\s*(.+)', line, re.MULTILINE)
-            if(m):
-                homeLon = float(m.group(1))
-                if(config['config']['debugLevel'] >= 10):
-                    print("load_settings: homeLon set to " + str(homeLon))
-                continue
-
             print(time_now() + ": load_settings: Unknown setting " + line)
 
         fh.close()
@@ -180,7 +166,7 @@ def load_settings():
         pass
 
 def save_settings():
-    global config, scheduledAmpsDaysBitmap, carapi, homeLat, homeLon
+    global config, scheduledAmpsDaysBitmap, carapi
 
     fh = open(config['config']['settingsPath'] + "/TWCManager.settings", 'w')
     fh.write('nonScheduledAmpsMax=' + str(master.getNonScheduledAmpsMax()) +
@@ -188,10 +174,7 @@ def save_settings():
             '\nscheduledAmpsStartHour=' + str(master.getScheduledAmpsStartHour()) +
             '\nscheduledAmpsEndHour=' + str(master.getScheduledAmpsEndHour()) +
             '\nscheduledAmpsDaysBitmap=' + str(scheduledAmpsDaysBitmap) +
-            '\nhourResumeTrackGreenEnergy=' + str(master.getHourResumeTrackGreenEnergy()) +
-            '\nhomeLat=' + str(homeLat) +
-            '\nhomeLon=' + str(homeLon)
-            )
+            '\nhourResumeTrackGreenEnergy=' + str(master.getHourResumeTrackGreenEnergy()))
 
     fh.close()
 
@@ -244,7 +227,7 @@ def unescape_msg(msg:bytearray, msgLen):
 def car_api_charge(charge):
     # Do not call this function directly.  Call by using background thread:
     # queue_background_task({'cmd':'charge', 'charge':<True/False>})
-    global carapi, homeLat, homeLon, config
+    global carapi, config
 
     now = time.time()
     apiResponseDict = {}
@@ -293,14 +276,14 @@ def car_api_charge(charge):
                 result = 'error'
                 continue
 
-            if(homeLat == 10000):
+            if(master.getHomeLatLon()[0] == 10000):
                 if(config['config']['debugLevel'] >= 1):
                     print(time_now() + ": Home location for vehicles has never been set.  " +
                         "We'll assume home is where we found the first vehicle currently parked.  " +
                         "Home set to lat=" + str(vehicle.lat) + ", lon=" +
                         str(vehicle.lon))
-                homeLat = vehicle.lat
-                homeLon = vehicle.lon
+                master.setHomeLat(vehicle.lat)
+                master.setHomeLon(vehicle.lon)
                 save_settings()
                 master.saveSettings()
 
@@ -318,8 +301,8 @@ def car_api_charge(charge):
             # also reports the car is not at its usual address.  I suspect this
             # is another case of a bug that's been causing car GPS to freeze  the
             # last couple months.
-            if(abs(homeLat - vehicle.lat) > 0.0289
-               or abs(homeLon - vehicle.lon) > 0.0289):
+            if(abs(master.getHomeLatLon()[0] - vehicle.lat) > 0.0289
+               or abs(master.getHomeLatLon()[1] - vehicle.lon) > 0.0289):
                 # Vehicle is not at home, so don't change its charge state.
                 if(config['config']['debugLevel'] >= 1):
                     print(time_now() + ': Vehicle ID ' + str(vehicle.ID) +
@@ -552,9 +535,6 @@ webMsgResult = 0
 
 timeTo0Aafter06 = 0
 timeToRaise2A = 0
-
-homeLat = 10000
-homeLon = 10000
 
 #
 # End global vars

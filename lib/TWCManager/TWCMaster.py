@@ -33,6 +33,8 @@ class TWCMaster:
   ser                 = None
   settings            = {}
   settings['chargeNowamps'] = 0
+  settings['homeLat']       = 10000
+  settings['homeLon']       = 10000
   settings['kWhDelivered']  = 119
   slaveTWCs           = {}
   slaveTWCRoundRobin  = []
@@ -196,6 +198,14 @@ class TWCMaster:
     if (generationOffset < 0):
       generationOffset = 0
     return float(generationOffset)
+
+  def getHomeLatLon(self):
+    # Returns Lat/Lon coordinates to check if car location is
+    # at home
+    latlon = []
+    latlon[0] = self.settings['homeLat']
+    latlon[1] = self.settings['homeLon']
+    return latlon
 
   def getMasterHeartbeatOverride(self):
     return self.overrideMasterHeartbeatData
@@ -516,6 +526,12 @@ class TWCMaster:
   def sethassstatus(self, hass):
     # Stores the hassstatus object
     self.hassstatus = hass
+
+  def setHomeLat(self, lat):
+    self.settings['homeLat'] = lat
+
+  def setHomeLon(self, lon):
+    self.settings['homeLon'] = lon
 
   def setHourResumeTrackGreenEnergy(self, hour):
     self.hourResumeTrackGreenEnergy = hour
