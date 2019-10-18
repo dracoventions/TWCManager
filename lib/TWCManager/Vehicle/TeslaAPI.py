@@ -1,5 +1,6 @@
 class CarApi:
 
+  import json
   import time
 
   carApiLastErrorTime = 0
@@ -35,7 +36,7 @@ class CarApi:
     return True
 
   def car_api_available(self, email = None, password = None, charge = None):
-    now = time.time()
+    now = self.time.time()
     apiResponseDict = {}
 
     if(now - self.getCarApiLastErrorTime() < (self.getCarApiErrorRetryMins()*60)):
@@ -66,14 +67,14 @@ class CarApi:
         if(self.getCarApiRefreshToken() != ''):
 
             cmd = 'curl -s -m 60 -X POST -H "accept: application/json" -H "Content-Type: application/json" -d \'' + \
-                  json.dumps({'grant_type': 'refresh_token', \
+                  self.json.dumps({'grant_type': 'refresh_token', \
                               'client_id': '81527cff06843c8634fdc09e8ac0abefb46ac849f38fe1e431c2ef2106796384', \
                               'client_secret': 'c7257eb71a564034f9419ee651c7d0e5f7aa6bfbd18bafb5c5c033b093bb2fa3', \
                               'refresh_token': self.getCarApiRefreshToken() }) + \
                   '\' "https://owner-api.teslamotors.com/oauth/token"'
         elif(email != None and password != None):
             cmd = 'curl -s -m 60 -X POST -H "accept: application/json" -H "Content-Type: application/json" -d \'' + \
-                  json.dumps({'grant_type': 'password', \
+                  self.json.dumps({'grant_type': 'password', \
                               'client_id': '81527cff06843c8634fdc09e8ac0abefb46ac849f38fe1e431c2ef2106796384', \
                               'client_secret': 'c7257eb71a564034f9419ee651c7d0e5f7aa6bfbd18bafb5c5c033b093bb2fa3', \
                               'email': email, 'password': password }) + \
@@ -89,12 +90,12 @@ class CarApi:
             # b'{"access_token":"4720d5f980c9969b0ca77ab39399b9103adb63ee832014fe299684201929380","token_type":"bearer","expires_in":3888000,"refresh_token":"110dd4455437ed351649391a3425b411755a213aa815171a2c6bfea8cc1253ae","created_at":1525232970}'
 
         try:
-            apiResponseDict = json.loads(apiResponse.decode('ascii'))
-        except json.decoder.JSONDecodeError:
+            apiResponseDict = self.json.loads(apiResponse.decode('ascii'))
+        except self.json.decoder.JSONDecodeError:
             pass
 
         try:
-            self.debugLog(4, 'Car API auth response', apiResponseDict, '\n')
+            self.debugLog(4, 'Car API auth response' + apiResponseDict)
             self.setCarApiBearerToken(apiResponseDict['access_token'])
             self.setCarApiRefreshToken(apiResponseDict['refresh_token'])
             self.setCarApiTokenExpireTime(now + apiResponseDict['expires_in'])
@@ -118,8 +119,8 @@ class CarApi:
                   '" "https://owner-api.teslamotors.com/api/1/vehicles"'
             self.debugLog(8, 'Car API cmd', cmd)
             try:
-                apiResponseDict = json.loads(run_process(cmd).decode('ascii'))
-            except json.decoder.JSONDecodeError:
+                apiResponseDict = self.json.loads(run_process(cmd).decode('ascii'))
+            except self.json.decoder.JSONDecodeError:
                 pass
 
             try:
@@ -172,8 +173,8 @@ class CarApi:
                 self.debugLog(8, 'Car API cmd', cmd)
 
                 try:
-                    apiResponseDict = json.loads(run_process(cmd).decode('ascii'))
-                except json.decoder.JSONDecodeError:
+                    apiResponseDict = self.json.loads(run_process(cmd).decode('ascii'))
+                except self.json.decoder.JSONDecodeError:
                     pass
 
                 state = 'error'
@@ -349,9 +350,13 @@ class CarApi:
         # quickly after we send wake_up.  I haven't seen a problem sending a
         # command immediately, but it seems safest to sleep 5 seconds after
         # waking before sending a command.
-        time.sleep(5);
+        self.time.sleep(5);
 
     return True
+
+  def debugLog(self, minlevel, message):
+    if (self.debugLevel >= minlevel):
+      print("TeslaAPI: (" + str(minlevel) + ") " + message)
 
   def getCarApiBearerToken(self):
     return self.carApiBearerToken
@@ -437,7 +442,7 @@ class CarApiVehicle:
 
     def debugLog(self, minlevel, message):
       if (self.debugLevel >= minlevel):
-        print("TeslaAPI: (" + str(minlevel) + ") " + message)
+        print("TeslaAPIVehicle: (" + str(minlevel) + ") " + message)
 
     def ready(self):
         if(self.time.time() - self.lastErrorTime < (self.carApiErrorRetryMins*60)):
@@ -473,12 +478,12 @@ class CarApiVehicle:
         for retryCount in range(0, 3):
             debugLog(8, ': Car API cmd' + cmd)
             try:
-                apiResponseDict = json.loads(run_process(cmd).decode('ascii'))
+                apiResponseDict = self.json.loads(run_process(cmd).decode('ascii'))
                 # This error can happen here as well:
                 #   {'response': {'reason': 'could_not_wake_buses', 'result': False}}
                 # This one is somewhat common:
                 #   {'response': None, 'error': 'vehicle unavailable: {:error=>"vehicle unavailable:"}', 'error_description': ''}
-            except json.decoder.JSONDecodeError:
+            except self.json.decoder.JSONDecodeError:
                 pass
 
             try:

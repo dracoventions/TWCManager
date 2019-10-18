@@ -268,7 +268,7 @@ def car_api_charge(charge):
             print(time_now() + ': car_api_charge return because under 60 sec since last carApiLastStartOrStopChargeTime')
         return 'error'
 
-    if(car_api_available(charge = charge) == False):
+    if(carapi.car_api_available(charge = charge) == False):
         if(config['config']['debugLevel'] >= 8):
             print(time_now() + ': car_api_charge return because car_api_available() == False')
         return 'error'
@@ -479,7 +479,7 @@ def background_tasks_thread():
             car_api_charge(task['charge'])
         elif(task['cmd'] == 'carApiEmailPassword'):
             carapi.updateCarApiLastErrorTime()
-            car_api_available(task['email'], task['password'])
+            carapi.car_api_available(task['email'], task['password'])
         elif(task['cmd'] == 'checkGreenEnergy'):
             check_green_energy()
 
