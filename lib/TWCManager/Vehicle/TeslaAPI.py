@@ -385,7 +385,6 @@ class CarApi:
 
     for vehicle in self.getCarApiVehicles():
         if(charge and vehicle.stopAskingToStartCharging):
-            if(config['config']['debugLevel'] >= 8):
             self.debugLog(8, "Don't charge vehicle " + str(vehicle.ID)
                       + " because vehicle.stopAskingToStartCharging == True")
             continue

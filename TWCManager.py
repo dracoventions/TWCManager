@@ -234,7 +234,7 @@ def background_tasks_thread():
             # car_api_charge does nothing if it's been under 60 secs since it
             # was last used so we shouldn't have to worry about calling this
             # too frequently.
-            car_api_charge(task['charge'])
+            carapi.car_api_charge(task['charge'])
         elif(task['cmd'] == 'carApiEmailPassword'):
             carapi.updateCarApiLastErrorTime()
             carapi.car_api_available(task['email'], task['password'])
