@@ -358,7 +358,7 @@ class CarApi:
 
     return True
 
-  def car_api_charge(charge):
+  def car_api_charge(self, charge):
     # Do not call this function directly.  Call by using background thread:
     # queue_background_task({'cmd':'charge', 'charge':<True/False>})
 

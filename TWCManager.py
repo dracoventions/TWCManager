@@ -43,6 +43,7 @@ from datetime import datetime
 import threading
 from lib.TWCManager.Control.HTTPControl import HTTPControl
 from lib.TWCManager.Control.MQTTControl import MQTTControl
+from lib.TWCManager.Control.WebIPCControl import WebIPCControl
 from lib.TWCManager.EMS.Fronius import Fronius
 from lib.TWCManager.EMS.HASS import HASS
 from lib.TWCManager.EMS.TED import TED
@@ -273,7 +274,7 @@ def check_green_energy():
 
     if(config['config']['debugLevel'] >= 1):
         print("%s: Solar generating %dW, Consumption %dW, Charger Load %dW" % (time_now(), master.getGeneration(), master.getConsumption(), master.getChargerLoad()))
-        print("          Limiting car charging to %.2fA - %.2fA = %.2fA." % ((master.getGeneration() / 240), (master.getConsumption() / 240), master.getMaxAmpsToDivideAmongSlaves()))
+        print("          Limiting car charging to %.2fA - %.2fA = %.2fA." % ((master.getGeneration() / 240), (master.getGenerationOffset() / 240), master.getMaxAmpsToDivideAmongSlaves()))
         print("          Charge when above %.0fA (minAmpsPerTWC)." % (config['config']['minAmpsPerTWC']))
 
     # Update HASS sensors with min/max amp values
@@ -335,6 +336,7 @@ carapi = CarApi(config)
 master = TWCMaster(fakeTWCID, config, carapi)
 carapi.setMaster(master)
 httpcontrol = HTTPControl(master)
+webipccontrol = WebIPCControl(master)
 mqttcontrol = MQTTControl(config['config']['debugLevel'], config['control']['MQTT'], master)
 fronius = Fronius(config['config']['debugLevel'], config['sources']['Fronius'])
 hass = HASS(config['config']['debugLevel'], config['sources']['HASS'])
@@ -485,203 +487,10 @@ while True:
                         (ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(master.getSlaveSign())))
                 master.send_slave_linkready()
 
-
         ########################################################################
         # See if there's any message from the web interface.
-        # If the message is longer than msgMaxSize, MSG_NOERROR tells it to
-        # return what it can of the message and discard the rest.
-        # When no message is available, IPC_NOWAIT tells msgrcv to return
-        # msgResult = 0 and $! = 42 with description 'No message of desired
-        # type'.
-        # If there is an actual error, webMsgResult will be -1.
-        # On success, webMsgResult is the length of webMsgPacked.
-        try:
-            webMsgRaw = webIPCqueue.receive(False, 2)
-            if(len(webMsgRaw[0]) > 0):
-                webMsgType = webMsgRaw[1]
-                unpacked = struct.unpack('=LH', webMsgRaw[0][0:6])
-                webMsgTime = unpacked[0]
-                webMsgID = unpacked[1]
-                webMsg = webMsgRaw[0][6:len(webMsgRaw[0])]
 
-                if(config['config']['debugLevel'] >= 1):
-                    webMsgRedacted = webMsg
-
-                    # Hide car password in web request to send password to Tesla
-                    m = re.search(b'^(carApiEmailPassword=[^\n]+\n)', webMsg, re.MULTILINE)
-                    if(m):
-                        webMsgRedacted = m.group(1) + b'[HIDDEN]'
-                    print(time_now() + ": Web query: '" + str(webMsgRedacted) + "', id " + str(webMsgID) +
-                                       ", time " + str(webMsgTime) + ", type " + str(webMsgType))
-                webResponseMsg = ''
-                numPackets = 0
-                if(webMsg == b'getStatus'):
-                    needCarApiBearerToken = False
-                    if(carapi.getCarApiBearerToken() == ''):
-                        for i in range(0, master.countSlaveTWC()):
-                            if(slaveTWCRoundRobin[i].protocolVersion == 2):
-                                needCarApiBearerToken = True
-
-                    webResponseMsg = (
-                        "%.2f" % (master.getMaxAmpsToDivideAmongSlaves()) +
-                        '`' + "%.2f" % (config['config']['wiringMaxAmpsAllTWCs']) +
-                        '`' + "%.2f" % (config['config']['minAmpsPerTWC']) +
-                        '`' + "%.2f" % (master.getChargeNowAmps()) +
-                        '`' + str(master.getNonScheduledAmpsMax()) +
-                        '`' + str(master.getScheduledAmpsMax()) +
-                        '`' + "%02d:%02d" % (int(master.getScheduledAmpsStartHour()),
-                                             int((master.getScheduledAmpsStartHour() % 1) * 60)) +
-                        '`' + "%02d:%02d" % (int(master.getScheduledAmpsEndHour()),
-                                             int((master.getScheduledAmpsEndHour() % 1) * 60)) +
-                        '`' + str(scheduledAmpsDaysBitmap) +
-                        '`' + "%02d:%02d" % (int(master.getHourResumeTrackGreenEnergy()),
-                                             int((master.getHourResumeTrackGreenEnergy() % 1) * 60)) +
-                        # Send 1 if we need an email/password entered for car api, otherwise send 0
-                        '`' + ('1' if needCarApiBearerToken else '0') +
-                        '`' + str(master.countSlaveTWC())
-                        )
-
-                    for i in range(0, master.countSlaveTWC()):
-                        webResponseMsg += (
-                            '`' + "%02X%02X" % (master.getSlaveTWCID(i)[0],
-                                                              master.getSlaveTWCID(i)[1]) +
-                            '~' + str(slaveTWCRoundRobin[i].maxAmps) +
-                            '~' + "%.2f" % (slaveTWCRoundRobin[i].reportedAmpsActual) +
-                            '~' + str(slaveTWCRoundRobin[i].lastAmpsOffered) +
-                            '~' + str(slaveTWCRoundRobin[i].reportedState)
-                            )
-
-                elif(webMsg[0:20] == b'setNonScheduledAmps='):
-                    m = re.search(b'([-0-9]+)', webMsg[19:len(webMsg)])
-                    if(m):
-                        master.setNonScheduledAmpsMax(int(m.group(1)))
-
-                        # Save nonScheduledAmpsMax to SD card so the setting
-                        # isn't lost on power failure or script restart.
-                        save_settings()
-                        master.saveSettings()
-                elif(webMsg[0:17] == b'setScheduledAmps='):
-                    m = re.search(b'([-0-9]+)\nstartTime=([-0-9]+):([0-9]+)\nendTime=([-0-9]+):([0-9]+)\ndays=([0-9]+)', \
-                                  webMsg[17:len(webMsg)], re.MULTILINE)
-                    if(m):
-                        master.setScheduledAmpsMax(int(m.group(1)))
-                        master.setScheduledAmpsStartHour(int(m.group(2)) + (int(m.group(3)) / 60))
-                        master.setScheduledAmpsEndHour(int(m.group(4)) + (int(m.group(5)) / 60))
-                        scheduledAmpsDaysBitmap = int(m.group(6))
-                        save_settings()
-                        master.saveSettings()
-                elif(webMsg[0:30] == b'setResumeTrackGreenEnergyTime='):
-                    m = re.search(b'([-0-9]+):([0-9]+)', webMsg[30:len(webMsg)], re.MULTILINE)
-                    if(m):
-                        master.setHourResumeTrackGreenEnergy(int(m.group(1)) + (int(m.group(2)) / 60))
-                        save_settings()
-                        master.saveSettings()
-                elif(webMsg[0:11] == b'sendTWCMsg='):
-                    m = re.search(b'([0-9a-fA-F]+)', webMsg[11:len(webMsg)], re.MULTILINE)
-                    if(m):
-                        twcMsg = trim_pad(bytearray.fromhex(m.group(1).decode('ascii')),
-                                          15 if master.countSlaveTWC() == 0 \
-                                          or slaveTWCRoundRobin[0].protocolVersion == 2 else 13)
-                        if((twcMsg[0:2] == b'\xFC\x19') or (twcMsg[0:2] == b'\xFC\x1A')):
-                            print("\n*** ERROR: Web interface requested sending command:\n"
-                                  + hex_str(twcMsg)
-                                  + "\nwhich could permanently disable the TWC.  Aborting.\n")
-                        elif((twcMsg[0:2] == b'\xFB\xE8')):
-                            print("\n*** ERROR: Web interface requested sending command:\n"
-                                  + hex_str(twcMsg)
-                                  + "\nwhich could crash the TWC.  Aborting.\n")
-                        else:
-                            lastTWCResponseMsg = bytearray();
-                            send_msg(twcMsg)
-                elif(webMsg == b'getLastTWCMsgResponse'):
-                    if(lastTWCResponseMsg != None and lastTWCResponseMsg != b''):
-                        webResponseMsg = hex_str(lastTWCResponseMsg)
-                    else:
-                        webResponseMsg = 'None'
-                elif(webMsg[0:20] == b'carApiEmailPassword='):
-                    m = re.search(b'([^\n]+)\n([^\n]+)', webMsg[20:len(webMsg)], re.MULTILINE)
-                    if(m):
-                        queue_background_task({'cmd':'carApiEmailPassword',
-                                                  'email':m.group(1).decode('ascii'),
-                                                  'password':m.group(2).decode('ascii')})
-                elif(webMsg[0:23] == b'setMasterHeartbeatData='):
-                    m = re.search(b'([0-9a-fA-F]*)', webMsg[23:len(webMsg)], re.MULTILINE)
-                    if(m):
-                        if(len(m.group(1)) > 0):
-                            overrideMasterHeartbeatData = trim_pad(bytearray.fromhex(m.group(1).decode('ascii')),
-                                                                   9 if slaveTWCRoundRobin[0].protocolVersion == 2 else 7)
-                        else:
-                            overrideMasterHeartbeatData = b''
-                elif(webMsg == b'chargeNow'):
-                    master.setChargeNowAmps(config['config']['wiringMaxAmpsAllTWCs'])
-                    master.setChargeNowTimeEnd(60*60*24)
-                    master.saveSettings()
-                elif(webMsg == b'chargeNowCancel'):
-                    master.resetChargeNowAmps()
-                elif(webMsg == b'dumpState'):
-                    # dumpState commands are used for debugging. They are called
-                    # using a web page:
-                    # http://(Pi address)/index.php?submit=1&dumpState=1
-                    webResponseMsg = ('time=' + str(now) + ', fakeMaster='
-                        + str(config['config']['fakeMaster']) + ', rs485Adapter=' + config['config']['rs485adapter']
-                        + ', baud=' + str(config['config']['baud'])
-                        + ', wiringMaxAmpsAllTWCs=' + str(config['config']['wiringMaxAmpsAllTWCs'])
-                        + ', wiringMaxAmpsPerTWC=' + str(config['config']['wiringMaxAmpsPerTWC'])
-                        + ', minAmpsPerTWC=' + str(config['config']['minAmpsPerTWC'])
-                        + ', greenEnergyAmpsOffset=' + str(config['config']['greenEnergyAmpsOffset'])
-                        + ', debugLevel=' + str(config['config']['debugLevel'])
-                        + '\n')
-                    webResponseMsg += (
-                        'carApiStopAskingToStartCharging=' + str(carApiStopAskingToStartCharging)
-                        + '\ncarApiLastStartOrStopChargeTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carapi.getLastStartOrStopChargeTime())))
-                        + '\ncarApiLastErrorTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carapi.getCarApiLastErrorTime())))
-                        + '\ncarApiTokenExpireTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carapi.getCarApiTokenExpireTime())))
-                        + '\n'
-                        )
-
-                    for vehicle in carapi.getCarApiVehicles():
-                        webResponseMsg += str(vehicle.__dict__) + '\n'
-
-                    webResponseMsg += 'slaveTWCRoundRobin:\n'
-                    for slaveTWC in master.getSlaveTWCs():
-                        webResponseMsg += str(slaveTWC.__dict__) + '\n'
-
-                    numPackets = math.ceil(len(webResponseMsg) / 290)
-                elif(webMsg[0:14] == b'setDebugLevel='):
-                    m = re.search(b'([-0-9]+)', webMsg[14:len(webMsg)], re.MULTILINE)
-                    if(m):
-                        config['config']['debugLevel'] = int(m.group(1))
-                else:
-                    print(time_now() + ": Unknown IPC request from web server: " + str(webMsg))
-
-                if(len(webResponseMsg) > 0):
-                    if(config['config']['debugLevel'] >= 5):
-                        print(time_now() + ": Web query response: '" + webResponseMsg + "'")
-
-                    try:
-                        if(numPackets == 0):
-                            if(len(webResponseMsg) > 290):
-                                webResponseMsg = webResponseMsg[0:290]
-
-                            webIPCqueue.send(struct.pack('=LH' + str(len(webResponseMsg)) + 's', webMsgTime, webMsgID,
-                                   webResponseMsg.encode('ascii')), block=False)
-                        else:
-                            # In this case, block=False prevents blocking if the message
-                            # queue is too full for our message to fit. Instead, an
-                            # error is returned.
-                            msgTemp = struct.pack('=LH1s', webMsgTime, webMsgID, bytearray([numPackets]))
-                            webIPCqueue.send(msgTemp, block=False)
-                            for i in range(0, numPackets):
-                                packet = webResponseMsg[i*290:i*290+290]
-                                webIPCqueue.send(struct.pack('=LH' + str(len(packet)) + 's', webMsgTime, webMsgID,
-                                   packet.encode('ascii')), block=False)
-
-                    except sysv_ipc.BusyError:
-                        print(time_now() + ": Error: IPC queue full when trying to send response to web interface.")
-
-        except sysv_ipc.BusyError:
-            # No web message is waiting.
-            pass
+        webipccontrol.processIPC(webIPCqueue)
 
         ########################################################################
         # See if there's an incoming message on the RS485 interface.
