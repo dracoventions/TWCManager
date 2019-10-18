@@ -2,6 +2,8 @@
 
 from lib.TWCManager.TWCSlave import TWCSlave
 from datetime import datetime
+import json
+import os.path
 import queue
 import serial
 import threading
@@ -13,10 +15,10 @@ class TWCMaster:
   backgroundTasksCmds = {}
   backgroundTasksLock = threading.Lock()
   carapi              = None
-  chargeNowAmps       = 0
   chargeNowTimeEnd    = 0
   config              = None
   consumptionValues   = {}
+  debugLevel          = 0
   generationValues    = {}
   hassstatus          = None
   hourResumeTrackGreenEnergy = -1
@@ -29,6 +31,8 @@ class TWCMaster:
   scheduledAmpsStartHour = -1
   scheduledAmpsEndHour = -1
   ser                 = None
+  settings            = {}
+  settings['chargeNowamps'] = 0
   slaveTWCs           = {}
   slaveTWCRoundRobin  = []
   spikeAmpsToCancel6ALimit = 16
@@ -48,9 +52,10 @@ class TWCMaster:
 
 
   def __init__(self, TWCID, config, carapi):
-    self.carapi = carapi
-    self.config = config
-    self.TWCID  = TWCID
+    self.carapi     = carapi
+    self.config     = config
+    self.debugLevel = config['config']['debugLevel']
+    self.TWCID      = TWCID
     self.subtractChargerLoad = config['config']['subtractChargerLoad']
 
     # Connect to serial port
@@ -68,11 +73,15 @@ class TWCMaster:
       # We're beyond the one-day period where we want to charge at
       # chargeNowAmps, so reset the chargeNow variables.
       return 0
-    elif (self.chargeNowTimeEnd > 0 and self.chargeNowAmps > 0):
+    elif (self.chargeNowTimeEnd > 0 and self.settings['chargeNowAmps'] > 0):
       return 1
 
   def countSlaveTWC(self):
     return int(len(self.slaveTWCRoundRobin))
+
+  def debugLog(self, minlevel, message):
+    if (self.debugLevel >= minlevel):
+      print("TWCMaster: (" + str(minlevel) + ") " + message)
 
   def deleteBackgroundTask(self, task):
     del self.backgroundTasksCmds[task['cmd']]
@@ -90,7 +99,7 @@ class TWCMaster:
     self.backgroundTasksLock.acquire()
 
   def getChargeNowAmps(self):
-    return (self.chargeNowAmps)
+    return (self.settings['chargeNowAmps'])
 
   def getHourResumeTrackGreenEnergy(self):
     return self.hourResumeTrackGreenEnergy
@@ -241,6 +250,30 @@ class TWCMaster:
   def hex_str(self, ba:bytearray):
     return " ".join("{:02X}".format(c) for c in ba)
 
+  def loadSettings(self):
+    # Loads the volatile application settings (such as charger timings,
+    # API credentials, etc) from a JSON file
+
+    # Step 1 - Load settings from JSON file
+    if (not os.path.exists(self.config['config']['settingsPath'] + '/settings.json')):
+      self.settings = {}
+      return
+
+    with open(self.config['config']['settingsPath'] + '/settings.json', 'r') as inconfig:
+      try:
+        self.settings = json.load(inconfig)
+      except Exception as e:
+        self.debugLog(1, "There was an exception whilst loading settings file " + self.config['config']['settingsPath'] + '/settings.json')
+        self.debugLog(1, "Some data may have been loaded. This may be because the file is being created for the first time.")
+        self.debugLog(1, "It may also be because you are upgrading from a TWCManager version prior to v1.1.4, which used the old settings file format.")
+        self.debugLog(1, "If this is the case, you may need to locate the old config file and migrate some settings manually.")
+        self.debugLog(10, str(e))
+
+    # Step 2 - Send settings to other modules
+    self.carapi.setCarApiBearerToken(self.settings.get('carApiBearerToken', ''))
+    self.carapi.setCarApiRefreshToken(self.settings.get('carApiRefreshToken', ''))
+    self.carapi.setCarApiTokenExpireTime(self.settings.get('carApiTokenExpireTime', ''))
+
   def master_id_conflict():
     # We're playing fake slave, and we got a message from a master with our TWCID.
     # By convention, as a slave we must change our TWCID because a master will not.
@@ -309,8 +342,22 @@ class TWCMaster:
   def resetChargeNowAmps(self):
     # Sets chargeNowAmps back to zero, so we follow the green energy
     # tracking again
-    self.chargeNowAmps = 0
+    self.settings['chargeNowAmps'] = 0
     self.chargeNowTimeEnd = 0
+
+  def saveSettings(self):
+    # Saves the volatile application settings (such as charger timings,
+    # API credentials, etc) to a JSON file
+    fileName = self.config['config']['settingsPath'] + '/settings.json'
+
+    # Step 1 - Merge any config from other modules
+    self.settings['carApiBearerToken'] = self.carapi.getCarApiBearerToken()
+    self.settings['carApiRefreshToken'] = self.carapi.getCarApiRefreshToken()
+    self.settings['carApiTokenExpireTime'] = self.carapi.getCarApiTokenExpireTime()
+
+    # Step 2 - Write the settings dict to a JSON file
+    with open(fileName, 'w') as outconfig:
+      json.dump(self.settings, outconfig)
 
   def send_master_linkready1(self):
 
@@ -446,7 +493,7 @@ class TWCMaster:
   def setChargeNowAmps(self, amps):
     # Accepts a number of amps to define the amperage at which we
     # should charge
-    self.chargeNowAmps = amps
+    self.settings['chargeNowAmps'] = amps
 
   def setChargeNowTimeEnd(self, time):
     self.chargeNowTimeEnd = (self.time.time() + time)

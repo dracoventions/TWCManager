@@ -18,7 +18,7 @@ ture improvements.
      * Tested: TM as Master, tracking Green Energy
      * Untested: TM as Slave (low-pri)
         * Will not work. There's some slave related comms that need to move from TWCManager to TWCMaster
-     * Untested: TM as Master, Scheduled Charging
+     * Tested: TM as Master, Scheduled Charging
      * Untested: TM as Master, Charge Now
      * Untested: Web IPC interface
      * TODO: Clean up globals in TWCSlave
