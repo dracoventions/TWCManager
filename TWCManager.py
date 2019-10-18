@@ -110,7 +110,7 @@ def time_now():
         ".%f" if config['config']['displayMilliseconds'] else "")))
 
 def load_settings():
-    global config, scheduledAmpsDaysBitmap, kWhDelivered, carapi, homeLat, homeLon
+    global config, scheduledAmpsDaysBitmap, carapi, homeLat, homeLon
 
     try:
         fh = open(config['config']['settingsPath'] + "/TWCManager.settings", 'r')
@@ -158,13 +158,6 @@ def load_settings():
                     print("load_settings: hourResumeTrackGreenEnergy set to " + str(m.group(1)))
                 continue
 
-            m = re.search(r'^\s*kWhDelivered\s*=\s*([-0-9.]+)', line, re.MULTILINE)
-            if(m):
-                kWhDelivered = float(m.group(1))
-                if(config['config']['debugLevel'] >= 10):
-                    print("load_settings: kWhDelivered set to " + str(kWhDelivered))
-                continue
-
             m = re.search(r'^\s*homeLat\s*=\s*(.+)', line, re.MULTILINE)
             if(m):
                 homeLat = float(m.group(1))
@@ -187,7 +180,7 @@ def load_settings():
         pass
 
 def save_settings():
-    global config, scheduledAmpsDaysBitmap, kWhDelivered, carapi, homeLat, homeLon
+    global config, scheduledAmpsDaysBitmap, carapi, homeLat, homeLon
 
     fh = open(config['config']['settingsPath'] + "/TWCManager.settings", 'w')
     fh.write('nonScheduledAmpsMax=' + str(master.getNonScheduledAmpsMax()) +
@@ -196,7 +189,6 @@ def save_settings():
             '\nscheduledAmpsEndHour=' + str(master.getScheduledAmpsEndHour()) +
             '\nscheduledAmpsDaysBitmap=' + str(scheduledAmpsDaysBitmap) +
             '\nhourResumeTrackGreenEnergy=' + str(master.getHourResumeTrackGreenEnergy()) +
-            '\nkWhDelivered=' + str(kWhDelivered) +
             '\nhomeLat=' + str(homeLat) +
             '\nhomeLon=' + str(homeLon)
             )
@@ -549,7 +541,6 @@ idxSlaveToSendNextHeartbeat = 0
 
 scheduledAmpsDaysBitmap = 0x7F
 
-kWhDelivered = 119
 timeLastkWhDelivered = time.time()
 timeLastkWhSaved = time.time()
 
@@ -1363,13 +1354,13 @@ while True:
                         continue
 
                     amps = (slaveHeartbeatData[1] << 8) + slaveHeartbeatData[2]
-                    kWhDelivered += (((240 * (amps/100)) / 1000 / 60 / 60) * (now - timeLastkWhDelivered))
+                    master.addkWhDelivered(((240 * (amps/100)) / 1000 / 60 / 60) * (now - timeLastkWhDelivered))
                     timeLastkWhDelivered = now
                     if(time.time() - timeLastkWhSaved >= 300.0):
                         timeLastkWhSaved = now
                         if(config['config']['debugLevel'] >= 9):
                             print(time_now() + ": Fake slave has delivered %.3fkWh" % \
-                               (kWhDelivered))
+                               (master.getkWhDelivered()))
                         save_settings()
                         master.saveSettings()
 
@@ -1516,7 +1507,7 @@ while True:
                             (senderID[0], senderID[1], receiverID[0], receiverID[1]))
 
                     if(receiverID == fakeTWCID):
-                        kWhCounter = int(kWhDelivered)
+                        kWhCounter = int(master.getkWhDelivered())
                         kWhPacked = bytearray([((kWhCounter >> 24) & 0xFF),
                                       ((kWhCounter >> 16) & 0xFF),
                                       ((kWhCounter >> 8) & 0xFF),

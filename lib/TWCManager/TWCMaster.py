@@ -33,6 +33,7 @@ class TWCMaster:
   ser                 = None
   settings            = {}
   settings['chargeNowamps'] = 0
+  settings['kWhDelivered']  = 119
   slaveTWCs           = {}
   slaveTWCRoundRobin  = []
   spikeAmpsToCancel6ALimit = 16
@@ -50,7 +51,6 @@ class TWCMaster:
   masterSign = bytearray(b'\x77')
   slaveSign = bytearray(b'\x77')
 
-
   def __init__(self, TWCID, config, carapi):
     self.carapi     = carapi
     self.config     = config
@@ -60,6 +60,9 @@ class TWCMaster:
 
     # Connect to serial port
     self.ser = serial.Serial(config['config']['rs485adapter'], config['config']['baud'], timeout=0)
+
+  def addkWhDelivered(self, kWh):
+    self.settings['kWhDelivered'] = self.settings['kWhDelivered'] + kWh
 
   def addSlaveTWC(self, slaveTWC):
     # Adds the Slave TWC to the Round Robin list
@@ -111,6 +114,9 @@ class TWCMaster:
 
   def gethassstatus(self):
     return self.hassstatus
+
+  def getkWhDelivered(self):
+    return self.settings['kWhDelivered']
 
   def getMaxAmpsToDivideAmongSlaves(self):
     return self.maxAmpsToDivideAmongSlaves
@@ -513,6 +519,10 @@ class TWCMaster:
 
   def setHourResumeTrackGreenEnergy(self, hour):
     self.hourResumeTrackGreenEnergy = hour
+
+  def setkWhDelivered(self, kWh):
+    self.settings['kWhDelivered'] = kWh
+    return True
 
   def setMasterTWCID(self, twcid):
     # This is called when TWCManager is in Slave mode, to track the
