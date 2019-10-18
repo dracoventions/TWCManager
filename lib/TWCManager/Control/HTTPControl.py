@@ -76,6 +76,27 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     page += "</style>"
     return page
 
+  def do_chargeSchedule(self):
+    page = """
+    <table class='table table-borderless'>
+      <thead>
+        <th scope='col'>&nbsp;</th>
+        <th scope='col'>Sun</th>
+        <th scope='col'>Mon</th>
+        <th scope='col'>Tue</th>
+        <th scope='col'>Wed</th>
+        <th scope='col'>Thu</th>
+        <th scope='col'>Fri</th>
+        <th scope='col'>Sat</th>
+      </thead>
+      <tbody>"""
+    for i in (x for y in (range(6, 24), range(0,5)) for x in y):
+      page += "<tr><th scope='row'>%02d</th><td>&nbsp;</td></tr>" % (i)
+    page += "</tbody>"
+    page += "</table>"
+
+    return page
+
   def do_jsrefresh(self):
     page = """
       // Only refresh the main page if the browser window has focus, and if
@@ -121,15 +142,20 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       </ul>
       <ul class="navbar-nav mr-auto">
         <li class="nav-item">
-          <a class="nav-link" href="#">Link</a>
+          <a class="nav-link" href="#">Schedule</a>
         </li>
       </ul>
       <ul class="navbar-nav mr-auto">
         <li class="nav-item">
-          <a class="nav-link disabled" href="#">Disabled</a>
+          <a class="nav-link" href="/settings">Settings</a>
         </li>
       </ul>
-      <span class="navbar-text">v1.1.3</span>
+      <ul class='navbar-nav mr-auto'>
+        <li class='nav-item'>
+          <a class='nav-link' href='https://github.com/ngardiner/TWCManager'>GitHub</a>
+        </li>
+      </ul>
+      <span class="navbar-text">v1.1.4</span>
     </nav>"""
     return page
 
@@ -159,7 +185,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += self.request_teslalogin()
 
       page += self.show_status()
-      page += self.show_twcs()
 
       page += "</table>"
       page += "</body>"
@@ -263,7 +288,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     global master
 
     page = "<table width = '100%'><tr width = '100%'><td width='30%'>"
-    page += "<table class='table table-dark' width='50%'>"
+    page += "<table class='table table-dark' width='100%'>"
     page += "<tr><th>Amps to share across all TWCs:</th>"
     page += "<td>" + str(master.getMaxAmpsToDivideAmongSlaves()) + "</td>"
     page += "<td>amps</td></tr>"
@@ -293,8 +318,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     page += "<td>" + str(master.num_cars_charging_now()) + "</td>"
     page += "<td>cars</td></tr></table></td>"
 
-    page += "<td>"
-    page += "<table class='table table-dark' width='50%'>"
+    page += "<td width='30%'>"
+    page += "<table class='table table-dark' width='100%'>"
     page += "<tr><th>Scheduled Charging Amps</th>"
     page += "<td>" + str(master.getScheduledAmpsMax()) + "</td></tr>"
 
@@ -308,7 +333,17 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     page += "<tr><th>Resume Tracking Green Energy at</th>"
     page += "<td>" + str(master.getHourResumeTrackGreenEnergy()) + "</td>"
     page += "</tr>"
-    page += "</table></td></tr></table>"
+    page += "</table></td>"
+
+    page += "<td width = '40%' rowspan = '3'>"
+    page += self.do_chargeSchedule()
+    page += "</td></tr>"
+    page += "<tr><td>"
+    page += self.show_twcs()
+    page += "</td></tr>"
+
+    # Handle overflow from calendar
+    page += "<tr><td>&nbsp;</td></tr></table>"
     return page
 
   def show_twcs(self):
