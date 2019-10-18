@@ -177,8 +177,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
   def process_teslalogin(self):
     # Check if we are skipping Tesla Login submission
 
-    print(master.teslaLoginAskLater)
-    print(self.fields)
     if (not master.teslaLoginAskLater):
       later = False
       try:
@@ -189,15 +187,18 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       if (later):
         master.teslaLoginAskLater = True
 
-      print(master.teslaLoginAskLater)
-
     if (not master.teslaLoginAskLater):
       # Process the information submitted
       self.send_response(200)
       self.send_header('Content-type','text/html')
       self.end_headers()
 
-      page = str(self.fields) + "<br>"
+      print(str(self.fields))
+      print(str(self.fields['email'][0]))
+      ret = master.carapi.car_api_available(self.fields['email'][0],self.fields['password'][0])
+      page = str(ret)
+
+      page += str(self.fields) + "<br>"
       self.wfile.write(page.encode("utf-8"))
       return
     else:
@@ -216,6 +217,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     page += "sent once to Tesla and are not stored. Credentials must be entered "
     page += "again if no cars are connected to this charger for over 45 days."
     page += "</p>"
+    page += "<input type=hidden name='page' value='tesla-login' />"
     page += "<p>"
     page += "<table>"
     page += "<tr><td>Tesla Account E-Mail:</td>"

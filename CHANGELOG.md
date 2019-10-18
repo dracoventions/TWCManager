@@ -6,6 +6,11 @@ This document shows the changes per release
 
   * TODO: Some doco around module configuration
   * TODO: DSMR from https://github.com/dschutterop/dsmr
+  * Implemented Tesla login / token retrieval for HTTP Config module.
+  * Improved debug logging for Tesla API Vehicle module.
+  * Breaking Change: Improved Settings Storage for non-volatile settings (not configuration) storage. 
+    * This will require a manual port of the settings from ```/etc/twcmanager/TWCManager.settings``` to ```/etc/twcmanager/settings.json```
+    * Due to a small user base, this is not done automatically. If there is demand for a port method, an issue can be raised for a feature request, and I'll create a one time script to port old settings to new settings.
 
 ## v1.1.3 - 2019-10-17
 

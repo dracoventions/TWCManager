@@ -1,6 +1,7 @@
 class CarApi:
 
   import json
+  import re
   import time
 
   carApiLastErrorTime = 0
@@ -10,6 +11,7 @@ class CarApi:
   carApiLastStartOrStopChargeTime = 0
   carApiVehicles      = []
   config              = None
+  debugLevel          = 0
   master              = None
 
   # Transient errors are ones that usually disappear if we retry the car API
@@ -30,6 +32,7 @@ class CarApi:
 
   def __init__(self, config):
     self.config = config
+    self.debugLevel = config['config']['debugLevel']
 
   def addVehicle(self, json):
     self.carApiVehicles.append(CarApiVehicle(json, self, self.config))
@@ -83,9 +86,9 @@ class CarApi:
         if(cmd != None):
             if(self.config['config']['debugLevel'] >= 2):
                 # Hide car password in output
-                cmdRedacted = re.sub(r'("password": )"[^"]+"', r'\1[HIDDEN]', cmd)
-                print(time_now() + ': Car API cmd', cmdRedacted)
-            apiResponse = run_process(cmd)
+                cmdRedacted = self.re.sub(r'("password": )"[^"]+"', r'\1[HIDDEN]', cmd)
+                print('Car API cmd', cmdRedacted)
+            apiResponse = self.run_process(cmd)
             # Example response:
             # b'{"access_token":"4720d5f980c9969b0ca77ab39399b9103adb63ee832014fe299684201929380","token_type":"bearer","expires_in":3888000,"refresh_token":"110dd4455437ed351649391a3425b411755a213aa815171a2c6bfea8cc1253ae","created_at":1525232970}'
 
@@ -95,7 +98,7 @@ class CarApi:
             pass
 
         try:
-            self.debugLog(4, 'Car API auth response' + apiResponseDict)
+            self.debugLog(4, 'Car API auth response' + str(apiResponseDict))
             self.setCarApiBearerToken(apiResponseDict['access_token'])
             self.setCarApiRefreshToken(apiResponseDict['refresh_token'])
             self.setCarApiTokenExpireTime(now + apiResponseDict['expires_in'])
@@ -119,7 +122,7 @@ class CarApi:
                   '" "https://owner-api.teslamotors.com/api/1/vehicles"'
             self.debugLog(8, 'Car API cmd', cmd)
             try:
-                apiResponseDict = self.json.loads(run_process(cmd).decode('ascii'))
+                apiResponseDict = self.json.loads(self.run_process(cmd).decode('ascii'))
             except self.json.decoder.JSONDecodeError:
                 pass
 
@@ -173,7 +176,7 @@ class CarApi:
                 self.debugLog(8, 'Car API cmd', cmd)
 
                 try:
-                    apiResponseDict = self.json.loads(run_process(cmd).decode('ascii'))
+                    apiResponseDict = self.json.loads(self.run_process(cmd).decode('ascii'))
                 except self.json.decoder.JSONDecodeError:
                     pass
 
@@ -421,9 +424,10 @@ class CarApiVehicle:
 
     import time
 
-    carapi = None
-    config = None
-    ID     = None
+    carapi     = None
+    config     = None
+    debuglevel = 0
+    ID         = None
 
     firstWakeAttemptTime = 0
     lastWakeAttemptTime = 0
@@ -462,6 +466,16 @@ class CarApiVehicle:
 
         debugLog(8, ': Vehicle ' + str(self.ID) + " not ready because it wasn't woken in the last 2 minutes.")
         return False
+
+    def run_process(self, cmd):
+        result = None
+        try:
+            result = subprocess.check_output(cmd, shell=True)
+        except subprocess.CalledProcessError:
+            # We reach this point if the process returns a non-zero exit code.
+            result = b''
+
+        return result
 
     def update_location(self):
         if(self.ready() == False):
