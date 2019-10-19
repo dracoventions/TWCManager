@@ -44,7 +44,7 @@ class CarApi:
     now = self.time.time()
     apiResponseDict = {}
 
-    if(now - self.getCarApiLastErrorTime() < (self.getCarApiErrorRetryMins()*60)):
+    if(self.getCarApiRetryRemaining()):
         # It's been under carApiErrorRetryMins minutes since the car API
         # generated an error. To keep strain off Tesla's API servers, wait
         # carApiErrorRetryMins mins till we try again. This delay could be
@@ -56,8 +56,10 @@ class CarApi:
         # enough to clear the blacklist. So at this point it seems Tesla has
         # accepted that third party apps use the API and deals with bad behavior
         # automatically.
-        self.debugLog(6, 'Car API disabled for ' + str(int(self.getCarApiErrorRetryMins()*60 - (now - self.getCarApiLastErrorTime()))) + ' more seconds due to recent error.')
+        self.debugLog(6, 'Car API disabled for ' + str(self.getCarApiRetryRemaining()) + ' more seconds due to recent error.')
         return False
+    else:
+        self.debugLog(8, "Entering car_api_available - next step is to query Tesla API")
 
     # Tesla car API info comes from https://timdorr.docs.apiary.io/
     if(self.getCarApiBearerToken() == '' or self.getCarApiTokenExpireTime() - now < 30*24*60*60):
@@ -83,7 +85,7 @@ class CarApi:
               'refresh_token': self.getCarApiRefreshToken()
             }
             self.debugLog(8, "Attempting token refresh")
-            req = requests.post(url, headers = headers, data = data)
+            req = self.requests.post(url, headers = headers, json = data)
         elif(email != None and password != None):
             headers = {
               'accept': 'application/json',
@@ -97,16 +99,19 @@ class CarApi:
               'password': password
             }
             self.debugLog(8, "Attempting password auth")
-            req = requests.post(url, headers = headers, data = data)
+            req = self.requests.post(url, headers = headers, json = data)
 
+        if(req == None):
+            self.debugLog(2, 'Car API request object is null')
         if(req != None):
             self.debugLog(2, 'Car API request' + str(req))
             apiResponse = req.text
             # Example response:
             # b'{"access_token":"4720d5f980c9969b0ca77ab39399b9103adb63ee832014fe299684201929380","token_type":"bearer","expires_in":3888000,"refresh_token":"110dd4455437ed351649391a3425b411755a213aa815171a2c6bfea8cc1253ae","created_at":1525232970}'
 
+        print("AAAAAA" + apiResponse)
         try:
-            apiResponseDict = self.json.loads(apiResponse.decode('ascii'))
+            apiResponseDict = self.json.loads(apiResponse)
         except self.json.decoder.JSONDecodeError:
             pass
 
@@ -116,7 +121,7 @@ class CarApi:
             self.setCarApiRefreshToken(apiResponseDict['refresh_token'])
             self.setCarApiTokenExpireTime(now + apiResponseDict['expires_in'])
         except KeyError:
-            self.debugLog(1, "ERROR: Can't access Tesla car via API.  Please log in again via web interface.")
+            self.debugLog(2, "ERROR: Can't access Tesla car via API.  Please log in again via web interface.")
             self.updateCarApiLastErrorTime()
             # Instead of just setting carApiLastErrorTime, erase tokens to
             # prevent further authorization attempts until user enters password
@@ -133,10 +138,9 @@ class CarApi:
             url = "https://owner-api.teslamotors.com/api/1/vehicles"
             headers = {
               'accept': 'application/json',
-              'Authorization': 'Bearer ' + self.getCarApiBearerToken(),
-              'Content-Type': 'application/json'
+              'Authorization': 'Bearer ' + self.getCarApiBearerToken()
             }
-            req = requests.post(url, headers = headers)
+            req = self.requests.post(url, headers = headers)
             self.debugLog(8, 'Car API cmd ' + str(req))
             try:
                 apiResponseDict = self.json.loads(req.text)
@@ -152,7 +156,7 @@ class CarApi:
                 # This catches cases like trying to access
                 # apiResponseDict['response'] when 'response' doesn't exist in
                 # apiResponseDict.
-                self.debugLog(1, "ERROR: Can't get list of vehicles via Tesla car API.  Will try again in "
+                self.debugLog(2, "ERROR: Can't get list of vehicles via Tesla car API.  Will try again in "
                       + str(self.getCarApiErrorRetryMins()) + " minutes.")
                 self.updateCarApiLastErrorTime()
                 return False
@@ -593,6 +597,21 @@ class CarApi:
   def getCarApiRefreshToken(self):
     return self.carApiRefreshToken
 
+  def getCarApiRetryRemaining(self):
+    # Calculate the amount of time remaining until the API can be queried
+    # again. This is the api backoff time minus the difference between now
+    # and the last error time
+    if (self.getCarApiLastErrorTime() == 0):
+      return 0
+    else:
+      backoff = (self.getCarApiErrorRetryMins()*60)
+      lasterror = (self.time.time() - self.getCarApiLastErrorTime())
+      if (lasterror >= backoff):
+        return 0
+      else:
+        self.debugLog(8, "Backoff is " + str(backoff) + ", lasterror delta is " + str(lasterror) + ", last error was " + str(self.getCarApiLastErrorTime()))
+        return int(backoff - lasterror)
+
   def getCarApiTransientErrors(self):
     return self.carApiTransientErrors
 
@@ -630,6 +649,10 @@ class CarApi:
     self.carApiErrorRetryMins = mins
     return True
 
+  def setCarApiLastErrorTime(self, tstamp):
+    self.carApiLastErrorTime = tstamp
+    return True
+
   def setCarApiRefreshToken(self, token):
     self.carApiRefreshToken = token
     return True
@@ -643,7 +666,9 @@ class CarApi:
     return True
 
   def updateCarApiLastErrorTime(self):
-    self.carApiLastErrorTime = self.time.time()
+    timestamp = self.time.time()
+    self.debugLog(8, "updateCarApiLastErrorTime() called due to Tesla API Error. Updating timestamp from " + str(self.carApiLastErrorTime) + " to " + str(timestamp))
+    self.carApiLastErrorTime = timestamp
     return True
 
   def updateLastStartOrStopChargeTime(self):
