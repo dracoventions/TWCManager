@@ -2,6 +2,7 @@ class CarApi:
 
   import json
   import re
+  import requests
   import subprocess
   import time
 
@@ -55,41 +56,52 @@ class CarApi:
         # enough to clear the blacklist. So at this point it seems Tesla has
         # accepted that third party apps use the API and deals with bad behavior
         # automatically.
-        self.debugLog(11, ': Car API disabled for ' +
-                  str(int(self.getCarApiErrorRetryMins()*60 - (now - self.getCarApiLastErrorTime()))) +
-                  ' more seconds due to recent error.')
+        self.debugLog(6, 'Car API disabled for ' + str(int(self.getCarApiErrorRetryMins()*60 - (now - self.getCarApiLastErrorTime()))) + ' more seconds due to recent error.')
         return False
 
     # Tesla car API info comes from https://timdorr.docs.apiary.io/
     if(self.getCarApiBearerToken() == '' or self.getCarApiTokenExpireTime() - now < 30*24*60*60):
-        cmd = None
+        req = None
         apiResponse = b''
+        client_id = '81527cff06843c8634fdc09e8ac0abefb46ac849f38fe1e431c2ef2106796384'
+        client_secret = 'c7257eb71a564034f9419ee651c7d0e5f7aa6bfbd18bafb5c5c033b093bb2fa3'
+        url = 'https://owner-api.teslamotors.com/oauth/token'
 
         # If we don't have a bearer token or our refresh token will expire in
         # under 30 days, get a new bearer token.  Refresh tokens expire in 45
         # days when first issued, so we'll get a new token every 15 days.
         if(self.getCarApiRefreshToken() != ''):
 
-            cmd = 'curl -s -m 60 -X POST -H "accept: application/json" -H "Content-Type: application/json" -d \'' + \
-                  self.json.dumps({'grant_type': 'refresh_token', \
-                              'client_id': '81527cff06843c8634fdc09e8ac0abefb46ac849f38fe1e431c2ef2106796384', \
-                              'client_secret': 'c7257eb71a564034f9419ee651c7d0e5f7aa6bfbd18bafb5c5c033b093bb2fa3', \
-                              'refresh_token': self.getCarApiRefreshToken() }) + \
-                  '\' "https://owner-api.teslamotors.com/oauth/token"'
+            headers = {
+              'accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
+            data = {
+              'client_id': client_id,
+              'client_secret': client_secret,
+              'grant_type': 'refresh_token',
+              'refresh_token': self.getCarApiRefreshToken()
+            }
+            self.debugLog(8, "Attempting token refresh")
+            req = requests.post(url, headers = headers, data = data)
         elif(email != None and password != None):
-            cmd = 'curl -s -m 60 -X POST -H "accept: application/json" -H "Content-Type: application/json" -d \'' + \
-                  self.json.dumps({'grant_type': 'password', \
-                              'client_id': '81527cff06843c8634fdc09e8ac0abefb46ac849f38fe1e431c2ef2106796384', \
-                              'client_secret': 'c7257eb71a564034f9419ee651c7d0e5f7aa6bfbd18bafb5c5c033b093bb2fa3', \
-                              'email': email, 'password': password }) + \
-                  '\' "https://owner-api.teslamotors.com/oauth/token"'
+            headers = {
+              'accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
+            data = {
+              'client_id': client_id,
+              'client_secret': client_secret,
+              'grant_type': 'password',
+              'email': email,
+              'password': password
+            }
+            self.debugLog(8, "Attempting password auth")
+            req = requests.post(url, headers = headers, data = data)
 
-        if(cmd != None):
-            if(self.config['config']['debugLevel'] >= 2):
-                # Hide car password in output
-                cmdRedacted = self.re.sub(r'("password": )"[^"]+"', r'\1[HIDDEN]', cmd)
-                print('Car API cmd', cmdRedacted)
-            apiResponse = self.run_process(cmd)
+        if(req != None):
+            self.debugLog(2, 'Car API request' + str(req))
+            apiResponse = req.text
             # Example response:
             # b'{"access_token":"4720d5f980c9969b0ca77ab39399b9103adb63ee832014fe299684201929380","token_type":"bearer","expires_in":3888000,"refresh_token":"110dd4455437ed351649391a3425b411755a213aa815171a2c6bfea8cc1253ae","created_at":1525232970}'
 
@@ -118,12 +130,16 @@ class CarApi:
 
     if(self.getCarApiBearerToken() != ''):
         if(self.getVehicleCount() < 1):
-            cmd = 'curl -s -m 60 -H "accept: application/json" -H "Authorization:Bearer ' + \
-                  self.getCarApiBearerToken() + \
-                  '" "https://owner-api.teslamotors.com/api/1/vehicles"'
-            self.debugLog(8, 'Car API cmd', cmd)
+            url = "https://owner-api.teslamotors.com/api/1/vehicles"
+            headers = {
+              'accept': 'application/json',
+              'Authorization': 'Bearer ' + self.getCarApiBearerToken(),
+              'Content-Type': 'application/json'
+            }
+            req = requests.post(url, headers = headers)
+            self.debugLog(8, 'Car API cmd ' + str(req))
             try:
-                apiResponseDict = self.json.loads(self.run_process(cmd).decode('ascii'))
+                apiResponseDict = self.json.loads(req.text)
             except self.json.decoder.JSONDecodeError:
                 pass
 
