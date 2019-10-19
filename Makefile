@@ -11,7 +11,7 @@ install:
 	sudo chmod -R 665 /var/www/html
 	sudo usermod -a -G www-data pi
 	
-	sudo cp HTML/* /var/www/html/
+	sudo cp html/* /var/www/html/
 	cp TWCManager.py /usr/bin/
 
 	# Create configuration directory

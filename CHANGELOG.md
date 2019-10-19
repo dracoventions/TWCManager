@@ -8,6 +8,8 @@ This document shows the changes per release
   * TODO: DSMR from https://github.com/dschutterop/dsmr
   * Implemented Tesla login / token retrieval for HTTP Config module.
   * Improved debug logging for Tesla API Vehicle module.
+  * Modularised the Web IPC interface for the external web server control component.
+  * Fix: Status output now subtracts charger load from consumption.
   * Breaking Change: Improved Settings Storage for non-volatile settings (not configuration) storage. 
     * This will require a manual port of the settings from ```/etc/twcmanager/TWCManager.settings``` to ```/etc/twcmanager/settings.json```
     * Due to a small user base, this is not done automatically. If there is demand for a port method, an issue can be raised for a feature request, and I'll create a one time script to port old settings to new settings.
@@ -29,7 +31,6 @@ ture improvements.
      * TODO: Clean up globals in TWCSlave
        * All that is left is the TM as Slave change above
      * TODO: Look at globals in TWCManager
-     * TODO: Fix bug - need to subtract charger load from consumption in regular status message IF option is enabled
 
 ## v1.1.2 - 2019-10-14
 

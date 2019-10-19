@@ -11,7 +11,7 @@
     // Point $twcScriptDir to the directory containing the TWCManager.py script.
     // Interprocess Communication with TWCManager.py will not work if this
     // parameter is incorrect.
-    $twcScriptDir = "/usr/bin/";
+    $twcScriptDir = "/etc/twcmanager";
 
     // End configuration parameters
     ///////////////////////////////////////////////////////////////////////////

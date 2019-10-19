@@ -31,11 +31,13 @@ class TWCMaster:
   scheduledAmpsStartHour = -1
   scheduledAmpsEndHour = -1
   ser                 = None
-  settings            = {}
-  settings['chargeNowamps'] = 0
-  settings['homeLat']       = 10000
-  settings['homeLon']       = 10000
-  settings['kWhDelivered']  = 119
+  settings            = {
+    'chargeNowAmps': 0,
+    'homeLat'      : 10000,
+    'homeLon'      : 10000,
+    'kWhDelivered' : 119,
+    'scheduledAmpsDaysBitmap' : 0x7F
+  }
   slaveTWCs           = {}
   slaveTWCRoundRobin  = []
   spikeAmpsToCancel6ALimit = 16
@@ -104,7 +106,8 @@ class TWCMaster:
     self.backgroundTasksLock.acquire()
 
   def getChargeNowAmps(self):
-    return (self.settings['chargeNowAmps'])
+    # Returns the currently configured Charge Now Amps setting
+    return (int(self.settings.get('chargeNowAmps', 0)))
 
   def getHourResumeTrackGreenEnergy(self):
     return self.hourResumeTrackGreenEnergy
@@ -125,6 +128,9 @@ class TWCMaster:
 
   def getmqttstatus(self):
     return self.mqttstatus
+
+  def getScheduledAmpsDaysBitmap(self):
+    return self.settings.get('scheduledAmpsDaysBitmap', 0x7F)
 
   def getNonScheduledAmpsMax(self):
     return self.nonScheduledAmpsMax
@@ -584,6 +590,9 @@ class TWCMaster:
 
   def setNonScheduledAmpsMax(self, amps):
     self.nonScheduledAmpsMax = amps
+
+  def setScheduledAmpsDaysBitmap(self, bitmap):
+    self.settings['scheduledAmpsDaysBitmap'] = bitmap
 
   def setScheduledAmpsMax(self, amps):
     self.scheduledAmpsMax = amps

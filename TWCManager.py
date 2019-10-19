@@ -34,7 +34,6 @@ import math
 import random
 import re
 import subprocess
-import struct
 import sys
 import sysv_ipc
 import time
@@ -111,7 +110,7 @@ def time_now():
         ".%f" if config['config']['displayMilliseconds'] else "")))
 
 def load_settings():
-    global config, scheduledAmpsDaysBitmap, carapi
+    global config, carapi
 
     try:
         fh = open(config['config']['settingsPath'] + "/TWCManager.settings", 'r')
@@ -145,13 +144,6 @@ def load_settings():
                     print("load_settings: scheduledAmpsEndHour set to " + str(m.group(1)))
                 continue
 
-            m = re.search(r'^\s*scheduledAmpsDaysBitmap\s*=\s*([-0-9.]+)', line, re.MULTILINE)
-            if(m):
-                scheduledAmpsDaysBitmap = int(m.group(1))
-                if(config['config']['debugLevel'] >= 10):
-                    print("load_settings: scheduledAmpsDaysBitmap set to " + str(scheduledAmpsDaysBitmap))
-                continue
-
             m = re.search(r'^\s*hourResumeTrackGreenEnergy\s*=\s*([-0-9.]+)', line, re.MULTILINE)
             if(m):
                 master.setHourResumeTrackGreenEnergy(float(m.group(1)))
@@ -167,14 +159,13 @@ def load_settings():
         pass
 
 def save_settings():
-    global config, scheduledAmpsDaysBitmap, carapi
+    global config, carapi
 
     fh = open(config['config']['settingsPath'] + "/TWCManager.settings", 'w')
     fh.write('nonScheduledAmpsMax=' + str(master.getNonScheduledAmpsMax()) +
             '\nscheduledAmpsMax=' + str(master.getScheduledAmpsMax()) +
             '\nscheduledAmpsStartHour=' + str(master.getScheduledAmpsStartHour()) +
             '\nscheduledAmpsEndHour=' + str(master.getScheduledAmpsEndHour()) +
-            '\nscheduledAmpsDaysBitmap=' + str(scheduledAmpsDaysBitmap) +
             '\nhourResumeTrackGreenEnergy=' + str(master.getHourResumeTrackGreenEnergy()))
 
     fh.close()
@@ -305,12 +296,8 @@ numInitMsgsToSend = 10
 msgRxCount = 0
 
 idxSlaveToSendNextHeartbeat = 0
-
-scheduledAmpsDaysBitmap = 0x7F
-
 timeLastkWhDelivered = time.time()
 timeLastkWhSaved = time.time()
-
 timeLastHeartbeatDebugOutput = 0
 
 webMsgPacked = ''
@@ -380,7 +367,7 @@ backgroundTasksThread.start()
 # If you can't get this to work, you can also set key = <some arbitrary number>
 # and in the web interface, use the same arbitrary number. While that could
 # conflict with another process, it's very unlikely to.
-webIPCkey = sysv_ipc.ftok(re.sub('/[^/]+$', '/', __file__), ord('T'), True)
+webIPCkey = sysv_ipc.ftok(config['config']['settingsPath'], ord('T'), True)
 
 # Use the key to create a message queue with read/write access for all users.
 webIPCqueue = sysv_ipc.MessageQueue(webIPCkey, sysv_ipc.IPC_CREAT, 0o666)
