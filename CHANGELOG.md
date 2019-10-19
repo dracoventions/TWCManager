@@ -27,7 +27,6 @@ ture improvements.
         * Will not work. There's some slave related comms that need to move from TWCManager to TWCMaster
      * Tested: TM as Master, Scheduled Charging
      * Untested: TM as Master, Charge Now
-     * Untested: Web IPC interface
      * TODO: Clean up globals in TWCSlave
        * All that is left is the TM as Slave change above
      * TODO: Look at globals in TWCManager
