@@ -466,7 +466,7 @@ class TWCSlave:
             # We're still in the one-day period where we want to charge at
             # chargeNowAmps, ignoring all other charging criteria.
             self.master.setMaxAmpsToChargeNowAmps()
-            self.debugLog(10, 'Charge at chargeNowAmps %.2f' % (chargeNowAmps))
+            self.debugLog(10, 'Charge at chargeNowAmps %.2f' % (self.master.getChargeNowAmps()))
         elif(blnUseScheduledAmps):
             # We're within the scheduled hours that we need to provide a set
             # number of amps.

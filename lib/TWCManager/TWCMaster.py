@@ -76,7 +76,7 @@ class TWCMaster:
     # Returns the following values:
     # 0 = chargeNowTime has expired, reset chargeNow to 0
     # 1 = chargeNowAmps is set, charge at the specified value
-    if (self.chargeNowTimeEnd > 0 and self.chargeNowTimeEnd < now):
+    if (self.chargeNowTimeEnd > 0 and self.chargeNowTimeEnd < time.time()):
       # We're beyond the one-day period where we want to charge at
       # chargeNowAmps, so reset the chargeNow variables.
       return 0
@@ -517,8 +517,8 @@ class TWCMaster:
     # should charge
     self.settings['chargeNowAmps'] = amps
 
-  def setChargeNowTimeEnd(self, time):
-    self.chargeNowTimeEnd = (self.time.time() + time)
+  def setChargeNowTimeEnd(self, timeadd):
+    self.chargeNowTimeEnd = (time.time() + timeadd)
 
   def setConsumption(self, source, value):
     # Accepts consumption values from one or more data sources

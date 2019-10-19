@@ -140,7 +140,7 @@ class CarApi:
               'accept': 'application/json',
               'Authorization': 'Bearer ' + self.getCarApiBearerToken()
             }
-            req = self.requests.post(url, headers = headers)
+            req = self.requests.get(url, headers = headers)
             self.debugLog(8, 'Car API cmd ' + str(req))
             try:
                 apiResponseDict = self.json.loads(req.text)
@@ -609,7 +609,7 @@ class CarApi:
       if (lasterror >= backoff):
         return 0
       else:
-        self.debugLog(8, "Backoff is " + str(backoff) + ", lasterror delta is " + str(lasterror) + ", last error was " + str(self.getCarApiLastErrorTime()))
+        self.debugLog(11, "Backoff is " + str(backoff) + ", lasterror delta is " + str(lasterror) + ", last error was " + str(self.getCarApiLastErrorTime()))
         return int(backoff - lasterror)
 
   def getCarApiTransientErrors(self):
