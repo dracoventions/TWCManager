@@ -168,7 +168,7 @@ class CarApi:
                               + " because vehicle.stopAskingToStartCharging == True")
                     continue
 
-                if(now - vehicle.lastErrorTime < (self.getCarApiErrorRetryMins()*60)):
+                if(self.getCarApiRetryRemaining()):
                     # It's been under carApiErrorRetryMins minutes since the car
                     # API generated an error on this vehicle. Don't send it more
                     # commands yet.
@@ -182,7 +182,7 @@ class CarApi:
 
                 if(now - vehicle.lastWakeAttemptTime <= vehicle.delayNextWakeAttempt):
                     self.debugLog(10, "car_api_available returning False because we are still delaying "
-                              + str(delayNextWakeAttempt) + " seconds after the last failed wake attempt.")
+                              + str(vehicle.delayNextWakeAttempt) + " seconds after the last failed wake attempt.")
                     return False
 
                 # It's been delayNextWakeAttempt seconds since we last failed to
@@ -195,7 +195,7 @@ class CarApi:
                   'accept': 'application/json',
                   'Authorization': 'Bearer ' + self.getCarApiBearerToken()
                 }
-                req = self.requests.get(url, headers = headers)
+                req = self.requests.post(url, headers = headers)
                 self.debugLog(8, 'Car API cmd' + str(req))
 
                 try:
@@ -204,9 +204,8 @@ class CarApi:
                     pass
 
                 state = 'error'
+                self.debugLog(4, 'Car API wake car response' + str(apiResponseDict))
                 try:
-                    self.debugLog(4, 'Car API wake car response', apiResponseDict, '\n')
-
                     state = apiResponseDict['response']['state']
 
                 except (KeyError, TypeError):
@@ -336,7 +335,7 @@ class CarApi:
                             vehicle.delayNextWakeAttempt = 15*60;
 
                     if(state == 'error'):
-                        self.debugLog(1, ": Car API wake car failed with unknown response.  " + "Will try again in " + str(vehicle.delayNextWakeAttempt) + " seconds.")
+                        self.debugLog(1, "Car API wake car failed with unknown response.  " + "Will try again in " + str(vehicle.delayNextWakeAttempt) + " seconds.")
                     else:
                         self.debugLog(1, "Car API wake car failed.  State remains: '"
                                 + state + "'.  Will try again in "
@@ -468,15 +467,15 @@ class CarApi:
           'accept': 'application/json',
           'Authorization': 'Bearer ' + self.getCarApiBearerToken()
         }
-        req = self.requests.get(url, headers = headers)
+        req = self.requests.post(url, headers = headers)
 
         # Retry up to 3 times on certain errors.
         for retryCount in range(0, 3):
             self.debugLog(8, 'Car API cmd' + str(req))
 
             try:
-                apiResponseDict = json.loads(req.text)
-            except json.decoder.JSONDecodeError:
+                apiResponseDict = self.json.loads(req.text)
+            except self.json.decoder.JSONDecodeError:
                 pass
 
             try:
@@ -579,7 +578,7 @@ class CarApi:
                 vehicle.lastErrorTime = now
             break
 
-    if(self.config['config']['debugLevel'] >= 1 and carapi.getLastStartOrStopChargeTime() == now):
+    if(self.config['config']['debugLevel'] >= 1 and self.getLastStartOrStopChargeTime() == now):
         print(time_now() + ': Car API ' + startOrStop + ' charge result: ' + result)
 
     return result
@@ -600,20 +599,27 @@ class CarApi:
   def getCarApiRefreshToken(self):
     return self.carApiRefreshToken
 
-  def getCarApiRetryRemaining(self):
+  def getCarApiRetryRemaining(self, vehicleLast = 0):
     # Calculate the amount of time remaining until the API can be queried
     # again. This is the api backoff time minus the difference between now
     # and the last error time
-    if (self.getCarApiLastErrorTime() == 0):
+
+    # The optional vehicleLast parameter allows passing the last error time
+    # for an individual vehicle, rather than the entire API.
+    lastError = self.getCarApiLastErrorTime()
+    if (vehicleLast > 0):
+      lastError = vehicleLast
+
+    if (lastError == 0):
       return 0
     else:
       backoff = (self.getCarApiErrorRetryMins()*60)
-      lasterror = (self.time.time() - self.getCarApiLastErrorTime())
-      if (lasterror >= backoff):
+      lasterrortime = (self.time.time() - lastError)
+      if (lasterrortime >= backoff):
         return 0
       else:
-        self.debugLog(11, "Backoff is " + str(backoff) + ", lasterror delta is " + str(lasterror) + ", last error was " + str(self.getCarApiLastErrorTime()))
-        return int(backoff - lasterror)
+        self.debugLog(11, "Backoff is " + str(backoff) + ", lasterror delta is " + str(lasterrortime) + ", last error was " + str(lastError))
+        return int(backoff - lasterrortime)
 
   def getCarApiTransientErrors(self):
     return self.carApiTransientErrors
@@ -697,10 +703,10 @@ class CarApiVehicle:
         print("TeslaAPIVehicle: (" + str(minlevel) + ") " + message)
 
     def ready(self):
-        if(self.time.time() - self.lastErrorTime < (self.carApiErrorRetryMins*60)):
+        if(self.carapi.getCarApiRetryRemaining(self.lastErrorTime)):
             # It's been under carApiErrorRetryMins minutes since the car API
             # generated an error on this vehicle. Return that car is not ready.
-            debugLog(8, ': Vehicle ' + str(self.ID)
+            self.debugLog(8, ': Vehicle ' + str(self.ID)
                     + ' not ready because of recent lastErrorTime '
                     + str(self.lastErrorTime))
             return False
@@ -712,7 +718,7 @@ class CarApiVehicle:
             # was issued.  Times I've tested: 1:35, 1:57, 2:30
             return True
 
-        debugLog(8, 'Vehicle ' + str(self.ID) + " not ready because it wasn't woken in the last 2 minutes.")
+        self.debugLog(8, 'Vehicle ' + str(self.ID) + " not ready because it wasn't woken in the last 2 minutes.")
         return False
 
     def update_location(self):
@@ -721,7 +727,7 @@ class CarApiVehicle:
 
         apiResponseDict = {}
 
-        url = 'https://owner-api.teslamotors.com/api/1/vehicles/"
+        url = "https://owner-api.teslamotors.com/api/1/vehicles/"
         url = url + str(self.ID) + "/data_request/drive_state"
 
         headers = {
@@ -732,7 +738,7 @@ class CarApiVehicle:
 
         # Retry up to 3 times on certain errors.
         for retryCount in range(0, 3):
-            debugLog(8, 'Car API cmd' + str(req))
+            self.debugLog(8, 'Car API cmd' + str(req))
             try:
                 apiResponseDict = self.json.loads(req.text)
                 # This error can happen here as well:
@@ -743,7 +749,7 @@ class CarApiVehicle:
                 pass
 
             try:
-                debugLog(4, 'Car API vehicle GPS location' + str(apiResponseDict) + '\n')
+                self.debugLog(4, 'Car API vehicle GPS location' + str(apiResponseDict) + '\n')
 
                 if('error' in apiResponseDict):
                     foundKnownError = False
@@ -754,7 +760,7 @@ class CarApiVehicle:
                             # it's worth re-trying in 1 minute rather than
                             # waiting carApiErrorRetryMins minutes for retry
                             # in the standard error handler.
-                            debugLog(1, "Car API returned '" + error
+                            self.debugLog(1, "Car API returned '" + error
                                       + "' when trying to get GPS location.  Try again in 1 minute.")
                             self.time.sleep(60)
                             foundKnownError = True
@@ -777,7 +783,7 @@ class CarApiVehicle:
                 # This catches cases like trying to access
                 # apiResponseDict['response'] when 'response' doesn't exist in
                 # apiResponseDict.
-                debugLog(1, ": ERROR: Can't get GPS location of vehicle " + str(self.ID) + \
+                self.debugLog(1, ": ERROR: Can't get GPS location of vehicle " + str(self.ID) + \
                           ".  Will try again later.")
                 self.lastErrorTime = self.time.time()
                 return False
