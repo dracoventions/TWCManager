@@ -3,7 +3,6 @@ class CarApi:
   import json
   import re
   import requests
-  import subprocess
   import time
 
   carApiLastErrorTime = 0
@@ -105,13 +104,11 @@ class CarApi:
             self.debugLog(2, 'Car API request object is null')
         if(req != None):
             self.debugLog(2, 'Car API request' + str(req))
-            apiResponse = req.text
             # Example response:
             # b'{"access_token":"4720d5f980c9969b0ca77ab39399b9103adb63ee832014fe299684201929380","token_type":"bearer","expires_in":3888000,"refresh_token":"110dd4455437ed351649391a3425b411755a213aa815171a2c6bfea8cc1253ae","created_at":1525232970}'
 
-        print("AAAAAA" + apiResponse)
         try:
-            apiResponseDict = self.json.loads(apiResponse)
+            apiResponseDict = self.json.loads(req.text)
         except self.json.decoder.JSONDecodeError:
             pass
 
@@ -145,10 +142,12 @@ class CarApi:
             try:
                 apiResponseDict = self.json.loads(req.text)
             except self.json.decoder.JSONDecodeError:
+                self.debugLog(1, "Failed to decode JSON response to API call " + url)
+                self.debugLog(6, "Response: " + req.text)
                 pass
 
             try:
-                self.debugLog(4, 'Car API vehicle list' + apiResponseDict + '\n')
+                self.debugLog(4, 'Car API vehicle list' + str(apiResponseDict) + '\n')
 
                 for i in range(0, apiResponseDict['count']):
                     self.addVehicle(apiResponseDict['response'][i]['id'])
@@ -156,8 +155,7 @@ class CarApi:
                 # This catches cases like trying to access
                 # apiResponseDict['response'] when 'response' doesn't exist in
                 # apiResponseDict.
-                self.debugLog(2, "ERROR: Can't get list of vehicles via Tesla car API.  Will try again in "
-                      + str(self.getCarApiErrorRetryMins()) + " minutes.")
+                self.debugLog(2, "ERROR: Can't get list of vehicles via Tesla car API.  Will try again in " + str(self.getCarApiErrorRetryMins()) + " minutes.")
                 self.updateCarApiLastErrorTime()
                 return False
 
@@ -190,14 +188,18 @@ class CarApi:
                 # It's been delayNextWakeAttempt seconds since we last failed to
                 # wake the car, or it's never been woken. Wake it.
                 vehicle.lastWakeAttemptTime = now
-                cmd = 'curl -s -m 60 -X POST -H "accept: application/json" -H "Authorization:Bearer ' + \
-                      self.getCarApiBearerToken() + \
-                      '" "https://owner-api.teslamotors.com/api/1/vehicles/' + \
-                      str(vehicle.ID) + '/wake_up"'
-                self.debugLog(8, 'Car API cmd', cmd)
+                url = "https://owner-api.teslamotors.com/api/1/vehicles/"
+                url = url + str(vehicle.ID) + "/wake_up"
+
+                headers = {
+                  'accept': 'application/json',
+                  'Authorization': 'Bearer ' + self.getCarApiBearerToken()
+                }
+                req = self.requests.get(url, headers = headers)
+                self.debugLog(8, 'Car API cmd' + str(req))
 
                 try:
-                    apiResponseDict = self.json.loads(self.run_process(cmd).decode('ascii'))
+                    apiResponseDict = self.json.loads(req.text)
                 except self.json.decoder.JSONDecodeError:
                     pass
 
@@ -334,9 +336,7 @@ class CarApi:
                             vehicle.delayNextWakeAttempt = 15*60;
 
                     if(state == 'error'):
-                        self.debugLog(1, ": Car API wake car failed with unknown response.  " \
-                                "Will try again in "
-                                + str(vehicle.delayNextWakeAttempt) + " seconds.")
+                        self.debugLog(1, ": Car API wake car failed with unknown response.  " + "Will try again in " + str(vehicle.delayNextWakeAttempt) + " seconds.")
                     else:
                         self.debugLog(1, "Car API wake car failed.  State remains: '"
                                 + state + "'.  Will try again in "
@@ -462,22 +462,25 @@ class CarApi:
             # wait 5 seconds in case of hardware differences between cars.
             time.sleep(5)
 
-        cmd = 'curl -s -m 60 -X POST -H "accept: application/json" -H "Authorization:Bearer ' + \
-              self.getCarApiBearerToken() + \
-              '" "https://owner-api.teslamotors.com/api/1/vehicles/' + \
-            str(vehicle.ID) + '/command/charge_' + startOrStop + '"'
+        url = "https://owner-api.teslamotors.com/api/1/vehicles/"
+        url = url + str(vehicle.ID) + "/command/charge_" + startOrStop
+        headers = {
+          'accept': 'application/json',
+          'Authorization': 'Bearer ' + self.getCarApiBearerToken()
+        }
+        req = self.requests.get(url, headers = headers)
 
         # Retry up to 3 times on certain errors.
         for retryCount in range(0, 3):
-            self.debugLog(8, 'Car API cmd', cmd)
+            self.debugLog(8, 'Car API cmd' + str(req))
 
             try:
-                apiResponseDict = json.loads(run_process(cmd).decode('ascii'))
+                apiResponseDict = json.loads(req.text)
             except json.decoder.JSONDecodeError:
                 pass
 
             try:
-                self.debugLog(4, 'Car API TWC ID: ' + str(vehicle.ID) + ": " + startOrStop + ' charge response' + apiResponseDict + '\n')
+                self.debugLog(4, 'Car API TWC ID: ' + str(vehicle.ID) + ": " + startOrStop + ' charge response' + str(apiResponseDict))
                 # Responses I've seen in apiResponseDict:
                 # Car is done charging:
                 #   {'response': {'result': False, 'reason': 'complete'}}
@@ -628,16 +631,6 @@ class CarApi:
   def getCarApiVehicles(self):
     return self.carApiVehicles
 
-  def run_process(self, cmd):
-      result = None
-      try:
-          result = self.subprocess.check_output(cmd, shell=True)
-      except self.subprocess.CalledProcessError:
-          # We reach this point if the process returns a non-zero exit code.
-          result = b''
-
-      return result
-
   def setCarApiBearerToken(self, token=None):
     if token:
       self.carApiBearerToken = token
@@ -728,16 +721,20 @@ class CarApiVehicle:
 
         apiResponseDict = {}
 
-        cmd = 'curl -s -m 60 -H "accept: application/json" -H "Authorization:Bearer ' + \
-              self.getCarApiBearerToken() + \
-              '" "https://owner-api.teslamotors.com/api/1/vehicles/' + \
-              str(self.ID) + '/data_request/drive_state"'
+        url = 'https://owner-api.teslamotors.com/api/1/vehicles/"
+        url = url + str(self.ID) + "/data_request/drive_state"
+
+        headers = {
+          'accept': 'application/json',
+          'Authorization': 'Bearer ' + self.getCarApiBearerToken()
+        }
+        req = self.requests.get(url, headers = headers)
 
         # Retry up to 3 times on certain errors.
         for retryCount in range(0, 3):
-            debugLog(8, ': Car API cmd' + cmd)
+            debugLog(8, 'Car API cmd' + str(req))
             try:
-                apiResponseDict = self.json.loads(run_process(cmd).decode('ascii'))
+                apiResponseDict = self.json.loads(req.text)
                 # This error can happen here as well:
                 #   {'response': {'reason': 'could_not_wake_buses', 'result': False}}
                 # This one is somewhat common:
@@ -746,7 +743,7 @@ class CarApiVehicle:
                 pass
 
             try:
-                debugLog(4, ': Car API vehicle GPS location' + apiResponseDict + '\n')
+                debugLog(4, 'Car API vehicle GPS location' + str(apiResponseDict) + '\n')
 
                 if('error' in apiResponseDict):
                     foundKnownError = False
