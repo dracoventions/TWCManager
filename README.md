@@ -16,8 +16,8 @@ To enable TWCManager to gather the solar generation information that it requires
 
 | Platform         | Status           | Details                 |
 | ---------------- | ---------------- | ----------------------- |
-| HTTP             | Available v1.1.3 | Allows control via embedded HTTP server |
-| MQTT             | Available v1.1.2 | Allows control via MQTT |
+| HTTPControl      | Available v1.1.3 | Allows control via embedded HTTP server |
+| MQTTControl      | Available v1.1.2 | Allows control via MQTT |
 
 ### EMS Interfaces
 
@@ -28,8 +28,8 @@ EMS Interfaces read solar generation and/or consumption values from an external 
 | Dutch SmartMeter | In Development | Supports DSMR Serial Protocol |
 | Fronius Inverter | Available v1.1.0 | Allows fetching generation and consumption from Fronius Inverter API |
 | HomeAssistant    | Available v1.0.1 | Allows fetching generation and consumption from HomeAssistant sensors |
-| Tesla Powerwall2 | Available v1.1.3 | Support for fetching Consumption and Generation from Tesla Powerwall 2 |
-| The Energy Detective | Available v1.1.2 | Support for TED (The Energy Detective) |
+| [Tesla Powerwall2](docs/modules/EMS_Powerwall2.md) | Available v1.1.3 | Support for fetching Consumption and Generation from Tesla Powerwall 2 |
+| [The Energy Detective](docs/modules/EMS_TED.md) | Available v1.1.2 | Support for TED (The Energy Detective) |
 
 ### Status Interfaces
 
