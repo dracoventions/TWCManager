@@ -33,10 +33,10 @@ The following table shows the available configuration parameters for the Tesla P
 
 | Parameter   | Value         |
 | ----------- | ------------- |
-| enabled     | Boolean value, ```true``` or ```false```. Determines whether we will poll the Tesla Powerwall 2. |
+| enabled     | *required* Boolean value, ```true``` or ```false```. Determines whether we will poll the Tesla Powerwall 2. |
 | password    | *Not implemented yet. If you have a password protected Powerwall2, please raise an issue to have this implemented.* |
-| serverIP    | The IP address of the Powerwall2 device. We will poll this device's HTTPS API |
-| serverPort  | API Server port. This is the port that we should connect to. This is almost always 443 (HTTPS) |
+| serverIP    | *required* The IP address of the Powerwall2 device. We will poll this device's HTTPS API |
+| serverPort  | *optional* API Server port. This is the port that we should connect to. This is almost always 443 (HTTPS) |
 
 ### JSON Configuration Example
 
