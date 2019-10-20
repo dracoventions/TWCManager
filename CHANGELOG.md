@@ -4,12 +4,11 @@ This document shows the changes per release
 
 ## v1.1.4 - Current Dev Branch
 
-  * TODO: Some doco around module configuration
-  * TODO: DSMR from https://github.com/dschutterop/dsmr
   * Implemented Tesla login / token retrieval for HTTP Config module.
   * Improved debug logging for Tesla API Vehicle module.
   * Modularised the Web IPC interface for the external web server control component.
   * Fix: Status output now subtracts charger load from consumption.
+  * Re-implemented the Tesla API queries using python's request module rather than external shell calls to curl. Provides better exception handling and less shell command/subprocess interaction.
   * Breaking Change: Improved Settings Storage for non-volatile settings (not configuration) storage. 
     * This will require a manual port of the settings from ```/etc/twcmanager/TWCManager.settings``` to ```/etc/twcmanager/settings.json```
     * Due to a small user base, this is not done automatically. If there is demand for a port method, an issue can be raised for a feature request, and I'll create a one time script to port old settings to new settings.
@@ -22,14 +21,6 @@ This document shows the changes per release
 emoving a large number of global variables and reduces complexity for future fea
 ture improvements.
      * Please Note: This is a major structural change to TWCManager, and is expected to take some time to fully test and validate. A benefit of this change is that now TWCSlave is modular, we can fully implement modular control interfaces.
-     * Tested: TM as Master, tracking Green Energy
-     * Untested: TM as Slave (low-pri)
-        * Will not work. There's some slave related comms that need to move from TWCManager to TWCMaster
-     * Tested: TM as Master, Scheduled Charging
-     * Untested: TM as Master, Charge Now
-     * TODO: Clean up globals in TWCSlave
-       * All that is left is the TM as Slave change above
-     * TODO: Look at globals in TWCManager
 
 ## v1.1.2 - 2019-10-14
 
@@ -68,12 +59,3 @@ This module provides HomeAssistant sensor functionality to the TWCManager projec
   * Integrated multi-charger and multi-car MQTT integration (Status Module) from flodorn's repository
   * Split the Sensor (EMS) and Status functions out of the main script
   * Created HomeAssistant EMS and Status modules and tested successfully
-  
-### Known Issues
-
-  * Large numbers of uncaught exceptions around connectivity for EMS and Status interfaces - These can be safely ignored, they will be fixed in v1.1. Currently, they will only result in excessive logging.
-  
-### Future Changes
-
-  * Separate class for serial communications - so TWCMaster and TWCSlave don't both need to speak to the serial port directly
-  * Modular serial interface - allow dummy module to be substituted for testing (along with above work)
