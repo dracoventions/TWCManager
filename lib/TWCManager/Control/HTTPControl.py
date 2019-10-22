@@ -163,7 +163,9 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     global master
     url = urllib.parse.urlparse(self.path)
 
-    if (url.path == '/'):
+    if (url.path == '/' or 
+        url.path == '/apiacct/True' or 
+        url.path == '/apiacct/False'):
       self.send_response(200)
       self.send_header('Content-type','text/html')
       self.end_headers()
@@ -181,8 +183,14 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       page += "<table border='0' padding='0' margin='0'><tr>"
       page += "<td valign='top'>"
 
-      if (not master.teslaLoginAskLater):
+      if (url.path == '/apiacct/False'):
+        page += "<font color='red'><b>Failed to log in to Tesla Account. Please check username and password and try again.</b></font>"
+
+      if (not master.teslaLoginAskLater and url.path != '/apiacct/True'):
         page += self.request_teslalogin()
+
+      if (url.path == '/apiacct/True'):
+        page += "<b>Thank you, successfully fetched Tesla API token."
 
       page += self.show_status()
 
@@ -243,15 +251,17 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         master.teslaLoginAskLater = True
 
     if (not master.teslaLoginAskLater):
-      # Process the information submitted
-      self.send_response(200)
-      self.send_header('Content-type','text/html')
-      self.end_headers()
+      # Connect to Tesla API
 
+      master.carapi.setCarApiLastErrorTime(0)
       ret = master.carapi.car_api_available(self.fields['email'][0],self.fields['password'][0])
-      page = str(ret)
 
-      self.wfile.write(page.encode("utf-8"))
+      # Redirect to an index page with output based on the return state of
+      # the function
+      self.send_response(302)
+      self.send_header('Location', '/apiacct/' + str(ret))
+      self.end_headers()
+      self.wfile.write(''.encode("utf-8"))
       return
     else:
       # User has asked to skip Tesla Account submission for this session
