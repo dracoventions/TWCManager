@@ -7,6 +7,9 @@ class HASSStatus:
   import requests
 
   apiKey           = None
+  config           = None
+  configConfig     = None
+  configHASS       = None
   debugLevel       = 0
   msgRate          = {}
   msgRatePerSensor = 60
@@ -15,12 +18,21 @@ class HASSStatus:
   serverPort       = 8123
   timeout          = 2
 
-  def __init__(self, debugLevel, config):
-    self.status      = config.get('enabled', False)
-    self.serverIP    = config.get('serverIP', None)
-    self.serverPort  = config.get('serverPort', 8123)
-    self.apiKey      = config.get('apiKey', None)
-    self.debugLevel  = debugLevel
+  def __init__(self, master):
+    self.config         = master.config
+    try:
+      self.configConfig = self.config['config']
+    except KeyError:
+      self.configConfig = {}
+    try:
+      self.configHASS   = self.config['status']['HASS']
+    except KeyError:
+      self.configHASS   = {}
+    self.status         = self.configHASS.get('enabled', False)
+    self.serverIP       = self.configHASS.get('serverIP', None)
+    self.serverPort     = self.configHASS.get('serverPort', 8123)
+    self.apiKey         = self.configHASS.get('apiKey', None)
+    self.debugLevel     = self.configConfig.get('debugLevel', 0)
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):

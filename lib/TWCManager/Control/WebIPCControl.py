@@ -5,16 +5,21 @@ import time
 
 class WebIPCControl:
 
-  carapi     = None
-  config     = None
-  debugLevel = 0
-  master     = None
+  carapi       = None
+  config       = None
+  configConfig = None
+  debugLevel   = 0
+  master       = None
 
   def __init__(self, master):
     self.carapi     = master.carapi
     self.config     = master.config
-    self.debugLevel = master.config['config']['debugLevel']
-    self.master     = master
+    try:
+      self.configConfig = master.config['config']
+    except KeyError:
+      self.configConfig = {}
+    self.debugLevel     = self.configConfig.get('debugLevel', 0)
+    self.master         = master
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):

@@ -5,29 +5,39 @@ class TeslaPowerwall2:
   import requests
   import time
 
-  cacheTime   = 60
-  config      = None
-  consumedW   = 0
-  debugLevel  = 0
-  fetchFailed = False
-  generatedW  = 0
-  importW     = 0
-  exportW     = 0
-  lastFetch   = 0
-  password    = None
-  serverIP    = None
-  serverPort  = 443
-  status      = False
-  timeout     = 10
-  voltage     = 0
+  cacheTime       = 60
+  config          = None
+  configConfig    = None
+  configPowerwall = None
+  consumedW       = 0
+  debugLevel      = 0
+  fetchFailed     = False
+  generatedW      = 0
+  importW         = 0
+  exportW         = 0
+  lastFetch       = 0
+  password        = None
+  serverIP        = None
+  serverPort      = 443
+  status          = False
+  timeout         = 10
+  voltage         = 0
 
   def __init__(self, master):
-    self.config      = master.config
-    self.debugLevel  = self.config.get('debugLevel', 0)
-    self.status      = self.config.get('enabled', False)
-    self.serverIP    = self.config.get('serverIP', None)
-    self.serverPort  = self.config.get('serverPort','443')
-    self.password    = self.config.get('password', None)
+    self.config            = master.config
+    try:
+      self.configConfig    = self.config['config']
+    except KeyError:
+      self.configConfig    = {}
+    try:
+      self.configPowerwall = self.config['sources']['Powerwall2']
+    except KeyError:
+      self.configPowerwall = {}
+    self.debugLevel        = self.configConfig.get('debugLevel', 0)
+    self.status            = self.configPowerwall.get('enabled', False)
+    self.serverIP          = self.configPowerwall.get('serverIP', None)
+    self.serverPort        = self.configPowerwall.get('serverPort','443')
+    self.password          = self.configPowerwall.get('password', None)
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):

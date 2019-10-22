@@ -10,25 +10,37 @@ class TED:
   import requests
   import time
 
-  cacheTime   = 60
-  consumedW   = 0
-  debugLevel  = 0
-  fetchFailed = False
-  generatedW  = 0
-  importW     = 0
-  exportW     = 0
-  lastFetch   = 0
-  serverIP    = None
-  serverPort  = 80
-  status      = False
-  timeout     = 10
-  voltage     = 0
+  cacheTime    = 60
+  config       = None
+  configConfig = None
+  configTED    = None
+  consumedW    = 0
+  debugLevel   = 0
+  fetchFailed  = False
+  generatedW   = 0
+  importW      = 0
+  exportW      = 0
+  lastFetch    = 0
+  serverIP     = None
+  serverPort   = 80
+  status       = False
+  timeout      = 10
+  voltage      = 0
 
-  def __init__(self, debugLevel, config):
-    self.debugLevel  = debugLevel
-    self.status      = config.get('enabled', False)
-    self.serverIP    = config.get('serverIP', None)
-    self.serverPort  = config.get('serverPort','80')
+  def __init__(self, master):
+    self.config         = master.config
+    try:
+      self.configConfig = self.config['config']
+    except KeyError:
+      self.configConfig = {}
+    try:
+      self.configTED    = self.config['sources']['TED']
+    except KeyError:
+      self.configTED    = {}
+    self.debugLevel     = self.configConfig.get('debugLevel', 0)
+    self.status         = self.configTED.get('enabled', False)
+    self.serverIP       = self.configTED.get('serverIP', None)
+    self.serverPort     = self.configTED.get('serverPort','80')
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):

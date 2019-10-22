@@ -265,10 +265,10 @@ webipccontrol = WebIPCControl(master)
 mqttcontrol = MQTTControl(master)
 fronius = Fronius(master)
 hass = HASS(master)
-master.sethassstatus(HASSStatus(config['config']['debugLevel'],config['status']['HASS']))
-master.setmqttstatus(MQTTStatus(config['config']['debugLevel'],config['status']['MQTT']))
+master.sethassstatus(HASSStatus(master))
+master.setmqttstatus(MQTTStatus(master))
 powerwall = TeslaPowerwall2(master)
-ted = TED(config['config']['debugLevel'], config['sources']['TED'])
+ted = TED(master)
 
 # Load settings from file
 master.loadSettings()

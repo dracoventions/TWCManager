@@ -8,6 +8,9 @@ class MQTTStatus:
   
   brokerIP        = None
   brokerPort      = 1883
+  config          = None
+  configConfig    = None
+  configMQTT      = {}
   connectionState = 0
   debugLevel      = 0
   msgQueue        = []
@@ -21,13 +24,22 @@ class MQTTStatus:
   topicPrefix     = None
   username        = None
   
-  def __init__(self, debugLevel, config):
-    self.debugLevel  = debugLevel
-    self.status      = config.get('enabled', False)
-    self.brokerIP    = config.get('brokerIP', None)
-    self.topicPrefix = config.get('topicPrefix', None)
-    self.username    = config.get('username', None)
-    self.password    = config.get('password', None)
+  def __init__(self, master):
+    self.config         = master.config
+    try:
+      self.configConfig = self.config['config']
+    except KeyError:
+      self.configConfig = {}
+    try:
+      self.configMQTT   = self.config['status']['MQTT']
+    except KeyError:
+      self.configMQTT   = {}
+    self.debugLevel     = self.configConfig.get('debugLevel', 0)
+    self.status         = self.configMQTT.get('enabled', False)
+    self.brokerIP       = self.configMQTT.get('brokerIP', None)
+    self.topicPrefix    = self.configMQTT.get('topicPrefix', None)
+    self.username       = self.configMQTT.get('username', None)
+    self.password       = self.configMQTT.get('password', None)
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
