@@ -6,6 +6,7 @@ class TeslaPowerwall2:
   import time
 
   cacheTime   = 60
+  config      = None
   consumedW   = 0
   debugLevel  = 0
   fetchFailed = False
@@ -20,12 +21,13 @@ class TeslaPowerwall2:
   timeout     = 10
   voltage     = 0
 
-  def __init__(self, debugLevel, config):
-    self.debugLevel  = debugLevel
-    self.status      = config.get('enabled', False)
-    self.serverIP    = config.get('serverIP', None)
-    self.serverPort  = config.get('serverPort','443')
-    self.password    = config.get('password', None)
+  def __init__(self, master):
+    self.config      = master.config
+    self.debugLevel  = self.config.get('debugLevel', 0)
+    self.status      = self.config.get('enabled', False)
+    self.serverIP    = self.config.get('serverIP', None)
+    self.serverPort  = self.config.get('serverPort','443')
+    self.password    = self.config.get('password', None)
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):

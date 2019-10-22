@@ -6,6 +6,7 @@ class MQTTControl:
   brokerIP        = None
   brokerPort      = 1883
   client          = None
+  config          = None
   connectionState = 0
   debugLevel      = 0
   master          = None
@@ -15,14 +16,15 @@ class MQTTControl:
   topicPrefix     = None
   username        = None
   
-  def __init__(self, debugLevel, config, master):
-    self.debugLevel  = debugLevel
-    self.status      = config.get('enabled', False)
-    self.brokerIP    = config.get('brokerIP', None)
+  def __init__(self, master):
+    self.config      = master.config
+    self.debugLevel  = self.config.get('debugLevel', 0)
+    self.status      = self.config.get('enabled', False)
+    self.brokerIP    = self.config.get('brokerIP', None)
     self.master      = master
-    self.topicPrefix = config.get('topicPrefix', None)
-    self.username    = config.get('username', None)
-    self.password    = config.get('password', None)
+    self.topicPrefix = self.config.get('topicPrefix', None)
+    self.username    = self.config.get('username', None)
+    self.password    = self.config.get('password', None)
 
     # Subscribe to the specified topic prefix, and process incoming messages
     # to determine if they represent control messages

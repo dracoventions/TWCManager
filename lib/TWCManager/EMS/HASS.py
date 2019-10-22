@@ -8,6 +8,7 @@ class HASS:
 
   apiKey                = None
   cacheTime             = 60
+  config                = None
   consumedW             = 0
   debugLevel            = 0
   fetchFailed           = False
@@ -20,14 +21,15 @@ class HASS:
   serverPort            = 8123
   timeout               = 2
 
-  def __init__(self, debugLevel, config):
-    self.status                = config.get('enabled', False)
-    self.serverIP              = config.get('serverIP', None)
-    self.serverPort            = config.get('serverPort', 8123)
-    self.apiKey                = config.get('apiKey', None)
-    self.debugLevel            = debugLevel
-    self.hassEntityConsumption = config.get('hassEntityConsumption', None)
-    self.hassEntityGeneration  = config.get('hassEntityGeneration', None)
+  def __init__(self, master):
+    self.config                = master.config
+    self.status                = self.config.get('enabled', False)
+    self.serverIP              = self.config.get('serverIP', None)
+    self.serverPort            = self.config.get('serverPort', 8123)
+    self.apiKey                = self.config.get('apiKey', None)
+    self.debugLevel            = self.config.get('debugLevel', 0)
+    self.hassEntityConsumption = self.config.get('hassEntityConsumption', None)
+    self.hassEntityGeneration  = self.config.get('hassEntityGeneration', None)
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
