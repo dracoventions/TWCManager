@@ -161,14 +161,24 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
   def do_get_settings(self):
     page = """
+    <html>
+    <head><title>Settings</title></head>
+    <body>
     <form method=POST action='/settings/save'>
       <table>
         <tr>
           <th>Stop Charging Method</th>
           <td>
-  <select name='chargeStopMode'>
-    <option value='1'>Tesla API</option>
-    <option value='2'>Stop Responding to Slaves</option>
+  <select name='chargeStopMode'>"""
+    page += '<option value="1" '
+    if (master.settings.get('chargeStopMode', "1") == "1"):
+      page += "selected"
+    page += ">Tesla API</option>"
+    page += '<option value="2" '
+    if (master.settings.get('chargeStopMode', "1") == "2"):
+      page += "selected"
+    page += ">Stop Responding to Slaves</option>"
+    page += """
   </select>
           </td>
         </tr>
@@ -178,6 +188,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         </tr>
       </table>
     </form>
+    </body>
+    </html>
     """
     return page
 
@@ -255,6 +267,12 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     field_data = self.rfile.read(length)
     self.fields = urllib.parse.parse_qs(str(field_data))
 
+    if (url.path == '/settings/save'):
+      # User has submitted settings.
+      # Call dedicated function
+      self.process_settings()
+      return
+
     if (url.path == '/tesla-login'):
       # User has submitted Tesla login.
       # Pass it to the dedicated process_teslalogin function
@@ -266,6 +284,22 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     self.end_headers()
     self.wfile.write(''.encode("utf-8"))
     return
+
+  def process_settings(self):
+
+      # Write settings
+      for key in self.fields:
+        keya = str(key).replace("b'","")
+        vala = self.fields[key][0].replace("'", "")
+        master.settings[keya] = vala
+      master.saveSettings()
+
+      # Redirect to the index page
+      self.send_response(302)
+      self.send_header('Location', '/')
+      self.end_headers()
+      self.wfile.write(''.encode("utf-8"))
+      return
 
   def process_teslalogin(self):
     # Check if we are skipping Tesla Login submission

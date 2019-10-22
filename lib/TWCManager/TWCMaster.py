@@ -29,7 +29,7 @@ class TWCMaster:
   ser                 = None
   settings            = {
     'chargeNowAmps'            : 0,
-    'chargeStopMode'           : 1,
+    'chargeStopMode'           : "1",
     'homeLat'                  : 10000,
     'homeLon'                  : 10000,
     'hourResumeTrackGreenEnergy' : -1,
@@ -613,9 +613,9 @@ class TWCMaster:
   def startCarsCharging(self):
     # This function is the opposite functionality to the stopCarsCharging function
     # below
-    if (self.settings.get('chargeStopMode', 1) == 1):
+    if (self.settings.get('chargeStopMode', "1") == "1"):
       self.queue_background_task({'cmd':'charge', 'charge':True})
-    if (self.settings.get('chargeStopMode', 1) == 2):
+    if (self.settings.get('chargeStopMode', "1") == "2"):
       self.settings['respondToSlaves'] = 1
 
   def stopCarsCharging(self):
@@ -627,9 +627,9 @@ class TWCMaster:
 
     # 1 = Stop the car(s) charging via the Tesla API
     # 2 = Stop the car(s) charging by refusing to respond to slave TWCs
-    if (self.settings.get('chargeStopMode', 1) == 1):
+    if (self.settings.get('chargeStopMode', "1") == "1"):
       self.queue_background_task({'cmd':'charge', 'charge':False})
-    if (self.settings.get('chargeStopMode', 1) == 2):
+    if (self.settings.get('chargeStopMode', "1") == "2"):
       self.settings['respondToSlaves'] = 0
 
   def time_now(self):
