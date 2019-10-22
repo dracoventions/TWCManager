@@ -25,6 +25,7 @@ class TWCMaster:
   maxAmpsToDivideAmongSlaves = 0
   mqttstatus          = None
   overrideMasterHeartbeatData = b''
+  protocolVersion     = 2
   ser                 = None
   settings            = {
     'chargeNowAmps'         : 0,
@@ -497,7 +498,7 @@ class TWCMaster:
 
     self.timeLastTx = time.time()
 
-  def send_slave_linkready():
+  def send_slave_linkready(self):
     # In the message below, \x1F\x40 (hex 0x1f40 or 8000 in base 10) refers to
     # this being a max 80.00Amp charger model.
     # EU chargers are 32A and send 0x0c80 (3200 in base 10).
@@ -506,11 +507,11 @@ class TWCMaster:
     # master TWC immediately start blinking its red LED 6 times with top green
     # LED on. Manual says this means "The networked Wall Connectors have
     # different maximum current capabilities".
-    msg = bytearray(b'\xFD\xE2') + self.TWCID + self.laveSign + bytearray(b'\x1F\x40\x00\x00\x00\x00\x00\x00')
+    msg = bytearray(b'\xFD\xE2') + self.TWCID + self.slaveSign + bytearray(b'\x1F\x40\x00\x00\x00\x00\x00\x00')
     if(self.protocolVersion == 2):
         msg += bytearray(b'\x00\x00')
 
-    send_msg(msg)
+    self.sendMsg(msg)
 
   def setChargeNowAmps(self, amps):
     # Accepts a number of amps to define the amperage at which we

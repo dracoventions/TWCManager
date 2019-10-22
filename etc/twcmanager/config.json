@@ -148,7 +148,8 @@
         # useful if you have one interface that provides generation detail and another that provides consumption
         # detail, but if both systems provided both values, it would be duplicated.
         "Fronius": {
-          "enabled": false
+          "enabled": false,
+          "serverIP": "192.168.1.2"
         },
         "HASS": {
       # The HASS module allows fetching of consumption and generation statistics from HomeAssistant sensors.
