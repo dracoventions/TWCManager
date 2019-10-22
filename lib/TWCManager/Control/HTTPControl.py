@@ -159,6 +159,28 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     </nav>"""
     return page
 
+  def do_get_settings(self):
+    page = """
+    <form method=POST action='/settings/save'>
+      <table>
+        <tr>
+          <th>Stop Charging Method</th>
+          <td>
+  <select name='chargeStopMode'>
+    <option value='1'>Tesla API</option>
+    <option value='2'>Stop Responding to Slaves</option>
+  </select>
+          </td>
+        </tr>
+        <tr>
+          <td>&nbsp;</td>
+          <td><input type=submit /></td>
+        </tr>
+      </table>
+    </form>
+    """
+    return page
+
   def do_GET(self):
     global master
     url = urllib.parse.urlparse(self.path)
@@ -199,6 +221,14 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       page += "</table>"
       page += "</html>"
 
+      self.wfile.write(page.encode("utf-8"))
+      return
+
+    if (url.path == '/settings'):
+      self.send_response(200)
+      self.send_header('Content-type','text/html')
+      self.end_headers()
+      page = self.do_get_settings()
       self.wfile.write(page.encode("utf-8"))
       return
 

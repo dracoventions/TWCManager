@@ -28,16 +28,18 @@ class TWCMaster:
   protocolVersion     = 2
   ser                 = None
   settings            = {
-    'chargeNowAmps'         : 0,
-    'homeLat'               : 10000,
-    'homeLon'               : 10000,
+    'chargeNowAmps'            : 0,
+    'chargeStopMode'           : 1,
+    'homeLat'                  : 10000,
+    'homeLon'                  : 10000,
     'hourResumeTrackGreenEnergy' : -1,
-    'kWhDelivered'          : 119,
-    'nonScheduledAmpsMax'   : -1,
-    'scheduledAmpsDaysBitmap' : 0x7F,
-    'scheduledAmpsEndHour'  : -1,
-    'scheduledAmpsMax'      : -1,
-    'scheduledAmpsStartHour': -1
+    'kWhDelivered'             : 119,
+    'nonScheduledAmpsMax'      : -1,
+    'respondToSlaves'          : 1,
+    'scheduledAmpsDaysBitmap'  : 0x7F,
+    'scheduledAmpsEndHour'     : -1,
+    'scheduledAmpsMax'         : -1,
+    'scheduledAmpsStartHour'   : -1
   }
   slaveHeartbeatData = bytearray([0x01,0x0F,0xA0,0x0F,0xA0,0x00,0x00,0x00,0x00])
   slaveTWCs           = {}
@@ -607,6 +609,28 @@ class TWCMaster:
 
   def setSpikeAmps(self, amps):
     self.spikeAmpsToCancel6ALimit = amps
+
+  def startCarsCharging(self):
+    # This function is the opposite functionality to the stopCarsCharging function
+    # below
+    if (self.settings.get('chargeStopMode', 1) == 1):
+      self.queue_background_task({'cmd':'charge', 'charge':True})
+    if (self.settings.get('chargeStopMode', 1) == 2):
+      self.settings['respondToSlaves'] = 1
+
+  def stopCarsCharging(self):
+    # This is called by components (mainly TWCSlave) who want to signal to us to
+    # call our configured routine for stopping vehicles from charging.
+    # The default setting is to use the Tesla API. Some people may not want to do
+    # this, as it only works for Tesla vehicles and requires logging in with your
+    # Tesla credentials. The alternate option is to stop responding to slaves
+
+    # 1 = Stop the car(s) charging via the Tesla API
+    # 2 = Stop the car(s) charging by refusing to respond to slave TWCs
+    if (self.settings.get('chargeStopMode', 1) == 1):
+      self.queue_background_task({'cmd':'charge', 'charge':False})
+    if (self.settings.get('chargeStopMode', 1) == 2):
+      self.settings['respondToSlaves'] = 0
 
   def time_now(self):
     return(datetime.now().strftime("%H:%M:%S" + (

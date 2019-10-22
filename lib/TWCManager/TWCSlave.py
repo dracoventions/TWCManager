@@ -259,6 +259,10 @@ class TWCSlave:
         # Heartbeat includes 7 bytes (Protocol 1) or 9 bytes (Protocol 2) of data
         # that we store in masterHeartbeatData.
 
+        if (self.master.settings.get('respondToSlaves', 1) == 0):
+          # We have been instructed not to send master heartbeats
+          return
+
         # Meaning of data:
         #
         # Byte 1 is a command:
@@ -366,13 +370,13 @@ class TWCSlave:
                 # them both from charging.  If the away vehicle is not currently
                 # charging, I'm not sure if this would prevent it from charging
                 # when next plugged in.
-                self.master.queue_background_task({'cmd':'charge', 'charge':False})
+                self.master.stopCarsCharging()
             elif(self.lastAmpsOffered >= 5.0 and self.reportedAmpsActual < 2.0
                  and self.reportedState != 0x02
             ):
                 # Car is not charging and is not reporting an error state, so
                 # try starting charge via car api.
-                self.master.queue_background_task({'cmd':'charge', 'charge':True})
+                self.master.startCarsCharging()
             elif(self.reportedAmpsActual > 4.0):
                 # At least one plugged in car is successfully charging. We don't
                 # know which car it is, so we must set

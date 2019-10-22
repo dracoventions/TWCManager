@@ -33,7 +33,6 @@ import os.path
 import math
 import random
 import re
-import subprocess
 import sys
 import sysv_ipc
 import time
@@ -93,16 +92,6 @@ def hex_str(s:str):
 
 def hex_str(ba:bytearray):
     return " ".join("{:02X}".format(c) for c in ba)
-
-def run_process(cmd):
-    result = None
-    try:
-        result = subprocess.check_output(cmd, shell=True)
-    except subprocess.CalledProcessError:
-        # We reach this point if the process returns a non-zero exit code.
-        result = b''
-
-    return result
 
 def time_now():
     global config
