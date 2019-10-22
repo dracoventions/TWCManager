@@ -4,6 +4,8 @@ This document shows the changes per release
 
 ## v1.1.5 - Current Dev Branch
 
+  * Standardised module configuration handling (which helps reduce the number of exceptions related to configuration)
+
 ## v1.1.4 - 2019-10-22
 
   * Implemented Tesla login / token retrieval for HTTP Config module.
