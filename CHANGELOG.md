@@ -2,7 +2,9 @@
 
 This document shows the changes per release
 
-## v1.1.4 - Current Dev Branch
+## v1.1.5 - Current Dev Branch
+
+## v1.1.4 - 2019-10-22
 
   * Implemented Tesla login / token retrieval for HTTP Config module.
   * Improved debug logging for Tesla API Vehicle module.
