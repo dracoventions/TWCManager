@@ -21,22 +21,22 @@ class TWCMaster:
   debugLevel          = 0
   generationValues    = {}
   hassstatus          = None
-  hourResumeTrackGreenEnergy = -1
   masterTWCID         = ''
   maxAmpsToDivideAmongSlaves = 0
   mqttstatus          = None
-  nonScheduledAmpsMax = -1
   overrideMasterHeartbeatData = b''
-  scheduledAmpsMax    = -1
-  scheduledAmpsStartHour = -1
-  scheduledAmpsEndHour = -1
   ser                 = None
   settings            = {
-    'chargeNowAmps': 0,
-    'homeLat'      : 10000,
-    'homeLon'      : 10000,
-    'kWhDelivered' : 119,
-    'scheduledAmpsDaysBitmap' : 0x7F
+    'chargeNowAmps'         : 0,
+    'homeLat'               : 10000,
+    'homeLon'               : 10000,
+    'hourResumeTrackGreenEnergy' : -1,
+    'kWhDelivered'          : 119,
+    'nonScheduledAmpsMax'   : -1,
+    'scheduledAmpsDaysBitmap' : 0x7F,
+    'scheduledAmpsEndHour'  : -1,
+    'scheduledAmpsMax'      : -1,
+    'scheduledAmpsStartHour': -1
   }
   slaveTWCs           = {}
   slaveTWCRoundRobin  = []
@@ -110,7 +110,7 @@ class TWCMaster:
     return (int(self.settings.get('chargeNowAmps', 0)))
 
   def getHourResumeTrackGreenEnergy(self):
-    return self.hourResumeTrackGreenEnergy
+    return self.settings.get('hourResumeTrackGreenEnergy', -1)
 
   def getMasterTWCID(self):
     # This is called when TWCManager is in Slave mode, to track the
@@ -133,16 +133,16 @@ class TWCMaster:
     return self.settings.get('scheduledAmpsDaysBitmap', 0x7F)
 
   def getNonScheduledAmpsMax(self):
-    return self.nonScheduledAmpsMax
+    return self.settings.get('nonScheduledAmpsMax', -1)
 
   def getScheduledAmpsMax(self):
-    return self.scheduledAmpsMax
+    return self.settings.get('scheduledAmpsMax', -1)
 
   def getScheduledAmpsStartHour(self):
-    return self.scheduledAmpsStartHour
+    return self.settings.get('scheduledAmpsStartHour', -1)
 
   def getScheduledAmpsEndHour(self):
-    return self.scheduledAmpsEndHour
+    return self.settings.get('scheduledAmpsEndHour', -1)
 
   def getSlaveSign(self):
     return self.slaveSign
@@ -540,7 +540,7 @@ class TWCMaster:
     self.settings['homeLon'] = lon
 
   def setHourResumeTrackGreenEnergy(self, hour):
-    self.hourResumeTrackGreenEnergy = hour
+    self.settings['hourResumeTrackGreenEnergy'] = hour
 
   def setkWhDelivered(self, kWh):
     self.settings['kWhDelivered'] = kWh
@@ -589,19 +589,19 @@ class TWCMaster:
     self.setMaxAmpsToDivideAmongSlaves(self.getScheduledAmpsMax())
 
   def setNonScheduledAmpsMax(self, amps):
-    self.nonScheduledAmpsMax = amps
+    self.settings['nonScheduledAmpsMax'] = amps
 
   def setScheduledAmpsDaysBitmap(self, bitmap):
     self.settings['scheduledAmpsDaysBitmap'] = bitmap
 
   def setScheduledAmpsMax(self, amps):
-    self.scheduledAmpsMax = amps
+    self.settings['scheduledAmpsMax'] = amps
 
   def setScheduledAmpsStartHour(self, hour):
-    self.scheduledAmpsStartHour = hour
+    self.settings['scheduledAmpsStartHour'] = hour
 
   def setScheduledAmpsEndHour(self, hour):
-    self.scheduledAmpsEndHour = hour
+    self.settings['scheduledAmpsEndHour'] = hour
 
   def setSpikeAmps(self, amps):
     self.spikeAmpsToCancel6ALimit = amps

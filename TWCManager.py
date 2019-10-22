@@ -109,67 +109,6 @@ def time_now():
     return(datetime.now().strftime("%H:%M:%S" + (
         ".%f" if config['config']['displayMilliseconds'] else "")))
 
-def load_settings():
-    global config, carapi
-
-    try:
-        fh = open(config['config']['settingsPath'] + "/TWCManager.settings", 'r')
-
-        for line in fh:
-            m = re.search(r'^\s*nonScheduledAmpsMax\s*=\s*([-0-9.]+)', line, re.MULTILINE)
-            if(m):
-                master.setNonScheduledAmpsMax(int(m.group(1)))
-                if(config['config']['debugLevel'] >= 10):
-                    print("load_settings: nonScheduledAmpsMax set to " + str(m.group(1)))
-                continue
-
-            m = re.search(r'^\s*scheduledAmpsMax\s*=\s*([-0-9.]+)', line, re.MULTILINE)
-            if(m):
-                master.setScheduledAmpsMax(int(m.group(1)))
-                if(config['config']['debugLevel'] >= 10):
-                    print("load_settings: scheduledAmpsMax set to " + str(m.group(1)))
-                continue
-
-            m = re.search(r'^\s*scheduledAmpsStartHour\s*=\s*([-0-9.]+)', line, re.MULTILINE)
-            if(m):
-                master.setScheduledAmpsStartHour(float(m.group(1)))
-                if(config['config']['debugLevel'] >= 10):
-                    print("load_settings: scheduledAmpsStartHour set to " + str(m.group(1)))
-                continue
-
-            m = re.search(r'^\s*scheduledAmpsEndHour\s*=\s*([-0-9.]+)', line, re.MULTILINE)
-            if(m):
-                master.setScheduledAmpsEndHour(float(m.group(1)))
-                if(config['config']['debugLevel'] >= 10):
-                    print("load_settings: scheduledAmpsEndHour set to " + str(m.group(1)))
-                continue
-
-            m = re.search(r'^\s*hourResumeTrackGreenEnergy\s*=\s*([-0-9.]+)', line, re.MULTILINE)
-            if(m):
-                master.setHourResumeTrackGreenEnergy(float(m.group(1)))
-                if(config['config']['debugLevel'] >= 10):
-                    print("load_settings: hourResumeTrackGreenEnergy set to " + str(m.group(1)))
-                continue
-
-            print(time_now() + ": load_settings: Unknown setting " + line)
-
-        fh.close()
-
-    except FileNotFoundError:
-        pass
-
-def save_settings():
-    global config, carapi
-
-    fh = open(config['config']['settingsPath'] + "/TWCManager.settings", 'w')
-    fh.write('nonScheduledAmpsMax=' + str(master.getNonScheduledAmpsMax()) +
-            '\nscheduledAmpsMax=' + str(master.getScheduledAmpsMax()) +
-            '\nscheduledAmpsStartHour=' + str(master.getScheduledAmpsStartHour()) +
-            '\nscheduledAmpsEndHour=' + str(master.getScheduledAmpsEndHour()) +
-            '\nhourResumeTrackGreenEnergy=' + str(master.getHourResumeTrackGreenEnergy()))
-
-    fh.close()
-
 def trim_pad(s:bytearray, makeLen):
     # Trim or pad s with zeros so that it's makeLen length.
     while(len(s) < makeLen):
@@ -332,7 +271,7 @@ master.setmqttstatus(MQTTStatus(config['config']['debugLevel'],config['status'][
 powerwall = TeslaPowerwall2(config['config']['debugLevel'], config['sources']['Powerwall2'])
 ted = TED(config['config']['debugLevel'], config['sources']['TED'])
 
-load_settings()
+# Load settings from file
 master.loadSettings()
 
 # Create a background thread to handle tasks that take too long on the main
@@ -920,7 +859,7 @@ while True:
                         if(config['config']['debugLevel'] >= 9):
                             print(time_now() + ": Fake slave has delivered %.3fkWh" % \
                                (master.getkWhDelivered()))
-                        save_settings()
+                        # Save settings to file
                         master.saveSettings()
 
                     if(heartbeatData[0] == 0x07):

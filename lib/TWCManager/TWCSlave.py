@@ -432,7 +432,7 @@ class TWCSlave:
         if(self.master.getNonScheduledAmpsMax() != -1 and self.master.getHourResumeTrackGreenEnergy() > -1
            and self.master.getHourResumeTrackGreenEnergy() == hourNow):
             self.master.setNonScheduledAmpsMax(-1)
-            save_settings()
+            self.master.saveSettings()
 
         # Check if we're within the hours we must use scheduledAmpsMax instead
         # of nonScheduledAmpsMax
