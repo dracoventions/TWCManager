@@ -242,17 +242,16 @@ class TWCSlave:
         #   1f 40 (80.00A)
         #   1f 41 (80.01A)
         #   ff ff (655.35A)
-        global slaveHeartbeatData
 
-        if(self.protocolVersion == 1 and len(slaveHeartbeatData) > 7):
+        if(self.protocolVersion == 1 and len(self.master.slaveHeartbeatData) > 7):
             # Cut array down to length 7
-            slaveHeartbeatData = slaveHeartbeatData[0:7]
+            self.master.slaveHeartbeatData = self.master.slaveHeartbeatData[0:7]
         elif(self.protocolVersion == 2):
-            while(len(slaveHeartbeatData) < 9):
+            while(len(self.master.slaveHeartbeatData) < 9):
                 # Increase array length to 9
-                slaveHeartbeatData.append(0x00)
+                self.master.slaveHeartbeatData.append(0x00)
 
-        self.master.sendMsg(bytearray(b'\xFD\xE0') + self.master.getFakeTWCID() + bytearray(masterID) + bytearray(slaveHeartbeatData))
+        self.master.sendMsg(bytearray(b'\xFD\xE0') + self.master.getFakeTWCID() + bytearray(masterID) + bytearray(self.master.slaveHeartbeatData))
 
     def send_master_heartbeat(self):
         # Send our fake master's heartbeat to this TWCSlave.

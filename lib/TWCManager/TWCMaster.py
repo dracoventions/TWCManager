@@ -39,6 +39,7 @@ class TWCMaster:
     'scheduledAmpsMax'      : -1,
     'scheduledAmpsStartHour': -1
   }
+  slaveHeartbeatData = bytearray([0x01,0x0F,0xA0,0x0F,0xA0,0x00,0x00,0x00,0x00])
   slaveTWCs           = {}
   slaveTWCRoundRobin  = []
   spikeAmpsToCancel6ALimit = 16

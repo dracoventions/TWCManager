@@ -230,7 +230,6 @@ msg = bytearray()
 msgLen = 0
 lastTWCResponseMsg = None
 
-slaveHeartbeatData = bytearray([0x01,0x0F,0xA0,0x0F,0xA0,0x00,0x00,0x00,0x00])
 numInitMsgsToSend = 10
 msgRxCount = 0
 
@@ -851,7 +850,7 @@ while True:
                                 receiverID[0], receiverID[1]))
                         continue
 
-                    amps = (slaveHeartbeatData[1] << 8) + slaveHeartbeatData[2]
+                    amps = (master.slaveHeartbeatData[1] << 8) + master.slaveHeartbeatData[2]
                     master.addkWhDelivered(((240 * (amps/100)) / 1000 / 60 / 60) * (now - timeLastkWhDelivered))
                     timeLastkWhDelivered = now
                     if(time.time() - timeLastkWhSaved >= 300.0):
@@ -865,38 +864,38 @@ while True:
                     if(heartbeatData[0] == 0x07):
                         # Lower amps in use (not amps allowed) by 2 for 10
                         # seconds. Set state to 07.
-                        slaveHeartbeatData[0] = heartbeatData[0]
+                        master.slaveHeartbeatData[0] = heartbeatData[0]
                         timeToRaise2A = now + 10
                         amps -= 280
-                        slaveHeartbeatData[3] = ((amps >> 8) & 0xFF)
-                        slaveHeartbeatData[4] = (amps & 0xFF)
+                        master.slaveHeartbeatData[3] = ((amps >> 8) & 0xFF)
+                        master.slaveHeartbeatData[4] = (amps & 0xFF)
                     elif(heartbeatData[0] == 0x06):
                         # Raise amp setpoint by 2 permanently and reply with
                         # state 06.  After 44 seconds, report state 0A.
                         timeTo0Aafter06 = now + 44
-                        slaveHeartbeatData[0] = heartbeatData[0]
+                        master.slaveHeartbeatData[0] = heartbeatData[0]
                         amps += 200
-                        slaveHeartbeatData[1] = ((amps >> 8) & 0xFF)
-                        slaveHeartbeatData[2] = (amps & 0xFF)
+                        master.slaveHeartbeatData[1] = ((amps >> 8) & 0xFF)
+                        master.slaveHeartbeatData[2] = (amps & 0xFF)
                         amps -= 80
-                        slaveHeartbeatData[3] = ((amps >> 8) & 0xFF)
-                        slaveHeartbeatData[4] = (amps & 0xFF)
+                        master.slaveHeartbeatData[3] = ((amps >> 8) & 0xFF)
+                        master.slaveHeartbeatData[4] = (amps & 0xFF)
                     elif(heartbeatData[0] == 0x05 or heartbeatData[0] == 0x08 or heartbeatData[0] == 0x09):
                         if(((heartbeatData[1] << 8) + heartbeatData[2]) > 0):
                             # A real slave mimics master's status bytes [1]-[2]
                             # representing max charger power even if the master
                             # sends it a crazy value.
-                            slaveHeartbeatData[1] = heartbeatData[1]
-                            slaveHeartbeatData[2] = heartbeatData[2]
+                            master.slaveHeartbeatData[1] = heartbeatData[1]
+                            master.slaveHeartbeatData[2] = heartbeatData[2]
 
                             ampsUsed = (heartbeatData[1] << 8) + heartbeatData[2]
                             ampsUsed -= 80
-                            slaveHeartbeatData[3] = ((ampsUsed >> 8) & 0xFF)
-                            slaveHeartbeatData[4] = (ampsUsed & 0xFF)
+                            master.slaveHeartbeatData[3] = ((ampsUsed >> 8) & 0xFF)
+                            master.slaveHeartbeatData[4] = (ampsUsed & 0xFF)
                     elif(heartbeatData[0] == 0):
                         if(timeTo0Aafter06 > 0 and timeTo0Aafter06 < now):
                             timeTo0Aafter06 = 0
-                            slaveHeartbeatData[0] = 0x0A
+                            master.slaveHeartbeatData[0] = 0x0A
                         elif(timeToRaise2A > 0 and timeToRaise2A < now):
                             # Real slave raises amps used by 2 exactly 10
                             # seconds after being sent into state 07. It raises
@@ -905,9 +904,9 @@ while True:
                             # timing here but hopefully close enough.
                             timeToRaise2A = 0
                             amps -= 80
-                            slaveHeartbeatData[3] = ((amps >> 8) & 0xFF)
-                            slaveHeartbeatData[4] = (amps & 0xFF)
-                            slaveHeartbeatData[0] = 0x0A
+                            master.slaveHeartbeatData[3] = ((amps >> 8) & 0xFF)
+                            master.slaveHeartbeatData[4] = (amps & 0xFF)
+                            master.slaveHeartbeatData[0] = 0x0A
                     elif(heartbeatData[0] == 0x02):
                         print(time_now() + ": Master heartbeat contains error %ld: %s" % \
                                 (heartbeatData[1], hex_str(heartbeatData)))
@@ -918,7 +917,7 @@ while True:
                     # Slaves always respond to master's heartbeat by sending
                     # theirs back.
                     slaveTWC.send_slave_heartbeat(senderID)
-                    slaveTWC.print_status(slaveHeartbeatData)
+                    slaveTWC.print_status(master.slaveHeartbeatData)
                 else:
                     msgMatch = re.search(b'\A\xfc\x1d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00+?.\Z', msg, re.DOTALL)
                 if(msgMatch and foundMsgMatch == False):
