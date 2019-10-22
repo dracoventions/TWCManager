@@ -2,6 +2,8 @@
 
 ## Introduction
 
+The HomeAssistant EMS module allows fetching of solar Generation and Consumption values from HomeAssistant sensors. This is useful as it allows a general interface to sensors which are implemented as dedicated HomeAssistant components. If there is no dedicated TWCManager module for an Energy Management System, using the HASS module allows the leveraging of HASS sensors.
+
 ### Status
 
 | Detail          | Value                          |
