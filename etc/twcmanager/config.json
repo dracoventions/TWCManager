@@ -139,6 +139,15 @@
         # oscilloscope. Don't change this unless something changes in future hardware.
         "baud": 9600
     },
+    "control": {
+      "MQTT": {
+        "enabled": false,
+        "brokerIP": "192.168.1.2",
+        "topicPrefix": "TWC",
+        "username": "mqttuser",
+        "password": "mqttpass"
+      }
+    },
     "sources":{
         # This section is where we configure the various sources that we retrieve our generation and consumption
         # values for our solar system from.
