@@ -8,17 +8,19 @@ The installation does not require a great amount of electrical skill or competen
 
   * If you are not confident or comfortable with the modification of the TWC installation, please stop here.
   * If you do not have access to a (or several) isolation devices to entirely de-energise the TWC during the installation, please stop here.
+  * Remember that you can always ask your electrician to run these wires (safely) for you.
 
 ## Basic Installation
 
 The basic installation approach consists of a pair of wires being installed into the RS-485 sockets of the Tesla Wall Charger, with an external device providing an RS-485 interface on which TWCManager communicates with the TWC to limit the charge based on the current Generation and Consumption rates of your solar installation.
 
-Pros
+**Pros**
   * Simpler installation, only requires feeding some wires through an existing entry point into the TWC.
   * Significantly less risk, as the advanced connection relies on storing a Raspberry Pi controller inside of the TWC and powering it from the LED display on the charger.
 
-Cons
+**Cons**
   * There is some visible external egress of these wires to connect to the controlling device.
+     * This can be mitigated through running the cables through wall cavities, however for the sake of simplicity, this document will only deal with running the wires through visibly.
 
 ### Tools Required
 
@@ -84,3 +86,5 @@ This switch controls the amperage of the Tesla Wall Charger. Note down the origi
 ## Expert Installation
 
 The Expert Installation approach is not recommended for most users due to the inherent difficulty of the installation process, and the inherent risk of inadvertent contact with a live component within the TWC chassis.
+
+   * [Expert Installation instructions are here](docs/TWCManager%20Installation.pdf)
