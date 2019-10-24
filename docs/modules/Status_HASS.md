@@ -1,0 +1,1 @@
+# HomeAssistant Status Module
