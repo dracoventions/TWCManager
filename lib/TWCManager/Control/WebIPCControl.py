@@ -10,6 +10,8 @@ class WebIPCControl:
   configConfig = None
   debugLevel   = 0
   master       = None
+  webIPCkey    = None
+  webIPCqueue  = None
 
   def __init__(self, master):
     self.carapi     = master.carapi
@@ -21,11 +23,54 @@ class WebIPCControl:
     self.debugLevel     = self.configConfig.get('debugLevel', 0)
     self.master         = master
 
+    # Create an IPC (Interprocess Communication) message queue that we can
+    # periodically check to respond to queries from the TWCManager web interface.
+    #
+    # These messages will contain commands like "start charging at 10A" or may ask
+    # for information like "how many amps is the solar array putting out".
+    #
+    # The message queue is identified by a numeric key. This script and the web
+    # interface must both use the same key. The "ftok" function facilitates creating
+    # such a key based on a shared piece of information that is not likely to
+    # conflict with keys chosen by any other process in the system.
+    #
+    # ftok reads the inode number of the file or directory pointed to by its first
+    # parameter. This file or dir must already exist and the permissions on it don't
+    # seem to matter. The inode of a particular file or dir is fairly unique but
+    # doesn't change often so it makes a decent choice for a key.  We use the parent
+    # directory of the TWCManager script.
+    #
+    # The second parameter to ftok is a single byte that adds some additional
+    # uniqueness and lets you create multiple queues linked to the file or dir in
+    # the first param. We use 'T' for Tesla.
+    #
+    # If you can't get this to work, you can also set key = <some arbitrary number>
+    # and in the web interface, use the same arbitrary number. While that could
+    # conflict with another process, it's very unlikely to.
+    self.webIPCkey = sysv_ipc.ftok(self.config['config']['settingsPath'], ord('T'), True)
+
+    # Use the key to create a message queue with read/write access for all users.
+    self.webIPCqueue = sysv_ipc.MessageQueue(self.webIPCkey, sysv_ipc.IPC_CREAT, 0o666)
+    if(self.webIPCqueue == None):
+        self.debugLog(1, "ERROR: Can't create Interprocess Communication message queue to communicate with web interface.")
+
+    # After the IPC message queue is created, if you type 'sudo ipcs -q' on the
+    # command like, you should see something like:
+    # ------ Message Queues --------
+    # key        msqid      owner      perms      used-bytes   messages
+    # 0x5402ed16 491520     pi         666        0            0
+    #
+    # If you want to get rid of all queues,
+    # reboot or type 'sudo ipcrm -a msg'.
+    # ones you didn't create or you may crash another process.
+    # Find more details in IPC here:
+    # http://www.onlamp.com/pub/a/php/2004/05/13/shared_memory.html
+
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
       print("WebIPC: (" + str(minlevel) + ") " + message)
 
-  def processIPC(self, webIPCqueue):
+  def processIPC(self):
 
     ########################################################################
     # See if there's any message from the web interface.
@@ -37,7 +82,7 @@ class WebIPCControl:
     # If there is an actual error, webMsgResult will be -1.
     # On success, webMsgResult is the length of webMsgPacked.
     try:
-        webMsgRaw = webIPCqueue.receive(False, 2)
+        webMsgRaw = self.webIPCqueue.receive(False, 2)
         if(len(webMsgRaw[0]) > 0):
             webMsgType = webMsgRaw[1]
             unpacked = struct.unpack('=LH', webMsgRaw[0][0:6])
@@ -197,17 +242,17 @@ class WebIPCControl:
                         if(len(webResponseMsg) > 290):
                             webResponseMsg = webResponseMsg[0:290]
 
-                        webIPCqueue.send(struct.pack('=LH' + str(len(webResponseMsg)) + 's', webMsgTime, webMsgID,
+                        self.webIPCqueue.send(struct.pack('=LH' + str(len(webResponseMsg)) + 's', webMsgTime, webMsgID,
                                webResponseMsg.encode('ascii')), block=False)
                     else:
                         # In this case, block=False prevents blocking if the message
                         # queue is too full for our message to fit. Instead, an
                         # error is returned.
                         msgTemp = struct.pack('=LH1s', webMsgTime, webMsgID, bytearray([numPackets]))
-                        webIPCqueue.send(msgTemp, block=False)
+                        self.webIPCqueue.send(msgTemp, block=False)
                         for i in range(0, numPackets):
                             packet = webResponseMsg[i*290:i*290+290]
-                            webIPCqueue.send(struct.pack('=LH' + str(len(packet)) + 's', webMsgTime, webMsgID,
+                            self.webIPCqueue.send(struct.pack('=LH' + str(len(packet)) + 's', webMsgTime, webMsgID,
                                packet.encode('ascii')), block=False)
 
                 except sysv_ipc.BusyError:

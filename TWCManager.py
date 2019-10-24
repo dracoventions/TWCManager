@@ -34,7 +34,6 @@ import math
 import random
 import re
 import sys
-import sysv_ipc
 import time
 import traceback
 from datetime import datetime
@@ -269,55 +268,6 @@ backgroundTasksThread = threading.Thread(target=background_tasks_thread, args = 
 backgroundTasksThread.daemon = True
 backgroundTasksThread.start()
 
-
-# Create an IPC (Interprocess Communication) message queue that we can
-# periodically check to respond to queries from the TWCManager web interface.
-#
-# These messages will contain commands like "start charging at 10A" or may ask
-# for information like "how many amps is the solar array putting out".
-#
-# The message queue is identified by a numeric key. This script and the web
-# interface must both use the same key. The "ftok" function facilitates creating
-# such a key based on a shared piece of information that is not likely to
-# conflict with keys chosen by any other process in the system.
-#
-# ftok reads the inode number of the file or directory pointed to by its first
-# parameter. This file or dir must already exist and the permissions on it don't
-# seem to matter. The inode of a particular file or dir is fairly unique but
-# doesn't change often so it makes a decent choice for a key.  We use the parent
-# directory of the TWCManager script.
-#
-# The second parameter to ftok is a single byte that adds some additional
-# uniqueness and lets you create multiple queues linked to the file or dir in
-# the first param. We use 'T' for Tesla.
-#
-# If you can't get this to work, you can also set key = <some arbitrary number>
-# and in the web interface, use the same arbitrary number. While that could
-# conflict with another process, it's very unlikely to.
-webIPCkey = sysv_ipc.ftok(config['config']['settingsPath'], ord('T'), True)
-
-# Use the key to create a message queue with read/write access for all users.
-webIPCqueue = sysv_ipc.MessageQueue(webIPCkey, sysv_ipc.IPC_CREAT, 0o666)
-if(webIPCqueue == None):
-    print("ERROR: Can't create Interprocess Communication message queue to communicate with web interface.")
-
-# After the IPC message queue is created, if you type 'sudo ipcs -q' on the
-# command like, you should see something like:
-# ------ Message Queues --------
-# key        msqid      owner      perms      used-bytes   messages
-# 0x5402ed16 491520     pi         666        0            0
-#
-# Notice that we've created the only IPC message queue in the system. Apparently
-# default software on the pi doesn't use IPC or if it does, it creates and
-# deletes its message queues quickly.
-#
-# If you want to get rid of all queues because you created extras accidentally,
-# reboot or type 'sudo ipcrm -a msg'.  Don't get rid of all queues if you see
-# ones you didn't create or you may crash another process.
-# Find more details in IPC here:
-# http://www.onlamp.com/pub/a/php/2004/05/13/shared_memory.html
-
-
 print("TWC Manager starting as fake %s with id %02X%02X and sign %02X" \
     % ( ("Master" if config['config']['fakeMaster'] else "Slave"), \
     ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(master.getSlaveSign())))
@@ -404,7 +354,7 @@ while True:
         ########################################################################
         # See if there's any message from the web interface.
 
-        webipccontrol.processIPC(webIPCqueue)
+        webipccontrol.processIPC()
 
         ########################################################################
         # See if there's an incoming message on the RS485 interface.
