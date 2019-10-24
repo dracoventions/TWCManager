@@ -58,14 +58,13 @@ It is important to read and understand the following warnings before using this 
 
 ## Features
 * Can be set up to only allow charging during certain hours.
-* Lets you control the amount of power delivered by a Tesla Wall Connector (TWC) to the car it's charging.
+* Lets you control the amount of power delivered by a Tesla Wall Connector (TWC) to the car it is charging.
 This can save around 6kWh per month when used to track a local green energy source like solar panels on your roof.  It can also avoid drawing grid energy for those without net metering or limit charging to times of day when prices are cheapest.
 * Whilst the TWCManager application cannot read the charge state of connected vehicles, using the Tesla API we can pull the charge status of a vehicle.
-* Integrates with HomeAssistant to report TWC sensor data back to HomeAssistant for display or use in automations.
+* Integrates with Status modules to report TWC sensor data to external syustems for display or use in automations.
 
 ## Limitations
 * Due to hardware limitations, TWCManager will not work with Tesla's older High Power Wall Connectors (HPWCs) that were discontinued around April 2016.
-* Interfaces (HomeAssistant and Fronius) are in development and have not been fully tested yet. 
 * There is currently no way to configure how TWCManager deals with more than one interface platform. Currently, TWCManager will add together the values (generation and consumption) for all configured integrations.
 
 ## Installation
