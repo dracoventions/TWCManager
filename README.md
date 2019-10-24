@@ -16,8 +16,8 @@ To enable TWCManager to gather the solar generation information that it requires
 
 | Platform         | Status           | Details                 |
 | ---------------- | ---------------- | ----------------------- |
-| HTTPControl      | Available v1.1.3 | Allows control via embedded HTTP server |
-| MQTTControl      | Available v1.1.2 | Allows control via MQTT |
+| [HTTPControl](docs/modules/Control_HTTP.md) | Available v1.1.3 | Allows control via embedded HTTP server |
+| [MQTTControl](docs/modules/Control_MQTT.md) | Available v1.1.2 | Allows control via MQTT |
 
 ### EMS Interfaces
 
@@ -37,7 +37,7 @@ Status interfaces publish TWCManager status information to external systems. Cur
 
 | Platform         | Status           | Details                 |
 | ---------------- | ---------------- | ----------------------- |
-| [HomeAssistant] (docs/modules/Status_HASS.md) | Available v1.0.1 | Provides HASS sensors to monitor TWCManager State |
+| [HomeAssistant](docs/modules/Status_HASS.md) | Available v1.0.1 | Provides HASS sensors to monitor TWCManager State |
 | [MQTT](docs/modules/Status_MQTT.md) | Available v1.0.1 | Publishes MQTT topics to monitor TWCManager State |
 
 ### Vehicle Interfaces
