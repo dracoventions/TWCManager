@@ -87,4 +87,4 @@ This switch controls the amperage of the Tesla Wall Charger. Note down the origi
 
 The Expert Installation approach is not recommended for most users due to the inherent difficulty of the installation process, and the inherent risk of inadvertent contact with a live component within the TWC chassis.
 
-   * [Expert Installation instructions are here](docs/TWCManager%20Installation.pdf)
+   * [Expert Installation instructions are here](TWCManager%20Installation.pdf)
