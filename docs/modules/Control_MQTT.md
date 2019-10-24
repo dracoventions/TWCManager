@@ -14,19 +14,6 @@ The MQTT Control Module allows control over the TWCManager Tesla Wall Charger co
 
 ## Configuration
 
-The following table shows the available configuration parameters for the Fronius EMS module.
-
-| Parameter   | Value         |
-| ----------- | ------------- |
-| enabled     | *required* Boolean value, ```true``` or ```false```. Determines whether we will poll the Fronius Inverter. |
-| serverIP    | *required* The IP address of the Fronius Inverter. We will poll this device's HTTP API. |
-| serverPort  | *optional* Web Server port. This is the port that we should connect to. This is almost always 80 (HTTP). |
-
-### JSON Configuration Example
-
-```
-## Configuration
-
 The following table shows the available configuration parameters for the MQTT Control module.
 
 | Parameter   | Value         |
