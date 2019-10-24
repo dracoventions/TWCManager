@@ -12,16 +12,36 @@ class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
 
 class HTTPControl:
 
-  PORT = 8080
+  configConfig = {}
+  configHTTP   = {}
+  debugLevel   = 1
+  httpPort     = 8080
+  status       = False
 
   def __init__(self, masterref):
 
     global master
     master = masterref
+    try:
+      self.configConfig = master.config['config']
+    except KeyError:
+      self.configConfig = {}
+    try:
+      self.configHTTP   = master.config['control']['HTTP']
+    except KeyError:
+      self.configHTTP   = {}
+    self.debugLevel   = self.configConfig.get('debugLevel', 1)
+    self.httpPort     = self.configHTTP.get('listenPort', 8080)
+    self.status       = self.configHTTP.get('enabled', False)
 
-    httpd = ThreadingSimpleServer(("", self.PORT), HTTPControlHandler)
-    print("serving at port", self.PORT)
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    if (self.status):
+      httpd = ThreadingSimpleServer(("", self.httpPort), HTTPControlHandler)
+      self.debugLog(1, "Serving at port: " + str(self.httpPort))
+      threading.Thread(target=httpd.serve_forever, daemon=True).start()
+
+  def debugLog(self, minlevel, message):
+    if (self.debugLevel >= minlevel):
+      print("HTTPControl: (" + str(minlevel) + ") " + message)
 
 class HTTPControlHandler(BaseHTTPRequestHandler):
 

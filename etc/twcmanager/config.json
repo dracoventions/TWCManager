@@ -140,6 +140,10 @@
         "baud": 9600
     },
     "control": {
+      "HTTP": {
+        "enabled": true,
+        "listenPort": 8080
+      },
       "MQTT": {
         "enabled": false,
         "brokerIP": "192.168.1.2",
