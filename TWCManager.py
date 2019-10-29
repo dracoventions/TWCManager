@@ -2566,6 +2566,8 @@ while True:
             # If we have no slaves, try to re-establish the connection
             if (numInitMsgsToSend == 0 and slave_count() == 0):
                 numInitMsgsToSend = 10
+                ser.close()
+                ser.open()
 
             # A real master sends 5 copies of linkready1 and linkready2 whenever
             # it starts up, which we do here.
