@@ -173,7 +173,7 @@ class WebIPCControl:
                               + "\nwhich could crash the TWC.  Aborting.\n")
                     else:
                         lastTWCResponseMsg = bytearray();
-                        send_msg(twcMsg)
+                        master.sendMsg(twcMsg)
             elif(webMsg == b'getLastTWCMsgResponse'):
                 if(lastTWCResponseMsg != None and lastTWCResponseMsg != b''):
                     webResponseMsg = hex_str(lastTWCResponseMsg)

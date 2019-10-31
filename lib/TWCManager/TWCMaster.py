@@ -70,7 +70,7 @@ class TWCMaster:
     self.ser = serial.Serial(config['config']['rs485adapter'], config['config']['baud'], timeout=0)
 
   def addkWhDelivered(self, kWh):
-    self.settings['kWhDelivered'] = self.settings['kWhDelivered'] + kWh
+    self.settings['kWhDelivered'] = self.settings.get('kWhDelivered', 0) + kWh
 
   def addSlaveTWC(self, slaveTWC):
     # Adds the Slave TWC to the Round Robin list

@@ -10,7 +10,7 @@
 # For support and information, please read through this thread:
 # https://teslamotorsclub.com/tmc/threads/new-wall-connector-load-sharing-protocol.72830
 #
-# Report bugs at https://github.com/cdragon/TWCManager/issues
+# Report bugs at https://github.com/ngardiner/TWCManager/issues
 #
 # This software is released under the "Unlicense" model: http://unlicense.org
 # This means source code and TWC protocol knowledge are released to the general
@@ -113,7 +113,7 @@ def unescape_msg(msg:bytearray, msgLen):
     # byte.
     msg = msg[0:msgLen]
 
-    # See notes in send_msg() for the way certain bytes in messages are escaped.
+    # See notes in sendMsg() for the way certain bytes in messages are escaped.
     # We basically want to change db dc into c0 and db dd into db.
     # Only scan to one less than the length of the string to avoid running off
     # the end looking at i+1.
@@ -439,7 +439,7 @@ while True:
             # received.
             #
             # Uncorrupted messages can be over 17 bytes long when special
-            # values are "escaped" as two bytes. See notes in send_msg.
+            # values are "escaped" as two bytes. See notes in sendMsg.
             #
             # To prevent most noise between messages, add a 120ohm
             # "termination" resistor in parallel to the D+ and D- lines.
@@ -771,7 +771,7 @@ while True:
                     heartbeatData = msgMatch.group(3)
                     master.setMasterTWCID(senderID)
                     try:
-                        slaveTWC = slaveTWCs[receiverID]
+                        slaveTWC = master.slaveTWCs[receiverID]
                     except KeyError:
                         slaveTWC = master.newSlave(receiverID, 80)
 
@@ -915,7 +915,7 @@ while True:
                         continue
 
                     try:
-                        slaveTWC = slaveTWCs[senderID]
+                        slaveTWC = master.slaveTWCs[senderID]
                     except KeyError:
                         # Slave is unlikely to send another linkready since it's
                         # already linked with a real Master TWC, so just assume
@@ -951,7 +951,7 @@ while True:
                         print(time_now() + ": VRS %02X%02X: %dkWh (%s) %dV %dV %dV" % \
                             (fakeTWCID[0], fakeTWCID[1],
                             kWhCounter, hex_str(kWhPacked), 240, 0, 0))
-                        send_msg(bytearray(b'\xFD\xEB') + fakeTWCID
+                        master.sendMsg(bytearray(b'\xFD\xEB') + fakeTWCID
                                  + kWhPacked
                                  + bytearray(b'\x00\xF0\x00\x00\x00\x00\x00'))
                 else:
