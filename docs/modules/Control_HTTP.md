@@ -47,6 +47,7 @@ The following table shows the available configuration parameters for the MQTT Co
     "listenPort": 8080
   }
 }
+```
 
 ## Using the HTTP Web Interface
 
