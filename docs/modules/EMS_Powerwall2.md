@@ -20,12 +20,12 @@ Given the location of the Powerwall in the home electrical system, it is highly 
 
 ### Status
 
-| Detail          | Value                          |
-| --------------- | ------------------------------ |
-| **Module Name** | Powerwall2                     |
-| **Module Type** | Energy Management System (EMS) |
-| **Features**    | Consumption, Generation        |
-| **Status**      | Implemented, *untested*        |
+| Detail          | Value                                         |
+| --------------- | --------------------------------------------- |
+| **Module Name** | Powerwall2                                    |
+| **Module Type** | Energy Management System (EMS)                |
+| **Features**    | Consumption, Generation, Grid Status, Voltage |
+| **Status**      | Implemented, *untested*                       |
 
 ## Configuration
 
@@ -34,7 +34,7 @@ The following table shows the available configuration parameters for the Tesla P
 | Parameter   | Value         |
 | ----------- | ------------- |
 | enabled     | *required* Boolean value, ```true``` or ```false```. Determines whether we will poll the Tesla Powerwall 2. |
-| password    | *Not implemented yet. If you have a password protected Powerwall2, please raise an issue to have this implemented.* |
+| password    | *optional* Password for the installer user, if required. If this is supplied, we will request a login token prior to API access. If not, requests will be performed without authentication. |
 | serverIP    | *required* The IP address of the Powerwall2 device. We will poll this device's HTTPS API |
 | serverPort  | *optional* API Server port. This is the port that we should connect to. This is almost always 443 (HTTPS) |
 

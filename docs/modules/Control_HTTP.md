@@ -28,3 +28,28 @@ There are two separate interfaces for managing TWCManager via web browser. These
 | **Module Name** | HTTPControl    |
 | **Module Type** | Status         |
 | **Status**      | In Development |
+
+## Configuration
+
+The following table shows the available configuration parameters for the MQTT Control module.
+
+| Parameter   | Value         |
+| ----------- | ------------- |
+| enabled     | *required* Boolean value, ```true``` or ```false```. Determines whether we will enable HTTP control. |
+| listenPort | *optional* HTTP Web Server port. Defaults to port 8080. |
+
+### JSON Configuration Example
+
+```
+"control": {
+  "HTTP": {
+    "enabled": true,
+    "listenPort": 8080
+  }
+}
+
+## Using the HTTP Web Interface
+
+If you have enabled HTTPControl, access it via the specified port. For example if your TWCManager machine is 192.168.1.1 and listenPort is 8080, access the HTTP interface with the following URL:
+
+<a href="http://192.168.1.1:8080/">http://192.168.1.1:8080/</a>
