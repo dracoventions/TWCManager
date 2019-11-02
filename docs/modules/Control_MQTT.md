@@ -40,13 +40,8 @@ The following table shows the available configuration parameters for the MQTT Co
 
 ## MQTT Topics
 
-| MQTT Topic                       | Value |
-| -------------------------------- | ----- |
-| *prefix*/all/totalAmpsInUse      | TBA |
-| *prefix*/*charger*/ampsInUse     | TBA |
-| *prefix*/*charger*/ampsMax       | TBA |
-| *prefix*/*charger*/carsCharging  | TBA |
-| *prefix*/*charger*/power         | TBA |
-| *prefix*/*charger*/state         | TBA |
-| *prefix*/config/maxAmpsForSlaves | TBA |
-| *prefix*/config/minAmpsPerTWC    | TBA |
+| MQTT Topic                     | Value | Description |
+| ------------------------------ | ----- | ----------- |
+| *prefix*/control/chargeNow     | TBA | Starts charging immediately. |
+| *prefix*/control/chargeNowEnd  | TBA | Stops immediate charging. |
+| *prefix*/control/stop          | None | Stops TWCManager. |
