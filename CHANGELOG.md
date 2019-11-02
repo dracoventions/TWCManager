@@ -2,7 +2,9 @@
 
 This document shows the changes per release
 
-## v1.1.5 - Current Dev Branch
+## v1.1.6 - Current Dev Branch
+
+## v1.1.5 - 2019-11-02
 
   * Standardised module configuration handling (which helps reduce the number of exceptions related to configuration)
   * Added configuration to enable/disable and configure HTTPControl module
