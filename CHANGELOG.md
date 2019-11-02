@@ -6,6 +6,7 @@ This document shows the changes per release
 
   * Standardised module configuration handling (which helps reduce the number of exceptions related to configuration)
   * Added configuration to enable/disable and configure HTTPControl module
+  * Added Grid Status, Voltage and Password Authentication support to Tesla Powerwall2 EMS module
 
 ## v1.1.4 - 2019-10-22
 

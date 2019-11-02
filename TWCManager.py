@@ -1001,7 +1001,7 @@ while True:
 # Note that there is no such thing as backgroundTasksThread.stop(). Because we
 # set the thread type to daemon, it will be automatically killed when we exit
 # this program.
-backgroundTasksQueue.join()
+master.backgroundTasksQueue.join()
 
 ser.close()
 
