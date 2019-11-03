@@ -4,6 +4,12 @@ This document shows the changes per release
 
 ## v1.1.6 - Current Dev Branch
 
+  * Implement policy-based charging, where individual charging logic (for scheduled, non-scheduled, green energy and charge now logic) is now centralised.
+    * Benefits of this approach:
+      * Single point within the code where we set the amps to share.
+      * Defined priority to ensure one case does not override another.
+      * Lays foundation for future advanced use cases.
+
 ## v1.1.5 - 2019-11-02
 
   * Standardised module configuration handling (which helps reduce the number of exceptions related to configuration)

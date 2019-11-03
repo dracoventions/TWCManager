@@ -9,7 +9,6 @@ class TWCSlave:
     TWCID      = None
     maxAmps    = None
     master     = None
-    timeLastGreenEnergyCheck = 0
 
     # Protocol 2 TWCs tend to respond to commands sent using protocol 1, so
     # default to that till we know for sure we're talking to protocol 2.
@@ -431,63 +430,10 @@ class TWCSlave:
         if(yesterday < 0):
             yesterday += 7
 
-        # Check if it's time to resume tracking green energy.
-        if(self.master.getNonScheduledAmpsMax() != -1 and self.master.getHourResumeTrackGreenEnergy() > -1
-           and self.master.getHourResumeTrackGreenEnergy() == hourNow):
-            self.master.setNonScheduledAmpsMax(-1)
-            self.master.saveSettings()
-
-        # Check if we're within the hours we must use scheduledAmpsMax instead
-        # of nonScheduledAmpsMax
-        blnUseScheduledAmps = 0
-        if(self.master.getScheduledAmpsMax() > 0 and scheduledAmpsStartHour > -1
-             and self.master.getScheduledAmpsEndHour() > -1 and self.master.getScheduledAmpsDaysBitmap() > 0):
-            if(scheduledAmpsStartHour > self.master.getScheduledAmpsEndHour()):
-                # We have a time like 8am to 7am which we must interpret as the
-                # 23-hour period after 8am or before 7am. Since this case always
-                # crosses midnight, we only ensure that scheduledAmpsDaysBitmap
-                # is set for the day the period starts on. For example, if
-                # scheduledAmpsDaysBitmap says only schedule on Monday, 8am to
-                # 7am, we apply scheduledAmpsMax from Monday at 8am to Monday at
-                # 11:59pm, and on Tuesday at 12am to Tuesday at 6:59am.
-                if((hourNow >= scheduledAmpsStartHour and (self.master.getScheduledAmpsDaysBitmap() & (1 << ltNow.tm_wday)))
-                     or (hourNow < self.master.getScheduledAmpsEndHour() and (self.master.getScheduledAmpsDaysBitmap() & (1 << yesterday)))):
-                   blnUseScheduledAmps = 1
-            else:
-                # We have a time like 7am to 8am which we must interpret as the
-                # 1-hour period between 7am and 8am.
-                if(hourNow >= scheduledAmpsStartHour and hourNow < self.master.getScheduledAmpsEndHour()
-                   and (self.master.getScheduledAmpsDaysBitmap() & (1 << ltNow.tm_wday))):
-                   blnUseScheduledAmps = 1
-
-        if(self.master.checkChargeNowTime() == 0):
-            # We're beyond the one-day period where we want to charge at
-            # chargeNowAmps, so reset the chargeNow variables.
-            self.master.resetChargeNowAmps()
-
-        if(self.master.checkChargeNowTime() == 1):
-            # We're still in the one-day period where we want to charge at
-            # chargeNowAmps, ignoring all other charging criteria.
-            self.master.setMaxAmpsToChargeNowAmps()
-            self.debugLog(10, 'Charge at chargeNowAmps %.2f' % (self.master.getChargeNowAmps()))
-        elif(blnUseScheduledAmps):
-            # We're within the scheduled hours that we need to provide a set
-            # number of amps.
-            self.master.setMaxAmpsToScheduledAmpsMax()
-        else:
-            if(self.master.getNonScheduledAmpsMax() > -1):
-                self.master.setMaxAmpsToNonScheduledAmpsMax()
-            elif(now - self.timeLastGreenEnergyCheck > 60):
-                self.timeLastGreenEnergyCheck = self.time.time()
-
-                # Don't bother to check solar generation before 6am or after
-                # 8pm. Sunrise in most U.S. areas varies from a little before
-                # 6am in Jun to almost 7:30am in Nov before the clocks get set
-                # back an hour. Sunset can be ~4:30pm to just after 8pm.
-                if(ltNow.tm_hour < 6 or ltNow.tm_hour >= 20):
-                    self.master.setMaxAmpsToDivideAmongSlaves(0)
-                else:
-                    self.master.queue_background_task({'cmd':'checkGreenEnergy'})
+        # Determine our charging policy. This is the policy engine of the
+        # TWCManager application. Using defined rules, we can determine how
+        # we charge.
+        self.master.setChargingPerPolicy()
 
         # Determine how many cars are charging and how many amps they're using
         numCarsCharging = self.master.num_cars_charging_now()

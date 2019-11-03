@@ -11,16 +11,56 @@ import time
 
 class TWCMaster:
 
+  active_policy       = None
   backgroundTasksQueue = queue.Queue()
   backgroundTasksCmds = {}
   backgroundTasksLock = threading.Lock()
   carapi              = None
-  chargeNowTimeEnd    = 0
+  charge_policy       = [
+    # The first policy table entry is for chargeNow. This will fire if
+    # chargeNowAmps is set to a positive integer and chargeNowTimeEnd
+    # is less than or equal to the current timestamp
+    { "name": "Charge Now",
+      "match": [ "settings.chargeNowAmps", "settings.chargeNowTimeEnd", "settings.chargeNowTimeEnd" ],
+      "condition": [ "gt", "gt", "gt" ],
+      "value": [ 0, 0, "now" ],
+      "charge_amps": "settings.chargeNowAmps" },
+
+    # If we are within Track Green Energy schedule, charging will be
+    # performed based on the amount of solar energy being produced.
+    # Don't bother to check solar generation before 6am or after
+    # 8pm. Sunrise in most U.S. areas varies from a little before
+    # 6am in Jun to almost 7:30am in Nov before the clocks get set
+    # back an hour. Sunset can be ~4:30pm to just after 8pm.
+    { "name": "Track Green Energy",
+      "match": [ "tm_hour", "tm_hour", "settings.hourResumeTrackGreenEnergy" ],
+      "condition": [ "gt", "lte", "lte" ],
+      "value": [ 6, 20, "tm_hour" ],
+      "charge_amps": "getMaxAmpsToDivideGreenEnergy()",
+      "background_task": "checkGreenEnergy" },
+
+    # Check if we are currently within the Scheduled Amps charging schedule.
+    # If so, charge at the specified number of amps.
+    { "name": "Scheduled Charging",
+      "match": [ "checkScheduledCharging()" ],
+      "condition": [ "eq" ],
+      "value": [ 1 ],
+      "charge_amps": "settings.scheduledAmpsMax" },
+
+      # If all else fails (ie no other policy match), we will charge at
+      # nonScheduledAmpsMax
+    { "name": "Non Scheduled Charging",
+      "match": [ "none" ],
+      "condition": [ "none" ],
+      "value": [ 0 ],
+      "charge_amps": "settings.nonScheduledAmpsMax" }
+  ]
   config              = None
   consumptionValues   = {}
   debugLevel          = 0
   generationValues    = {}
   hassstatus          = None
+  lastPolicyCheck     = 0
   masterTWCID         = ''
   maxAmpsToDivideAmongSlaves = 0
   mqttstatus          = None
@@ -30,6 +70,7 @@ class TWCMaster:
   settings            = {
     'chargeNowAmps'            : 0,
     'chargeStopMode'           : "1",
+    'chargeNowTimeEnd'         : 0,
     'homeLat'                  : 10000,
     'homeLon'                  : 10000,
     'hourResumeTrackGreenEnergy' : -1,
@@ -76,16 +117,33 @@ class TWCMaster:
     # Adds the Slave TWC to the Round Robin list
     return self.slaveTWCRoundRobin.append(slaveTWC)
 
-  def checkChargeNowTime(self):
-    # Returns the following values:
-    # 0 = chargeNowTime has expired, reset chargeNow to 0
-    # 1 = chargeNowAmps is set, charge at the specified value
-    if (self.chargeNowTimeEnd > 0 and self.chargeNowTimeEnd < time.time()):
-      # We're beyond the one-day period where we want to charge at
-      # chargeNowAmps, so reset the chargeNow variables.
-      return 0
-    elif (self.chargeNowTimeEnd > 0 and self.settings['chargeNowAmps'] > 0):
-      return 1
+  def checkScheduledCharging(self):
+
+    # Check if we're within the hours we must use scheduledAmpsMax instead
+    # of nonScheduledAmpsMax
+    blnUseScheduledAmps = 0
+    ltNow = time.localtime()
+
+    if(self.getScheduledAmpsMax() > 0 and self.settings.get('scheduledAmpsStartHour', -1) > -1
+      and self.getScheduledAmpsEndHour() > -1 and self.getScheduledAmpsDaysBitmap() > 0):
+        if(self.settings.get('scheduledAmpsStartHour', -1) > self.getScheduledAmpsEndHour()):
+          # We have a time like 8am to 7am which we must interpret as the
+          # 23-hour period after 8am or before 7am. Since this case always
+          # crosses midnight, we only ensure that scheduledAmpsDaysBitmap
+          # is set for the day the period starts on. For example, if
+          # scheduledAmpsDaysBitmap says only schedule on Monday, 8am to
+          # 7am, we apply scheduledAmpsMax from Monday at 8am to Monday at
+          # 11:59pm, and on Tuesday at 12am to Tuesday at 6:59am.
+          if((hourNow >= self.settings.get('scheduledAmpsStartHour', -1) and (self.getScheduledAmpsDaysBitmap() & (1 << ltNow.tm_wday)))
+               or (hourNow < self.getScheduledAmpsEndHour() and (self.getScheduledAmpsDaysBitmap() & (1 << yesterday)))):
+             blnUseScheduledAmps = 1
+        else:
+          # We have a time like 7am to 8am which we must interpret as the
+          # 1-hour period between 7am and 8am.
+          if(hourNow >= self.settings.get('scheduledAmpsStartHour', -1) and hourNow < self.getScheduledAmpsEndHour()
+             and (self.getScheduledAmpsDaysBitmap() & (1 << ltNow.tm_wday))):
+             blnUseScheduledAmps = 1
+    return blnUseScheduledAmps
 
   def countSlaveTWC(self):
     return int(len(self.slaveTWCRoundRobin))
@@ -346,6 +404,36 @@ class TWCMaster:
             self.mqttstatus.setStatus(slaveTWC.TWCID, "carsCharging", carsCharging)
     return carsCharging
 
+  def policyValue(self, value):
+    # policyValue is a macro to allow charging policy to refer to things
+    # such as EMS module values or settings. This allows us to control
+    # charging via policy.
+    ltNow = time.localtime()
+
+    # If value is "now", substitute with current timestamp
+    if (str(value) == "now"):
+      return time.time()
+
+    # If value is "tm_hour", substitute with current hour
+    if (str(value) == "tm_hour"):
+      return ltNow.tm_hour
+
+    # If value refers to a setting, return the setting
+    if(str(value).startswith("settings.")):
+      strstart = 10
+      strend = len(value)
+      return self.settings.get(value[strstart:strend], 0)
+
+    # If value refers to a function, execute the function and capture the
+    # output
+    if (str(value) == "getMaxAmpsToDivideGreenEnergy()"):
+      return self.getMaxAmpsToDivideGreenEnergy()
+    elif (str(value) == "checkScheduledCharging()"):
+      return self.checkScheduledCharging()
+
+    # None of the macro conditions matched, return the value as is
+    return value
+
   def queue_background_task(self, task):
 
     if(task['cmd'] in self.backgroundTasksCmds):
@@ -369,7 +457,7 @@ class TWCMaster:
     # Sets chargeNowAmps back to zero, so we follow the green energy
     # tracking again
     self.settings['chargeNowAmps'] = 0
-    self.chargeNowTimeEnd = 0
+    self.settings['chargeNowTimeEnd'] = 0
 
   def saveSettings(self):
     # Saves the volatile application settings (such as charger timings,
@@ -522,7 +610,94 @@ class TWCMaster:
     self.settings['chargeNowAmps'] = amps
 
   def setChargeNowTimeEnd(self, timeadd):
-    self.chargeNowTimeEnd = (time.time() + timeadd)
+    self.settings['chargeNowTimeEnd'] = (time.time() + timeadd)
+
+  def setChargingPerPolicy(self):
+    # This function is called for the purpose of evaluating the charging
+    # policy and matching the first rule which matches our scenario.
+
+    # Once we have determined the maximum number of amps for all slaves to
+    # share based on the policy, we call setMaxAmpsToDivideAmongSlaves to
+    # distribute the designated power amongst slaves.
+
+    # First, determine if it has been less than 60 seconds since the last
+    # policy check. If so, skip for now
+    if ((self.lastPolicyCheck + 60) > time.time()):
+      return
+    else:
+      # Update last policy check time
+      self.lastPolicyCheck = time.time()
+
+    for policy in self.charge_policy:
+
+      # Iterate through each set of match, condition and value sets
+      iter = 0
+      for match, condition, value in zip(policy['match'], policy['condition'], policy['value']):
+
+        iter += 1
+        self.debugLog(8, "Evaluating Policy match (" + str(match) + "), condition (" + condition + "), value (" + str(value) + "), iteration (" + str(iter) + ")")
+        # Start by not having matched the condition
+        is_matched = 0
+        match = self.policyValue(match)
+        value = self.policyValue(value)
+
+        # Perform comparison
+        if (condition == "gt"):
+          # Match must be greater than value
+          if (match > value):
+            is_matched = 1
+        if (condition == "lte"):
+          # Match must be less or equal to value
+          if (match <= value):
+            is_matched = 1
+        if (condition == "eq"):
+          # Match must be equal to value
+          if (match == value):
+            is_matched = 1
+        if (condition == "ne"):
+          # Match must not be equal to value
+          if (match != value):
+            is_matched = 1
+        if (condition == "false"):
+          # Condition: false is a method to ensure a policy entry
+          # is never matched, possibly for testing purposes
+          is_matched = 0
+        if (condition == "none"):
+          # No condition exists.
+          is_matched = 1
+
+        # Check if we have met all criteria
+        if (is_matched):
+
+          # Have we checked all policy conditions yet?
+          if (len(policy['match']) == iter):
+
+            # Yes, we will now enforce policy
+            self.debugLog(8, "All policy conditions have matched. Policy chosen is " + str(policy['name']))
+            self.active_policy = str(policy['name'])
+
+            # Determine which value to set the charging to
+            if (policy['charge_amps'] == "value"):
+              self.setMaxAmpsToDivideAmongSlaves(int(policy['value']))
+              self.debugLog(10, 'Charge at %.2f' % int(policy['value']))
+            else:
+              self.setMaxAmpsToDivideAmongSlaves(self.policyValue(policy['charge_amps']))
+              self.debugLog(10, 'Charge at %.2f' % self.policyValue(policy['charge_amps']))
+
+            # If a background task is defined for this policy, queue it
+            bgt = policy.get('background_task', None)
+            if (bgt):
+              self.queue_background_task({'cmd':bgt})
+
+            # Now, finish processing
+            return
+
+          else:
+            self.debugLog(8, "This policy condition has matched, but there are more to process.")
+
+        else:
+          self.debugLog(8, "Policy conditions were not matched.")
+          break
 
   def setConsumption(self, source, value):
     # Accepts consumption values from one or more data sources
@@ -559,9 +734,6 @@ class TWCMaster:
     # Stores the mqttstatus object
     self.mqttstatus = mqtt
 
-  def setMaxAmpsToChargeNowAmps(self):
-    self.setMaxAmpsToDivideAmongSlaves(self.getChargeNowAmps())
-
   def setMaxAmpsToDivideAmongSlaves(self, amps):
 
     # Use backgroundTasksLock to prevent changing maxAmpsToDivideAmongSlaves
@@ -580,17 +752,6 @@ class TWCMaster:
     self.maxAmpsToDivideAmongSlaves = amps
 
     self.releaseBackgroundTasksLock()
-
-  def setMaxAmpsToGreenEnergyTrack(self):
-    # Set the Max Amps to divide among TWCs to the current Green Energy
-    # generation value
-    self.setMaxAmpsToDivideAmongSlaves(self.getMaxAmpsToDivideGreenEnergy())
-
-  def setMaxAmpsToNonScheduledAmpsMax(self):
-    self.setMaxAmpsToDivideAmongSlaves(self.getNonScheduledAmpsMax())
-
-  def setMaxAmpsToScheduledAmpsMax(self):
-    self.setMaxAmpsToDivideAmongSlaves(self.getScheduledAmpsMax())
 
   def setNonScheduledAmpsMax(self, amps):
     self.settings['nonScheduledAmpsMax'] = amps

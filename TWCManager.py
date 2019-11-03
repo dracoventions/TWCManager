@@ -188,8 +188,6 @@ def check_green_energy():
     master.setGeneration('Powerwall2', powerwall.getGeneration())
     master.setGeneration('TED', ted.getGeneration())
 
-    master.setMaxAmpsToGreenEnergyTrack()
-
     if(config['config']['debugLevel'] >= 1):
         print("%s: Solar generating %dW, Consumption %dW, Charger Load %dW" % (time_now(), master.getGeneration(), master.getConsumption(), master.getChargerLoad()))
         print("          Limiting car charging to %.2fA - %.2fA = %.2fA." % ((master.getGeneration() / 240), (master.getGenerationOffset() / 240), master.getMaxAmpsToDivideAmongSlaves()))
