@@ -33,11 +33,11 @@ class HASS:
       self.configHASS          = master.config['sources']['HASS']
     except KeyError:
       self.configHASS          = {}
-    self.status                = self.configConfig.get('enabled', False)
+    self.status                = self.configHASS.get('enabled', False)
     self.serverIP              = self.configHASS.get('serverIP', None)
     self.serverPort            = self.configHASS.get('serverPort', 8123)
     self.apiKey                = self.configHASS.get('apiKey', None)
-    self.debugLevel            = self.configHASS.get('debugLevel', 0)
+    self.debugLevel            = self.configConfig.get('debugLevel', 0)
     self.hassEntityConsumption = self.configHASS.get('hassEntityConsumption', None)
     self.hassEntityGeneration  = self.configHASS.get('hassEntityGeneration', None)
 
