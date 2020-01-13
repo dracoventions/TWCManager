@@ -150,8 +150,7 @@ rs485Adapter = '/dev/ttyUSB0'
 # 100 amp breaker * 0.8 = 80 here.
 # IF YOU'RE NOT SURE WHAT TO PUT HERE, ASK THE ELECTRICIAN WHO INSTALLED YOUR
 # CHARGER.
-wiringMaxAmpsAllTWCs = 40
-
+wiringMaxAmpsAllTWCs = 32
 # If all your chargers share a single circuit breaker, set wiringMaxAmpsPerTWC
 # to the same value as wiringMaxAmpsAllTWCs.
 # Rarely, each TWC will be wired to its own circuit breaker. If you're
@@ -160,8 +159,7 @@ wiringMaxAmpsAllTWCs = 40
 # wiringMaxAmpsAllTWCs.
 # For example, if you have two TWCs each with a 50A breaker, set
 # wiringMaxAmpsPerTWC = 50 * 0.8 = 40 and wiringMaxAmpsAllTWCs = 40 + 40 = 80.
-wiringMaxAmpsPerTWC = 40
-
+wiringMaxAmpsPerTWC = 32
 # https://teslamotorsclub.com/tmc/threads/model-s-gen2-charger-efficiency-testing.78740/#post-1844789
 # says you're using 10.85% more power (91.75/82.77=1.1085) charging at 5A vs 40A,
 # 2.48% more power at 10A vs 40A, and 1.9% more power at 20A vs 40A.  This is
@@ -192,7 +190,7 @@ wiringMaxAmpsPerTWC = 40
 # can't reach that rate, so charging as fast as your wiring supports is best
 # from that standpoint.  It's not clear how much damage charging at slower
 # rates really does.
-minAmpsPerTWC = 12
+minAmpsPerTWC = 5
 
 # When you have more than one vehicle associated with the Tesla car API and
 # onlyChargeMultiCarsAtHome = True, cars will only be controlled by the API when
@@ -1139,7 +1137,7 @@ def car_api_charge(charge):
                                     print(time_now() + ": Car API returned '"
                                           + error
                                           + "' when trying to start charging.  Try again in 1 minute.")
-                                time.sleep(60)
+                                time.sleep(10) #Was 60s JMS
                                 foundKnownError = True
                                 break
                         if(foundKnownError):
@@ -1280,18 +1278,35 @@ def check_green_energy():
     # values or authentication. The -s option prevents curl from
     # displaying download stats. -m 60 prevents the whole
     # operation from taking over 60 seconds.
-    greenEnergyData = run_process('curl -s -m 60 "http://192.168.13.58/history/export.csv?T=1&D=0&M=1&C=1"')
-
-    # In case, greenEnergyData will contain something like this:
+    #greenEnergyData = run_process('curl -s -m 60 "http://192.168.13.58/history/export.csv?T=1&D=0&M=1&C=1"')
+    Photovoltaic = 0
+    Smartmeter=0
+    HouseBatt= 0
+    try:
+      Photovoltaic = run_process('curl -s -m 5 "http://192.168.0.21:8087/getPlainValue/vis.0.PV"')
+      SmartMeter = run_process('curl -s -m 5 "http://192.168.0.21:8087/getPlainValue/vis.0.Grid"')
+      HouseBatt = run_process('curl -s -m 5 "http://192.168.0.21:8087/getPlainValue/vis.0.Batt_Discharge"')
+    except:
+      pass
     #   MTU, Time, Power, Cost, Voltage
     #   Solar,11/11/2017 14:20:43,-2.957,-0.29,124.3
     # The only part we care about is -2.957 which is negative
     # kW currently being generated. When 0kW is generated, the
     # negative disappears so we make it optional in the regex
     # below.
-    m = re.search(b'^Solar,[^,]+,-?([^, ]+),', greenEnergyData, re.MULTILINE)
+    #m = re.search(b'^Solar,[^,]+,-?([^, ]+),', greenEnergyData, re.MULTILINE)
+    SmartMeter = -int(SmartMeter) # - means surplus
+    HouseBatt = int(float(HouseBatt)) #If Powerwall discharges, subtract this from surplus
+    
+    greenEnergyData = SmartMeter - HouseBatt + total_amps_actual_all_twcs()*225
+    print("Smarmeter %d Housebatt %d "% (SmartMeter,HouseBatt))
+
+    
+    m = int(greenEnergyData) 
     if(m):
-        solarW = int(float(m.group(1)) * 1000)
+               #solarW = int(float(m.group(1))+1000)
+        solarW = m
+
 
         # Use backgroundTasksLock to prevent changing maxAmpsToDivideAmongSlaves
         # if the main thread is in the middle of examining and later using
@@ -1302,13 +1317,13 @@ def check_green_energy():
         # Car charges at 240 volts in North America so we figure
         # out how many amps * 240 = solarW and limit the car to
         # that many amps.
-        maxAmpsToDivideAmongSlaves = (solarW / 240) + \
+        maxAmpsToDivideAmongSlaves = (solarW / 225) + \
                                       greenEnergyAmpsOffset
 
         if(debugLevel >= 1):
             print("%s: Solar generating %dW so limit car charging to:\n" \
                  "          %.2fA + %.2fA = %.2fA.  Charge when above %.0fA (minAmpsPerTWC)." % \
-                 (time_now(), solarW, (solarW / 240),
+                 (time_now(), solarW, (solarW / 225),
                  greenEnergyAmpsOffset, maxAmpsToDivideAmongSlaves,
                  minAmpsPerTWC))
 
@@ -1411,7 +1426,7 @@ class CarApiVehicle:
                                 print(time_now() + ": Car API returned '"
                                       + error
                                       + "' when trying to get GPS location.  Try again in 1 minute.")
-                            time.sleep(60)
+                            time.sleep(10) #Was 60 JMS
                             foundKnownError = True
                             break
                     if(foundKnownError):
