@@ -5,7 +5,7 @@ class TeslaPowerwall2:
   import requests
   import time
 
-  batteryLevel    = 0
+  batteryLevel    = 100
   cacheTime       = 60
   config          = None
   configConfig    = None
@@ -17,6 +17,7 @@ class TeslaPowerwall2:
   gridStatus      = False
   importW         = 0
   exportW         = 0
+  minSOE          = 90
   lastFetch       = 0
   password        = None
   serverIP        = None
@@ -43,6 +44,7 @@ class TeslaPowerwall2:
     self.serverIP          = self.configPowerwall.get('serverIP', None)
     self.serverPort        = self.configPowerwall.get('serverPort','443')
     self.password          = self.configPowerwall.get('password', None)
+    self.minSOE            = self.configPowerwall.get('minBatteryLevel', 90)
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
@@ -104,6 +106,11 @@ class TeslaPowerwall2:
 
     # Perform updates if necessary
     self.update()
+
+    if ( self.batteryLevel < self.minSOE ):
+      # Battery is below threshold; keep all generation for PW charging
+      self.debugLog(5, "Powerwall2 energy level below target. Skipping getGeneration")
+      return 0
 
     # Return generation value
     return float(self.generatedW)
