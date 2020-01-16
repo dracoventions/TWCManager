@@ -108,16 +108,14 @@ class TeslaPowerwall2:
     # Return generation value
     return float(self.generatedW)
 
-  def getPWValues(self):
-
+  def getPWJson(self, path):
     # Fetch the specified URL from Powerwall and return the data
     self.fetchFailed = False
 
     # Get a login token, if password authentication is enabled
     self.doPowerwallLogin()
 
-    url = "https://" + self.serverIP + ":" + self.serverPort
-    url += "/api/meters/aggregates"
+    url = "https://" + self.serverIP + ":" + self.serverPort + path
     headers = {}
 
     # Send authentication token if password authentication is enabled
@@ -130,44 +128,19 @@ class TeslaPowerwall2:
     try:
         r = self.requests.get(url, headers = headers, timeout=self.timeout, verify=False)
     except self.requests.exceptions.ConnectionError as e:
-        self.debugLog(4, "Error connecting to Tesla Powerwall 2 to fetch solar data")
+        self.debugLog(4, "Error connecting to Tesla Powerwall 2 to fetch " + path)
         self.debugLog(10, str(e))
         self.fetchFailed = True
         return False
 
     r.raise_for_status()
     return r.json()
+
+  def getPWValues(self):
+    return self.getPWJson("/api/meters/aggregates")
 
   def getSOE(self):
-
-    # Fetch the specified URL from Powerwall and return the data
-    self.fetchFailed = False
-
-    # Get a login token, if password authentication is enabled
-    self.doPowerwallLogin()
-
-    url = "https://" + self.serverIP + ":" + self.serverPort
-    url += "/api/system_status/soe"
-    headers = {}
-
-    # Send authentication token if password authentication is enabled
-    if ((self.password is not None) and (self.tokenProvider == "basic")):
-      headers['Authorization'] = "Bearer " + self.token
-    else:
-      self.debugLog(1, "Error: Powerwall password is set, but no token method matches.")
-      self.debugLog(1, "Token method reported by Powerwall is " + str(self.tokenProvider))
-
-    try:
-        r = self.requests.get(url, headers = headers, timeout=self.timeout, verify=False)
-    except self.requests.exceptions.ConnectionError as e:
-        self.debugLog(4, "Error connecting to Tesla Powerwall 2 to fetch charge state")
-        self.debugLog(10, str(e))
-        self.fetchFailed = True
-        return False
-
-    r.raise_for_status()
-    return r.json()
-
+    return self.getPWJson("/api/system_status/soe")
 
   def startPowerwall(self):
     # This function will instruct the powerwall to run.
