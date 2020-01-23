@@ -12,8 +12,8 @@ install:
 	sudo usermod -a -G www-data pi
 	
 	sudo cp html/* /var/www/html/
-	cp TWCManager.py /usr/bin/
+	sudo cp TWCManager.py /usr/bin/
 
 	# Create configuration directory
-	mkdir /etc/twcmanager
-	cp etc/twcmanager/config.json /etc/twcmanager/
+	sudo mkdir /etc/twcmanager
+	sudo cp etc/twcmanager/config.json /etc/twcmanager/
