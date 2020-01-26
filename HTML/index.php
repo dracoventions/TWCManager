@@ -330,52 +330,55 @@
                     else {
                         print "None";
                     }
-                    print "</p><p style=\"margin-bottom:0\">";
 
                     $carApiEmailPasswordNeeded = $status[$statusIdx++];
 
                     if($status[$statusIdx] < 1) {
+                        print "</p><p style=\"margin-bottom:0\">";
                         print "<strong>No slave TWCs found on RS485 network.</strong>";
                     }
-
-                    // Display info about each TWC being managed.
-                    for($i = 0; $i < $status[$statusIdx]; $i++) {
-                        $subStatus = explode('~', $status[$statusIdx + 1]);
-                        $twcModelMaxAmps = $subStatus[1];
-                        print("<strong>TWC " . $subStatus[0] . ':</strong> ');
-                        if($subStatus[2] < 1.0) {
-                            /*if($subStatus[4] == 0) {
-                                // I was hoping state 0 meant no car is plugged in, but
-                                // there are periods when we're telling the car no power is
-                                // available and the state flips between 5 and 0 every
-                                // second. Sometimes it changes to state 0 for long periods
-                                // (likely when the car goes to sleep for ~15 mins at a
-                                // time) even when the car is plugged in, so it looks like
-                                // we can't actually determine if a car is plugged in or
-                                // not.
-                                print "No car plugged in.";
-                            }
-                            else {*/
-                            if($subStatus[3] < 5.0) {
-                                if($maxAmpsToDivideAmongSlaves > 0 &&
-                                   $maxAmpsToDivideAmongSlaves < $minAmpsPerTWC) {
-                                    print "Power available less than {$minAmpsPerTWC}A (minAmpsPerTWC).";
+                    else {
+                        // Display info about each TWC being managed.
+                        $numTWCs = $status[$statusIdx++];
+                        for($i = 0; $i < $numTWCs; $i++) {
+                            print "</p><p style=\"margin-bottom:0\">";
+                            $subStatus = explode('~', $status[$statusIdx++]);
+                            $twcModelMaxAmps = $subStatus[1];
+                            print("<strong>TWC " . $subStatus[0] . ':</strong> ');
+                            if($subStatus[2] < 1.0) {
+                                /*if($subStatus[4] == 0) {
+                                    // I was hoping state 0 meant no car is plugged in, but
+                                    // there are periods when we're telling the car no power is
+                                    // available and the state flips between 5 and 0 every
+                                    // second. Sometimes it changes to state 0 for long periods
+                                    // (likely when the car goes to sleep for ~15 mins at a
+                                    // time) even when the car is plugged in, so it looks like
+                                    // we can't actually determine if a car is plugged in or
+                                    // not.
+                                    print "No car plugged in.";
+                                }
+                                else {*/
+                                if($subStatus[3] < 5.0) {
+                                    if($maxAmpsToDivideAmongSlaves > 0 &&
+                                       $maxAmpsToDivideAmongSlaves < $minAmpsPerTWC) {
+                                        print "Power available less than {$minAmpsPerTWC}A (minAmpsPerTWC).";
+                                    }
+                                    else {
+                                        print "No power available.";
+                                    }
                                 }
                                 else {
-                                    print "No power available.";
+                                    print "Finished charging, unplugged, or waking up."
+                                        . " (" . $subStatus[3] . "A available)";
                                 }
                             }
                             else {
-                                print "Finished charging, unplugged, or waking up."
-                                    . " (" . $subStatus[3] . "A available)";
-                            }
-                        }
-                        else {
-                            print "Charging at " . $subStatus[2] . "A.";
-                            if($subStatus[3] - $subStatus[2] > 1.0) {
-                                // Car is using over 1A less than is available, so print
-                                // a note.
-                                print " (" . $subStatus[3] . "A available)";
+                                print "Charging at " . $subStatus[2] . "A.";
+                                if($subStatus[3] - $subStatus[2] > 1.0) {
+                                    // Car is using over 1A less than is available, so print
+                                    // a note.
+                                    print " (" . $subStatus[3] . "A available)";
+                                }
                             }
                         }
                     }
