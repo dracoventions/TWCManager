@@ -14,6 +14,7 @@ class CarApi:
   config              = None
   debugLevel          = 0
   master              = None
+  minChargeLevel      = -1
 
   # Transient errors are ones that usually disappear if we retry the car API
   # command a minute or less later.
@@ -24,7 +25,7 @@ class CarApi:
   # Error strings below need only match the start of an error response such as:
   # {'response': None, 'error_description': '',
   # 'error': 'operation_timedout for txid `4853e3ad74de12733f8cc957c9f60040`}'}
-  carApiTransientErrors = ['upstream internal error', 
+  carApiTransientErrors = ['upstream internal error',
                            'operation_timedout',
                            'vehicle unavailable']
 
@@ -689,6 +690,9 @@ class CarApiVehicle:
 
     lastErrorTime = 0
     stopAskingToStartCharging = False
+
+    batteryLevel = -1
+    chargeLimit  = -1
     lat = 10000
     lon = 10000
 
@@ -721,14 +725,11 @@ class CarApiVehicle:
         self.debugLog(8, 'Vehicle ' + str(self.ID) + " not ready because it wasn't woken in the last 2 minutes.")
         return False
 
-    def update_location(self):
+    def get_car_api(self, url):
         if(self.ready() == False):
-            return False
+            return (False, None)
 
         apiResponseDict = {}
-
-        url = "https://owner-api.teslamotors.com/api/1/vehicles/"
-        url = url + str(self.ID) + "/data_request/drive_state"
 
         headers = {
           'accept': 'application/json',
@@ -761,7 +762,7 @@ class CarApiVehicle:
                             # waiting carApiErrorRetryMins minutes for retry
                             # in the standard error handler.
                             self.debugLog(1, "Car API returned '" + error
-                                      + "' when trying to get GPS location.  Try again in 1 minute.")
+                                      + "' when trying to get status.  Try again in 1 minute.")
                             self.time.sleep(60)
                             foundKnownError = True
                             break
@@ -777,15 +778,38 @@ class CarApiVehicle:
                     # 'could_not_wake_buses' is handled.
                     self.time.sleep(5)
                     continue
-                self.lat = response['latitude']
-                self.lon = response['longitude']
             except (KeyError, TypeError):
                 # This catches cases like trying to access
                 # apiResponseDict['response'] when 'response' doesn't exist in
                 # apiResponseDict.
-                self.debugLog(1, ": ERROR: Can't get GPS location of vehicle " + str(self.ID) + \
+                self.debugLog(1, ": ERROR: Can't access vehicle status " + str(self.ID) + \
                           ".  Will try again later.")
                 self.lastErrorTime = self.time.time()
-                return False
+                return (False, None)
 
-            return True
+            return (True, response)
+
+    def update_location(self):
+
+        url = "https://owner-api.teslamotors.com/api/1/vehicles/"
+        url = url + str(self.ID) + "/data_request/drive_state"
+
+        (result, response) = self.get_car_api(url)
+
+        if result:
+            self.lat = response['latitude']
+            self.lon = response['longitude']
+
+        return result
+
+    def update_charge(self):
+        url = "https://owner-api.teslamotors.com/api/1/vehicles/"
+        url = url + str(self.ID) + "/data_request/charge_state"
+
+        (result, response) = self.get_car_api(url)
+
+        if result:
+            self.chargeLimit = response['charge_limit_soc']
+            self.batteryLevel = response['battery_level']
+
+        return result
