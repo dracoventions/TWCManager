@@ -34,7 +34,11 @@ class CarApi:
 
   def __init__(self, config):
     self.config = config
-    self.debugLevel = config['config']['debugLevel']
+    try:
+        self.debugLevel = config['config']['debugLevel']
+        self.minChargeLevel = config['config']['minChargeLevel']
+    except KeyError:
+        pass
 
   def addVehicle(self, json):
     self.carApiVehicles.append(CarApiVehicle(json, self, self.config))
@@ -412,6 +416,11 @@ class CarApi:
         if(vehicle.ready() == False):
             continue
 
+        if(vehicle.update_charge() and vehicle.batteryLevel < self.minChargeLevel ):
+            # If the vehicle's charge state is lower than the configured minimum,
+            #   don't stop it from charging, even if we'd otherwise not charge.
+            continue
+
         # Only update carApiLastStartOrStopChargeTime if car_api_available() managed
         # to wake cars.  Setting this prevents any command below from being sent
         # more than once per minute.
@@ -689,6 +698,8 @@ class CarApiVehicle:
     delayNextWakeAttempt = 0
 
     lastErrorTime = 0
+    lastDriveStatusTime = 0
+    lastChargeStatusTime = 0
     stopAskingToStartCharging = False
 
     batteryLevel = -1
@@ -794,9 +805,15 @@ class CarApiVehicle:
         url = "https://owner-api.teslamotors.com/api/1/vehicles/"
         url = url + str(self.ID) + "/data_request/drive_state"
 
+        now = self.time.time()
+
+        if (now - self.lastDriveStatusTime < 60):
+            return True
+
         (result, response) = self.get_car_api(url)
 
         if result:
+            self.lastDriveStatusTime = self.time.time()
             self.lat = response['latitude']
             self.lon = response['longitude']
 
@@ -806,9 +823,15 @@ class CarApiVehicle:
         url = "https://owner-api.teslamotors.com/api/1/vehicles/"
         url = url + str(self.ID) + "/data_request/charge_state"
 
+        now = self.time.time()
+
+        if (now - self.lastChargeStatusTime < 60):
+            return True
+
         (result, response) = self.get_car_api(url)
 
         if result:
+            self.lastChargeStatusTime = self.time.time()
             self.chargeLimit = response['charge_limit_soc']
             self.batteryLevel = response['battery_level']
 
