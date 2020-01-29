@@ -595,7 +595,7 @@ class TWCSlave:
                               ' < 60 or self.reportedAmpsActual ' + str(self.reportedAmpsActual) +
                               ' < 4')
                     if(self.master.getMaxAmpsToDivideAmongSlaves() < 1):
-                        desiredAmosOffered = 0
+                        desiredAmpsOffered = 0
                     else:
                         desiredAmpsOffered = minAmpsToOffer
         else:
