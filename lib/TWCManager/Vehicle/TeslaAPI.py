@@ -10,6 +10,7 @@ class CarApi:
   carApiRefreshToken  = ''
   carApiTokenExpireTime = time.time()
   carApiLastStartOrStopChargeTime = 0
+  lastChargeLimitApplied = -1
   carApiVehicles      = []
   config              = None
   debugLevel          = 0
@@ -44,7 +45,7 @@ class CarApi:
     self.carApiVehicles.append(CarApiVehicle(json, self, self.config))
     return True
 
-  def car_api_available(self, email = None, password = None, charge = None):
+  def car_api_available(self, email = None, password = None, charge = None, applyLimit = None):
     now = self.time.time()
     apiResponseDict = {}
 
@@ -169,17 +170,20 @@ class CarApi:
             needSleep = False
             for vehicle in self.getCarApiVehicles():
                 if(charge == True and vehicle.stopAskingToStartCharging):
-                    # Vehicle is in a state (complete or charging) already
-                    # which doesn't make sense for us to keep requesting it
-                    # to start charging, so we will stop.
-                    self.debugLog(11, "Don't repeatedly request API to charge vehicle " + str(vehicle.ID) + ", because vehicle.stopAskingToStartCharging == True - it has already been requested.")
+                    self.debugLog(11, "Don't wake vehicle " + str(vehicle.ID)
+                              + " because vehicle.stopAskingToStartCharging == True")
+                    continue
+
+                if(applyLimit == True and vehicle.stopTryingToApplyLimit):
+                    self.debugLog(11, "Don't wake vehicle " + str(vehicle.ID)
+                              + " because vehicle.stopTryingToApplyLimit == True")
                     continue
 
                 if(self.getCarApiRetryRemaining()):
                     # It's been under carApiErrorRetryMins minutes since the car
                     # API generated an error on this vehicle. Don't send it more
                     # commands yet.
-                    self.debugLog(8, "Don't send commands to vehicle " + str(vehicle.ID)
+                    self.debugLog(11, "Don't send commands to vehicle " + str(vehicle.ID)
                               + " because it returned an error in the last "
                               + str(self.getCarApiErrorRetryMins()) + " minutes.")
                     continue
@@ -603,6 +607,44 @@ class CarApi:
 
     return result
 
+  def applyChargeLimit(self, limit):
+    if( limit != self.lastChargeLimitApplied ):
+        # If the limit has changed, we need to re-apply to all vehicles.
+        # Technically, we only need to wake them if the limit has increased,
+        # but I don't want that complexity yet.
+        for vehicle in self.carApiVehicles:
+            vehicle.stopTryingToApplyLimit = False
+        self.lastChargeLimitApplied = limit
+
+    if(self.car_api_available(applyLimit = True) == False):
+        self.debugLog(8, 'applyChargeLimit return because car_api_available() == False')
+        return 'error'
+
+    for vehicle in self.carApiVehicles:
+        if( vehicle.stopTryingToApplyLimit or not vehicle.ready() ):
+            continue
+
+        located = vehicle.update_location()
+        (found, target) = self.master.getNormalChargeLimit(vehicle.ID)
+        if( limit == -1 or (located and not vehicle.atHome) ):
+            # We're removing any applied limit
+            if(found):
+                if( vehicle.apply_charge_limit(target) ):
+                    self.master.removeNormalChargeLimit(vehicle.ID)
+                    vehicle.stopTryingToApplyLimit = True
+            else:
+                vehicle.stopTryingToApplyLimit = True
+        else:
+            # We're applying a new limit
+            if( not found ):
+                if( vehicle.update_charge() ):
+                    self.master.saveNormalChargeLimit(vehicle.ID, vehicle.chargeLimit)
+                else:
+                    # We failed to read the "normal" limit; don't risk changing it.
+                    continue
+
+            vehicle.stopTryingToApplyLimit = vehicle.apply_charge_limit(limit)
+
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
       print("TeslaAPI: (" + str(minlevel) + ") " + message)
@@ -708,11 +750,13 @@ class CarApiVehicle:
     firstWakeAttemptTime = 0
     lastWakeAttemptTime = 0
     delayNextWakeAttempt = 0
+    lastLimitAttemptTime = 0
 
     lastErrorTime = 0
     lastDriveStatusTime = 0
     lastChargeStatusTime = 0
     stopAskingToStartCharging = False
+    stopTryingToApplyLimit = False
 
     batteryLevel = -1
     chargeLimit  = -1
@@ -850,3 +894,79 @@ class CarApiVehicle:
             self.batteryLevel = response['battery_level']
 
         return result
+
+    def apply_charge_limit(self, limit):
+        if(self.stopTryingToApplyLimit):
+            return True
+
+        now = self.time.time()
+
+        if( now - self.lastLimitAttemptTime <= 300
+            or self.carapi.getCarApiRetryRemaining(self.lastErrorTime)):
+            return False
+
+        if( self.ready() == False):
+            return False
+
+        self.lastLimitAttemptTime = now
+
+        url = "https://owner-api.teslamotors.com/api/1/vehicles/"
+        url = url + str(self.ID) + "/command/set_charge_limit"
+
+        headers = {
+            'accept': 'application/json',
+            'Authorization': 'Bearer ' + self.carapi.getCarApiBearerToken()
+        }
+        body = {
+            'percent': limit
+        }
+
+        for retryCount in range(0, 3):
+            req = self.requests.post(url, headers = headers, json = body)
+            self.debugLog(8, 'Car API cmd' + str(req))
+
+            try:
+                apiResponseDict = self.json.loads(req.text)
+            except self.json.decoder.JSONDecodeError:
+                pass
+
+            result = False
+            reason = ''
+            try:
+                result = apiResponseDict['response']['result']
+                reason = apiResponseDict['response']['reason']
+            except (KeyError, TypeError):
+                # This catches unexpected cases like trying to access
+                # apiResponseDict['response'] when 'response' doesn't exist
+                # in apiResponseDict.
+                result = False
+
+            if(result == True or reason == 'already_set'):
+                self.stopTryingToApplyLimit = True
+                return True
+            elif(reason == 'could_not_wake_buses'):
+                time.sleep(5)
+                continue
+            elif(apiResponseDict['response'] == None):
+                if('error' in apiResponseDict):
+                    foundKnownError = False
+                    error = apiResponseDict['error']
+                    for knownError in self.carapi.getCarApiTransientErrors():
+                        if(knownError == error[0:len(knownError)]):
+                            # I see these errors often enough that I think
+                            # it's worth re-trying in 1 minute rather than
+                            # waiting carApiErrorRetryMins minutes for retry
+                            # in the standard error handler.
+                            self.debugLog(1, "Car API returned '"
+                                        + error
+                                        + "' when trying to start charging.  Try again in 1 minute.")
+                            time.sleep(60)
+                            foundKnownError = True
+                            break
+                    if(foundKnownError):
+                        continue
+            else:
+                self.lastErrorTime = now
+
+
+        return False

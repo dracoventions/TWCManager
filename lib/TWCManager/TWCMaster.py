@@ -361,6 +361,12 @@ class TWCMaster:
     else:
       return 0
 
+  def getNormalChargeLimit(self, ID):
+    if( ID in self.settings['chargeLimits'].keys()):
+      return (True, self.settings['chargeLimits'][ID] )
+    else:
+      return (False, None)
+
   def getSerial(self):
     return self.ser
 
@@ -545,11 +551,23 @@ class TWCMaster:
   def releaseBackgroundTasksLock(self):
     self.backgroundTasksLock.release()
 
+  def removeNormalChargeLimit(self, ID):
+    if( 'chargeLimits' in self.settings ):
+      self.setting['chargeLimits'].remove(ID)
+      self.saveSettings()
+
   def resetChargeNowAmps(self):
     # Sets chargeNowAmps back to zero, so we follow the green energy
     # tracking again
     self.settings['chargeNowAmps'] = 0
     self.settings['chargeNowTimeEnd'] = 0
+
+  def saveNormalChargeLimit(self, ID, limit):
+    if( not 'chargeLimits' in self.settings ):
+      self.settings['chargeLimits'] = dict()
+
+    self.setting['chargeLimits'][ID] = limit
+    self.saveSettings()
 
   def saveSettings(self):
     # Saves the volatile application settings (such as charger timings,
