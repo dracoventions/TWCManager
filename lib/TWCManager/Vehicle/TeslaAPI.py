@@ -687,6 +687,8 @@ class CarApi:
 class CarApiVehicle:
 
     import time
+    import requests
+    import json
 
     carapi     = None
     config     = None
@@ -746,18 +748,18 @@ class CarApiVehicle:
           'accept': 'application/json',
           'Authorization': 'Bearer ' + self.carapi.getCarApiBearerToken()
         }
-        req = self.carapi.requests.get(url, headers = headers)
+        req = self.requests.get(url, headers = headers)
 
         # Retry up to 3 times on certain errors.
         for retryCount in range(0, 3):
             self.debugLog(8, 'Car API cmd' + str(req))
             try:
-                apiResponseDict = self.carapi.json.loads(req.text)
+                apiResponseDict = self.json.loads(req.text)
                 # This error can happen here as well:
                 #   {'response': {'reason': 'could_not_wake_buses', 'result': False}}
                 # This one is somewhat common:
                 #   {'response': None, 'error': 'vehicle unavailable: {:error=>"vehicle unavailable:"}', 'error_description': ''}
-            except self.carapi.json.decoder.JSONDecodeError:
+            except self.json.decoder.JSONDecodeError:
                 pass
 
             try:
@@ -774,7 +776,7 @@ class CarApiVehicle:
                             # in the standard error handler.
                             self.debugLog(1, "Car API returned '" + error
                                       + "' when trying to get status.  Try again in 1 minute.")
-                            self.carapi.time.sleep(60)
+                            self.time.sleep(60)
                             foundKnownError = True
                             break
                     if(foundKnownError):
@@ -787,7 +789,7 @@ class CarApiVehicle:
                 if('reason' in response and response['reason'] == 'could_not_wake_buses'):
                     # Retry after 5 seconds.  See notes in car_api_charge where
                     # 'could_not_wake_buses' is handled.
-                    self.carapi.time.sleep(5)
+                    self.time.sleep(5)
                     continue
             except (KeyError, TypeError):
                 # This catches cases like trying to access
@@ -805,7 +807,7 @@ class CarApiVehicle:
         url = "https://owner-api.teslamotors.com/api/1/vehicles/"
         url = url + str(self.ID) + "/data_request/drive_state"
 
-        now = self.carapi.time.time()
+        now = self.time.time()
 
         if (now - self.lastDriveStatusTime < 60):
             return True
@@ -823,7 +825,7 @@ class CarApiVehicle:
         url = "https://owner-api.teslamotors.com/api/1/vehicles/"
         url = url + str(self.ID) + "/data_request/charge_state"
 
-        now = self.carapi.time.time()
+        now = self.time.time()
 
         if (now - self.lastChargeStatusTime < 60):
             return True
