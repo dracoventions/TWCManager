@@ -384,6 +384,38 @@ class CarApi:
 
     return True
 
+  def is_location_home(self, lat, lon):
+
+    if(self.master.getHomeLatLon()[0] == 10000):
+        self.debugLog(1, "Home location for vehicles has never been set.  " +
+                "We'll assume home is where we found the first vehicle currently parked.  " +
+                "Home set to lat=" + str(lat) + ", lon=" +
+                str(lon))
+        self.master.setHomeLat(lat)
+        self.master.setHomeLon(lon)
+        self.master.saveSettings()
+        return True
+
+    # 1 lat or lon = ~364488.888 feet. The exact feet is different depending
+    # on the value of latitude, but this value should be close enough for
+    # our rough needs.
+    # 1/364488.888 * 10560 = 0.0289.
+    # So if vehicle is within 0289 lat and lon of homeLat/Lon,
+    # it's within ~10560 feet (2 miles) of home and we'll consider it to be
+    # at home.
+    # I originally tried using 0.00548 (~2000 feet) but one night the car
+    # consistently reported being 2839 feet away from home despite being
+    # parked in the exact spot I always park it.  This is very odd because
+    # GPS is supposed to be accurate to within 12 feet.  Tesla phone app
+    # also reports the car is not at its usual address.  I suspect this
+    # is another case of a bug that's been causing car GPS to freeze  the
+    # last couple months.
+    if(abs(self.master.getHomeLatLon()[0] - lat) > 0.0289
+       or abs(self.master.getHomeLatLon()[1] - lon) > 0.0289):
+        return False
+
+    return True
+
   def car_api_charge(self, charge):
     # Do not call this function directly.  Call by using background thread:
     # queue_background_task({'cmd':'charge', 'charge':<True/False>})
@@ -436,31 +468,7 @@ class CarApi:
                 result = 'error'
                 continue
 
-            if(self.master.getHomeLatLon()[0] == 10000):
-                self.debugLog(1, "Home location for vehicles has never been set.  " +
-                        "We'll assume home is where we found the first vehicle currently parked.  " +
-                        "Home set to lat=" + str(vehicle.lat) + ", lon=" +
-                        str(vehicle.lon))
-                self.master.setHomeLat(vehicle.lat)
-                self.master.setHomeLon(vehicle.lon)
-                self.master.saveSettings()
-
-            # 1 lat or lon = ~364488.888 feet. The exact feet is different depending
-            # on the value of latitude, but this value should be close enough for
-            # our rough needs.
-            # 1/364488.888 * 10560 = 0.0289.
-            # So if vehicle is within 0289 lat and lon of homeLat/Lon,
-            # it's within ~10560 feet (2 miles) of home and we'll consider it to be
-            # at home.
-            # I originally tried using 0.00548 (~2000 feet) but one night the car
-            # consistently reported being 2839 feet away from home despite being
-            # parked in the exact spot I always park it.  This is very odd because
-            # GPS is supposed to be accurate to within 12 feet.  Tesla phone app
-            # also reports the car is not at its usual address.  I suspect this
-            # is another case of a bug that's been causing car GPS to freeze  the
-            # last couple months.
-            if(abs(self.master.getHomeLatLon()[0] - vehicle.lat) > 0.0289
-               or abs(self.master.getHomeLatLon()[1] - vehicle.lon) > 0.0289):
+            if(not vehicle.atHome):
                 # Vehicle is not at home, so don't change its charge state.
                 self.debugLog(1, 'Vehicle ID ' + str(vehicle.ID) +
                           ' is not at home.  Do not ' + startOrStop + ' charge.')
@@ -710,6 +718,7 @@ class CarApiVehicle:
     chargeLimit  = -1
     lat = 10000
     lon = 10000
+    atHome = False
 
     def __init__(self, ID, carapi, config):
         self.carapi     = carapi
@@ -820,6 +829,7 @@ class CarApiVehicle:
             self.lastDriveStatusTime = self.time.time()
             self.lat = response['latitude']
             self.lon = response['longitude']
+            self.atHome = self.carapi.is_location_home(self.lat, self.lon)
 
         return result
 
