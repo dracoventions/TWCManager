@@ -367,6 +367,12 @@ class TWCMaster:
     else:
       return (False, None)
 
+  def getNormalChargeLimit(self, ID):
+    if( ID in self.settings['chargeLimits'].keys()):
+      return (True, self.settings['chargeLimits'][ID] )
+    else:
+      return (False, None)
+
   def getSerial(self):
     return self.ser
 
