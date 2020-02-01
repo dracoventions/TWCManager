@@ -114,6 +114,13 @@
         # time interval, due to the available amps being set below minimum charge.
         "subtractChargerLoad": false,
 
+        # The minChargeLevel parameter determines the minimum acceptable SOC
+        # state for any monitored vehicle. If the SOC is below this value,
+        # the car will not be stopped from charging (even if we are not
+        # generating sufficient energy). This value is disabled by default,
+        # you will need to un-comment it to have it take effect.
+        #"minChargeLevel": 10,
+
         # Choose how much debugging info to output.
         # 0 is no output other than errors.
         # 1 is just the most useful info.
