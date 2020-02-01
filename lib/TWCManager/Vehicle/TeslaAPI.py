@@ -14,6 +14,7 @@ class CarApi:
   config              = None
   debugLevel          = 0
   master              = None
+  minChargeLevel      = -1
 
   # Transient errors are ones that usually disappear if we retry the car API
   # command a minute or less later.
@@ -24,7 +25,7 @@ class CarApi:
   # Error strings below need only match the start of an error response such as:
   # {'response': None, 'error_description': '',
   # 'error': 'operation_timedout for txid `4853e3ad74de12733f8cc957c9f60040`}'}
-  carApiTransientErrors = ['upstream internal error', 
+  carApiTransientErrors = ['upstream internal error',
                            'operation_timedout',
                            'vehicle unavailable']
 
@@ -33,7 +34,11 @@ class CarApi:
 
   def __init__(self, config):
     self.config = config
-    self.debugLevel = config['config']['debugLevel']
+    try:
+        self.debugLevel = config['config']['debugLevel']
+        self.minChargeLevel = config['config']['minChargeLevel']
+    except KeyError:
+        pass
 
   def addVehicle(self, json):
     self.carApiVehicles.append(CarApiVehicle(json, self, self.config))
@@ -411,6 +416,11 @@ class CarApi:
         if(vehicle.ready() == False):
             continue
 
+        if(vehicle.update_charge() and vehicle.batteryLevel < self.minChargeLevel ):
+            # If the vehicle's charge state is lower than the configured minimum,
+            #   don't stop it from charging, even if we'd otherwise not charge.
+            continue
+
         # Only update carApiLastStartOrStopChargeTime if car_api_available() managed
         # to wake cars.  Setting this prevents any command below from being sent
         # more than once per minute.
@@ -677,6 +687,8 @@ class CarApi:
 class CarApiVehicle:
 
     import time
+    import requests
+    import json
 
     carapi     = None
     config     = None
@@ -688,7 +700,12 @@ class CarApiVehicle:
     delayNextWakeAttempt = 0
 
     lastErrorTime = 0
+    lastDriveStatusTime = 0
+    lastChargeStatusTime = 0
     stopAskingToStartCharging = False
+
+    batteryLevel = -1
+    chargeLimit  = -1
     lat = 10000
     lon = 10000
 
@@ -721,18 +738,15 @@ class CarApiVehicle:
         self.debugLog(8, 'Vehicle ' + str(self.ID) + " not ready because it wasn't woken in the last 2 minutes.")
         return False
 
-    def update_location(self):
+    def get_car_api(self, url):
         if(self.ready() == False):
-            return False
+            return (False, None)
 
         apiResponseDict = {}
 
-        url = "https://owner-api.teslamotors.com/api/1/vehicles/"
-        url = url + str(self.ID) + "/data_request/drive_state"
-
         headers = {
           'accept': 'application/json',
-          'Authorization': 'Bearer ' + self.getCarApiBearerToken()
+          'Authorization': 'Bearer ' + self.carapi.getCarApiBearerToken()
         }
         req = self.requests.get(url, headers = headers)
 
@@ -749,19 +763,19 @@ class CarApiVehicle:
                 pass
 
             try:
-                self.debugLog(4, 'Car API vehicle GPS location' + str(apiResponseDict) + '\n')
+                self.debugLog(4, 'Car API vehicle status' + str(apiResponseDict) + '\n')
 
                 if('error' in apiResponseDict):
                     foundKnownError = False
                     error = apiResponseDict['error']
-                    for knownError in self.getCarApiTransientErrors():
+                    for knownError in self.carapi.getCarApiTransientErrors():
                         if(knownError == error[0:len(knownError)]):
                             # I see these errors often enough that I think
                             # it's worth re-trying in 1 minute rather than
                             # waiting carApiErrorRetryMins minutes for retry
                             # in the standard error handler.
                             self.debugLog(1, "Car API returned '" + error
-                                      + "' when trying to get GPS location.  Try again in 1 minute.")
+                                      + "' when trying to get status.  Try again in 1 minute.")
                             self.time.sleep(60)
                             foundKnownError = True
                             break
@@ -777,15 +791,50 @@ class CarApiVehicle:
                     # 'could_not_wake_buses' is handled.
                     self.time.sleep(5)
                     continue
-                self.lat = response['latitude']
-                self.lon = response['longitude']
             except (KeyError, TypeError):
                 # This catches cases like trying to access
                 # apiResponseDict['response'] when 'response' doesn't exist in
                 # apiResponseDict.
-                self.debugLog(1, ": ERROR: Can't get GPS location of vehicle " + str(self.ID) + \
+                self.debugLog(1, ": ERROR: Can't access vehicle status " + str(self.ID) + \
                           ".  Will try again later.")
                 self.lastErrorTime = self.time.time()
-                return False
+                return (False, None)
 
+            return (True, response)
+
+    def update_location(self):
+
+        url = "https://owner-api.teslamotors.com/api/1/vehicles/"
+        url = url + str(self.ID) + "/data_request/drive_state"
+
+        now = self.time.time()
+
+        if (now - self.lastDriveStatusTime < 60):
             return True
+
+        (result, response) = self.get_car_api(url)
+
+        if result:
+            self.lastDriveStatusTime = self.time.time()
+            self.lat = response['latitude']
+            self.lon = response['longitude']
+
+        return result
+
+    def update_charge(self):
+        url = "https://owner-api.teslamotors.com/api/1/vehicles/"
+        url = url + str(self.ID) + "/data_request/charge_state"
+
+        now = self.time.time()
+
+        if (now - self.lastChargeStatusTime < 60):
+            return True
+
+        (result, response) = self.get_car_api(url)
+
+        if result:
+            self.lastChargeStatusTime = self.time.time()
+            self.chargeLimit = response['charge_limit_soc']
+            self.batteryLevel = response['battery_level']
+
+        return result
