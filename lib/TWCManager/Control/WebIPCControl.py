@@ -2,6 +2,7 @@ import re
 import struct
 import sysv_ipc
 import time
+import math
 
 class WebIPCControl:
 
@@ -203,7 +204,7 @@ class WebIPCControl:
                 # dumpState commands are used for debugging. They are called
                 # using a web page:
                 # http://(Pi address)/index.php?submit=1&dumpState=1
-                webResponseMsg = ('time=' + str(now) + ', fakeMaster='
+                webResponseMsg = ('time=' + str(time.time()) + ', fakeMaster='
                     + str(self.config['config']['fakeMaster']) + ', rs485Adapter=' + self.config['config']['rs485adapter']
                     + ', baud=' + str(self.config['config']['baud'])
                     + ', wiringMaxAmpsAllTWCs=' + str(self.config['config']['wiringMaxAmpsAllTWCs'])
@@ -213,13 +214,12 @@ class WebIPCControl:
                     + ', debugLevel=' + str(self.config['config']['debugLevel'])
                     + '\n')
                 webResponseMsg += (
-                    'carApiStopAskingToStartCharging=' + str(carApiStopAskingToStartCharging)
-                    + '\ncarApiLastStartOrStopChargeTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(self.carapi.getLastStartOrStopChargeTime())))
+                    'carApiLastStartOrStopChargeTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(self.carapi.getLastStartOrStopChargeTime())))
                     + '\ncarApiLastErrorTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(self.carapi.getCarApiLastErrorTime())))
                     + '\ncarApiTokenExpireTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(self.carapi.getCarApiTokenExpireTime())))
                     + '\n')
 
-                for vehicle in carapi.getCarApiVehicles():
+                for vehicle in self.carapi.getCarApiVehicles():
                     webResponseMsg += str(vehicle.__dict__) + '\n'
 
                 webResponseMsg += 'slaveTWCRoundRobin:\n'
