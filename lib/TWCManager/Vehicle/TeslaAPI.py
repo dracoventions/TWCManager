@@ -19,7 +19,7 @@ class CarApi:
   # command a minute or less later.
   # 'vehicle unavailable:' sounds like it implies the car is out of connection
   # range, but I once saw it returned by drive_state after wake_up returned
-  # 'online'. In that case, the car is reacahble, but drive_state failed for some
+  # 'online'. In that case, the car is reachable, but drive_state failed for some
   # reason. Thus we consider it a transient error.
   # Error strings below need only match the start of an error response such as:
   # {'response': None, 'error_description': '',
