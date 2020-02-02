@@ -112,7 +112,7 @@ class MQTTStatus:
     self.msgQueue.clear()
 
     for msg in self.msgQueueBuffer:
-      self.debugLog(8, "Publishing MQTT Topic " + str(msg['topic']))
+      self.debugLog(8, "Publishing MQTT Topic " + str(msg['topic']) + " (value is " + str(msg['payload']) + ")")
       try:
         pub = client.publish(msg['topic'], payload=msg['payload'], qos=0)
       except e:

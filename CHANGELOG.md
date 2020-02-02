@@ -14,6 +14,7 @@ This document logs the changes per release of TWCManager.
   * Bugfix: Makefile update to install php7.3 on raspbian (thanks @MikeBishop)
   * Bugfix: Fix typo which did not set desiredAmps to 0 when total amps available for all chargers was less than 1 (thanks @MikeBishop)
   * Bugfix: Fix crash condition in dumpState function for WebIPC control interface (thanks @MikeBishop)
+  * Bugfix: Correctly display multiple chargers in web (RPC) interface (merged from upstream @cdragon)
 
 ## v1.1.5 - 2019-11-02
 
