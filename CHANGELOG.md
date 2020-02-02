@@ -2,7 +2,9 @@
 
 This document logs the changes per release of TWCManager.
 
-## v1.1.6 - Current Dev Branch
+## v1.1.7 - Current Dev Branch
+
+## v1.1.6 - 2020-02-02
 
   * Implement policy-based charging, where individual charging logic (for scheduled, non-scheduled, green energy and charge now logic) is now centralised.
     * Benefits of this approach:

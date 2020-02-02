@@ -32,7 +32,7 @@ pip3 install commentjson paho-mqtt pyserial sysv_ipc
 ```
 git clone https://github.com/ngardiner/TWCManager
 cd TWCManager
-git checkout v1.1.3
+git checkout v1.1.6
 make install
 ```
 
