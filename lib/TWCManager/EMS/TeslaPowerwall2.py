@@ -5,6 +5,7 @@ class TeslaPowerwall2:
   import requests
   import time
 
+  batteryLevel    = 100
   cacheTime       = 60
   config          = None
   configConfig    = None
@@ -16,6 +17,7 @@ class TeslaPowerwall2:
   gridStatus      = False
   importW         = 0
   exportW         = 0
+  minSOE          = 90
   lastFetch       = 0
   password        = None
   serverIP        = None
@@ -42,6 +44,7 @@ class TeslaPowerwall2:
     self.serverIP          = self.configPowerwall.get('serverIP', None)
     self.serverPort        = self.configPowerwall.get('serverPort','443')
     self.password          = self.configPowerwall.get('password', None)
+    self.minSOE            = self.configPowerwall.get('minBatteryLevel', 90)
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
@@ -104,19 +107,22 @@ class TeslaPowerwall2:
     # Perform updates if necessary
     self.update()
 
+    if ( self.batteryLevel < self.minSOE ):
+      # Battery is below threshold; keep all generation for PW charging
+      self.debugLog(5, "Powerwall2 energy level below target. Skipping getGeneration")
+      return 0
+
     # Return generation value
     return float(self.generatedW)
 
-  def getPWValues(self):
-
+  def getPWJson(self, path):
     # Fetch the specified URL from Powerwall and return the data
     self.fetchFailed = False
 
     # Get a login token, if password authentication is enabled
     self.doPowerwallLogin()
 
-    url = "https://" + self.serverIP + ":" + self.serverPort
-    url += "/api/meters/aggregates"
+    url = "https://" + self.serverIP + ":" + self.serverPort + path
     headers = {}
 
     # Send authentication token if password authentication is enabled
@@ -129,13 +135,19 @@ class TeslaPowerwall2:
     try:
         r = self.requests.get(url, headers = headers, timeout=self.timeout, verify=False)
     except self.requests.exceptions.ConnectionError as e:
-        self.debugLog(4, "Error connecting to Tesla Powerwall 2 to fetch solar data")
+        self.debugLog(4, "Error connecting to Tesla Powerwall 2 to fetch " + path)
         self.debugLog(10, str(e))
         self.fetchFailed = True
         return False
 
     r.raise_for_status()
     return r.json()
+
+  def getPWValues(self):
+    return self.getPWJson("/api/meters/aggregates")
+
+  def getSOE(self):
+    return self.getPWJson("/api/system_status/soe")
 
   def startPowerwall(self):
     # This function will instruct the powerwall to run.
@@ -182,6 +194,13 @@ class TeslaPowerwall2:
         self.voltage = int(value['site']['instant_average_voltage'])
       else:
         # Fetch failed to obtain values
+        self.fetchFailed = True
+
+      value = self.getSOE()
+
+      if (value):
+        self.batteryLevel = float(value['percentage'])
+      else:
         self.fetchFailed = True
 
       # Update last fetch time
