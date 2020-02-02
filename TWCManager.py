@@ -159,6 +159,8 @@ def background_tasks_thread():
             carapi.car_api_available(task['email'], task['password'])
         elif(task['cmd'] == 'checkGreenEnergy'):
             check_green_energy()
+        elif(task['cmd'] == 'updateStatus'):
+            update_statuses()
 
         # Delete task['cmd'] from backgroundTasksCmds such that
         # queue_background_task() can queue another task['cmd'] in the future.
@@ -188,16 +190,20 @@ def check_green_energy():
     master.setGeneration('Powerwall2', powerwall.getGeneration())
     master.setGeneration('TED', ted.getGeneration())
 
-    if(config['config']['debugLevel'] >= 1):
-        print("%s: Solar generating %dW, Consumption %dW, Charger Load %dW" % (time_now(), master.getGeneration(), master.getConsumption(), master.getChargerLoad()))
-        print("          Limiting car charging to %.2fA - %.2fA = %.2fA." % ((master.getGeneration() / 240), (master.getGenerationOffset() / 240), master.getMaxAmpsToDivideAmongSlaves()))
-        print("          Charge when above %.0fA (minAmpsPerTWC)." % (config['config']['minAmpsPerTWC']))
+def update_statuses():
 
-    # Update HASS sensors with min/max amp values
-    master.gethassstatus().setStatus(bytes("config", 'UTF-8'), "min_amps_per_twc", config['config']['minAmpsPerTWC'])
-    master.getmqttstatus().setStatus(bytes("config", 'UTF-8'), "minAmpsPerTWC", config['config']['minAmpsPerTWC'])
-    master.gethassstatus().setStatus(bytes("all", 'UTF-8'), "max_amps_for_slaves", master.getMaxAmpsToDivideAmongSlaves())
-    master.getmqttstatus().setStatus(bytes("all", 'UTF-8'), "maxAmpsForSlaves", master.getMaxAmpsToDivideAmongSlaves())
+  # Print a status update, and update MQTT / HASS values
+
+  if(config['config']['debugLevel'] >= 1):
+      print("%s: Green energy generates %dW, Consumption %dW, Charger Load %dW" % (time_now(), master.getGeneration(), master.getConsumption(), master.getChargerLoad()))
+      print("          Limiting car charging to %.2fA - %.2fA = %.2fA." % ((master.getGeneration() / 240), (master.getGenerationOffset() / 240), master.getMaxAmpsToDivideAmongSlaves()))
+      print("          Charge when above %.0fA (minAmpsPerTWC)." % (config['config']['minAmpsPerTWC']))
+
+  # Update HASS sensors with min/max amp values
+  master.gethassstatus().setStatus(bytes("config", 'UTF-8'), "min_amps_per_twc", config['config']['minAmpsPerTWC'])
+  master.getmqttstatus().setStatus(bytes("config", 'UTF-8'), "minAmpsPerTWC", config['config']['minAmpsPerTWC'])
+  master.gethassstatus().setStatus(bytes("all", 'UTF-8'), "max_amps_for_slaves", master.getMaxAmpsToDivideAmongSlaves())
+  master.getmqttstatus().setStatus(bytes("all", 'UTF-8'), "maxAmpsForSlaves", master.getMaxAmpsToDivideAmongSlaves())
 
 #
 # End functions

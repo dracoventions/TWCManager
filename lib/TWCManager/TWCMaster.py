@@ -753,6 +753,10 @@ class TWCMaster:
 
     self.releaseBackgroundTasksLock()
 
+    # Now that we have updated the maxAmpsToDivideAmongSlaves, send update
+    # to console / MQTT / etc
+    self.queue_background_task({'cmd':'updateStatus'})
+
   def setNonScheduledAmpsMax(self, amps):
     self.settings['nonScheduledAmpsMax'] = amps
 
