@@ -396,7 +396,7 @@ class CarApi:
 
     if(now - self.getLastStartOrStopChargeTime() < 60):
         # Don't start or stop more often than once a minute
-        self.debugLog(8, 'car_api_charge return because under 60 sec since last carApiLastStartOrStopChargeTime')
+        self.debugLog(11, 'car_api_charge return because under 60 sec since last carApiLastStartOrStopChargeTime')
         return 'error'
 
     if(self.car_api_available(charge = charge) == False):
