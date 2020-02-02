@@ -172,8 +172,7 @@ class CarApi:
                     # Vehicle is in a state (complete or charging) already
                     # which doesn't make sense for us to keep requesting it
                     # to start charging, so we will stop.
-                    self.debugLog(11, "Don't charge vehicle " + str(vehicle.ID)
-                              + " because vehicle.stopAskingToStartCharging == True")
+                    self.debugLog(11, "Don't repeatedly request API to charge vehicle " + str(vehicle.ID) + ", because vehicle.stopAskingToStartCharging == True - it has already been requested.")
                     continue
 
                 if(self.getCarApiRetryRemaining()):
