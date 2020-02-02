@@ -202,7 +202,12 @@
           "enabled": false,
           "serverIP": "192.168.1.2",
       # Password is optional. Specify it if authentication is enabled.
-          "password": "test123"
+          "password": "test123",
+      # The following value specifies the minimum battery level of the 
+      # Powerwall2 before the car will be able to charge. This avoids a
+      # situation where the battery level is low due to low generation, and the
+      # battery is then further depleted by the vehicle charging.
+          "minBatteryLevel": 90
         },
       # The energy detective
         "TED": {

@@ -9,7 +9,8 @@ This document logs the changes per release of TWCManager.
       * Single point within the code where we set the amps to share.
       * Defined priority to ensure one case does not override another.
       * Lays foundation for future advanced use cases.
-  * Add optional override to not instruct a vehicle to stop charging via Tesla API (if the policy would otherwise dictate this) if the vehicle SOC is below a defined (optional) minimum. This avoids excessive battery drain which may be harmful to the vehicle's battery. Instead of stopping the charge session, the vehicle will continue to charge at ```minAmpsPerTWC``` until minimum SOC is met (thanks @MikeBishop).
+  * TeslaAPI: Add optional override to not instruct a vehicle to stop charging via Tesla API (if the policy would otherwise dictate this) if the vehicle SOC is below a defined (optional) minimum. This avoids excessive battery drain which may be harmful to the vehicle's battery. Instead of stopping the charge session, the vehicle will continue to charge at ```minAmpsPerTWC``` until minimum SOC is met (thanks @MikeBishop).
+  * Powerwall2 EMS: Feature to limit charging when Powerwall2 state of charge is below a defined minimum, to avoid depleting Powerwall2 during low energy generation (thanks @MikeBishop).
   * Bugfix: HASS EMS module was non-functional due to an error introduced during config separation. Fixed in v1.1.6.
   * Bugfix: Makefile update to install php7.3 on raspbian (thanks @MikeBishop)
   * Bugfix: Fix typo which did not set desiredAmps to 0 when total amps available for all chargers was less than 1 (thanks @MikeBishop)
