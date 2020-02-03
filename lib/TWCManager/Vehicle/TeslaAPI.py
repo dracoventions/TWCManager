@@ -171,8 +171,12 @@ class CarApi:
             needSleep = False
             for vehicle in self.getCarApiVehicles():
                 if(charge == True and vehicle.stopAskingToStartCharging):
-                    self.debugLog(11, "Don't wake vehicle " + str(vehicle.ID)
-                              + " because vehicle.stopAskingToStartCharging == True")
+                    # Vehicle is in a state (complete or charging) already
+                    # which doesn't make sense for us to keep requesting it
+                    # to start charging, so we will stop.
+                    self.debugLog(11, "Don't repeatedly request API to charge vehicle "
+                        + str(vehicle.ID) + ", because vehicle.stopAskingToStartCharging "
+                        + " == True - it has already been requested.")
                     continue
 
                 if(applyLimit == True and vehicle.stopTryingToApplyLimit):
@@ -182,7 +186,7 @@ class CarApi:
 
                 if(applyLimit == True and vehicle.stopTryingToApplyLimit):
                     self.debugLog(8, "Don't wake vehicle " + str(vehicle.ID)
-                              + " because vehicle.stopTryingToApplyLimit == True")
+                              + " to set the charge limit - it has already been set")
                     continue
 
                 if(self.getCarApiRetryRemaining()):
