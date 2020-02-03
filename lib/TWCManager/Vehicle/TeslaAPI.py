@@ -620,7 +620,8 @@ class CarApi:
         return 'error'
 
     now = self.time.time()
-    if(now - self.carApiLastChargeLimitApplyTime < 60):
+    if( not checkArrival and not checkDeparture and
+        now - self.carApiLastChargeLimitApplyTime < 60):
         # Don't change limits more often than once a minute
         self.debugLog(11, 'applyChargeLimit return because under 60 sec since last carApiLastChargeLimitApplyTime')
         return 'error'
@@ -630,17 +631,16 @@ class CarApi:
     #   - We think the car is at home and we've been asked to check for departures
     #   - We think the car is at home and we notice it gone
     #   - We think the car is away from home and we've been asked to check for arrivals
-    #   - We think the car is away from home and we notice it here
+    # 
+    # We do NOT opportunistically check for arrivals, because that would be a
+    # continuous API poll.
     for vehicle in self.carApiVehicles:
         (found, target) = self.master.getNormalChargeLimit(vehicle.ID)
         if((found and (
                 limit != self.lastChargeLimitApplied or
                 checkDeparture or
                 (vehicle.update_location(wake=False) and not vehicle.atHome))) or
-            (not found and limit != -1 and (
-                checkArrival or
-                (vehicle.update_location(wake=False) and vehicle.atHome)))
-            ):
+            (not found and limit != -1 and checkArrival)):
             vehicle.stopTryingToApplyLimit = False
 
     if(self.car_api_available(applyLimit = True) == False):
