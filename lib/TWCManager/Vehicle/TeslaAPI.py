@@ -612,18 +612,34 @@ class CarApi:
 
     return result
 
-  def applyChargeLimit(self, limit):
-    if( limit != self.lastChargeLimitApplied ):
-        # If the limit has changed, we need to re-apply to all vehicles.
-        # Technically, we only need to wake them if the limit has increased,
-        # but I don't want that complexity yet.
-        for vehicle in self.carApiVehicles:
+  def applyChargeLimit(self, limit, checkArrival=False, checkDeparture=False):
+
+    if(self.car_api_available() == False):
+        self.debugLog(8, 'applyChargeLimit return because car_api_available() == False')
+        return 'error'
+
+    # We need to try to apply limits if:
+    #   - We think the car is at home and the limit has changed
+    #   - We think the car is at home and we've been asked to check for departures
+    #   - We think the car is at home and we notice it gone
+    #   - We think the car is away from home and we've been asked to check for arrivals
+    #   - We think the car is away from home and we notice it here
+    for vehicle in self.carApiVehicles:
+        if((vehicle.atHome and (
+                limit != self.lastChargeLimitApplied or
+                checkDeparture or
+                (vehicle.update_location(wake=False) and not vehicle.atHome))) or
+            (not vehicle.atHome and (
+                checkArrival or
+                (vehicle.update_location(wake=False) and vehicle.atHome)))
+            ):
             vehicle.stopTryingToApplyLimit = False
-        self.lastChargeLimitApplied = limit
 
     if(self.car_api_available(applyLimit = True) == False):
         self.debugLog(8, 'applyChargeLimit return because car_api_available() == False')
         return 'error'
+
+    self.lastChargeLimitApplied = limit
 
     for vehicle in self.carApiVehicles:
         if( vehicle.stopTryingToApplyLimit or not vehicle.ready() ):
