@@ -625,11 +625,12 @@ class CarApi:
     #   - We think the car is away from home and we've been asked to check for arrivals
     #   - We think the car is away from home and we notice it here
     for vehicle in self.carApiVehicles:
-        if((vehicle.atHome and (
+        (found, target) = self.master.getNormalChargeLimit(vehicle.ID)
+        if((found and (
                 limit != self.lastChargeLimitApplied or
                 checkDeparture or
                 (vehicle.update_location(wake=False) and not vehicle.atHome))) or
-            (not vehicle.atHome and (
+            (not found and limit != -1 and (
                 checkArrival or
                 (vehicle.update_location(wake=False) and vehicle.atHome)))
             ):
