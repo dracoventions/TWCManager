@@ -496,10 +496,10 @@ class CarApi:
           'accept': 'application/json',
           'Authorization': 'Bearer ' + self.getCarApiBearerToken()
         }
-        req = self.requests.post(url, headers = headers)
 
         # Retry up to 3 times on certain errors.
         for retryCount in range(0, 3):
+            req = self.requests.post(url, headers = headers)
             self.debugLog(8, 'Car API cmd' + str(req))
 
             try:
@@ -779,7 +779,7 @@ class CarApiVehicle:
       if (self.debugLevel >= minlevel):
         print("TeslaAPIVehicle: (" + str(minlevel) + ") " + message)
 
-    def ready(self):
+    def ready(self, wake=True):
         if(self.carapi.getCarApiRetryRemaining(self.lastErrorTime)):
             # It's been under carApiErrorRetryMins minutes since the car API
             # generated an error on this vehicle. Return that car is not ready.
@@ -788,8 +788,11 @@ class CarApiVehicle:
                     + str(self.lastErrorTime))
             return False
 
-        if(self.firstWakeAttemptTime == 0 and self.time.time() - self.lastWakeAttemptTime < 2*60):
-            # Less than 2 minutes since we successfully woke this car, so it
+        if(wake == False or
+           (self.firstWakeAttemptTime == 0 and
+            self.time.time() - self.lastWakeAttemptTime < 2*60)):
+            # If we need to wake the car, it's been
+            # less than 2 minutes since we successfully woke this car, so it
             # should still be awake.  Tests on my car in energy saver mode show
             # it returns to sleep state about two minutes after the last command
             # was issued.  Times I've tested: 1:35, 1:57, 2:30
@@ -798,8 +801,8 @@ class CarApiVehicle:
         self.debugLog(8, 'Vehicle ' + str(self.ID) + " not ready because it wasn't woken in the last 2 minutes.")
         return False
 
-    def get_car_api(self, url):
-        if(self.ready() == False):
+    def get_car_api(self, url, wake=True):
+        if(self.ready(wake) == False):
             return (False, None)
 
         apiResponseDict = {}
@@ -808,10 +811,10 @@ class CarApiVehicle:
           'accept': 'application/json',
           'Authorization': 'Bearer ' + self.carapi.getCarApiBearerToken()
         }
-        req = self.requests.get(url, headers = headers)
 
         # Retry up to 3 times on certain errors.
         for retryCount in range(0, 3):
+            req = self.requests.get(url, headers = headers)
             self.debugLog(8, 'Car API cmd' + str(req))
             try:
                 apiResponseDict = self.json.loads(req.text)
@@ -828,6 +831,12 @@ class CarApiVehicle:
                 if('error' in apiResponseDict):
                     foundKnownError = False
                     error = apiResponseDict['error']
+
+                    # If we opted not to wake the vehicle, unavailable is expected.
+                    # Don't keep trying if that happens.
+                    unavailable = 'vehicle unavailable'
+                    if(wake == False and unavailable == error[0:len(unavailable)]):
+                        return (False, None)
                     for knownError in self.carapi.getCarApiTransientErrors():
                         if(knownError == error[0:len(knownError)]):
                             # I see these errors often enough that I think
@@ -862,7 +871,7 @@ class CarApiVehicle:
 
             return (True, response)
 
-    def update_location(self):
+    def update_location(self, wake=True):
 
         url = "https://owner-api.teslamotors.com/api/1/vehicles/"
         url = url + str(self.ID) + "/data_request/drive_state"
@@ -872,7 +881,7 @@ class CarApiVehicle:
         if (now - self.lastDriveStatusTime < 60):
             return True
 
-        (result, response) = self.get_car_api(url)
+        (result, response) = self.get_car_api(url, wake)
 
         if result:
             self.lastDriveStatusTime = self.time.time()
