@@ -818,6 +818,10 @@ class TWCMaster:
             if (bgt):
               self.queue_background_task({'cmd':bgt})
 
+            # If a charge limit is defined for this policy, apply it
+            limit = policy.get('charge_limit', -1)
+            self.queue_background_task({'cmd':'applyChargeLimit', 'limit':limit})
+
             # Now, finish processing
             return
 

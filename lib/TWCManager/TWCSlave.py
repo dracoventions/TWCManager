@@ -42,6 +42,7 @@ class TWCSlave:
     lastHeartbeatDebugOutput = ''
     timeLastHeartbeatDebugOutput = 0
     wiringMaxAmps = 0
+    departureCheckTimes = list()
 
     def __init__(self, TWCID, maxAmps, config, carapi, master):
         self.carapi  = carapi
@@ -412,6 +413,19 @@ class TWCSlave:
         # TWC.
         if(self.lastAmpsOffered < 0):
             self.lastAmpsOffered = self.reportedAmpsMax
+
+        # If power starts flowing, check whether a car has arrived
+        if(self.reportedAmpsActualSignificantChangeMonitor < 3 and
+           self.reportedAmpsActual > 3):
+            self.master.queue_background_task({'cmd':'checkArrival'})
+
+        # If power drops off, check whether a car leaves in the next little while
+        if(self.reportedAmpsActualSignificantChangeMonitor > 2 and
+           self.reportedAmpsActual < 2):
+            self.departureCheckTimes = {now + 5*60, now + 20*60, now + 45*60}
+        if(len(self.departureCheckTimes) > 0 and now >= self.departureCheckTimes[0]):
+            self.master.queue_background_task('cmd':'checkDeparture')
+            self.departureCheckTimes.pop()
 
         # Keep track of the amps the slave is actually using and the last time it
         # changed by more than 0.8A.

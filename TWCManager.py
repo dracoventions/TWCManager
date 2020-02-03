@@ -157,6 +157,12 @@ def background_tasks_thread():
             check_green_energy()
         elif(task['cmd'] == 'updateStatus'):
             update_statuses()
+        elif(task['cmd'] == 'applyChargeLimit'):
+            carapi.applyChargeLimit(limit=task['limit'])
+        elif(task['cmd'] == 'checkArrival'):
+            carapi.applyChargeLimit(limit=carapi.lastChargeLimitApplied, checkArrival=True)
+        elif(task['cmd'] == 'checkDeparture'):
+            carapi.applyChargeLimit(limit=carapi.lastChargeLimitApplied, checkDeparture=True)
 
         # Delete task['cmd'] from backgroundTasksCmds such that
         # queue_background_task() can queue another task['cmd'] in the future.
