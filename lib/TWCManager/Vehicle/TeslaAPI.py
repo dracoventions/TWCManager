@@ -10,6 +10,7 @@ class CarApi:
   carApiRefreshToken  = ''
   carApiTokenExpireTime = time.time()
   carApiLastStartOrStopChargeTime = 0
+  carApiLastChargeLimitApplyTime = 0
   lastChargeLimitApplied = -1
   carApiVehicles      = []
   config              = None
@@ -618,6 +619,12 @@ class CarApi:
         self.debugLog(8, 'applyChargeLimit return because car_api_available() == False')
         return 'error'
 
+    now = self.time.time()
+    if(now - self.carApiLastChargeLimitApplyTime < 60):
+        # Don't change limits more often than once a minute
+        self.debugLog(11, 'applyChargeLimit return because under 60 sec since last carApiLastChargeLimitApplyTime')
+        return 'error'
+
     # We need to try to apply limits if:
     #   - We think the car is at home and the limit has changed
     #   - We think the car is at home and we've been asked to check for departures
@@ -641,6 +648,7 @@ class CarApi:
         return 'error'
 
     self.lastChargeLimitApplied = limit
+    self.carApiLastChargeLimitApplyTime = now
 
     for vehicle in self.carApiVehicles:
         if( vehicle.stopTryingToApplyLimit or not vehicle.ready() ):
