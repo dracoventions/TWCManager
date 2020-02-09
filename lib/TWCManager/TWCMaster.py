@@ -420,7 +420,7 @@ class TWCMaster:
 
     # If value refers to a setting, return the setting
     if(str(value).startswith("settings.")):
-      strstart = 10
+      strstart = 9
       strend = len(value)
       return self.settings.get(value[strstart:strend], 0)
 
