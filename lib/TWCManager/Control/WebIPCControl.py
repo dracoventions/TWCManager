@@ -176,18 +176,18 @@ class WebIPCControl:
                                       or slaveTWCRoundRobin[0].protocolVersion == 2 else 13)
                     if((twcMsg[0:2] == b'\xFC\x19') or (twcMsg[0:2] == b'\xFC\x1A')):
                         print("\n*** ERROR: Web interface requested sending command:\n"
-                              + hex_str(twcMsg)
+                              + self.master.hex_str(twcMsg)
                               + "\nwhich could permanently disable the TWC.  Aborting.\n")
                     elif((twcMsg[0:2] == b'\xFB\xE8')):
                         print("\n*** ERROR: Web interface requested sending command:\n"
-                              + hex_str(twcMsg)
+                              + self.master.hex_str(twcMsg)
                               + "\nwhich could crash the TWC.  Aborting.\n")
                     else:
                         self.master.lastTWCResponseMsg = bytearray();
                         self.master.sendMsg(twcMsg)
             elif(webMsg == b'getLastTWCMsgResponse'):
                 if(self.master.lastTWCResponseMsg != None and self.master.lastTWCResponseMsg != b''):
-                    webResponseMsg = hex_str(self.master.lastTWCResponseMsg)
+                    webResponseMsg = self.master.hex_str(self.master.lastTWCResponseMsg)
                 else:
                     webResponseMsg = 'None'
             elif(webMsg[0:20] == b'carApiEmailPassword='):
