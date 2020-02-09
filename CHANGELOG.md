@@ -6,6 +6,7 @@ This document logs the changes per release of TWCManager.
 
   * Bugfixes
      * Fixed an issue where the policy based charging rules could not access settings variables due to an error in string offser (thanks @AndySchroder)
+     * Fixed an issue with the debug web interface (WebIPC) which impacted sending custom commands to the TWC and recieving the result
 
 ## v1.1.6 - 2020-02-02
 
