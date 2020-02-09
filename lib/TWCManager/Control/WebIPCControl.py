@@ -71,6 +71,16 @@ class WebIPCControl:
     if (self.debugLevel >= minlevel):
       print("WebIPC: (" + str(minlevel) + ") " + message)
 
+  def trim_pad(s:bytearray, makeLen):
+    # Trim or pad s with zeros so that it's makeLen length.
+    while(len(s) < makeLen):
+        s += b'\x00'
+
+    if(len(s) > makeLen):
+        s = s[0:makeLen]
+
+    return s
+
   def processIPC(self):
 
     ########################################################################
@@ -162,7 +172,7 @@ class WebIPCControl:
             elif(webMsg[0:11] == b'sendTWCMsg='):
                 m = re.search(b'([0-9a-fA-F]+)', webMsg[11:len(webMsg)], re.MULTILINE)
                 if(m):
-                    twcMsg = trim_pad(bytearray.fromhex(m.group(1).decode('ascii')), 15 if self.master.countSlaveTWC() == 0 \
+                    twcMsg = self.trim_pad(bytearray.fromhex(m.group(1).decode('ascii')), 15 if self.master.countSlaveTWC() == 0 \
                                       or slaveTWCRoundRobin[0].protocolVersion == 2 else 13)
                     if((twcMsg[0:2] == b'\xFC\x19') or (twcMsg[0:2] == b'\xFC\x1A')):
                         print("\n*** ERROR: Web interface requested sending command:\n"
@@ -190,7 +200,7 @@ class WebIPCControl:
                 m = re.search(b'([0-9a-fA-F]*)', webMsg[23:len(webMsg)], re.MULTILINE)
                 if(m):
                     if(len(m.group(1)) > 0):
-                        overrideMasterHeartbeatData = trim_pad(bytearray.fromhex(m.group(1).decode('ascii')),
+                        overrideMasterHeartbeatData = self.trim_pad(bytearray.fromhex(m.group(1).decode('ascii')),
                                                                9 if slaveTWCRoundRobin[0].protocolVersion == 2 else 7)
                     else:
                         overrideMasterHeartbeatData = b''

@@ -97,16 +97,6 @@ def time_now():
     return(datetime.now().strftime("%H:%M:%S" + (
         ".%f" if config['config']['displayMilliseconds'] else "")))
 
-def trim_pad(s:bytearray, makeLen):
-    # Trim or pad s with zeros so that it's makeLen length.
-    while(len(s) < makeLen):
-        s += b'\x00'
-
-    if(len(s) > makeLen):
-        s = s[0:makeLen]
-
-    return s
-
 def unescape_msg(msg:bytearray, msgLen):
     # Given a message received on the RS485 network, remove leading and trailing
     # C0 byte, unescape special byte values, and verify its data matches the CRC
