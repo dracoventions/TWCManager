@@ -210,7 +210,6 @@ dataLen = 0
 ignoredData = bytearray()
 msg = bytearray()
 msgLen = 0
-lastTWCResponseMsg = None
 
 numInitMsgsToSend = 10
 msgRxCount = 0
@@ -461,13 +460,13 @@ while True:
             # to the sent message.  Never set lastTWCResponseMsg to a commonly
             # repeated message like master or slave linkready, heartbeat, or
             # voltage/kWh report.
-            if(lastTWCResponseMsg == b''
+            if(master.lastTWCResponseMsg == b''
                and msg[0:2] != b'\xFB\xE0' and msg[0:2] != b'\xFD\xE0'
                and msg[0:2] != b'\xFC\xE1' and msg[0:2] != b'\xFB\xE2'
                and msg[0:2] != b'\xFD\xE2' and msg[0:2] != b'\xFB\xEB'
                and msg[0:2] != b'\xFD\xEB' and msg[0:2] != b'\xFD\xE0'
             ):
-                lastTWCResponseMsg = msg
+                master.lastTWCResponseMsg = msg
 
             if(config['config']['debugLevel'] >= 9):
                 print("Rx@" + time_now() + ": (" + hex_str(ignoredData) + ') ' \

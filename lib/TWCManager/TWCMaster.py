@@ -61,6 +61,7 @@ class TWCMaster:
   generationValues    = {}
   hassstatus          = None
   lastPolicyCheck     = 0
+  lastTWCResponseMsg  = None
   masterTWCID         = ''
   maxAmpsToDivideAmongSlaves = 0
   mqttstatus          = None

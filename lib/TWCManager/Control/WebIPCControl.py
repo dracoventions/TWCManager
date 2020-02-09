@@ -71,7 +71,7 @@ class WebIPCControl:
     if (self.debugLevel >= minlevel):
       print("WebIPC: (" + str(minlevel) + ") " + message)
 
-  def trim_pad(s:bytearray, makeLen):
+  def trim_pad(self, s:bytearray, makeLen):
     # Trim or pad s with zeros so that it's makeLen length.
     while(len(s) < makeLen):
         s += b'\x00'
@@ -183,11 +183,11 @@ class WebIPCControl:
                               + hex_str(twcMsg)
                               + "\nwhich could crash the TWC.  Aborting.\n")
                     else:
-                        lastTWCResponseMsg = bytearray();
-                        master.sendMsg(twcMsg)
+                        self.master.lastTWCResponseMsg = bytearray();
+                        self.master.sendMsg(twcMsg)
             elif(webMsg == b'getLastTWCMsgResponse'):
-                if(lastTWCResponseMsg != None and lastTWCResponseMsg != b''):
-                    webResponseMsg = hex_str(lastTWCResponseMsg)
+                if(self.master.lastTWCResponseMsg != None and self.master.lastTWCResponseMsg != b''):
+                    webResponseMsg = hex_str(self.master.lastTWCResponseMsg)
                 else:
                     webResponseMsg = 'None'
             elif(webMsg[0:20] == b'carApiEmailPassword='):
