@@ -745,7 +745,7 @@ class TWCMaster:
     if(amps > self.config['config']['wiringMaxAmpsAllTWCs']):
       # Never tell the slaves to draw more amps than the physical charger
       # wiring can handle.
-      debugLog(1, "ERROR: specified maxAmpsToDivideAmongSlaves " + str(amps) +
+      self.debugLog(1, "ERROR: specified maxAmpsToDivideAmongSlaves " + str(amps) +
        " > wiringMaxAmpsAllTWCs " + str(self.config['config']['wiringMaxAmpsAllTWCs']) +
        ".\nSee notes above wiringMaxAmpsAllTWCs in the 'Configuration parameters' section.")
       amps = self.config['config']['wiringMaxAmpsAllTWCs']
