@@ -14,6 +14,7 @@ This document logs the changes per release of TWCManager.
      * Fixed a bug with debug output if the charger is configured to draw more amps than the wiring can handle (thanks @AndySchroder).
      * Fixed an issue with the debug web interface (WebIPC) which impacted sending custom commands to the TWC and recieving the result
      * Fixed the refresh image for the IPC web interface (thanks @notreallybob).
+     * Fixed a situation where amp calculations can lead to a value of -1 due to previously used default values. Any amp related defaults are now 0, with exception handling for negative values.
 
 ## v1.1.6 - 2020-02-02
 

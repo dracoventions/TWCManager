@@ -78,11 +78,11 @@ class TWCMaster:
     'homeLon'                  : 10000,
     'hourResumeTrackGreenEnergy' : -1,
     'kWhDelivered'             : 119,
-    'nonScheduledAmpsMax'      : -1,
+    'nonScheduledAmpsMax'      : 0,
     'respondToSlaves'          : 1,
     'scheduledAmpsDaysBitmap'  : 0x7F,
     'scheduledAmpsEndHour'     : -1,
-    'scheduledAmpsMax'         : -1,
+    'scheduledAmpsMax'         : 0,
     'scheduledAmpsStartHour'   : -1
   }
   slaveHeartbeatData = bytearray([0x01,0x0F,0xA0,0x0F,0xA0,0x00,0x00,0x00,0x00])
@@ -199,7 +199,11 @@ class TWCMaster:
 
   def getChargeNowAmps(self):
     # Returns the currently configured Charge Now Amps setting
-    return (int(self.settings.get('chargeNowAmps', 0)))
+    chargenow = int(self.settings.get('chargeNowAmps', 0))
+    if (chargenow > 0):
+      return chargenow
+    else:
+      return 0
 
   def getHourResumeTrackGreenEnergy(self):
     return self.settings.get('hourResumeTrackGreenEnergy', -1)
@@ -216,7 +220,10 @@ class TWCMaster:
     return self.settings['kWhDelivered']
 
   def getMaxAmpsToDivideAmongSlaves(self):
-    return self.maxAmpsToDivideAmongSlaves
+    if (self.maxAmpsToDivideAmongSlaves > 0):
+      return self.maxAmpsToDivideAmongSlaves
+    else:
+      return 0
 
   def getmqttstatus(self):
     return self.mqttstatus
@@ -225,10 +232,18 @@ class TWCMaster:
     return self.settings.get('scheduledAmpsDaysBitmap', 0x7F)
 
   def getNonScheduledAmpsMax(self):
-    return self.settings.get('nonScheduledAmpsMax', -1)
+    nschedamps = int(self.settings.get('nonScheduledAmpsMax', 0))
+    if (nschedamps > 0):
+      return nschedamps
+    else:
+      return 0
 
   def getScheduledAmpsMax(self):
-    return self.settings.get('scheduledAmpsMax', -1)
+    schedamps = int(self.settings.get('scheduledAmpsMax', 0))
+    if (schedamps > 0):
+      return schedamps
+    else:
+      return 0
 
   def getScheduledAmpsStartHour(self):
     return self.settings.get('scheduledAmpsStartHour', -1)
@@ -326,7 +341,11 @@ class TWCMaster:
     # out how many amps * 240 = solarW and limit the car to
     # that many amps.
     maxAmpsToDivide = (solarW / 240)
-    return maxAmpsToDivide
+
+    if (maxAmpsToDivide > 0):
+      return maxAmpsToDivide
+    else:
+      return 0
 
   def getSerial(self):
     return self.ser
