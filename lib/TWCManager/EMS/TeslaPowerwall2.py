@@ -6,7 +6,7 @@ class TeslaPowerwall2:
   import time
 
   batteryLevel    = 100
-  cacheTime       = 60
+  cacheTime       = 10
   config          = None
   configConfig    = None
   configPowerwall = None

@@ -4,10 +4,16 @@ This document logs the changes per release of TWCManager.
 
 ## v1.1.7 - Current Dev Branch
 
+  * Dropped the default policy check timer down to 30 seconds from 60 seconds after positive feedback on lower calculation intervals
+  * Dropped cache time in all EMS modules down to 10 seconds to ensure that the lower calculation intervals work correctly
+  * Added ability to override the policy check timer to set it to any value desired
+  * Added ability to override the policy entirely from the configuration file (with caveat that this is not recommended)
+  * Added ability to extend the policy at two points (before and after) to add extra rules in whilst retaining the rest of the policy
   * Bugfixes
      * Fixed an issue where the policy based charging rules could not access settings variables due to an error in string offset (thanks @AndySchroder).
      * Fixed a bug with debug output if the charger is configured to draw more amps than the wiring can handle (thanks @AndySchroder).
      * Fixed an issue with the debug web interface (WebIPC) which impacted sending custom commands to the TWC and recieving the result
+     * Fixed the refresh image for the IPC web interface (thanks @notreallybob).
 
 ## v1.1.6 - 2020-02-02
 

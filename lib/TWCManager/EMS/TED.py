@@ -10,7 +10,7 @@ class TED:
   import requests
   import time
 
-  cacheTime    = 60
+  cacheTime    = 10
   config       = None
   configConfig = None
   configTED    = None

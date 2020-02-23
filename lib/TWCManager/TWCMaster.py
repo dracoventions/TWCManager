@@ -55,6 +55,7 @@ class TWCMaster:
       "value": [ 0 ],
       "charge_amps": "settings.nonScheduledAmpsMax" }
   ]
+
   config              = None
   consumptionValues   = {}
   debugLevel          = 0
@@ -66,6 +67,7 @@ class TWCMaster:
   maxAmpsToDivideAmongSlaves = 0
   mqttstatus          = None
   overrideMasterHeartbeatData = b''
+  policyCheckInterval = 30
   protocolVersion     = 2
   ser                 = None
   settings            = {
@@ -108,6 +110,31 @@ class TWCMaster:
     self.TWCID      = TWCID
     self.subtractChargerLoad = config['config']['subtractChargerLoad']
 
+    # Override Charge Policy if specified
+    config_policy = config.get("policy")
+    if (config_policy):
+      if (len(config_policy.get("override", [])) > 0):
+        # Policy override specified, just ovrrride in place without processing the
+        # extensions
+        self.charge_policy = config_policy.get("override")
+      else:
+        # Insert optional policy extensions into policy list
+        # After - Inserted before Non-Scheduled Charging
+        config_extend = config_policy.get("extend", {})
+        if (len(config_extend.get("after", [])) > 0):
+          self.charge_policy[3:3] = config_extend.get("after")
+
+        # Before - Inserted after Charge Now
+        if (len(config_extend.get("before", [])) > 0):
+          self.charge_policy[1:1] = config_extend.get("before")
+
+    # Set the Policy Check Interval if specified
+    if (config_policy):
+      policy_engine = config_policy.get("engine")
+      if (policy_engine):
+        if (policy_engine.get('policyCheckInterval')):
+          self.policyCheckInterval = policy_engine.get('policyCheckInterval')
+
     # Connect to serial port
     self.ser = serial.Serial(config['config']['rs485adapter'], config['config']['baud'], timeout=0)
 
@@ -135,12 +162,14 @@ class TWCMaster:
           # scheduledAmpsDaysBitmap says only schedule on Monday, 8am to
           # 7am, we apply scheduledAmpsMax from Monday at 8am to Monday at
           # 11:59pm, and on Tuesday at 12am to Tuesday at 6:59am.
+          hourNow = ltNow.tm_hour + (ltNow.tm_min / 60)
           if((hourNow >= self.settings.get('scheduledAmpsStartHour', -1) and (self.getScheduledAmpsDaysBitmap() & (1 << ltNow.tm_wday)))
                or (hourNow < self.getScheduledAmpsEndHour() and (self.getScheduledAmpsDaysBitmap() & (1 << yesterday)))):
              blnUseScheduledAmps = 1
         else:
           # We have a time like 7am to 8am which we must interpret as the
           # 1-hour period between 7am and 8am.
+          hourNow = ltNow.tm_hour + (ltNow.tm_min / 60)
           if(hourNow >= self.settings.get('scheduledAmpsStartHour', -1) and hourNow < self.getScheduledAmpsEndHour()
              and (self.getScheduledAmpsDaysBitmap() & (1 << ltNow.tm_wday))):
              blnUseScheduledAmps = 1
@@ -621,9 +650,9 @@ class TWCMaster:
     # share based on the policy, we call setMaxAmpsToDivideAmongSlaves to
     # distribute the designated power amongst slaves.
 
-    # First, determine if it has been less than 60 seconds since the last
+    # First, determine if it has been less than 30 seconds since the last
     # policy check. If so, skip for now
-    if ((self.lastPolicyCheck + 60) > time.time()):
+    if ((self.lastPolicyCheck + self.policyCheckInterval) > time.time()):
       return
     else:
       # Update last policy check time

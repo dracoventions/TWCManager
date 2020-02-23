@@ -159,6 +159,68 @@
         "password": "mqttpass"
       }
     },
+
+    # In the below policy segment of the configuration, we can tune the behaviour
+    # of the policy engine. By default, the policy engine will:
+    # - Check for the configuration of a "Charge Now" option, if so, start charging
+    #   at the specified rate for the specified time.
+    # - Evaluate any user defined extensions in the before section below
+    # - Poll Green Energy Sources to see if they are supplying enough energy to charge
+    #   (and within schedule), and if so, adjust charge rate to generated energy value
+    # - During Scheduled Charging hours, charge at the scheduled rate.
+    # - Evaluate any user defined extensions in the after section below
+    # - Outside Scheduled Charging, charge at unscheduled charge rate
+    "policy":{
+      "engine":{
+        "policyCheckInterval": 30
+      },
+      # NOTE: Override and Extend are mutually exclusive options. Once you override, you
+      # can no longer extend the inbuilt policy. 
+      # Using the extend feature below, you can add extra rules into the charging policy.
+      "extend":{
+        # Rules in the before section here are evaluated after the Charge Now rule
+        "before":[
+        ],
+        # Rules in the after section here are evaluted before the Unscheduled Charging
+        # rule at the end of the policy.
+        "after":[
+        ]
+      },
+      # NOTE: Override and Extend are mutually exclusive options. Once you override, you
+      # can no longer extend the inbuilt policy.
+      # If you are planning on using this feature, please consider first using the
+      # extend option above, which probably lets you do what you need to do, but avoids
+      # totally replacing the charge policy which may get improved over time in the
+      # codebase. If you do override this, you may need to keep it in sync with the code
+      # in future.
+      "override": [
+      # { "name": "Charge Now",
+      #   "match": [ "settings.chargeNowAmps", "settings.chargeNowTimeEnd", "settings.chargeNowTimeEnd" ],
+      #   "condition": [ "gt", "gt", "gt" ],
+      #   "value": [ 0, 0, "now" ],
+      #   "charge_amps": "settings.chargeNowAmps" },
+
+      # { "name": "Track Green Energy",
+      #   "match": [ "tm_hour", "tm_hour", "settings.hourResumeTrackGreenEnergy" ],
+      #   "condition": [ "gt", "lte", "lte" ],
+      #   "value": [ 6, 20, "tm_hour" ],
+      #   "charge_amps": "getMaxAmpsToDivideGreenEnergy()",
+      #   "background_task": "checkGreenEnergy" },
+
+      # { "name": "Scheduled Charging",
+      #   "match": [ "checkScheduledCharging()" ],
+      #   "condition": [ "eq" ],
+      #   "value": [ 1 ],
+      #   "charge_amps": "settings.scheduledAmpsMax" },
+
+      # { "name": "Non Scheduled Charging",
+      #   "match": [ "none" ],
+      #   "condition": [ "none" ],
+      #   "value": [ 0 ],
+      #   "charge_amps": "settings.nonScheduledAmpsMax" }
+
+      ]
+    }
     "sources":{
         # This section is where we configure the various sources that we retrieve our generation and consumption
         # values for our solar system from.
