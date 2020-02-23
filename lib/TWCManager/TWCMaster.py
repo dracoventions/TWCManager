@@ -656,7 +656,12 @@ class TWCMaster:
   def setChargeNowAmps(self, amps):
     # Accepts a number of amps to define the amperage at which we
     # should charge
-    self.settings['chargeNowAmps'] = amps
+    if (amps > self.config['config']['wiringMaxAmpsAllTWCs']):
+      self.debugLog(1, "setChargeNowAmps failed because specified amps are above wiringMaxAmpsAllTWCs")
+    elif (amps < 0):
+      self.debugLog(1, "setChargeNowAmps failed as specified amps is less than 0")
+    else:
+      self.settings['chargeNowAmps'] = amps
 
   def setChargeNowTimeEnd(self, timeadd):
     self.settings['chargeNowTimeEnd'] = (time.time() + timeadd)

@@ -75,10 +75,18 @@ class MQTTControl:
 
   def mqttMessage(self, client, userdata, message):
 
+    # Takes an MQTT message which has a message body of the following format:
+    # [Amps to charge at],[Seconds to charge for]
+    # eg. 24,3600
     if (message.topic == self.topicPrefix + "/control/chargeNow"):
-      self.debugLog(3, "MQTT Message called chargeNow")
-      self.master.setChargeNowAmps(12)
-      self.master.setChargeNowTimeEnd(60*60*24)
+      payload = str(message.payload.decode("utf-8"))
+      self.debugLog(3, "MQTT Message called chargeNow with payload " + payload)
+      plsplit = payload.split(",", 1)
+      if (len(plsplit) == 2):
+        self.master.setChargeNowAmps(int(plsplit[0]))
+        self.master.setChargeNowTimeEnd(int(plsplit[1]))
+      else:
+        self.debugLog(1, "MQTT chargeNow command failed: Incorrect number of parameters")
 
     if (message.topic == self.topicPrefix + "/control/chargeNowEnd"):
       self.debugLog(3, "MQTT Message called chargeNowEnd")
