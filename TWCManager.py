@@ -51,6 +51,7 @@ from lib.TWCManager.TWCMaster import TWCMaster
 from lib.TWCManager.Vehicle.TeslaAPI import CarApi
 from lib.TWCManager.Vehicle.TeslaAPI import CarApiVehicle
 
+# Enable support for Python Visual Studio Debugger
 if 'DEBUG_SECRET' in os.environ:
     import ptvsd
     ptvsd.enable_attach(os.environ['DEBUG_SECRET'])
