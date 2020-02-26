@@ -51,6 +51,11 @@ from lib.TWCManager.TWCMaster import TWCMaster
 from lib.TWCManager.Vehicle.TeslaAPI import CarApi
 from lib.TWCManager.Vehicle.TeslaAPI import CarApiVehicle
 
+if 'DEBUG_SECRET' in os.environ:
+    import ptvsd
+    ptvsd.enable_attach(os.environ['DEBUG_SECRET'])
+    ptvsd.wait_for_attach()
+
 ##########################
 # Load Configuration File
 config = None
