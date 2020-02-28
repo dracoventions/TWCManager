@@ -68,7 +68,7 @@ Identify the Rotary Switch, which is to the left of the RS-485 header.
 
 This switch controls the amperage of the Tesla Wall Charger. Note down the original setting for your TWC. This will need to be changed to location F, in order to set the TWC to Slave Mode.
 
-#### 240V (Europe / Oceania)
+#### Europe / Oceania
 
 | Rotary Switch | Maximum Output Current |
 | ------------- | ---------------------- |
@@ -81,6 +81,27 @@ This switch controls the amperage of the Tesla Wall Charger. Note down the origi
 | 6             | 20A                    |
 | 7             | 25A                    |
 | 8             | 32A                    |
+| F             | Slave Mode             |
+
+#### North America
+
+| Rotary Switch | Maximum Output Current |
+| ------------- | ---------------------- |
+| 0             | Test Mode              |
+| 1             | 12A                    |
+| 2             | 16A                    |
+| 3             | 20A                    |
+| 4             | 24A                    |
+| 5             | 28A                    |
+| 6             | 32A                    |
+| 7             | 36A                    |
+| 8             | 40A                    |
+| 9             | 48A                    |
+| A             | 56A                    |
+| B             | 64A                    |
+| C             | 72A                    |
+| D             | 80A                    |
+| E             | Not valid              |
 | F             | Slave Mode             |
 
 ## Expert Installation
