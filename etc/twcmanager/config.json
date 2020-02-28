@@ -220,7 +220,8 @@
       #   "charge_amps": "settings.nonScheduledAmpsMax" }
 
       ]
-    }
+    },
+    
     "sources":{
         # This section is where we configure the various sources that we retrieve our generation and consumption
         # values for our solar system from.
