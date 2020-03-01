@@ -24,7 +24,8 @@ class TWCMaster:
       "match": [ "settings.chargeNowAmps", "settings.chargeNowTimeEnd", "settings.chargeNowTimeEnd" ],
       "condition": [ "gt", "gt", "gt" ],
       "value": [ 0, 0, "now" ],
-      "charge_amps": "settings.chargeNowAmps" },
+      "charge_amps": "settings.chargeNowAmps",
+      "charge_limit": "settings.chargeNowLimit" },
 
     # If we are within Track Green Energy schedule, charging will be
     # performed based on the amount of solar energy being produced.
@@ -37,7 +38,8 @@ class TWCMaster:
       "condition": [ "gte", "lt", "lte" ],
       "value": [ 6, 20, "tm_hour" ],
       "charge_amps": "getMaxAmpsToDivideGreenEnergy()",
-      "background_task": "checkGreenEnergy" },
+      "background_task": "checkGreenEnergy",
+      "charge_limit": "settings.greenEnergyLimit" },
 
     # Check if we are currently within the Scheduled Amps charging schedule.
     # If so, charge at the specified number of amps.
@@ -45,7 +47,8 @@ class TWCMaster:
       "match": [ "checkScheduledCharging()" ],
       "condition": [ "eq" ],
       "value": [ 1 ],
-      "charge_amps": "settings.scheduledAmpsMax" },
+      "charge_amps": "settings.scheduledAmpsMax",,
+      "charge_limit": "settings.scheduledLimit" },
 
       # If all else fails (ie no other policy match), we will charge at
       # nonScheduledAmpsMax
@@ -53,7 +56,8 @@ class TWCMaster:
       "match": [ "none" ],
       "condition": [ "none" ],
       "value": [ 0 ],
-      "charge_amps": "settings.nonScheduledAmpsMax" }
+      "charge_amps": "settings.nonScheduledAmpsMax",
+      "charge_limit": "settings.nonScheduledLimit" }
   ]
 
   config              = None
@@ -819,7 +823,7 @@ class TWCMaster:
               self.queue_background_task({'cmd':bgt})
 
             # If a charge limit is defined for this policy, apply it
-            limit = policy.get('charge_limit', -1)
+            limit = self.policyValue(policy.get('charge_limit', -1))
             self.queue_background_task({'cmd':'applyChargeLimit', 'limit':limit})
 
             # Now, finish processing
