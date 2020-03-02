@@ -47,7 +47,7 @@ class TWCMaster:
       "match": [ "checkScheduledCharging()" ],
       "condition": [ "eq" ],
       "value": [ 1 ],
-      "charge_amps": "settings.scheduledAmpsMax",,
+      "charge_amps": "settings.scheduledAmpsMax",
       "charge_limit": "config.scheduledLimit" },
 
       # If all else fails (ie no other policy match), we will charge at

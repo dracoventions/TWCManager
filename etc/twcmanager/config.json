@@ -209,26 +209,31 @@
       #   "match": [ "settings.chargeNowAmps", "settings.chargeNowTimeEnd", "settings.chargeNowTimeEnd" ],
       #   "condition": [ "gt", "gt", "gt" ],
       #   "value": [ 0, 0, "now" ],
-      #   "charge_amps": "settings.chargeNowAmps" },
+      #   "charge_amps": "settings.chargeNowAmps",
+      #   "charge_limit": "config.chargeNowLimit" },
 
       # { "name": "Track Green Energy",
       #   "match": [ "tm_hour", "tm_hour", "settings.hourResumeTrackGreenEnergy" ],
       #   "condition": [ "gte", "lt", "lte" ],
       #   "value": [ 6, 20, "tm_hour" ],
       #   "charge_amps": "getMaxAmpsToDivideGreenEnergy()",
-      #   "background_task": "checkGreenEnergy" },
+      #   "background_task": "checkGreenEnergy",
+      #   "charge_limit": "config.greenEnergyLimit" },
 
       # { "name": "Scheduled Charging",
       #   "match": [ "checkScheduledCharging()" ],
       #   "condition": [ "eq" ],
       #   "value": [ 1 ],
-      #   "charge_amps": "settings.scheduledAmpsMax" },
+      #   "charge_amps": "settings.scheduledAmpsMax",
+      #   "charge_limit": "config.scheduledLimit" },
 
       # { "name": "Non Scheduled Charging",
       #   "match": [ "none" ],
       #   "condition": [ "none" ],
       #   "value": [ 0 ],
-      #   "charge_amps": "settings.nonScheduledAmpsMax" }
+      #   "charge_amps": "settings.nonScheduledAmpsMax",
+      #   "charge_limit": "config.nonScheduledLimit" }
+
 
       ]
     },
