@@ -25,7 +25,7 @@ class TWCMaster:
       "condition": [ "gt", "gt", "gt" ],
       "value": [ 0, 0, "now" ],
       "charge_amps": "settings.chargeNowAmps",
-      "charge_limit": "settings.chargeNowLimit" },
+      "charge_limit": "config.chargeNowLimit" },
 
     # If we are within Track Green Energy schedule, charging will be
     # performed based on the amount of solar energy being produced.
@@ -39,7 +39,7 @@ class TWCMaster:
       "value": [ 6, 20, "tm_hour" ],
       "charge_amps": "getMaxAmpsToDivideGreenEnergy()",
       "background_task": "checkGreenEnergy",
-      "charge_limit": "settings.greenEnergyLimit" },
+      "charge_limit": "config.greenEnergyLimit" },
 
     # Check if we are currently within the Scheduled Amps charging schedule.
     # If so, charge at the specified number of amps.
@@ -48,7 +48,7 @@ class TWCMaster:
       "condition": [ "eq" ],
       "value": [ 1 ],
       "charge_amps": "settings.scheduledAmpsMax",,
-      "charge_limit": "settings.scheduledLimit" },
+      "charge_limit": "config.scheduledLimit" },
 
       # If all else fails (ie no other policy match), we will charge at
       # nonScheduledAmpsMax
@@ -57,7 +57,7 @@ class TWCMaster:
       "condition": [ "none" ],
       "value": [ 0 ],
       "charge_amps": "settings.nonScheduledAmpsMax",
-      "charge_limit": "settings.nonScheduledLimit" }
+      "charge_limit": "config.nonScheduledLimit" }
   ]
 
   config              = None
