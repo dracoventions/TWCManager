@@ -4,6 +4,8 @@ class TeslaPowerwall2:
 
   import requests
   import time
+  import urllib3
+  import json as json
 
   batteryLevel    = 100
   cacheTime       = 10
@@ -45,6 +47,10 @@ class TeslaPowerwall2:
     self.serverPort        = self.configPowerwall.get('serverPort','443')
     self.password          = self.configPowerwall.get('password', None)
     self.minSOE            = self.configPowerwall.get('minBatteryLevel', 90)
+    if self.status and self.debugLevel < 11:
+      # PW uses self-signed certificates; squelch warnings
+      import urllib3
+      urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
