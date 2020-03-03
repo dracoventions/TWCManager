@@ -424,7 +424,7 @@ class TWCSlave:
            self.reportedAmpsActual < 2):
             self.departureCheckTimes = {now + 5*60, now + 20*60, now + 45*60}
         if(len(self.departureCheckTimes) > 0 and now >= self.departureCheckTimes[0]):
-            self.master.queue_background_task('cmd':'checkDeparture')
+            self.master.queue_background_task({'cmd':'checkDeparture'})
             self.departureCheckTimes.pop()
 
         # Keep track of the amps the slave is actually using and the last time it
