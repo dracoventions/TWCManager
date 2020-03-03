@@ -132,21 +132,22 @@ class TeslaPowerwall2:
     headers = {}
 
     # Send authentication token if password authentication is enabled
-    if ((self.password is not None) and (self.tokenProvider == "Basic")):
-      headers['Authorization'] = "Bearer " + self.token
-    else:
-      self.debugLog(1, "Error: Powerwall password is set, but no token method matches.")
-      self.debugLog(1, "Token method reported by Powerwall is " + str(self.tokenProvider))
+    if self.password is not None:
+      if self.tokenProvider == "Basic":
+        headers['Authorization'] = "Bearer " + self.token
+      else:
+        self.debugLog(1, "Error: Powerwall password is set, but no token method matches.")
+        self.debugLog(1, "Token method reported by Powerwall is " + str(self.tokenProvider))
 
     try:
-        r = self.requests.get(url, headers = headers, timeout=self.timeout, verify=False)
+      r = self.requests.get(url, headers = headers, timeout=self.timeout, verify=False)
+      r.raise_for_status()
     except self.requests.exceptions.ConnectionError as e:
         self.debugLog(4, "Error connecting to Tesla Powerwall 2 to fetch " + path)
         self.debugLog(10, str(e))
         self.fetchFailed = True
         return False
 
-    r.raise_for_status()
     return r.json()
 
   def getPWValues(self):
@@ -167,11 +168,12 @@ class TeslaPowerwall2:
     headers = {}
 
     # Send authentication token if password authentication is enabled
-    if ((self.password is not None) and (self.tokenProvider == "Basic")):
-      headers['Authorization'] = "Bearer " + self.token
-    else:
-      self.debugLog(1, "Error: Powerwall password is set, but no token method matches.")
-      self.debugLog(1, "Token method reported by Powerwall is " + str(self.tokenProvider))
+    if self.password is not None:
+      if self.tokenProvider == "Basic":
+        headers['Authorization'] = "Bearer " + self.token
+      else:
+        self.debugLog(1, "Error: Powerwall password is set, but no token method matches.")
+        self.debugLog(1, "Token method reported by Powerwall is " + str(self.tokenProvider))
 
     try:
         r = self.requests.get(url, headers = headers, timeout=self.timeout, verify=False)
