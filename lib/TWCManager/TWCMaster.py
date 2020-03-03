@@ -333,7 +333,7 @@ class TWCMaster:
   def getHomeLatLon(self):
     # Returns Lat/Lon coordinates to check if car location is
     # at home
-    latlon = []
+    latlon = [10000,10000]
     latlon[0] = self.settings.get('homeLat',10000)
     latlon[1] = self.settings.get('homeLon',10000)
     return latlon
@@ -817,6 +817,8 @@ class TWCMaster:
 
             # If a charge limit is defined for this policy, apply it
             limit = self.policyValue(policy.get('charge_limit', -1))
+            if not (limit >= 50 and limit <= 100):
+              limit = -1
             self.queue_background_task({'cmd':'applyChargeLimit', 'limit':limit})
 
             # Now, finish processing
