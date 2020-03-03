@@ -132,7 +132,7 @@ class TeslaPowerwall2:
     headers = {}
 
     # Send authentication token if password authentication is enabled
-    if ((self.password is not None) and (self.tokenProvider == "basic")):
+    if ((self.password is not None) and (self.tokenProvider == "Basic")):
       headers['Authorization'] = "Bearer " + self.token
     else:
       self.debugLog(1, "Error: Powerwall password is set, but no token method matches.")
@@ -167,7 +167,7 @@ class TeslaPowerwall2:
     headers = {}
 
     # Send authentication token if password authentication is enabled
-    if ((self.password is not None) and (self.tokenProvider == "basic")):
+    if ((self.password is not None) and (self.tokenProvider == "Basic")):
       headers['Authorization'] = "Bearer " + self.token
     else:
       self.debugLog(1, "Error: Powerwall password is set, but no token method matches.")
