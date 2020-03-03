@@ -166,9 +166,9 @@ class CarApi:
                 self.updateCarApiLastErrorTime()
                 return False
 
-        if(self.getVehicleCount() > 0):
+        needSleep = False
+        if(self.getVehicleCount() > 0 and (charge or applyLimit)):
             # Wake cars if needed
-            needSleep = False
             for vehicle in self.getCarApiVehicles():
                 if(charge == True and vehicle.stopAskingToStartCharging):
                     # Vehicle is in a state (complete or charging) already
