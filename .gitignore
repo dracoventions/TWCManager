@@ -1,5 +1,6 @@
 __pycache__
 build/
 config.json
+.vscode/
 dist/
 TWCManager.egg-info/
