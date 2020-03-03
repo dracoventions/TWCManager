@@ -907,7 +907,7 @@ class CarApiVehicle:
 
         now = self.time.time()
 
-        if (now - self.lastDriveStatusTime < 60):
+        if (now - self.lastDriveStatusTime < (60 if wake else 3600)):
             return True
 
         (result, response) = self.get_car_api(url, wake)
