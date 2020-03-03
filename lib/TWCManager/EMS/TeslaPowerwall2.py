@@ -67,7 +67,7 @@ class TeslaPowerwall2:
           "Content-Type": "application/json"
         }
         data = {
-          "username": "installer",
+          "username": "customer",
           "password": self.password,
           "force_sm_off": False
         }
