@@ -334,8 +334,8 @@ class TWCMaster:
     # Returns Lat/Lon coordinates to check if car location is
     # at home
     latlon = []
-    latlon[0] = self.settings['homeLat']
-    latlon[1] = self.settings['homeLon']
+    latlon[0] = self.settings.get('homeLat',10000)
+    latlon[1] = self.settings.get('homeLon',10000)
     return latlon
 
   def getMasterHeartbeatOverride(self):
@@ -366,16 +366,9 @@ class TWCMaster:
       return 0
 
   def getNormalChargeLimit(self, ID):
-    if( ID in self.settings['chargeLimits'].keys()):
-      return (True, self.settings['chargeLimits'][ID] )
-    else:
-      return (False, None)
-
-  def getNormalChargeLimit(self, ID):
-    if( ID in self.settings['chargeLimits'].keys()):
-      return (True, self.settings['chargeLimits'][ID] )
-    else:
-      return (False, None)
+    if 'chargeLimits' in self.settings and ID in self.settings['chargeLimits']:
+        return (True, self.settings['chargeLimits'][ID] )
+    return (False, None)
 
   def getSerial(self):
     return self.ser
