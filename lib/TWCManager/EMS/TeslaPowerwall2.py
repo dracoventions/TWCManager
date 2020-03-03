@@ -61,7 +61,7 @@ class TeslaPowerwall2:
     # the login details to the Powerwall API, and get an authentication token.
     # If we already have an authentication token, we just use that.
     if (self.password is not None):
-      if (self.token is None or self.tokenTimeout > self.time.time()):
+      if (self.token is None or self.tokenTimeout < self.time.time()):
         self.debugLog(6, "Logging in to Powerwall API")
         headers = {
           "Content-Type": "application/json"
