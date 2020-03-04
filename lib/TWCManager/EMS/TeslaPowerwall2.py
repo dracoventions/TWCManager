@@ -49,8 +49,7 @@ class TeslaPowerwall2:
     self.minSOE            = self.configPowerwall.get('minBatteryLevel', 90)
     if self.status and self.debugLevel < 11:
       # PW uses self-signed certificates; squelch warnings
-      import urllib3
-      urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
+      self.urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
@@ -61,7 +60,7 @@ class TeslaPowerwall2:
     # the login details to the Powerwall API, and get an authentication token.
     # If we already have an authentication token, we just use that.
     if (self.password is not None):
-      if (self.token is None or self.tokenTimeout < self.time.time()):
+      if (self.token is None or self.tokenTimeout >= self.time.time()):
         self.debugLog(6, "Logging in to Powerwall API")
         headers = {
           "Content-Type": "application/json"
@@ -86,11 +85,15 @@ class TeslaPowerwall2:
 
         # Time out token after one hour
         self.tokenTimeout = (self.time.time() + (60 * 60))
-        self.debugLog(4, str(rjson['token']))
+        self.debugLog(4, "Powerwall2 API Login returned token " + str(rjson['token']))
 
         # After authentication, start Powerwall
         # If we don't do this, the Powerwall will stop working after login
         self.startPowerwall()
+
+      else:
+
+        self.debugLog(6, "Powerwall2 API token " + str(self.token) + " still valid for " + str(self.tokenTimeout - self.time.time()) + " seconds.")
 
   def getConsumption(self):
 
