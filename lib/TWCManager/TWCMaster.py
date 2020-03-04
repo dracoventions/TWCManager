@@ -489,7 +489,7 @@ class TWCMaster:
       return self.checkScheduledCharging()
 
     # If value is tiered, split it up
-    if strValue.find(".") != -1:
+    if str(value).find(".") != -1:
       pieces = str(value).split(".")
 
       # If value refers to a setting, return the setting
