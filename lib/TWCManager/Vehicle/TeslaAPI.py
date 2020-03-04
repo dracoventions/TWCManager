@@ -920,7 +920,7 @@ class CarApiVehicle:
 
         return result
 
-    def update_charge(self):
+    def update_charge(self, wake = True):
         url = "https://owner-api.teslamotors.com/api/1/vehicles/"
         url = url + str(self.ID) + "/data_request/charge_state"
 
@@ -929,7 +929,7 @@ class CarApiVehicle:
         if (now - self.lastChargeStatusTime < 60):
             return True
 
-        (result, response) = self.get_car_api(url)
+        (result, response) = self.get_car_api(url, wake=wake)
 
         if result:
             self.lastChargeStatusTime = self.time.time()
