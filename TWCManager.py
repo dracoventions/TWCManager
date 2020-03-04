@@ -255,6 +255,8 @@ hass = HASS(master)
 master.sethassstatus(HASSStatus(master))
 master.setmqttstatus(MQTTStatus(master))
 powerwall = TeslaPowerwall2(master)
+# The below is temporary until improvements to instantiation are complete
+master.registerModule({ "name": "TeslaPowerwall2", "ref": powerwall, "type": "EMS" })
 ted = TED(master)
 
 # Load settings from file

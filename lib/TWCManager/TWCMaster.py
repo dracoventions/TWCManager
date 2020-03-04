@@ -137,7 +137,7 @@ class TWCMaster:
           self.policyCheckInterval = policy_engine.get('policyCheckInterval')
 
     # Register ourself as a module, allows lookups via the Module architecture
-    self.registerModule({ "name": "master", "ref": self })
+    self.registerModule({ "name": "master", "ref": self, "type": "Master" })
 
     # Connect to serial port
     self.ser = serial.Serial(config['config']['rs485adapter'], config['config']['baud'], timeout=0)
@@ -228,6 +228,16 @@ class TWCMaster:
       return self.maxAmpsToDivideAmongSlaves
     else:
       return 0
+
+  def getModuleByName(self, name):
+    module = self.modules.get(name, None)
+    if (module):
+      return module['ref']
+    else:
+      return None
+
+  def getModulesByType(self, type):
+    return None
 
   def getmqttstatus(self):
     return self.mqttstatus
@@ -514,7 +524,10 @@ class TWCMaster:
 
       # Check this module has not already been instantiated
       if (not self.modules.get(module['name'], None)):
-        self.modules[module['name']] = module['ref']
+        self.modules[module['name']] = {
+          "ref": module['ref'],
+          "type": module['type']
+        }
         self.debugLog(4, "Registered module " + module['name'] + " by reference")
       else:
         self.debugLog(4, "Avoided re-registration of module " + module['name'] + ", which has already been loaded")
