@@ -471,18 +471,28 @@ class TWCMaster:
     if (str(value) == "tm_hour"):
       return ltNow.tm_hour
 
-    # If value refers to a setting, return the setting
-    if(str(value).startswith("settings.")):
-      strstart = 9
-      strend = len(value)
-      return self.settings.get(value[strstart:strend], 0)
-
     # If value refers to a function, execute the function and capture the
     # output
     if (str(value) == "getMaxAmpsToDivideGreenEnergy()"):
       return self.getMaxAmpsToDivideGreenEnergy()
     elif (str(value) == "checkScheduledCharging()"):
       return self.checkScheduledCharging()
+
+    # If value is tiered, split it up
+    if strValue.find(".") != -1:
+      pieces = str(value).split(".")
+
+      # If value refers to a setting, return the setting
+      if pieces[0] == "settings":
+        return self.settings.get(pieces[1], 0)
+      elif pieces[0] == "config":
+        return self.config['config'].get(pieces[1], 0)
+      elif pieces[0] == "modules":
+        module = None
+        if pieces[1] in self.modules:
+          module = self.modules[pieces[1]]
+          if pieces[2] in vars(module):
+            return getattr(module,pieces[2])
 
     # None of the macro conditions matched, return the value as is
     return value
