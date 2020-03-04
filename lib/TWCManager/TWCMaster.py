@@ -500,7 +500,7 @@ class TWCMaster:
       elif pieces[0] == "modules":
         module = None
         if pieces[1] in self.modules:
-          module = self.modules[pieces[1]]
+          module = self.getModuleByName(pieces[1])
           if pieces[2] in vars(module):
             return getattr(module,pieces[2])
 
