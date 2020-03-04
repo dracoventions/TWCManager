@@ -4,6 +4,8 @@ class TeslaPowerwall2:
 
   import requests
   import time
+  import urllib3
+  import json as json
 
   batteryLevel    = 100
   cacheTime       = 10
@@ -45,6 +47,10 @@ class TeslaPowerwall2:
     self.serverPort        = self.configPowerwall.get('serverPort','443')
     self.password          = self.configPowerwall.get('password', None)
     self.minSOE            = self.configPowerwall.get('minBatteryLevel', 90)
+    if self.status and self.debugLevel < 11:
+      # PW uses self-signed certificates; squelch warnings
+      import urllib3
+      urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
@@ -55,13 +61,13 @@ class TeslaPowerwall2:
     # the login details to the Powerwall API, and get an authentication token.
     # If we already have an authentication token, we just use that.
     if (self.password is not None):
-      if (self.token is None or self.tokenTimeout > self.time.time()):
+      if (self.token is None or self.tokenTimeout < self.time.time()):
         self.debugLog(6, "Logging in to Powerwall API")
         headers = {
           "Content-Type": "application/json"
         }
         data = {
-          "username": "installer",
+          "username": "customer",
           "password": self.password,
           "force_sm_off": False
         }
@@ -126,21 +132,22 @@ class TeslaPowerwall2:
     headers = {}
 
     # Send authentication token if password authentication is enabled
-    if ((self.password is not None) and (self.tokenProvider == "basic")):
-      headers['Authorization'] = "Bearer " + self.token
-    else:
-      self.debugLog(1, "Error: Powerwall password is set, but no token method matches.")
-      self.debugLog(1, "Token method reported by Powerwall is " + str(self.tokenProvider))
+    if self.password is not None:
+      if self.tokenProvider == "Basic":
+        headers['Authorization'] = "Bearer " + self.token
+      else:
+        self.debugLog(1, "Error: Powerwall password is set, but no token method matches.")
+        self.debugLog(1, "Token method reported by Powerwall is " + str(self.tokenProvider))
 
     try:
-        r = self.requests.get(url, headers = headers, timeout=self.timeout, verify=False)
+      r = self.requests.get(url, headers = headers, timeout=self.timeout, verify=False)
+      r.raise_for_status()
     except self.requests.exceptions.ConnectionError as e:
         self.debugLog(4, "Error connecting to Tesla Powerwall 2 to fetch " + path)
         self.debugLog(10, str(e))
         self.fetchFailed = True
         return False
 
-    r.raise_for_status()
     return r.json()
 
   def getPWValues(self):
@@ -161,11 +168,12 @@ class TeslaPowerwall2:
     headers = {}
 
     # Send authentication token if password authentication is enabled
-    if ((self.password is not None) and (self.tokenProvider == "basic")):
-      headers['Authorization'] = "Bearer " + self.token
-    else:
-      self.debugLog(1, "Error: Powerwall password is set, but no token method matches.")
-      self.debugLog(1, "Token method reported by Powerwall is " + str(self.tokenProvider))
+    if self.password is not None:
+      if self.tokenProvider == "Basic":
+        headers['Authorization'] = "Bearer " + self.token
+      else:
+        self.debugLog(1, "Error: Powerwall password is set, but no token method matches.")
+        self.debugLog(1, "Token method reported by Powerwall is " + str(self.tokenProvider))
 
     try:
         r = self.requests.get(url, headers = headers, timeout=self.timeout, verify=False)
