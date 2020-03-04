@@ -20,6 +20,8 @@ class TeslaPowerwall2:
   importW         = 0
   exportW         = 0
   minSOE          = 90
+  operatingMode   = ''
+  reservePercent  = 100
   lastFetch       = 0
   password        = None
   serverIP        = None
@@ -159,6 +161,9 @@ class TeslaPowerwall2:
   def getSOE(self):
     return self.getPWJson("/api/system_status/soe")
 
+  def getOperation(self):
+    return self.getPWJson("/api/operation")
+
   def startPowerwall(self):
     # This function will instruct the powerwall to run.
     # This is needed after getting a login token for v1.15 and above
@@ -211,6 +216,14 @@ class TeslaPowerwall2:
 
       if (value):
         self.batteryLevel = float(value['percentage'])
+      else:
+        self.fetchFailed = True
+
+      value = self.getOperation()
+
+      if (value):
+        self.operatingMode = value['mode']
+        self.reservePercent = value['backup_reserve_percent']
       else:
         self.fetchFailed = True
 
