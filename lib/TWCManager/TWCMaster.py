@@ -65,6 +65,7 @@ class TWCMaster:
   lastTWCResponseMsg  = None
   masterTWCID         = ''
   maxAmpsToDivideAmongSlaves = 0
+  modules             = {}
   mqttstatus          = None
   overrideMasterHeartbeatData = b''
   policyCheckInterval = 30
@@ -134,6 +135,9 @@ class TWCMaster:
       if (policy_engine):
         if (policy_engine.get('policyCheckInterval')):
           self.policyCheckInterval = policy_engine.get('policyCheckInterval')
+
+    # Register ourself as a module, allows lookups via the Module architecture
+    self.registerModule({ "name": "master", "ref": self })
 
     # Connect to serial port
     self.ser = serial.Serial(config['config']['rs485adapter'], config['config']['baud'], timeout=0)
@@ -498,6 +502,22 @@ class TWCMaster:
 
     # Queue the task to be handled by background_tasks_thread.
     self.backgroundTasksQueue.put(task)
+
+  def registerModule(self, module):
+    # This function is used during module instantiation to either reference a
+    # previously loaded module, or to instantiate a module for the first time
+    if (not module['ref'] and not module['modulename']):
+      debugLog(4, "registerModule called for module " + str(module['name']) + " without an existing reference or a module to instantiate.")
+    elif (module['ref']):
+      # If the reference is passed, it means this module has already been
+      # instantiated and we should just refer to the existing instance
+
+      # Check this module has not already been instantiated
+      if (not self.modules.get(module['name'], None)):
+        self.modules[module['name']] = module['ref']
+        self.debugLog(4, "Registered module " + module['name'] + " by reference")
+      else:
+        self.debugLog(4, "Avoided re-registration of module " + module['name'] + ", which has already been loaded")
 
   def releaseBackgroundTasksLock(self):
     self.backgroundTasksLock.release()

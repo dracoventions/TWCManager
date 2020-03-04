@@ -11,6 +11,8 @@ This document logs the changes per release of TWCManager.
   * Added ability to extend the policy at two points (before and after) to add extra rules in whilst retaining the rest of the policy
   * MQTT control command chargeNow will now accept a payload specifying the number of amps and duration to charge
   * Added support for remote debugging using the Python Visual Studio remote debugger (ptvsd) (thanks @MikeBishop)
+  * Significant improvements to Powerwall2 EMS module including authentication fixes, addition of Operating State to module state tracking, fixing a HTTPS certificate validation issue and stability testing (thanks @MikeBishop)
+  * Early framework for centralised module instantiation
   * Bugfixes
      * Fixed an issue where the policy based charging rules could not access settings variables due to an error in string offset (thanks @AndySchroder).
      * Fixed a bug with debug output if the charger is configured to draw more amps than the wiring can handle (thanks @AndySchroder).
