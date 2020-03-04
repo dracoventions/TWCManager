@@ -461,10 +461,10 @@ class CarApi:
                       + " because vehicle.stopAskingToStartCharging == True")
             continue
 
-        if(vehicle.ready() == False):
+        if(vehicle.ready(wake = charge) == False):
             continue
 
-        if(vehicle.update_charge() and vehicle.batteryLevel < self.minChargeLevel ):
+        if(vehicle.update_charge(wake = False) and vehicle.batteryLevel < self.minChargeLevel ):
             # If the vehicle's charge state is lower than the configured minimum,
             #   don't stop it from charging, even if we'd otherwise not charge.
             continue
