@@ -556,7 +556,7 @@ class TWCMaster:
 
   def removeNormalChargeLimit(self, ID):
     if( 'chargeLimits' in self.settings ):
-      self.setting['chargeLimits'].remove(ID)
+      self.settings['chargeLimits'].remove(ID)
       self.saveSettings()
 
   def resetChargeNowAmps(self):
