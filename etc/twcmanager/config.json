@@ -130,7 +130,7 @@
         #"chargeNowLimit": 100,
         #"greenEnergyLimit": 90,
         #"scheduledLimit": 50,
-        #"nonscheduledLimit": -1,
+        #"nonScheduledLimit": -1,
 
         # Choose how much debugging info to output.
         # 0 is no output other than errors.
