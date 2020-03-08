@@ -51,7 +51,7 @@ class TeslaPowerwall2:
     self.minSOE            = self.configPowerwall.get('minBatteryLevel', 90)
     if self.status and self.debugLevel < 11:
       # PW uses self-signed certificates; squelch warnings
-      self.urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
+      self.urllib3.disable_warnings(category=self.urllib3.exceptions.InsecureRequestWarning)
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
