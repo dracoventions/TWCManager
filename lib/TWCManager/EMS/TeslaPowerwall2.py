@@ -28,10 +28,9 @@ class TeslaPowerwall2:
   serverPort      = 443
   status          = False
   timeout         = 10
-  token           = None
-  tokenProvider   = None
-  tokenTimeout    = None
+  tokenTimeout    = 0
   voltage         = 0
+  httpSession     = None
 
   def __init__(self, master):
     self.config            = master.config
@@ -49,6 +48,7 @@ class TeslaPowerwall2:
     self.serverPort        = self.configPowerwall.get('serverPort','443')
     self.password          = self.configPowerwall.get('password', None)
     self.minSOE            = self.configPowerwall.get('minBatteryLevel', 90)
+    self.httpSession       = self.requests.session()
     if self.status and self.debugLevel < 11:
       # PW uses self-signed certificates; squelch warnings
       self.urllib3.disable_warnings(category=self.urllib3.exceptions.InsecureRequestWarning)
@@ -62,7 +62,7 @@ class TeslaPowerwall2:
     # the login details to the Powerwall API, and get an authentication token.
     # If we already have an authentication token, we just use that.
     if (self.password is not None):
-      if (self.token is None or self.tokenTimeout < self.time.time()):
+      if (self.tokenTimeout < self.time.time()):
         self.debugLog(6, "Logging in to Powerwall API")
         headers = {
           "Content-Type": "application/json"
@@ -75,27 +75,21 @@ class TeslaPowerwall2:
         url = "https://" + self.serverIP + ":" + self.serverPort
         url += "/api/login/Basic"
         try:
-          req = self.requests.post(url, headers=headers, json = data, timeout=self.timeout, verify=False)
+          req = self.httpSession.post(url, headers=headers, json = data, timeout=self.timeout, verify=False)
         except self.requests.exceptions.ConnectionError as e:
           self.debugLog(4, "Error connecting to Tesla Powerwall 2 for API login")
           self.debugLog(10, str(e))
           return False
 
-        rjson = self.json.loads(req.text)
-        self.token = rjson['token']
-        self.tokenProvider = rjson['provider']
-
         # Time out token after one hour
         self.tokenTimeout = (self.time.time() + (60 * 60))
-        self.debugLog(4, "Powerwall2 API Login returned token " + str(rjson['token']))
 
         # After authentication, start Powerwall
         # If we don't do this, the Powerwall will stop working after login
         self.startPowerwall()
 
       else:
-
-        self.debugLog(6, "Powerwall2 API token " + str(self.token) + " still valid for " + str(self.tokenTimeout - self.time.time()) + " seconds.")
+        self.debugLog(6, "Powerwall2 API token still valid for " + str(self.tokenTimeout - self.time.time()) + " seconds.")
 
   def getConsumption(self):
 
@@ -136,16 +130,8 @@ class TeslaPowerwall2:
     url = "https://" + self.serverIP + ":" + self.serverPort + path
     headers = {}
 
-    # Send authentication token if password authentication is enabled
-    if self.password is not None:
-      if self.tokenProvider == "Basic":
-        headers['Authorization'] = "Bearer " + self.token
-      else:
-        self.debugLog(1, "Error: Powerwall password is set, but no token method matches.")
-        self.debugLog(1, "Token method reported by Powerwall is " + str(self.tokenProvider))
-
     try:
-      r = self.requests.get(url, headers = headers, timeout=self.timeout, verify=False)
+      r = self.httpSession.get(url, headers = headers, timeout=self.timeout, verify=False)
       r.raise_for_status()
     except self.requests.exceptions.ConnectionError as e:
         self.debugLog(4, "Error connecting to Tesla Powerwall 2 to fetch " + path)
@@ -175,16 +161,8 @@ class TeslaPowerwall2:
     url += "/api/sitemaster/run"
     headers = {}
 
-    # Send authentication token if password authentication is enabled
-    if self.password is not None:
-      if self.tokenProvider == "Basic":
-        headers['Authorization'] = "Bearer " + self.token
-      else:
-        self.debugLog(1, "Error: Powerwall password is set, but no token method matches.")
-        self.debugLog(1, "Token method reported by Powerwall is " + str(self.tokenProvider))
-
     try:
-        r = self.requests.get(url, headers = headers, timeout=self.timeout, verify=False)
+        r = self.httpSession.get(url, headers = headers, timeout=self.timeout, verify=False)
     except self.requests.exceptions.ConnectionError as e:
         self.debugLog(4, "Error instructing Tesla Powerwall 2 to start")
         self.debugLog(10, str(e))
@@ -222,7 +200,7 @@ class TeslaPowerwall2:
       value = self.getOperation()
 
       if (value):
-        self.operatingMode = value['mode']
+        self.operatingMode = value['real_mode']
         self.reservePercent = value['backup_reserve_percent']
       else:
         self.fetchFailed = True
