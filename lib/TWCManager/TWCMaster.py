@@ -555,7 +555,7 @@ class TWCMaster:
     self.backgroundTasksLock.release()
 
   def removeNormalChargeLimit(self, ID):
-    if( 'chargeLimits' in self.settings and ID in self.settings['chargelimits'] ):
+    if( 'chargeLimits' in self.settings and ID in self.settings['chargeLimits'] ):
       del self.settings['chargeLimits'][ID]
       self.saveSettings()
 
