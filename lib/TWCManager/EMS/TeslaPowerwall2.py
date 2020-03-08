@@ -133,7 +133,7 @@ class TeslaPowerwall2:
     try:
       r = self.httpSession.get(url, headers = headers, timeout=self.timeout, verify=False)
       r.raise_for_status()
-    except self.requests.exceptions.ConnectionError as e:
+    except Exception as e:
         self.debugLog(4, "Error connecting to Tesla Powerwall 2 to fetch " + path)
         self.debugLog(10, str(e))
         self.fetchFailed = True
