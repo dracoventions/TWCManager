@@ -2,7 +2,9 @@
 
 This document logs the changes per release of TWCManager.
 
-## v1.1.7 - Current Dev Branch
+## v1.1.8 - Current development release
+
+## v1.1.7 - 2020-03-09
 
   * Dropped the default policy check timer down to 30 seconds from 60 seconds after positive feedback on lower calculation intervals
   * Dropped cache time in all EMS modules down to 10 seconds to ensure that the lower calculation intervals work correctly
@@ -14,12 +16,14 @@ This document logs the changes per release of TWCManager.
   * Significant improvements to Powerwall2 EMS module including authentication fixes, addition of Operating State to module state tracking, fixing a HTTPS certificate validation issue and stability testing (thanks @MikeBishop)
   * Early framework for centralised module instantiation
   * Allow use of module parameters within policy rules (thanks @MikeBishop)
+  * Added setup.py setuptools script, which will shortly become the recommended installation method
   * Bugfixes
      * Fixed an issue where the policy based charging rules could not access settings variables due to an error in string offset (thanks @AndySchroder).
      * Fixed a bug with debug output if the charger is configured to draw more amps than the wiring can handle (thanks @AndySchroder).
      * Fixed an issue with the debug web interface (WebIPC) which impacted sending custom commands to the TWC and recieving the result
      * Fixed the refresh image for the IPC web interface (thanks @notreallybob).
      * Fixed a situation where amp calculations can lead to a value of -1 due to previously used default values. Any amp related defaults are now 0, with exception handling for negative values.
+     * Fixed an error in policy rule where green energy charging was offset by 1 hour (thanks @MikeBishop)
 
 ## v1.1.6 - 2020-02-02
 

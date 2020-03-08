@@ -202,7 +202,7 @@
 
       # { "name": "Track Green Energy",
       #   "match": [ "tm_hour", "tm_hour", "settings.hourResumeTrackGreenEnergy" ],
-      #   "condition": [ "gt", "lte", "lte" ],
+      #   "condition": [ "gte", "lt", "lte" ],
       #   "value": [ 6, 20, "tm_hour" ],
       #   "charge_amps": "getMaxAmpsToDivideGreenEnergy()",
       #   "background_task": "checkGreenEnergy" },
