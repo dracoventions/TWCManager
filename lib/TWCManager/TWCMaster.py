@@ -34,7 +34,7 @@ class TWCMaster:
     # back an hour. Sunset can be ~4:30pm to just after 8pm.
     { "name": "Track Green Energy",
       "match": [ "tm_hour", "tm_hour", "settings.hourResumeTrackGreenEnergy" ],
-      "condition": [ "gt", "lte", "lte" ],
+      "condition": [ "gte", "lt", "lte" ],
       "value": [ 6, 20, "tm_hour" ],
       "charge_amps": "getMaxAmpsToDivideGreenEnergy()",
       "background_task": "checkGreenEnergy" },
@@ -743,23 +743,31 @@ class TWCMaster:
           # Match must be greater than value
           if (match > value):
             is_matched = 1
-        if (condition == "lte"):
-          # Match must be less or equal to value
+        elif (condition == "gte"):
+          # Match must be greater than or equal to value
+          if (match >= value):
+            is_matched = 1
+        elif (condition == "lt"):
+          # Match must be less than value
+          if (match < value):
+            is_matched = 1
+        elif (condition == "lte"):
+          # Match must be less than or equal to value
           if (match <= value):
             is_matched = 1
-        if (condition == "eq"):
+        elif (condition == "eq"):
           # Match must be equal to value
           if (match == value):
             is_matched = 1
-        if (condition == "ne"):
+        elif (condition == "ne"):
           # Match must not be equal to value
           if (match != value):
             is_matched = 1
-        if (condition == "false"):
+        elif (condition == "false"):
           # Condition: false is a method to ensure a policy entry
           # is never matched, possibly for testing purposes
           is_matched = 0
-        if (condition == "none"):
+        elif (condition == "none"):
           # No condition exists.
           is_matched = 1
 
