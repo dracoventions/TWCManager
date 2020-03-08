@@ -2,7 +2,6 @@ install:
 
 	sudo apt-get update
 	sudo apt-get install -y lighttpd php7.3-cgi screen git python3-pip
-	sudo -H pip3 install pyserial sysv_ipc commentjson paho-mqtt
 	sudo lighty-enable-mod fastcgi-php ; exit 0
 	sudo service lighttpd force-reload
 
@@ -11,7 +10,8 @@ install:
 	sudo chmod -R 665 /var/www/html
 	sudo usermod -a -G www-data pi
 
-	sudo cp TWCManager.py /usr/bin/
+	# Install TWCManager packages
+	./setup.py install
 
 	# Create configuration directory
 	sudo mkdir /etc/twcmanager

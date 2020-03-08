@@ -1,15 +1,19 @@
 #!/usr/bin/python3
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 setup(
     name="TWCManager",
     version="1.1.7",
-    packages=find_packages(),
+    package_dir={"": "lib"},
+    packages=find_namespace_packages(where="lib"),
 
     # Dependencies
     install_requires = [
-      "commentjson",
-      "json"
+      "commentjson>=0.8.3",
+      "paho_mqtt>=1.5.0",
+      "pyserial>=3.4",
+      "requests>=2.23.0",
+      "sysv_ipc>=1.0.1"
     ],
 
     # Package Metadata
