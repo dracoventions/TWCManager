@@ -1,32 +1,36 @@
+DEPS := lighttpd screen git
+SUDO := sudo
 VER := $(shell lsb_release -sr)
 
 install:
 
-	sudo apt-get update
+	$(SUDO) apt-get update
 
 ifeq ($(VER), 9.11)
-	sudo apt-get install -y lighttpd php7.0-cgi screen git
+	$(SUDO) apt-get install -y $(DEPS) php7.0-cgi
 else ifeq ($(VER), stretch)
-	sudo apt-get install -y lighttpd php7.0-cgi screen git
+	$(SUDO) apt-get install -y $(DEPS) php7.0-cgi
 else ifeq ($(VER), 16.04)
-	sudo apt-get install -y lighttpd php7.0-cgi screen git
+	$(SUDO) apt-get install -y $(DEPS) php7.0-cgi
 else ifeq ($(VER), 16.10)
-	sudo apt-get install -y lighttpd php7.0-cgi screen git
+	$(SUDO) apt-get install -y $(DEPS) php7.0-cgi
 else
-	sudo apt-get install -y lighttpd php7.3-cgi screen git
+	$(SUDO) apt-get install -y $(DEPS) php7.3-cgi
 endif
-	sudo lighty-enable-mod fastcgi-php ; exit 0
-	sudo service lighttpd force-reload
+	$(SUDO) lighty-enable-mod fastcgi-php ; exit 0
+	$(SUDO) service lighttpd force-reload
 
-	sudo cp html/* /var/www/html/
-	sudo chown -R www-data:www-data /var/www/html
-	sudo chmod -R 665 /var/www/html
-	sudo usermod -a -G www-data pi
+	$(SUDO) cp html/* /var/www/html/
+	$(SUDO) chown -R www-data:www-data /var/www/html
+	$(SUDO) chmod -R 665 /var/www/html
+	$(SUDO) usermod -a -G www-data pi
 
 	# Install TWCManager packages
-	./setup.py install
+	$(SUDO) ./setup.py install
 
 	# Create configuration directory
-	sudo mkdir -p /etc/twcmanager
-	sudo cp etc/twcmanager/config.json /etc/twcmanager/
-	sudo chown root:pi /etc/twcmanager -R
+	$(SUDO) mkdir -p /etc/twcmanager
+ifeq (,$(wildcard /etc/twcmanager/config.json))
+	$(SUDO) cp etc/twcmanager/config.json /etc/twcmanager/
+endif
+	$(SUDO) chown root:pi /etc/twcmanager -R
