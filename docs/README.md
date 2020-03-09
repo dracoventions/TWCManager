@@ -8,7 +8,7 @@ Please see the [Installation Guide](InstallationGuide.md) for detailed informati
 
 ### Recommended Installation
 
-The recommended installation for this project is on a Raspberry Pi machine using Rasbian. The Raspbian OS can be downloaded from the following location:
+The recommended installation for this project is on a Raspberry Pi machine using Raspbian. The Raspbian OS can be downloaded from the following location:
 
    * https://www.raspberrypi.org/downloads/raspbian/
 
@@ -18,7 +18,7 @@ You can flash the Raspbian OS using the tools listed on the following page:
 
 ### Install Required Packages (Debian/Ubuntu/Raspbian)
 
-The following packages are required to fetch and install the TWCManager project.
+The following packages are required to fetch and install the TWCManager project. These are the minimal required packages to start the installation process, during which any other required dependencies will be fetched automatically.
 
 ```
 sudo apt-get update
@@ -39,6 +39,9 @@ sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.5 2
 You can check that this command has been successful by running ```python --version``` and checking that the version is python3.
 
 ### Clone GIT Repository and copy files
+
+During this step, the source code and all related files will be cloned from the GitHub repository and installed into the appropriate location on your system.
+
 ```
 git clone https://github.com/ngardiner/TWCManager
 cd TWCManager
