@@ -6,21 +6,28 @@ Please see the [Installation Guide](InstallationGuide.md) for detailed informati
 
 ## Software Installation
 
-### Install Packages (Debian/Ubuntu/Raspbian)
+### Recommended Installation
 
-#### Debian/Raspbian Stretch & Ubuntu Xenial (16.04), Ubuntu Yakkety (16.10), Ubuntu Zesty (17.04) and Ubuntu Artful (17.10)
+The recommended installation for this project is on a Raspberry Pi machine using Rasbian. The Raspbian OS can be downloaded from the following location:
+
+   * https://www.raspberrypi.org/downloads/raspbian/
+
+You can flash the Raspbian OS using the tools listed on the following page:
+
+   * https://www.raspberrypi.org/documentation/installation/installing-images/README.md
+
+### Install Required Packages (Debian/Ubuntu/Raspbian)
+
+The following packages are required to fetch and install the TWCManager project.
+
 ```
 sudo apt-get update
-sudo apt-get install -y lighttpd php7.0-cgi screen git
-```
-
-#### Debian/Raspbian Sid & Ubuntu Bionic (18.04), Ubuntu Disco (19.04) and Ubuntu Eoan (19.10)
-```
-sudo apt-get update
-sudo apt-get install -y lighttpd php7.3-cgi screen git
+sudo apt-get install -y git python3 python3-setuptools
 ```
 
 ### Default to Python3
+
+TWCManager requires a minimum of python 3.3 to work correctly.
 
 You may need to set python3 as your default python interpreter version on Debian/Ubuntu. The following command will set python 3.5 as your default interpreter. 
 
