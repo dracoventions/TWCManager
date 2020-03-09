@@ -7,9 +7,17 @@ Please see the [Installation Guide](InstallationGuide.md) for detailed informati
 ## Software Installation
 
 ### Install Packages (Debian/Ubuntu/Raspbian)
+
+#### Debian/Raspbian Stretch & Ubuntu Xenial (16.04), Ubuntu Yakkety (16.10), Ubuntu Zesty (17.04) and Ubuntu Artful (17.10)
 ```
 sudo apt-get update
-sudo apt-get install -y lighttpd php7.0-cgi screen git python3-pip
+sudo apt-get install -y lighttpd php7.0-cgi screen git
+```
+
+#### Debian/Raspbian Sid & Ubuntu Bionic (18.04), Ubuntu Disco (19.04) and Ubuntu Eoan (19.10)
+```
+sudo apt-get update
+sudo apt-get install -y lighttpd php7.3-cgi screen git
 ```
 
 ### Default to Python3
@@ -46,8 +54,8 @@ python3 -m TWCManager
 After starting TWCManager, the script will run in the foreground and will regularly update with the current status. An example output is as follows:
 
 <pre>
-11:57:49: <b>SHA 1234</b>: 00 <b>00.00/00.00A</b> 0000 0000  <b>M</b>: 09 <b>00.00/17.00A<b> 0000 0000
-11:57:49: Green energy generates <b>4956W</b>, Consumption <b>726W</b>, Charger Load 0W
+11:57:49: <b>SHA 1234</b>: 00 <b>00.00/00.00A</b> 0000 0000  <b>M</b>: 09 <b>00.00/17.00A</b> 0000 0000
+11:57:49: Green energy generates <b>4956W</b>, Consumption <b>726W</b>, Charger Load <b>0W</b>
           Limiting car charging to 20.65A - 3.03A = <b>17.62A</b>.
           Charge when above <b>6A</b> (minAmpsPerTWC).
 </pre>

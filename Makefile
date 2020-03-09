@@ -1,7 +1,7 @@
 install:
 
 	sudo apt-get update
-	sudo apt-get install -y lighttpd php7.3-cgi screen git python3-pip
+	sudo apt-get install -y lighttpd php7.3-cgi screen git
 	sudo lighty-enable-mod fastcgi-php ; exit 0
 	sudo service lighttpd force-reload
 
