@@ -133,4 +133,4 @@ If you have multiple cars, TWCManager will attempt to identify which cars are ho
 ### Why do I need to log into my Tesla account when using the web interface?
 
    * TWCManager uses your Tesla login to obtain an API token. This API token is used to talk to your vehicle(s).
-   * When the available charger capacity falls below minAmpsPerTWC, 
+   * When the available charger capacity falls below minAmpsPerTWC, the TWCManager script will contact the Tesla API to tell the vehicle to stop charging. If this is not configured, your vehicle will continue to charge at 6A even when the charging policy dictates that we stop charging.
