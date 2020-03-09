@@ -23,16 +23,11 @@ sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.5 2
 
 You can check that this command has been successful by running ```python --version``` and checking that the version is python3.
 
-### Install necessary python modules
-```
-pip3 install commentjson paho-mqtt pyserial sysv_ipc
-```
-
 ### Clone GIT Repository and copy files
 ```
 git clone https://github.com/ngardiner/TWCManager
 cd TWCManager
-git checkout v1.1.6
+git checkout v1.1.7
 make install
 ```
 
@@ -40,7 +35,25 @@ make install
 After performing the installation tasks above, edit the /etc/twcmanager/config.json file and customize to suit your environment.
 
 ### Running the script
-*To be completed shortly*
+Once the above steps are complete, start the TWCManager script with the following command:
+
+```
+python3 -m TWCManager
+```
+
+## Monitoring the script operation
+
+After starting TWCManager, the script will run in the foreground and will regularly update with the current status. An example output is as follows:
+
+```
+11:57:49: **SHA 1234**: 00 00.00/00.00A 0000 0000  M: 09 **00.00/17.00A** 0000 0000
+11:57:49: Green energy generates **4956W**, Consumption 726W, Charger Load 0W
+          Limiting car charging to 20.65A - 3.03A = **17.62A**.
+          Charge when above **6A** (minAmpsPerTWC).
+```
+
+   * SHA 1234 is the reported TWC code for each of the Slave TWCs that the Master is connected to.
+   * The 00.00/00.00A next to the Slave TWC code is the current number of amps being utilised and the total number of amps available to that slave. The master divides the total amperage available for use between the connected slaves.
 
 ## Frequently Asked Questions
 
