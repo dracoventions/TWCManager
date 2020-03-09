@@ -3,7 +3,7 @@
 from setuptools import setup, find_namespace_packages
 setup(
     name="TWCManager",
-    version="1.1.7",
+    version="1.1.8",
     package_dir={"": "lib"},
     packages=find_namespace_packages(where="lib"),
 

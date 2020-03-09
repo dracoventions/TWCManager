@@ -154,7 +154,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     <p>&nbsp;</p>
     <nav class='navbar fixed-top navbar-dark bg-dark' role='navigation'>
       <a class='navbar-brand' href='/'>TWCManager</a>
-      <link rel='icon' type='image/png' href='https://raw.githubusercontent.com/ngardiner/TWCManager/master/tree/v1.1.5/html/favicon.png'>
+      <link rel='icon' type='image/png' href='https://raw.githubusercontent.com/ngardiner/TWCManager/master/tree/v1.1.8/html/favicon.png'>
       <ul class="navbar-nav mr-auto">
         <li class="nav-item active">
           <a class="nav-link" href="#">Home</a>
@@ -175,7 +175,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
           <a class='nav-link' href='https://github.com/ngardiner/TWCManager'>GitHub</a>
         </li>
       </ul>
-      <span class="navbar-text">v1.1.5</span>
+      <span class="navbar-text">v1.1.8</span>
     </nav>"""
     return page
 
