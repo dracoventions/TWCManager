@@ -27,6 +27,6 @@ endif
 	./setup.py install
 
 	# Create configuration directory
-	sudo mkdir /etc/twcmanager
+	sudo mkdir -p /etc/twcmanager
 	sudo cp etc/twcmanager/config.json /etc/twcmanager/
 	sudo chown root:pi /etc/twcmanager -R
