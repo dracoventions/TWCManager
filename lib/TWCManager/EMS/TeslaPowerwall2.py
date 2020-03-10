@@ -160,6 +160,7 @@ class TeslaPowerwall2:
     token = self.master.carapi.getCarApiBearerToken()
     expiry = self.master.carapi.getCarApiTokenExpireTime()
     now = self.time.time()
+    self.lastCloudFetch = now
 
     if token and now < expiry:
       headers = {
@@ -209,7 +210,6 @@ class TeslaPowerwall2:
 
         if "storm_mode_active" in result:
           self.stormWatch = result["storm_mode_active"]
-          self.lastCloudFetch = now
 
   def startPowerwall(self):
     # This function will instruct the powerwall to run.
