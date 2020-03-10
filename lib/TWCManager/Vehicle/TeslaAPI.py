@@ -180,11 +180,6 @@ class CarApi:
                     continue
 
                 if(applyLimit == True and vehicle.stopTryingToApplyLimit):
-                    self.debugLog(11, "Don't wake vehicle " + str(vehicle.ID)
-                              + " because vehicle.stopTryingToApplyLimit == True")
-                    continue
-
-                if(applyLimit == True and vehicle.stopTryingToApplyLimit):
                     self.debugLog(8, "Don't wake vehicle " + str(vehicle.ID)
                               + " to set the charge limit - it has already been set")
                     continue
