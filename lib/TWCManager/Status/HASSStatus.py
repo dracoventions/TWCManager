@@ -38,7 +38,7 @@ class HASSStatus:
     if (self.debugLevel >= minlevel):
       print("debugLog: (" + str(minlevel) + ") " + message)
 
-  def setStatus(self, twcid, key, value):
+  def setStatus(self, twcid, key_underscore, key_camelcase, value):
 
     # Format TWCID nicely
     twident = None
@@ -47,7 +47,7 @@ class HASSStatus:
     else:
       twident = str(twcid.decode("utf-8"))
 
-    sensor = "sensor.twcmanager_" + str(twident) + "_" + key
+    sensor = "sensor.twcmanager_" + str(twident) + "_" + key_underscore
 
     if (self.status):
 

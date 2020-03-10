@@ -401,12 +401,13 @@ class TWCSlave:
         self.timeLastRx = now
 
         self.reportedAmpsMax = ((heartbeatData[1] << 8) + heartbeatData[2]) / 100
-        self.master.gethassstatus().setStatus(self.TWCID, "amps_max", self.reportedAmpsMax)
-        self.master.getmqttstatus().setStatus(self.TWCID, "ampsMax", self.reportedAmpsMax)
         self.reportedAmpsActual = ((heartbeatData[3] << 8) + heartbeatData[4]) / 100
         self.reportedState = heartbeatData[0]
-        self.master.gethassstatus().setStatus(self.TWCID, "state", self.reportedState)
-        self.master.getmqttstatus().setStatus(self.TWCID, "state", self.reportedState)
+
+        for module in self.master.getModulesByType('Status'):
+          module['ref'].setStatus(self.TWCID, "amps_max", "ampsMax", self.reportedAmpsMax)
+          module['ref'].setStatus(self.TWCID, "state", "state", self.reportedState)
+
 
         # self.lastAmpsOffered is initialized to -1.
         # If we find it at that value, set it to the current value reported by the
@@ -435,8 +436,8 @@ class TWCSlave:
            or abs(self.reportedAmpsActual - self.reportedAmpsActualSignificantChangeMonitor) > 0.8):
             self.timeReportedAmpsActualChangedSignificantly = now
             self.reportedAmpsActualSignificantChangeMonitor = self.reportedAmpsActual
-            self.master.gethassstatus().setStatus(self.TWCID, "power", self.reportedAmpsActual)
-            self.master.getmqttstatus().setStatus(self.TWCID, "power", self.reportedAmpsActual)
+            for module in self.master.getModulesByType('Status'):
+              module['ref'].setStatus(self.TWCID, "power", "power", self.reportedAmpsActual)
 
         ltNow = self.time.localtime()
         hourNow = ltNow.tm_hour + (ltNow.tm_min / 60)

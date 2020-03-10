@@ -205,11 +205,10 @@ def update_statuses():
       print("          Limiting car charging to %.2fA - %.2fA = %.2fA." % ((master.getGeneration() / 240), (master.getGenerationOffset() / 240), master.getMaxAmpsToDivideAmongSlaves()))
       print("          Charge when above %.0fA (minAmpsPerTWC)." % (config['config']['minAmpsPerTWC']))
 
-  # Update HASS sensors with min/max amp values
-  master.gethassstatus().setStatus(bytes("config", 'UTF-8'), "min_amps_per_twc", config['config']['minAmpsPerTWC'])
-  master.getmqttstatus().setStatus(bytes("config", 'UTF-8'), "minAmpsPerTWC", config['config']['minAmpsPerTWC'])
-  master.gethassstatus().setStatus(bytes("all", 'UTF-8'), "max_amps_for_slaves", master.getMaxAmpsToDivideAmongSlaves())
-  master.getmqttstatus().setStatus(bytes("all", 'UTF-8'), "maxAmpsForSlaves", master.getMaxAmpsToDivideAmongSlaves())
+  # Update Sensors with min/max amp values
+  for module in master.getModulesByType('Status'):
+    module['ref'].setStatus(bytes("config", 'UTF-8'), "min_amps_per_twc", "minAmpsPerTWC", config['config']['minAmpsPerTWC'])
+    module['ref'].setStatus(bytes("all", 'UTF-8'), "max_amps_for_slaves", "maxAmpsForSlaves", master.getMaxAmpsToDivideAmongSlaves())
 
 #
 # End functions
@@ -275,8 +274,6 @@ carapi.setMaster(master)
 httpcontrol = HTTPControl(master)
 webipccontrol = WebIPCControl(master)
 mqttcontrol = MQTTControl(master)
-master.sethassstatus(master.getModuleByName("HASSStatus"))
-master.setmqttstatus(master.getModuleByName("MQTTStatus"))
 
 # Load settings from file
 master.loadSettings()
@@ -971,7 +968,7 @@ while True:
                         print(time_now() + ": VRS %02X%02X: %dkWh (%s) %dV %dV %dV" % \
                             (fakeTWCID[0], fakeTWCID[1],
                             kWhCounter, hex_str(kWhPacked), 240, 0, 0))
-                        master.sendMsg(bytearray(b'\xFD\xEB') + fakeTWCID
+                        master.getModuleByName("RS485").send(bytearray(b'\xFD\xEB') + fakeTWCID
                                  + kWhPacked
                                  + bytearray(b'\x00\xF0\x00\x00\x00\x00\x00'))
                 else:

@@ -64,13 +64,11 @@ class TWCMaster:
   consumptionValues   = {}
   debugLevel          = 0
   generationValues    = {}
-  hassstatus          = None
   lastPolicyCheck     = 0
   lastTWCResponseMsg  = None
   masterTWCID         = ''
   maxAmpsToDivideAmongSlaves = 0
   modules             = {}
-  mqttstatus          = None
   overrideMasterHeartbeatData = b''
   policyCheckInterval = 30
   protocolVersion     = 2
@@ -221,9 +219,6 @@ class TWCMaster:
     # master's TWCID
     return self.masterTWCID
 
-  def gethassstatus(self):
-    return self.hassstatus
-
   def getkWhDelivered(self):
     return self.settings['kWhDelivered']
 
@@ -243,12 +238,10 @@ class TWCMaster:
   def getModulesByType(self, type):
     matched = []
     for module in self.modules:
-      if module['type'] == type:
-        matched.append({ name: module['name'], ref: module['ref'] })
+      modinfo = self.modules[module]
+      if modinfo["type"] == type:
+        matched.append({ "name": module, "ref": modinfo['ref'] })
     return matched
-
-  def getmqttstatus(self):
-    return self.mqttstatus
 
   def getScheduledAmpsDaysBitmap(self):
     return self.settings.get('scheduledAmpsDaysBitmap', 0x7F)
@@ -394,14 +387,15 @@ class TWCMaster:
     # Returns the number of amps currently in use by all TWCs
     totalAmps = 0
     for slaveTWC in self.getSlaveTWCs():
-        totalAmps += slaveTWC.reportedAmpsActual
-        self.hassstatus.setStatus(slaveTWC.TWCID, "amps_in_use", slaveTWC.reportedAmpsActual)
-        self.mqttstatus.setStatus(slaveTWC.TWCID, "ampsInUse", slaveTWC.reportedAmpsActual)
+      totalAmps += slaveTWC.reportedAmpsActual
+      for module in self.getModulesByType('Status'):
+        module['ref'].setStatus(slaveTWC.TWCID, "amps_in_use", "ampsInUse", slaveTWC.reportedAmpsActual)
+
+    for module in self.getModulesByType('Status'):
+      module['ref'].setStatus(bytes("all", 'UTF-8'), "total_amps_in_use", "totalAmpsInUse", totalAmps)
 
     if(self.config['config']['debugLevel'] >= 10):
-        print("Total amps all slaves are using: " + str(totalAmps))
-    self.hassstatus.setStatus(bytes("all", 'UTF-8'), "total_amps_in_use", totalAmps)
-    self.mqttstatus.setStatus(bytes("all", 'UTF-8'), "totalAmpsInUse", totalAmps)
+      print("Total amps all slaves are using: " + str(totalAmps))
     return totalAmps
 
   def hex_str(self, s:str):
@@ -476,8 +470,8 @@ class TWCMaster:
             carsCharging += 1
             if(self.config['config']['debugLevel'] >= 10):
                 print("BUGFIX: Number of cars charging now: " + str(carsCharging))
-            self.hassstatus.setStatus(slaveTWC.TWCID, "cars_charging", carsCharging)
-            self.mqttstatus.setStatus(slaveTWC.TWCID, "carsCharging", carsCharging)
+            for module in self.getModulesByType('Status'):
+              module['ref'].setStatus(slaveTWC.TWCID, "cars_charging", "carsCharging", carsCharging)
     return carsCharging
 
   def policyValue(self, value):
@@ -844,10 +838,6 @@ class TWCMaster:
   def setGeneration(self, source, value):
     self.generationValues[source] = value
 
-  def sethassstatus(self, hass):
-    # Stores the hassstatus object
-    self.hassstatus = hass
-
   def setHomeLat(self, lat):
     self.settings['homeLat'] = lat
 
@@ -865,10 +855,6 @@ class TWCMaster:
     # This is called when TWCManager is in Slave mode, to track the
     # master's TWCID
     self.masterTWCID = twcid
-
-  def setmqttstatus(self, mqtt):
-    # Stores the mqttstatus object
-    self.mqttstatus = mqtt
 
   def setMaxAmpsToDivideAmongSlaves(self, amps):
 

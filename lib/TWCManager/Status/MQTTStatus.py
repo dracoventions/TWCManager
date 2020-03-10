@@ -45,7 +45,7 @@ class MQTTStatus:
     if (self.debugLevel >= minlevel):
       print("MQTTStatus: (" + str(minlevel) + ") " + message)
     
-  def setStatus(self, twcid, key, value):
+  def setStatus(self, twcid, key_underscore, key_camelcase, value):
     if (self.status):
 
       # Format TWCID nicely
@@ -55,7 +55,7 @@ class MQTTStatus:
       else:
         twident = str(twcid.decode("utf-8"))
       topic = self.topicPrefix+ "/" + twident
-      topic = topic + "/" + key
+      topic = topic + "/" + key_camelcase
 
       # Perform rate limiting first (as there are some very chatty topics).
       # For each message that comes through, we take the topic name and check
