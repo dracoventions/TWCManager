@@ -39,8 +39,6 @@ import time
 import traceback
 from datetime import datetime
 import threading
-from lib.TWCManager.Control.HTTPControl import HTTPControl
-from lib.TWCManager.Control.MQTTControl import MQTTControl
 from lib.TWCManager.Control.WebIPCControl import WebIPCControl
 from lib.TWCManager.TWCMaster import TWCMaster
 from lib.TWCManager.Vehicle.TeslaAPI import CarApi
@@ -50,6 +48,8 @@ from lib.TWCManager.Vehicle.TeslaAPI import CarApiVehicle
 # All listed modules will be loaded at boot time
 modules_available = [
   "Interface.RS485",
+  "Control.HTTPControl",
+  "Control.MQTTControl",
   "EMS.Fronius",
   "EMS.HASS",
   "EMS.TeslaPowerwall2",
@@ -271,9 +271,7 @@ for module in modules_available:
   master.registerModule({ "name": modulename[1], "ref": modinstance, "type": modulename[0] })
 
 carapi.setMaster(master)
-httpcontrol = HTTPControl(master)
 webipccontrol = WebIPCControl(master)
-mqttcontrol = MQTTControl(master)
 
 # Load settings from file
 master.loadSettings()
