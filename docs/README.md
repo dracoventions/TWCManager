@@ -79,7 +79,7 @@ After starting TWCManager, the script will run in the foreground and will regula
 
 ## Developing for TWCManager
 
-Your contributions are most welcome! If you've been working on a new EMS module or you want to contribute to the project in any way, please take a look at our [DevelopmentGuide.md](Development Guide) and feel free to get involved!
+Your contributions are most welcome! If you've been working on a new EMS module or you want to contribute to the project in any way, please take a look at our [Development Guide](DevelopmentGuide.md) and feel free to get involved!
 
 ## Frequently Asked Questions
 
@@ -148,3 +148,8 @@ If you have multiple cars, TWCManager will attempt to identify which cars are ho
 
    * TWCManager uses your Tesla login to obtain an API token. This API token is used to talk to your vehicle(s).
    * When the available charger capacity falls below minAmpsPerTWC, the TWCManager script will contact the Tesla API to tell the vehicle to stop charging. If this is not configured, your vehicle will continue to charge at 6A even when the charging policy dictates that we stop charging.
+
+### What do we know about the various different Tesla Wall Charger revisions and how they operate?
+
+   * The Tesla HPWC (Gen 1) wall charger was released in 2012 and was sold up until 2013, and can be identified by the LED. The Gen 1 used a bank of 4 DIP switches to configure the supplied amperage, rather than the rotary switch, and does not feature an RS458 bus at all. Gen 1 HPWC chargers are not capable of load sharing and cannot be used with TWCManager.
+   * The TWC Gen 3 wall charger was released in January 2020 and is still being sold today, and can be identified by the white faceplate and the shorter charging cable. The Gen 3 TWC has a single RS485 header (whereas the Gen 2 has a double RS485 header) and does not currently have sharing capability. It has the capability to connect to WiFi, however the value of this is not yet known.
