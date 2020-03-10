@@ -106,6 +106,35 @@ This switch controls the amperage of the Tesla Wall Charger. Note down the origi
 
 ## Expert Installation
 
-The Expert Installation approach is not recommended for most users due to the inherent difficulty of the installation process, and the inherent risk of inadvertent contact with a live component within the TWC chassis.
+The Expert Installation approach is not recommended for most users due to the
+inherent difficulty of the installation process.  However, if you are
+comfortable with cutting and soldering wires, the process is not overly
+complicated.
 
-   * [Expert Installation instructions are here](TWCManager%20Installation.pdf)
+Full details are [here](TWCManager%20Installation.pdf), but the process consists
+of building an adapter cable to power the Raspberry Pi (5V) from the TWC's own
+internal low-voltage components.
+
+The following pieces are required:
+
+- Heat shrink
+- [UBEC 5V buck converter](https://www.adafruit.com/product/1385)
+- [Male](https://www.digikey.com/product-detail/en/3m/4610-6051/MPK10K-ND/138305) and
+  [female](https://www.digikey.com/product-detail/en/3m/89110-0101/MKC10A-ND/229690)
+  IDC connectors, with a
+  [ribbon cable](https://www.digikey.com/product-detail/en/3m/3365-10-300SF/MC10G-5-ND/145432)
+  to connect them
+- Optionally, a spare micro-USB cable
+
+The TWC provides 14V low voltage to the front panel LEDs; this is the connector
+you unplug to remove the inner cover.  The IDC connectors allow tapping this 14V
+source, and the buck converter steps the 14V source down to 5V to power the
+Raspberry Pi.
+
+The output of the UBEC can be soldered directly to the Raspberry Pi's GPIO board
+if you are very handy with fine soldering.  Alternatively, cut off the micro-USB
+end of your spare cable, solder the UBEC's output to the red and black wires,
+and power the Pi via USB as usual.
+
+Use heat shrink to cover all exposed metal to reduce the risk of inadvertent
+shorts or contact with the TWC's high-voltage components.
