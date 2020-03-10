@@ -11,7 +11,7 @@ class CarApi:
   carApiTokenExpireTime = time.time()
   carApiLastStartOrStopChargeTime = 0
   carApiLastChargeLimitApplyTime = 0
-  lastChargeLimitApplied = -1
+  lastChargeLimitApplied = 0
   carApiVehicles      = []
   config              = None
   debugLevel          = 0
