@@ -28,6 +28,7 @@
 # For more information, please visit http://unlicense.org
 
 import commentjson
+import importlib
 import json
 import os.path
 import math
@@ -41,15 +42,21 @@ import threading
 from lib.TWCManager.Control.HTTPControl import HTTPControl
 from lib.TWCManager.Control.MQTTControl import MQTTControl
 from lib.TWCManager.Control.WebIPCControl import WebIPCControl
-from lib.TWCManager.EMS.Fronius import Fronius
-from lib.TWCManager.EMS.HASS import HASS
-from lib.TWCManager.EMS.TED import TED
-from lib.TWCManager.EMS.TeslaPowerwall2 import TeslaPowerwall2
-from lib.TWCManager.Status.HASSStatus import HASSStatus
-from lib.TWCManager.Status.MQTTStatus import MQTTStatus
 from lib.TWCManager.TWCMaster import TWCMaster
 from lib.TWCManager.Vehicle.TeslaAPI import CarApi
 from lib.TWCManager.Vehicle.TeslaAPI import CarApiVehicle
+
+# Define available modules for the instantiator
+# All listed modules will be loaded at boot time
+modules_available = [
+  "Interface.RS485",
+  "EMS.Fronius",
+  "EMS.HASS",
+  "EMS.TeslaPowerwall2",
+  "EMS.TED",
+  "Status.HASSStatus",
+  "Status.MQTTStatus"
+]
 
 # Enable support for Python Visual Studio Debugger
 if 'DEBUG_SECRET' in os.environ:
@@ -184,13 +191,10 @@ def check_green_energy():
     # in the config section at the top of this file.
     #
     master.setConsumption('Manual', (config['config']['greenEnergyAmpsOffset'] * 240))
-    master.setConsumption('Fronius', fronius.getConsumption())
-    master.setGeneration('Fronius', fronius.getGeneration())
-    master.setConsumption('HomeAssistant', hass.getConsumption())
-    master.setGeneration('HomeAssistant', hass.getGeneration())
-    master.setConsumption('Powerwall2', powerwall.getConsumption())
-    master.setGeneration('Powerwall2', powerwall.getGeneration())
-    master.setGeneration('TED', ted.getGeneration())
+    # Poll all loaded EMS modules for consumption and generation values
+    for module in master.getModulesByType('EMS'):
+      master.setConsumption(module["name"], module["ref"].getConsumption())
+      master.setGeneration(module["name"], module["ref"].getGeneration())
 
 def update_statuses():
 
@@ -252,18 +256,27 @@ timeToRaise2A = 0
 # Instantiate necessary classes
 carapi = CarApi(config)
 master = TWCMaster(fakeTWCID, config, carapi)
+
+# Instantiate all modules in the modules_available list automatically
+for module in modules_available:
+  modulename = []
+  if str(module).find(".") != -1:
+    modulename = str(module).split(".")
+
+  moduleref = importlib.import_module("lib.TWCManager." + module)
+  modclassref = getattr(moduleref, modulename[1])
+  modinstance = modclassref(master)
+
+  # Register the new module with master class, so every other module can
+  # interact with it
+  master.registerModule({ "name": modulename[1], "ref": modinstance, "type": modulename[0] })
+
 carapi.setMaster(master)
 httpcontrol = HTTPControl(master)
 webipccontrol = WebIPCControl(master)
 mqttcontrol = MQTTControl(master)
-fronius = Fronius(master)
-hass = HASS(master)
-master.sethassstatus(HASSStatus(master))
-master.setmqttstatus(MQTTStatus(master))
-powerwall = TeslaPowerwall2(master)
-# The below is temporary until improvements to instantiation are complete
-master.registerModule({ "name": "TeslaPowerwall2", "ref": powerwall, "type": "EMS" })
-ted = TED(master)
+master.sethassstatus(master.getModuleByName("HASSStatus"))
+master.setmqttstatus(master.getModuleByName("MQTTStatus"))
 
 # Load settings from file
 master.loadSettings()

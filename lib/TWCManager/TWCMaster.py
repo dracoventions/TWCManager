@@ -241,7 +241,11 @@ class TWCMaster:
       return None
 
   def getModulesByType(self, type):
-    return None
+    matched = []
+    for module in self.modules:
+      if module['type'] == type:
+        matched.append({ name: module['name'], ref: module['ref'] })
+    return matched
 
   def getmqttstatus(self):
     return self.mqttstatus
