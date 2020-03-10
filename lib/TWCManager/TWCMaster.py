@@ -366,8 +366,8 @@ class TWCMaster:
       return 0
 
   def getNormalChargeLimit(self, ID):
-    if 'chargeLimits' in self.settings and ID in self.settings['chargeLimits']:
-        return (True, self.settings['chargeLimits'][ID] )
+    if 'chargeLimits' in self.settings and str(ID) in self.settings['chargeLimits']:
+        return (True, self.settings['chargeLimits'][str(ID)] )
     return (False, None)
 
   def getSerial(self):
@@ -555,8 +555,8 @@ class TWCMaster:
     self.backgroundTasksLock.release()
 
   def removeNormalChargeLimit(self, ID):
-    if( 'chargeLimits' in self.settings and ID in self.settings['chargeLimits'] ):
-      del self.settings['chargeLimits'][ID]
+    if( 'chargeLimits' in self.settings and str(ID) in self.settings['chargeLimits'] ):
+      del self.settings['chargeLimits'][str(ID)]
       self.saveSettings()
 
   def resetChargeNowAmps(self):
@@ -569,7 +569,7 @@ class TWCMaster:
     if( not 'chargeLimits' in self.settings ):
       self.settings['chargeLimits'] = dict()
 
-    self.settings['chargeLimits'][ID] = limit
+    self.settings['chargeLimits'][str(ID)] = limit
     self.saveSettings()
 
   def saveSettings(self):
