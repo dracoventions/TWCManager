@@ -4,6 +4,11 @@ This document logs the changes per release of TWCManager.
 
 ## v1.1.8 - Current development release
 
+  * Introduce vehicle SOC charge limiting per policy (thanks @MikeBishop)
+  * New module instantiation system removing static references to most modules
+  * Bugfixes
+    * Remove duplicate conditional check in TeslaAPI module (thanks @MikeBishop)
+
 ## v1.1.7 - 2020-03-09
 
   * Dropped the default policy check timer down to 30 seconds from 60 seconds after positive feedback on lower calculation intervals
