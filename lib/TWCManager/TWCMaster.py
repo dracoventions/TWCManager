@@ -635,7 +635,7 @@ class TWCMaster:
     # send slave linkready every 10 seconds whether or not they got master
     # linkready1/2 and if a master sees slave linkready, it will start sending
     # the slave master heartbeat once per second and the two are then connected.
-    self.sendMsg(bytearray(b'\xFC\xE1') + self.TWCID + self.masterSign + bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x00'))
+    self.getModuleByName("RS485").send(bytearray(b'\xFC\xE1') + self.TWCID + self.masterSign + bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x00'))
 
   def send_master_linkready2(self):
 
@@ -658,47 +658,7 @@ class TWCMaster:
     # Once a master starts sending heartbeat messages to a slave, it
     # no longer sends the global linkready2 message (or if it does,
     # they're quite rare so I haven't seen them).
-    self.sendMsg(bytearray(b'\xFB\xE2') + self.TWCID + self.masterSign + bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x00'))
-
-  def sendMsg(self, msg):
-    # Send msg on the RS485 network. We'll escape bytes with a special meaning,
-    # add a CRC byte to the message end, and add a C0 byte to the start and end
-    # to mark where it begins and ends.
-
-    msg = bytearray(msg)
-    checksum = 0
-    for i in range(1, len(msg)):
-        checksum += msg[i]
-
-    msg.append(checksum & 0xFF)
-
-    # Escaping special chars:
-    # The protocol uses C0 to mark the start and end of the message.  If a C0
-    # must appear within the message, it is 'escaped' by replacing it with
-    # DB and DC bytes.
-    # A DB byte in the message is escaped by replacing it with DB DD.
-    #
-    # User FuzzyLogic found that this method of escaping and marking the start
-    # and end of messages is based on the SLIP protocol discussed here:
-    #   https://en.wikipedia.org/wiki/Serial_Line_Internet_Protocol
-    i = 0
-    while(i < len(msg)):
-        if(msg[i] == 0xc0):
-            msg[i:i+1] = b'\xdb\xdc'
-            i = i + 1
-        elif(msg[i] == 0xdb):
-            msg[i:i+1] = b'\xdb\xdd'
-            i = i + 1
-        i = i + 1
-
-    msg = bytearray(b'\xc0' + msg + b'\xc0')
-
-    if(self.config['config']['debugLevel'] >= 9):
-        print("Tx@" + self.time_now() + ": " + self.hex_str(msg))
-
-    self.ser.write(msg)
-
-    self.timeLastTx = time.time()
+    self.getModuleByName("RS485").send(bytearray(b'\xFB\xE2') + self.TWCID + self.masterSign + bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x00'))
 
   def send_slave_linkready(self):
     # In the message below, \x1F\x40 (hex 0x1f40 or 8000 in base 10) refers to
@@ -713,7 +673,7 @@ class TWCMaster:
     if(self.protocolVersion == 2):
         msg += bytearray(b'\x00\x00')
 
-    self.sendMsg(msg)
+    self.getModuleByName("RS485").send(msg)
 
   def setChargeNowAmps(self, amps):
     # Accepts a number of amps to define the amperage at which we

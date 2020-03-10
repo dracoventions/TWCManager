@@ -2,8 +2,11 @@ class RS485:
 
   import time
   debugLevel       = 0
+  master           = None
+  ser              = None
 
   def __init__(self, master):
+    self.master = master
     self.ser    = master.ser
     try:
         self.debugLevel = master.config['config']['debugLevel']
@@ -44,8 +47,8 @@ class RS485:
 
     msg = bytearray(b'\xc0' + msg + b'\xc0')
 
-    if(self.config['config']['debugLevel'] >= 9):
-        print("Tx@" + self.time_now() + ": " + self.hex_str(msg))
+    if(self.master.config['config']['debugLevel'] >= 9):
+        print("Tx@" + self.master.time_now() + ": " + self.master.hex_str(msg))
 
     self.ser.write(msg)
 

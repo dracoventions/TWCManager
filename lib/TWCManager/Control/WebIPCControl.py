@@ -184,7 +184,7 @@ class WebIPCControl:
                               + "\nwhich could crash the TWC.  Aborting.\n")
                     else:
                         self.master.lastTWCResponseMsg = bytearray();
-                        self.master.sendMsg(twcMsg)
+                        self.master.getModuleByName("RS485").send(twcMsg)
             elif(webMsg == b'getLastTWCMsgResponse'):
                 if(self.master.lastTWCResponseMsg != None and self.master.lastTWCResponseMsg != b''):
                     webResponseMsg = self.master.hex_str(self.master.lastTWCResponseMsg)

@@ -116,7 +116,7 @@ def unescape_msg(msg:bytearray, msgLen):
     # byte.
     msg = msg[0:msgLen]
 
-    # See notes in sendMsg() for the way certain bytes in messages are escaped.
+    # See notes in RS485.send() for the way certain bytes in messages are escaped.
     # We basically want to change db dc into c0 and db dd into db.
     # Only scan to one less than the length of the string to avoid running off
     # the end looking at i+1.
