@@ -19,6 +19,7 @@ class TeslaPowerwall2:
   gridStatus      = False
   importW         = 0
   exportW         = 0
+  master          = None
   minSOE          = 90
   operatingMode   = ''
   reservePercent  = 100
@@ -31,8 +32,12 @@ class TeslaPowerwall2:
   tokenTimeout    = 0
   voltage         = 0
   httpSession     = None
+  lastCloudFetch  = 0
+  cloudID         = None
+  stormWatch      = False
 
   def __init__(self, master):
+    self.master            = master
     self.config            = master.config
     try:
       self.configConfig    = self.config['config']
@@ -48,6 +53,7 @@ class TeslaPowerwall2:
     self.serverPort        = self.configPowerwall.get('serverPort','443')
     self.password          = self.configPowerwall.get('password', None)
     self.minSOE            = self.configPowerwall.get('minBatteryLevel', 90)
+    self.cloudID           = self.configPowerwall.get('cloudID', None)
     self.httpSession       = self.requests.session()
     if self.status and self.debugLevel < 11:
       # PW uses self-signed certificates; squelch warnings
@@ -150,6 +156,63 @@ class TeslaPowerwall2:
   def getOperation(self):
     return self.getPWJson("/api/operation")
 
+  def getStormWatch(self):
+    token = self.master.carapi.getCarApiBearerToken()
+    expiry = self.master.carapi.getCarApiTokenExpireTime()
+    now = self.time.time()
+    self.lastCloudFetch = now
+
+    if token and now < expiry:
+      headers = {
+          "Authorization": "Bearer " + token,
+          "Content-Type": "application/json",
+      }
+      if not self.cloudID:
+        url = "https://owner-api.teslamotors.com/api/1/products"
+        bodyjson = None
+        products = list()
+
+        try:
+          r = self.httpSession.get(url, headers=headers)
+          r.raise_for_status()
+          bodyjson = r.json()
+          products = [
+              (i["energy_site_id"], i["site_name"])
+              for i in bodyjson["response"]
+              if "battery_type" in i and i["battery_type"] == "ac_powerwall"
+          ]
+        except:
+          pass
+
+        if len(products) == 1:
+          (site,name) = products[0]
+          self.cloudID = site
+        elif len(products) > 1:
+          self.debugLog(
+              1,
+              "Multiple Powerwall sites linked to your Tesla account.  Please specify the correct site ID in your config.json.",
+          )
+          for (site,name) in products:
+              self.debugLog(1, f"   {site}: {name}")
+        else:
+          self.debugLog(1, "Couldn't find a Powerwall on your Tesla account.")
+
+      if self.cloudID:
+        url = f"https://owner-api.teslamotors.com/api/1/energy_sites/{self.cloudID}/live_status"
+        bodyjson = None
+        result = dict()
+
+        try:
+          r = self.httpSession.get(url, headers=headers)
+          r.raise_for_status()
+          bodyjson = r.json()
+          result = bodyjson["response"]
+        except:
+          pass
+
+        if "storm_mode_active" in result:
+          self.stormWatch = result["storm_mode_active"]
+
   def startPowerwall(self):
     # This function will instruct the powerwall to run.
     # This is needed after getting a login token for v1.15 and above
@@ -208,6 +271,9 @@ class TeslaPowerwall2:
       # Update last fetch time
       if (self.fetchFailed is not True):
         self.lastFetch = int(self.time.time())
+
+      if int(self.time.time() - self.lastCloudFetch) > 30*60*60:
+        self.getStormWatch()
 
       return True
     else:
