@@ -6,6 +6,7 @@ This document logs the changes per release of TWCManager.
 
   * Introduce vehicle SOC charge limiting per policy (thanks @MikeBishop)
   * New module instantiation system removing static references to most modules
+  * Query Tesla API to fetch Stormwatch detection data (thanks @MikeBishop)
   * Bugfixes
     * Remove duplicate conditional check in TeslaAPI module (thanks @MikeBishop)
 
