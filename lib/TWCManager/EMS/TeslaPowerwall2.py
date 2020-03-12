@@ -194,6 +194,8 @@ class TeslaPowerwall2:
           )
           for (site,name) in products:
               self.debugLog(1, f"   {site}: {name}")
+        else:
+          self.debugLog(1, "Couldn't find a Powerwall on your Tesla account.")
 
       if self.cloudID:
         url = f"https://owner-api.teslamotors.com/api/1/energy_sites/{self.cloudID}/live_status"
