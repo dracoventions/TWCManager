@@ -421,7 +421,7 @@ class TWCMaster:
         self.debugLog(1, "Some data may have been loaded. This may be because the file is being created for the first time.")
         self.debugLog(1, "It may also be because you are upgrading from a TWCManager version prior to v1.1.4, which used the old settings file format.")
         self.debugLog(1, "If this is the case, you may need to locate the old config file and migrate some settings manually.")
-        self.debugLog(10, str(e))
+        self.debugLog(11, str(e))
 
     # Step 2 - Send settings to other modules
     self.carapi.setCarApiBearerToken(self.settings.get('carApiBearerToken', ''))
@@ -534,7 +534,7 @@ class TWCMaster:
     # This function is used during module instantiation to either reference a
     # previously loaded module, or to instantiate a module for the first time
     if (not module['ref'] and not module['modulename']):
-      debugLog(4, "registerModule called for module " + str(module['name']) + " without an existing reference or a module to instantiate.")
+      debugLog(2, "registerModule called for module " + str(module['name']) + " without an existing reference or a module to instantiate.")
     elif (module['ref']):
       # If the reference is passed, it means this module has already been
       # instantiated and we should just refer to the existing instance
@@ -545,9 +545,9 @@ class TWCMaster:
           "ref": module['ref'],
           "type": module['type']
         }
-        self.debugLog(4, "Registered module " + module['name'] + " by reference")
+        self.debugLog(7, "Registered module " + module['name'])
       else:
-        self.debugLog(4, "Avoided re-registration of module " + module['name'] + ", which has already been loaded")
+        self.debugLog(7, "Avoided re-registration of module " + module['name'] + ", which has already been loaded")
 
   def releaseBackgroundTasksLock(self):
     self.backgroundTasksLock.release()
@@ -757,7 +757,7 @@ class TWCMaster:
           if (len(policy['match']) == iter):
 
             # Yes, we will now enforce policy
-            self.debugLog(8, "All policy conditions have matched. Policy chosen is " + str(policy['name']))
+            self.debugLog(7, "All policy conditions have matched. Policy chosen is " + str(policy['name']))
             self.active_policy = str(policy['name'])
 
             # Determine which value to set the charging to
