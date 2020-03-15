@@ -520,8 +520,7 @@ class TWCMaster:
         module = None
         if pieces[1] in self.modules:
           module = self.getModuleByName(pieces[1])
-          if pieces[2] in vars(module):
-            return getattr(module,pieces[2])
+          return getattr(module,pieces[2],value)
 
     # None of the macro conditions matched, return the value as is
     return value

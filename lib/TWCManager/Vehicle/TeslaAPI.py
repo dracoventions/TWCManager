@@ -762,6 +762,17 @@ class TeslaAPI:
     self.carApiLastStartOrStopChargeTime = self.time.time()
     return True
 
+  @property
+  def numCarsAtHome(self):
+      return len([car for car in self.carApiVehicles if car.atHome])
+
+  @property
+  def minBatteryLevelAtHome(self):
+      return min(
+          [car.batteryLevel for car in self.carApiVehicles if car.atHome],
+          default=10000
+      )
+
 class CarApiVehicle:
 
     import time
