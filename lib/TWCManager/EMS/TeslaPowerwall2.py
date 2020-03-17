@@ -119,9 +119,9 @@ class TeslaPowerwall2:
     # Perform updates if necessary
     self.update()
 
-    if self.batteryLevel > (self.minSOE * 1.05):
+    if self.batteryLevel > (self.minSOE * 1.05) and self.importW < 900:
       self.suppressGeneration = False
-    if self.batteryLevel < (self.minSOE * .95) or self.importW > 1000:
+    if self.batteryLevel < (self.minSOE * .95):
       self.suppressGeneration = True
 
       # Battery is below threshold; leave all generation for PW charging
@@ -129,6 +129,10 @@ class TeslaPowerwall2:
 
     if self.suppressGeneration:
       return 0
+
+    # Don't take effect immediately, in case it's a temporary blip.
+    if self.importW > 1000:
+      self.suppressGeneration = True
 
     # Return generation value
     return float(self.generatedW)
