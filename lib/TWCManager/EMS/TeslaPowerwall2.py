@@ -35,6 +35,7 @@ class TeslaPowerwall2:
   lastCloudFetch  = 0
   cloudID         = None
   stormWatch      = False
+  suppressGeneration = False
 
   def __init__(self, master):
     self.master            = master
@@ -118,9 +119,15 @@ class TeslaPowerwall2:
     # Perform updates if necessary
     self.update()
 
-    if ( self.batteryLevel < self.minSOE ):
-      # Battery is below threshold; keep all generation for PW charging
-      self.debugLog(5, "Powerwall2 energy level below target. Skipping getGeneration")
+    if self.batteryLevel > (self.minSOE * 1.05):
+      self.suppressGeneration = False
+    if self.batteryLevel < (self.minSOE * .95) or self.importW > 1000:
+      self.suppressGeneration = True
+
+      # Battery is below threshold; leave all generation for PW charging
+      self.debugLog(5, "Powerwall needs to charge. Ignoring generation.")
+
+    if self.suppressGeneration:
       return 0
 
     # Return generation value
@@ -241,6 +248,9 @@ class TeslaPowerwall2:
       if (value):
         self.generatedW = float(value['solar']['instant_power'])
         self.consumedW = float(value['load']['instant_power'])
+        gridW = float(value['site']['instant_power'])
+        self.importW = gridW if gridW > 0 else 0
+        self.exportW = abs(gridW) if gridW < 0 else 0
 
         # Determine grid status from "site" (grid) frequency
         if (int(value['site']['frequency']) == 0):
