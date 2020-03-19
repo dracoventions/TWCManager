@@ -4,6 +4,7 @@ class RS485:
   debugLevel       = 0
   master           = None
   ser              = None
+  timeLastTx       = 0
 
   def __init__(self, master):
     self.master = master
