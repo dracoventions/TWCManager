@@ -479,14 +479,24 @@ class TWCMaster:
     # charging via policy.
     ltNow = time.localtime()
 
+    casefold = str(value).casefold()
+
+    # Boolean values
+    if (casefold == "true"):
+      return True
+    if (casefold == "false"):
+      return False
+
     # If value is "now", substitute with current timestamp
-    if (str(value) == "now"):
+    if (casefold == "now"):
       return time.time()
 
     # If value is "tm_hour", substitute with current hour
-    if (str(value) == "tm_hour"):
+    if (casefold == "tm_hour"):
       return ltNow.tm_hour
 
+    # The remaining checks are case-sensitive!
+    #
     # If value refers to a function, execute the function and capture the
     # output
     if (str(value) == "getMaxAmpsToDivideGreenEnergy()"):
