@@ -7,34 +7,25 @@ class TeslaPowerwall2:
   import urllib3
   import json as json
 
-  batteryLevel    = 100
   cacheTime       = 10
+  cloudCacheTime  = 1800
   config          = None
   configConfig    = None
   configPowerwall = None
-  consumedW       = 0
   debugLevel      = 0
-  fetchFailed     = False
-  generatedW      = 0
-  gridStatus      = False
-  importW         = 0
-  exportW         = 0
   master          = None
   minSOE          = 90
-  operatingMode   = ''
-  reservePercent  = 100
-  lastFetch       = 0
+  lastFetch       = dict()
   password        = None
   serverIP        = None
   serverPort      = 443
   status          = False
   timeout         = 10
   tokenTimeout    = 0
-  voltage         = 0
   httpSession     = None
   lastCloudFetch  = 0
   cloudID         = None
-  stormWatch      = False
+  suppressGeneration = False
 
   def __init__(self, master):
     self.master            = master
@@ -58,6 +49,59 @@ class TeslaPowerwall2:
     if self.status and self.debugLevel < 11:
       # PW uses self-signed certificates; squelch warnings
       self.urllib3.disable_warnings(category=self.urllib3.exceptions.InsecureRequestWarning)
+
+  @property
+  def generatedW(self):
+    value = self.getPWValues()
+    return float(value['solar']['instant_power'])
+
+  @property
+  def consumedW(self):
+    value = self.getPWValues()
+    return float(value['load']['instant_power'])
+
+  @property
+  def importW(self):
+    value = self.getPWValues()
+    gridW = float(value['site']['instant_power'])
+    return gridW if gridW > 0 else 0
+
+  @property
+  def exportW(self):
+    value = self.getPWValues()
+    gridW = float(value['site']['instant_power'])
+    return abs(gridW) if gridW < 0 else 0
+
+  @property
+  def gridStatus(self):
+    value = self.getStatus()
+    # There are actually two types of disconnected, but let's simplify that away
+    return True if value['grid_status'] == "SystemGridConnected" else False
+
+  @property
+  def voltage(self):
+    value = self.getPWValues()
+    return int(value['site']['instant_average_voltage'])
+
+  @property
+  def batteryLevel(self):
+    value = self.getSOE()
+    return float(value['percentage'])
+
+  @property
+  def operatingMode(self):
+    value = self.getOperation()
+    return value['real_mode']
+
+  @property
+  def reservePercent(self):
+    value = self.getOperation()
+    return float(value['backup_reserve_percent'])
+
+  @property
+  def stormWatch(self):
+    value = self.getStormWatch()
+    return value.get('storm_mode_active', False)
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
@@ -103,9 +147,6 @@ class TeslaPowerwall2:
       self.debugLog(10, "Powerwall2 EMS Module Disabled. Skipping getConsumption")
       return 0
 
-    # Perform updates if necessary
-    self.update()
-
     # Return consumption value
     return float(self.consumedW)
 
@@ -115,37 +156,50 @@ class TeslaPowerwall2:
       self.debugLog(10, "Powerwall2 EMS Module Disabled. Skipping getGeneration")
       return 0
 
-    # Perform updates if necessary
-    self.update()
+    if self.batteryLevel > (self.minSOE * 1.05) and self.importW < 900:
+      self.suppressGeneration = False
+    if self.batteryLevel < (self.minSOE * .95):
+      self.suppressGeneration = True
 
-    if ( self.batteryLevel < self.minSOE ):
-      # Battery is below threshold; keep all generation for PW charging
-      self.debugLog(5, "Powerwall2 energy level below target. Skipping getGeneration")
+      # Battery is below threshold; leave all generation for PW charging
+      self.debugLog(5, "Powerwall needs to charge. Ignoring generation.")
+
+    if self.suppressGeneration:
       return 0
+
+    # Don't take effect immediately, in case it's a temporary blip.
+    if self.importW > 1000:
+      self.suppressGeneration = True
 
     # Return generation value
     return float(self.generatedW)
 
   def getPWJson(self, path):
-    # Fetch the specified URL from Powerwall and return the data
-    self.fetchFailed = False
 
-    # Get a login token, if password authentication is enabled
-    self.doPowerwallLogin()
+    (lastTime, lastData) = self.lastFetch[path] if path in self.lastFetch else (0, None)
 
-    url = "https://" + self.serverIP + ":" + self.serverPort + path
-    headers = {}
+    if (int(self.time.time()) - lastTime) > self.cacheTime:
 
-    try:
-      r = self.httpSession.get(url, headers = headers, timeout=self.timeout, verify=False)
-      r.raise_for_status()
-    except Exception as e:
-        self.debugLog(4, "Error connecting to Tesla Powerwall 2 to fetch " + path)
-        self.debugLog(10, str(e))
-        self.fetchFailed = True
-        return False
+      # Fetch the specified URL from Powerwall and return the data
 
-    return r.json()
+      # Get a login token, if password authentication is enabled
+      self.doPowerwallLogin()
+
+      url = "https://" + self.serverIP + ":" + self.serverPort + path
+      headers = {}
+
+      try:
+        r = self.httpSession.get(url, headers = headers, timeout=self.timeout, verify=False)
+        r.raise_for_status()
+      except Exception as e:
+          self.debugLog(4, "Error connecting to Tesla Powerwall 2 to fetch " + path)
+          self.debugLog(10, str(e))
+          return False
+
+      lastData = r.json()
+      self.lastFetch[path] = (self.time.time(), r.json())
+
+    return lastData
 
   def getPWValues(self):
     return self.getPWJson("/api/meters/aggregates")
@@ -156,62 +210,8 @@ class TeslaPowerwall2:
   def getOperation(self):
     return self.getPWJson("/api/operation")
 
-  def getStormWatch(self):
-    token = self.master.carapi.getCarApiBearerToken()
-    expiry = self.master.carapi.getCarApiTokenExpireTime()
-    now = self.time.time()
-    self.lastCloudFetch = now
-
-    if token and now < expiry:
-      headers = {
-          "Authorization": "Bearer " + token,
-          "Content-Type": "application/json",
-      }
-      if not self.cloudID:
-        url = "https://owner-api.teslamotors.com/api/1/products"
-        bodyjson = None
-        products = list()
-
-        try:
-          r = self.httpSession.get(url, headers=headers)
-          r.raise_for_status()
-          bodyjson = r.json()
-          products = [
-              (i["energy_site_id"], i["site_name"])
-              for i in bodyjson["response"]
-              if "battery_type" in i and i["battery_type"] == "ac_powerwall"
-          ]
-        except:
-          pass
-
-        if len(products) == 1:
-          (site,name) = products[0]
-          self.cloudID = site
-        elif len(products) > 1:
-          self.debugLog(
-              1,
-              "Multiple Powerwall sites linked to your Tesla account.  Please specify the correct site ID in your config.json.",
-          )
-          for (site,name) in products:
-              self.debugLog(1, f"   {site}: {name}")
-        else:
-          self.debugLog(1, "Couldn't find a Powerwall on your Tesla account.")
-
-      if self.cloudID:
-        url = f"https://owner-api.teslamotors.com/api/1/energy_sites/{self.cloudID}/live_status"
-        bodyjson = None
-        result = dict()
-
-        try:
-          r = self.httpSession.get(url, headers=headers)
-          r.raise_for_status()
-          bodyjson = r.json()
-          result = bodyjson["response"]
-        except:
-          pass
-
-        if "storm_mode_active" in result:
-          self.stormWatch = result["storm_mode_active"]
+  def getStatus(self):
+    return self.getPWJson("/api/system_status/grid_status")
 
   def startPowerwall(self):
     # This function will instruct the powerwall to run.
@@ -230,52 +230,3 @@ class TeslaPowerwall2:
         self.debugLog(4, "Error instructing Tesla Powerwall 2 to start")
         self.debugLog(10, str(e))
         return False
-
-  def update(self):
-
-    if ((int(self.time.time()) - self.lastFetch) > self.cacheTime):
-      # Cache has expired. Fetch values from Powerwall.
-
-      value = self.getPWValues()
-
-      if (value):
-        self.generatedW = float(value['solar']['instant_power'])
-        self.consumedW = float(value['load']['instant_power'])
-
-        # Determine grid status from "site" (grid) frequency
-        if (int(value['site']['frequency']) == 0):
-          self.gridStatus = False
-        else:
-          self.gridStatus = True
-
-        self.voltage = int(value['site']['instant_average_voltage'])
-      else:
-        # Fetch failed to obtain values
-        self.fetchFailed = True
-
-      value = self.getSOE()
-
-      if (value):
-        self.batteryLevel = float(value['percentage'])
-      else:
-        self.fetchFailed = True
-
-      value = self.getOperation()
-
-      if (value):
-        self.operatingMode = value['real_mode']
-        self.reservePercent = value['backup_reserve_percent']
-      else:
-        self.fetchFailed = True
-
-      # Update last fetch time
-      if (self.fetchFailed is not True):
-        self.lastFetch = int(self.time.time())
-
-      if int(self.time.time() - self.lastCloudFetch) > 30*60*60:
-        self.getStormWatch()
-
-      return True
-    else:
-      # Cache time has not elapsed since last fetch, serve from cache.
-      return False
