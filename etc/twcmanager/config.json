@@ -186,9 +186,12 @@
         "policyCheckInterval": 30
       },
       # NOTE: Override and Extend are mutually exclusive options. Once you override, you
-      # can no longer extend the inbuilt policy. 
+      # can no longer extend the inbuilt policy.
       # Using the extend feature below, you can add extra rules into the charging policy.
       "extend":{
+        # Rules in the emergency section are evaluated before the Charge Now rule
+        "emergency":[
+        ],
         # Rules in the before section here are evaluated after the Charge Now rule
         "before":[
         ],
@@ -212,20 +215,20 @@
       #   "charge_amps": "settings.chargeNowAmps",
       #   "charge_limit": "config.chargeNowLimit" },
 
-      # { "name": "Track Green Energy",
+      # { "name": "Scheduled Charging",
+        #   "match": [ "checkScheduledCharging()" ],
+        #   "condition": [ "eq" ],
+        #   "value": [ 1 ],
+        #   "charge_amps": "settings.scheduledAmpsMax",
+        #   "charge_limit": "config.scheduledLimit" },
+  
+        # { "name": "Track Green Energy",
       #   "match": [ "tm_hour", "tm_hour", "settings.hourResumeTrackGreenEnergy" ],
       #   "condition": [ "gte", "lt", "lte" ],
       #   "value": [ 6, 20, "tm_hour" ],
       #   "charge_amps": "getMaxAmpsToDivideGreenEnergy()",
       #   "background_task": "checkGreenEnergy",
       #   "charge_limit": "config.greenEnergyLimit" },
-
-      # { "name": "Scheduled Charging",
-      #   "match": [ "checkScheduledCharging()" ],
-      #   "condition": [ "eq" ],
-      #   "value": [ 1 ],
-      #   "charge_amps": "settings.scheduledAmpsMax",
-      #   "charge_limit": "config.scheduledLimit" },
 
       # { "name": "Non Scheduled Charging",
       #   "match": [ "none" ],
@@ -237,7 +240,7 @@
 
       ]
     },
-    
+
     "sources":{
         # This section is where we configure the various sources that we retrieve our generation and consumption
         # values for our solar system from.
