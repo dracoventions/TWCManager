@@ -190,6 +190,8 @@
       # Using the extend feature below, you can add extra rules into the charging policy.
       "extend":{
         # Rules in the emergency section are evaluated before the Charge Now rule
+        #
+        # They should primarily be used to abort charging when necessary.
         "emergency":[
         ],
         # Rules in the before section here are evaluated after the Charge Now rule
