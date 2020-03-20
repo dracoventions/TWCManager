@@ -23,7 +23,6 @@ class TeslaPowerwall2:
   timeout         = 10
   tokenTimeout    = 0
   httpSession     = None
-  lastCloudFetch  = 0
   cloudID         = None
   suppressGeneration = False
 
@@ -212,6 +211,69 @@ class TeslaPowerwall2:
 
   def getStatus(self):
     return self.getPWJson("/api/system_status/grid_status")
+
+  def getStormWatch(self):
+    carapi = self.master.getModuleByName("TeslaAPI")
+    token = carapi.getCarApiBearerToken()
+    expiry = carapi.getCarApiTokenExpireTime()
+    now = self.time.time()
+    key = "CLOUD/live_status"
+
+    (lastTime, lastData) = self.lastFetch[key] if key in self.lastFetch else (0, dict())
+
+    if (int(self.time.time()) - lastTime) > self.cloudCacheTime:
+
+      if token and now < expiry:
+        headers = {
+            "Authorization": "Bearer " + token,
+            "Content-Type": "application/json",
+        }
+        if not self.cloudID:
+          url = "https://owner-api.teslamotors.com/api/1/products"
+          bodyjson = None
+          products = list()
+
+          try:
+            r = self.httpSession.get(url, headers=headers)
+            r.raise_for_status()
+            bodyjson = r.json()
+            products = [
+                (i["energy_site_id"], i["site_name"])
+                for i in bodyjson["response"]
+                if "battery_type" in i and i["battery_type"] == "ac_powerwall"
+            ]
+          except:
+            pass
+
+          if len(products) == 1:
+            (site,name) = products[0]
+            self.cloudID = site
+          elif len(products) > 1:
+            self.debugLog(
+                1,
+                "Multiple Powerwall sites linked to your Tesla account.  Please specify the correct site ID in your config.json.",
+            )
+            for (site,name) in products:
+                self.debugLog(1, f"   {site}: {name}")
+          else:
+            self.debugLog(1, "Couldn't find a Powerwall on your Tesla account.")
+
+        if self.cloudID:
+          url = f"https://owner-api.teslamotors.com/api/1/energy_sites/{self.cloudID}/live_status"
+          bodyjson = None
+          result = dict()
+
+          try:
+            r = self.httpSession.get(url, headers=headers)
+            r.raise_for_status()
+            bodyjson = r.json()
+            lastData = bodyjson["response"]
+          except:
+            pass
+
+      self.lastFetch[key] = (now, lastData)
+    return lastData
+
 
   def startPowerwall(self):
     # This function will instruct the powerwall to run.
