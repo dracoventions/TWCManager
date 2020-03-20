@@ -213,8 +213,9 @@ class TeslaPowerwall2:
     return self.getPWJson("/api/system_status/grid_status")
 
   def getStormWatch(self):
-    token = self.master.carapi.getCarApiBearerToken()
-    expiry = self.master.carapi.getCarApiTokenExpireTime()
+    carapi = self.master.getModuleByName("TeslaAPI")
+    token = carapi.getCarApiBearerToken()
+    expiry = carapi.getCarApiTokenExpireTime()
     now = self.time.time()
     key = "CLOUD/live_status"
 
