@@ -26,6 +26,15 @@ class TWCMaster:
       "charge_amps": "settings.chargeNowAmps",
       "charge_limit": "config.chargeNowLimit" },
 
+    # Check if we are currently within the Scheduled Amps charging schedule.
+    # If so, charge at the specified number of amps.
+    { "name": "Scheduled Charging",
+      "match": [ "checkScheduledCharging()" ],
+      "condition": [ "eq" ],
+      "value": [ 1 ],
+      "charge_amps": "settings.scheduledAmpsMax",
+      "charge_limit": "config.scheduledLimit" },
+
     # If we are within Track Green Energy schedule, charging will be
     # performed based on the amount of solar energy being produced.
     # Don't bother to check solar generation before 6am or after
@@ -39,15 +48,6 @@ class TWCMaster:
       "charge_amps": "getMaxAmpsToDivideGreenEnergy()",
       "background_task": "checkGreenEnergy",
       "charge_limit": "config.greenEnergyLimit" },
-
-    # Check if we are currently within the Scheduled Amps charging schedule.
-    # If so, charge at the specified number of amps.
-    { "name": "Scheduled Charging",
-      "match": [ "checkScheduledCharging()" ],
-      "condition": [ "eq" ],
-      "value": [ 1 ],
-      "charge_amps": "settings.scheduledAmpsMax",
-      "charge_limit": "config.scheduledLimit" },
 
       # If all else fails (ie no other policy match), we will charge at
       # nonScheduledAmpsMax
@@ -114,7 +114,7 @@ class TWCMaster:
     config_policy = config.get("policy")
     if (config_policy):
       if (len(config_policy.get("override", [])) > 0):
-        # Policy override specified, just ovrrride in place without processing the
+        # Policy override specified, just override in place without processing the
         # extensions
         self.charge_policy = config_policy.get("override")
       else:
@@ -127,6 +127,10 @@ class TWCMaster:
         # Before - Inserted after Charge Now
         if (len(config_extend.get("before", [])) > 0):
           self.charge_policy[1:1] = config_extend.get("before")
+
+        # Emergency - Inserted at the beginning
+        if (len(config_extend.get("emergency", [])) > 0):
+          self.charge_policy[0:0] = config_extend.get("emergency")
 
     # Set the Policy Check Interval if specified
     if (config_policy):
