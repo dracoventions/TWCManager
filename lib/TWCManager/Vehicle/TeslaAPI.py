@@ -74,12 +74,13 @@ class CarApi:
         client_id = '81527cff06843c8634fdc09e8ac0abefb46ac849f38fe1e431c2ef2106796384'
         client_secret = 'c7257eb71a564034f9419ee651c7d0e5f7aa6bfbd18bafb5c5c033b093bb2fa3'
         url = 'https://owner-api.teslamotors.com/oauth/token'
+        headers = None
+        data = None
 
         # If we don't have a bearer token or our refresh token will expire in
         # under 30 days, get a new bearer token.  Refresh tokens expire in 45
         # days when first issued, so we'll get a new token every 15 days.
         if(self.getCarApiRefreshToken() != ''):
-
             headers = {
               'accept': 'application/json',
               'Content-Type': 'application/json'
@@ -91,7 +92,7 @@ class CarApi:
               'refresh_token': self.getCarApiRefreshToken()
             }
             self.debugLog(8, "Attempting token refresh")
-            req = self.requests.post(url, headers = headers, json = data)
+
         elif(email != None and password != None):
             headers = {
               'accept': 'application/json',
@@ -105,19 +106,20 @@ class CarApi:
               'password': password
             }
             self.debugLog(8, "Attempting password auth")
-            req = self.requests.post(url, headers = headers, json = data)
 
-        if(req == None):
-            self.debugLog(2, 'Car API request object is null')
-        if(req != None):
-            self.debugLog(2, 'Car API request' + str(req))
-            # Example response:
-            # b'{"access_token":"4720d5f980c9969b0ca77ab39399b9103adb63ee832014fe299684201929380","token_type":"bearer","expires_in":3888000,"refresh_token":"110dd4455437ed351649391a3425b411755a213aa815171a2c6bfea8cc1253ae","created_at":1525232970}'
+        if(headers and data):
+            try:
+                req = self.requests.post(url, headers = headers, json = data)
+                self.debugLog(2, 'Car API request' + str(req))
+                # Example response:
+                # b'{"access_token":"4720d5f980c9969b0ca77ab39399b9103adb63ee832014fe299684201929380","token_type":"bearer","expires_in":3888000,"refresh_token":"110dd4455437ed351649391a3425b411755a213aa815171a2c6bfea8cc1253ae","created_at":1525232970}'
 
-        try:
-            apiResponseDict = self.json.loads(req.text)
-        except self.json.decoder.JSONDecodeError:
-            pass
+                apiResponseDict = self.json.loads(req.text)
+            except:
+                pass
+        else:
+            self.debugLog(2, 'Car API request is empty')
+
 
         try:
             self.debugLog(4, 'Car API auth response' + str(apiResponseDict))
@@ -144,12 +146,12 @@ class CarApi:
               'accept': 'application/json',
               'Authorization': 'Bearer ' + self.getCarApiBearerToken()
             }
-            req = self.requests.get(url, headers = headers)
-            self.debugLog(8, 'Car API cmd ' + str(req))
             try:
+                req = self.requests.get(url, headers = headers)
+                self.debugLog(8, 'Car API cmd ' + str(req))
                 apiResponseDict = self.json.loads(req.text)
-            except self.json.decoder.JSONDecodeError:
-                self.debugLog(1, "Failed to decode JSON response to API call " + url)
+            except:
+                self.debugLog(1, "Failed to make API call " + url)
                 self.debugLog(6, "Response: " + req.text)
                 pass
 
@@ -211,12 +213,11 @@ class CarApi:
                   'accept': 'application/json',
                   'Authorization': 'Bearer ' + self.getCarApiBearerToken()
                 }
-                req = self.requests.post(url, headers = headers)
-                self.debugLog(8, 'Car API cmd' + str(req))
-
                 try:
+                    req = self.requests.post(url, headers = headers)
+                    self.debugLog(8, 'Car API cmd' + str(req))
                     apiResponseDict = self.json.loads(req.text)
-                except self.json.decoder.JSONDecodeError:
+                except:
                     pass
 
                 state = 'error'
@@ -499,12 +500,11 @@ class CarApi:
 
         # Retry up to 3 times on certain errors.
         for retryCount in range(0, 3):
-            req = self.requests.post(url, headers = headers)
-            self.debugLog(8, 'Car API cmd' + str(req))
-
             try:
+                req = self.requests.post(url, headers = headers)
+                self.debugLog(8, 'Car API cmd' + str(req))
                 apiResponseDict = self.json.loads(req.text)
-            except self.json.decoder.JSONDecodeError:
+            except:
                 pass
 
             try:
@@ -838,15 +838,15 @@ class CarApiVehicle:
 
         # Retry up to 3 times on certain errors.
         for retryCount in range(0, 3):
-            req = self.requests.get(url, headers = headers)
-            self.debugLog(8, 'Car API cmd' + str(req))
             try:
+                req = self.requests.get(url, headers = headers)
+                self.debugLog(8, 'Car API cmd' + str(req))
                 apiResponseDict = self.json.loads(req.text)
                 # This error can happen here as well:
                 #   {'response': {'reason': 'could_not_wake_buses', 'result': False}}
                 # This one is somewhat common:
                 #   {'response': None, 'error': 'vehicle unavailable: {:error=>"vehicle unavailable:"}', 'error_description': ''}
-            except self.json.decoder.JSONDecodeError:
+            except:
                 pass
 
             try:
@@ -960,12 +960,12 @@ class CarApiVehicle:
         }
 
         for retryCount in range(0, 3):
-            req = self.requests.post(url, headers = headers, json = body)
-            self.debugLog(8, 'Car API cmd' + str(req))
-
             try:
+                req = self.requests.post(url, headers = headers, json = body)
+                self.debugLog(8, 'Car API cmd' + str(req))
+
                 apiResponseDict = self.json.loads(req.text)
-            except self.json.decoder.JSONDecodeError:
+            except:
                 pass
 
             result = False
