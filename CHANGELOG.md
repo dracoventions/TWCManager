@@ -9,6 +9,8 @@ This document logs the changes per release of TWCManager.
   * New module instantiation system removing static references to most modules
      * Integration of Tesla Vehicle API into module architecture (thanks @MikeBishop)
   * Query Tesla API to fetch Stormwatch detection data (thanks @MikeBishop)
+  * Make policy match operators case-insensitive (thanks @MikeBishop)
+  * Re-order policy to avoid Track Green Energy overriding scheduled charging, and to add a new emergency policy entry point at the start of the policy (thanks @MikeBishop)
   * Bugfixes
     * Remove duplicate conditional check in TeslaAPI module (thanks @MikeBishop)
 
