@@ -1,4 +1,4 @@
-class CarApi:
+class TeslaAPI:
 
   import json
   import re
@@ -34,11 +34,12 @@ class CarApi:
   # Define minutes between retrying non-transient errors.
   carApiErrorRetryMins = 10
 
-  def __init__(self, config):
-    self.config = config
+  def __init__(self, master):
+    self.master = master
     try:
-        self.debugLevel = config['config']['debugLevel']
-        self.minChargeLevel = config['config']['minChargeLevel']
+        self.config = master.config
+        self.debugLevel = self.config['config']['debugLevel']
+        self.minChargeLevel = self.config['config']['minChargeLevel']
     except KeyError:
         pass
 
@@ -749,10 +750,6 @@ class CarApi:
 
   def setCarApiTokenExpireTime(self, value):
     self.carApiTokenExpireTime = value
-    return True
-
-  def setMaster(self, master):
-    self.master = master
     return True
 
   def updateCarApiLastErrorTime(self):

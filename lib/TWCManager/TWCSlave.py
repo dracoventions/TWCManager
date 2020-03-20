@@ -3,7 +3,6 @@ class TWCSlave:
     import re
     import time
 
-    carapi     = None
     config     = None
     debugLevel = 0
     TWCID      = None
@@ -44,8 +43,7 @@ class TWCSlave:
     wiringMaxAmps = 0
     departureCheckTimes = list()
 
-    def __init__(self, TWCID, maxAmps, config, carapi, master):
-        self.carapi  = carapi
+    def __init__(self, TWCID, maxAmps, config, master):
         self.config  = config
         self.master  = master
         self.TWCID   = TWCID
@@ -387,7 +385,7 @@ class TWCSlave:
                 # some unexpected case from never starting a charge. It also
                 # seems less confusing to see in the output that we always try
                 # to start API charging after the car stops taking a charge.
-                for vehicle in self.carapi.getCarApiVehicles():
+                for vehicle in self.master.getModuleByName("TeslaAPI").getCarApiVehicles():
                     vehicle.stopAskingToStartCharging = False
 
         self.master.getModuleByName("RS485").send(bytearray(b'\xFB\xE0') + self.master.getFakeTWCID() + bytearray(self.TWCID)

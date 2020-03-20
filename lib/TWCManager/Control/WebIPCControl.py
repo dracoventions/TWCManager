@@ -6,7 +6,6 @@ import math
 
 class WebIPCControl:
 
-  carapi       = None
   config       = None
   configConfig = None
   debugLevel   = 0
@@ -15,7 +14,6 @@ class WebIPCControl:
   webIPCqueue  = None
 
   def __init__(self, master):
-    self.carapi     = master.carapi
     self.config     = master.config
     try:
       self.configConfig = master.config['config']
@@ -114,7 +112,7 @@ class WebIPCControl:
             slaveTWCRoundRobin = self.master.getSlaveTWCs()
             if(webMsg == b'getStatus'):
                 needCarApiBearerToken = False
-                if(self.carapi.getCarApiBearerToken() == ''):
+                if(self.master.getModuleByName("TeslaAPI").getCarApiBearerToken() == ''):
                     for i in range(0, self.master.countSlaveTWC()):
                         if(slaveTWCRoundRobin[i].protocolVersion == 2):
                             needCarApiBearerToken = True
@@ -214,6 +212,7 @@ class WebIPCControl:
                 # dumpState commands are used for debugging. They are called
                 # using a web page:
                 # http://(Pi address)/index.php?submit=1&dumpState=1
+                carapi = self.master.getModuleByName("TeslaAPI")
                 webResponseMsg = ('time=' + str(time.time()) + ', fakeMaster='
                     + str(self.config['config']['fakeMaster']) + ', rs485Adapter=' + self.config['config']['rs485adapter']
                     + ', baud=' + str(self.config['config']['baud'])
@@ -224,12 +223,12 @@ class WebIPCControl:
                     + ', debugLevel=' + str(self.config['config']['debugLevel'])
                     + '\n')
                 webResponseMsg += (
-                    'carApiLastStartOrStopChargeTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(self.carapi.getLastStartOrStopChargeTime())))
-                    + '\ncarApiLastErrorTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(self.carapi.getCarApiLastErrorTime())))
-                    + '\ncarApiTokenExpireTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(self.carapi.getCarApiTokenExpireTime())))
+                    'carApiLastStartOrStopChargeTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carapi.getLastStartOrStopChargeTime())))
+                    + '\ncarApiLastErrorTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carapi.getCarApiLastErrorTime())))
+                    + '\ncarApiTokenExpireTime=' + str(time.strftime("%m-%d-%y %H:%M:%S", time.localtime(carapi.getCarApiTokenExpireTime())))
                     + '\n')
 
-                for vehicle in self.carapi.getCarApiVehicles():
+                for vehicle in carapi.getCarApiVehicles():
                     webResponseMsg += str(vehicle.__dict__) + '\n'
 
                 webResponseMsg += 'slaveTWCRoundRobin:\n'
