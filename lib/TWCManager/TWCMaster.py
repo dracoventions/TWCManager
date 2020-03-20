@@ -15,7 +15,6 @@ class TWCMaster:
   backgroundTasksQueue = queue.Queue()
   backgroundTasksCmds = {}
   backgroundTasksLock = threading.Lock()
-  carapi              = None
   charge_policy       = [
     # The first policy table entry is for chargeNow. This will fire if
     # chargeNowAmps is set to a positive integer and chargeNowTimeEnd
@@ -105,8 +104,7 @@ class TWCMaster:
   masterSign = bytearray(b'\x77')
   slaveSign = bytearray(b'\x77')
 
-  def __init__(self, TWCID, config, carapi):
-    self.carapi     = carapi
+  def __init__(self, TWCID, config):
     self.config     = config
     self.debugLevel = config['config']['debugLevel']
     self.TWCID      = TWCID
@@ -423,9 +421,10 @@ class TWCMaster:
         self.debugLog(11, str(e))
 
     # Step 2 - Send settings to other modules
-    self.carapi.setCarApiBearerToken(self.settings.get('carApiBearerToken', ''))
-    self.carapi.setCarApiRefreshToken(self.settings.get('carApiRefreshToken', ''))
-    self.carapi.setCarApiTokenExpireTime(self.settings.get('carApiTokenExpireTime', ''))
+    carapi = self.getModuleByName("TeslaAPI")
+    carapi.setCarApiBearerToken(self.settings.get('carApiBearerToken', ''))
+    carapi.setCarApiRefreshToken(self.settings.get('carApiRefreshToken', ''))
+    carapi.setCarApiTokenExpireTime(self.settings.get('carApiTokenExpireTime', ''))
 
   def master_id_conflict():
     # We're playing fake slave, and we got a message from a master with our TWCID.
@@ -450,7 +449,7 @@ class TWCMaster:
     except KeyError:
         pass
 
-    slaveTWC = TWCSlave(newSlaveID, maxAmps, self.config, self.carapi, self)
+    slaveTWC = TWCSlave(newSlaveID, maxAmps, self.config, self)
     self.slaveTWCs[newSlaveID] = slaveTWC
     self.addSlaveTWC(slaveTWC)
 
@@ -575,9 +574,10 @@ class TWCMaster:
     fileName = self.config['config']['settingsPath'] + '/settings.json'
 
     # Step 1 - Merge any config from other modules
-    self.settings['carApiBearerToken'] = self.carapi.getCarApiBearerToken()
-    self.settings['carApiRefreshToken'] = self.carapi.getCarApiRefreshToken()
-    self.settings['carApiTokenExpireTime'] = self.carapi.getCarApiTokenExpireTime()
+    carapi = self.getModuleByName("TeslaAPI")
+    self.settings['carApiBearerToken'] = carapi.getCarApiBearerToken()
+    self.settings['carApiRefreshToken'] = carapi.getCarApiRefreshToken()
+    self.settings['carApiTokenExpireTime'] = carapi.getCarApiTokenExpireTime()
 
     # Step 2 - Write the settings dict to a JSON file
     with open(fileName, 'w') as outconfig:

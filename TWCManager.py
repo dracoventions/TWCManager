@@ -41,13 +41,12 @@ from datetime import datetime
 import threading
 from lib.TWCManager.Control.WebIPCControl import WebIPCControl
 from lib.TWCManager.TWCMaster import TWCMaster
-from lib.TWCManager.Vehicle.TeslaAPI import CarApi
-from lib.TWCManager.Vehicle.TeslaAPI import CarApiVehicle
 
 # Define available modules for the instantiator
 # All listed modules will be loaded at boot time
 modules_available = [
   "Interface.RS485",
+  "Vehicle.TeslaAPI",
   "Control.HTTPControl",
   "Control.MQTTControl",
   "EMS.Fronius",
@@ -147,7 +146,8 @@ def unescape_msg(msg:bytearray, msgLen):
     return msg
 
 def background_tasks_thread():
-    global carapi, master
+    global master
+    carapi = master.getModuleByName("TeslaAPI")
 
     while True:
         task = master.getBackgroundTask()
@@ -253,8 +253,7 @@ timeToRaise2A = 0
 #
 
 # Instantiate necessary classes
-carapi = CarApi(config)
-master = TWCMaster(fakeTWCID, config, carapi)
+master = TWCMaster(fakeTWCID, config)
 
 # Instantiate all modules in the modules_available list automatically
 for module in modules_available:
@@ -270,7 +269,6 @@ for module in modules_available:
   # interact with it
   master.registerModule({ "name": modulename[1], "ref": modinstance, "type": modulename[0] })
 
-carapi.setMaster(master)
 webipccontrol = WebIPCControl(master)
 
 # Load settings from file
