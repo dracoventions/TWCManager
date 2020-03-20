@@ -5,7 +5,9 @@ This document logs the changes per release of TWCManager.
 ## v1.1.8 - Current development release
 
   * Introduce vehicle SOC charge limiting per policy (thanks @MikeBishop)
+  * Significant improvements in Tesla Powerwall2 EMS module function and stability (thanks @MikeBishop)
   * New module instantiation system removing static references to most modules
+     * Integration of Tesla Vehicle API into module architecture (thanks @MikeBishop)
   * Query Tesla API to fetch Stormwatch detection data (thanks @MikeBishop)
   * Bugfixes
     * Remove duplicate conditional check in TeslaAPI module (thanks @MikeBishop)
