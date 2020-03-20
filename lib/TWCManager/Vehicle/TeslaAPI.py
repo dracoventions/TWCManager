@@ -795,7 +795,7 @@ class CarApiVehicle:
     stopAskingToStartCharging = False
     stopTryingToApplyLimit = False
 
-    batteryLevel = -1
+    batteryLevel = 10000
     chargeLimit  = -1
     lat = 10000
     lon = 10000
