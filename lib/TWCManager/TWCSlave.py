@@ -251,7 +251,7 @@ class TWCSlave:
                 # Increase array length to 9
                 self.master.slaveHeartbeatData.append(0x00)
 
-       self.master.getModuleByName("RS485").send(bytearray(b'\xFD\xE0') + self.master.getFakeTWCID() + bytearray(masterID) + bytearray(self.master.slaveHeartbeatData))
+        self.master.getModuleByName("RS485").send(bytearray(b'\xFD\xE0') + self.master.getFakeTWCID() + bytearray(masterID) + bytearray(self.master.slaveHeartbeatData))
 
     def send_master_heartbeat(self):
         # Send our fake master's heartbeat to this TWCSlave.

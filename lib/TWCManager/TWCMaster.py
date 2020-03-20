@@ -94,7 +94,6 @@ class TWCMaster:
   spikeAmpsToCancel6ALimit = 16
   subtractChargerLoad = False
   teslaLoginAskLater  = False
-  timeLastTx          = 0
   TWCID               = None
 
 # TWCs send a seemingly-random byte after their 2-byte TWC id in a number of
@@ -273,7 +272,7 @@ class TWCMaster:
     return self.spikeAmpsToCancel6ALimit
 
   def getTimeLastTx(self):
-    return self.timeLastTx
+    return self.getModuleByName("RS485").timeLastTx
 
   def deleteSlaveTWC(self, deleteSlaveID):
     for i in range(0, len(self.slaveTWCRoundRobin)):
