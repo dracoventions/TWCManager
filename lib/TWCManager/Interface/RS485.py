@@ -1,6 +1,8 @@
 class RS485:
 
+  import serial
   import time
+
   debugLevel       = 0
   master           = None
   ser              = None
@@ -8,11 +10,13 @@ class RS485:
 
   def __init__(self, master):
     self.master = master
-    self.ser    = master.ser
     try:
         self.debugLevel = master.config['config']['debugLevel']
     except KeyError:
         pass
+
+    # Connect to serial port
+    self.ser = self.serial.Serial(master.config['config']['rs485adapter'], master.config['config']['baud'], timeout=0)
 
   def close(self):
     # Close the serial interface

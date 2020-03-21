@@ -51,7 +51,7 @@ class WebIPCControl:
     # Use the key to create a message queue with read/write access for all users.
     self.webIPCqueue = sysv_ipc.MessageQueue(self.webIPCkey, sysv_ipc.IPC_CREAT, 0o666)
     if(self.webIPCqueue == None):
-        self.debugLog(1, "ERROR: Can't create Interprocess Communication message queue to communicate with web interface.")
+        self.master.debugLog(1, "WebIPCCtrl", "ERROR: Can't create Interprocess Communication message queue to communicate with web interface.")
 
     # After the IPC message queue is created, if you type 'sudo ipcs -q' on the
     # command like, you should see something like:
@@ -64,10 +64,6 @@ class WebIPCControl:
     # ones you didn't create or you may crash another process.
     # Find more details in IPC here:
     # http://www.onlamp.com/pub/a/php/2004/05/13/shared_memory.html
-
-  def debugLog(self, minlevel, message):
-    if (self.debugLevel >= minlevel):
-      print("WebIPC: (" + str(minlevel) + ") " + message)
 
   def trim_pad(self, s:bytearray, makeLen):
     # Trim or pad s with zeros so that it's makeLen length.
@@ -99,14 +95,13 @@ class WebIPCControl:
             webMsgID = unpacked[1]
             webMsg = webMsgRaw[0][6:len(webMsgRaw[0])]
 
-            if(self.config['config']['debugLevel'] >= 1):
-                webMsgRedacted = webMsg
-                # Hide car password in web request to send password to Tesla
-                m = re.search(b'^(carApiEmailPassword=[^\n]+\n)', webMsg, re.MULTILINE)
-                if(m):
-                    webMsgRedacted = m.group(1) + b'[HIDDEN]'
-                self.debugLog(1, "Web query: '" + str(webMsgRedacted) + "', id " + str(webMsgID) +
-                                   ", time " + str(webMsgTime) + ", type " + str(webMsgType))
+            webMsgRedacted = webMsg
+            # Hide car password in web request to send password to Tesla
+            m = re.search(b'^(carApiEmailPassword=[^\n]+\n)', webMsg, re.MULTILINE)
+            if(m):
+                webMsgRedacted = m.group(1) + b'[HIDDEN]'
+
+            self.master.debugLog(1, "WebIPCCtrl", "Web query: '" + str(webMsgRedacted) + "', id " + str(webMsgID) + ", time " + str(webMsgTime) + ", type " + str(webMsgType))
             webResponseMsg = ''
             numPackets = 0
             slaveTWCRoundRobin = self.master.getSlaveTWCs()
@@ -241,10 +236,10 @@ class WebIPCControl:
                 if(m):
                     self.config['config']['debugLevel'] = int(m.group(1))
             else:
-                self.debugLog(1, "Unknown IPC request from web server: " + str(webMsg))
+                self.master.debugLog(1, "WebIPCCtrl", "Unknown IPC request from web server: " + str(webMsg))
 
             if(len(webResponseMsg) > 0):
-                self.debugLog(5, "Web query response: '" + webResponseMsg + "'")
+                self.master.debugLog(5, "WebIPCCtrl", "Web query response: '" + webResponseMsg + "'")
 
                 try:
                     if(numPackets == 0):
@@ -265,7 +260,7 @@ class WebIPCControl:
                                packet.encode('ascii')), block=False)
 
                 except sysv_ipc.BusyError:
-                    self.debugLog(0, "Error: IPC queue full when trying to send response to web interface.")
+                    self.master.debugLog(0, "WebIPCCtrl", "Error: IPC queue full when trying to send response to web interface.")
 
     except sysv_ipc.BusyError:
         # No web message is waiting.

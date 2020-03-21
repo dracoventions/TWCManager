@@ -207,10 +207,25 @@ def check_green_energy():
 
 def update_statuses():
 
-  # Print a status update
-  debugLog(1, "Green energy generates %dW, Consumption %dW, Charger Load %dW" % (master.getGeneration(), master.getConsumption(), master.getChargerLoad()))
-  debugLog(1, "Limiting car charging to %.2fA - %.2fA = %.2fA." % ((master.getGeneration() / 240), (master.getGenerationOffset() / 240), master.getMaxAmpsToDivideAmongSlaves()))
-  debugLog(1, "Charge when above %.0fA (minAmpsPerTWC)." % (config['config']['minAmpsPerTWC']))
+  # Print a status update if we are on track green energy showing the
+  # generation and consumption figures
+  maxamps = f("{master.getMaxAmpsToDivideAmongSlaves():.2f}A")
+  if (master.active_policy == "Track Green Energy"):
+    genwatts = f("{master.getGeneration():.0f}W")
+    conwatts = f("{master.getConsumption():.0f}W")
+    chgwatts = f("{master.getChargerLoad():.0f}W")
+    debugLog(1, f("Green energy generates {colored(genwatts, 'magenta')}, Consumption {colored(conwatts, 'magenta')}, Charger Load {colored(chgwatts, 'magenta')}"))
+    generation = f("{master.getGeneration() / 240:.2f}A")
+    consumption = f("{master.getGenerationOffset() / 240:.2f}A")
+    debugLog(1, f("Limiting charging to {colored(generation, 'magenta')} - {colored(consumption, 'magenta')} = {colored(maxamps, 'magenta')}."))
+
+  else:
+    # For all other modes, simply show the Amps to charge at
+    debugLog(1, f("Limiting charging to {colored(maxamps, 'magenta')}."))
+
+  # Print minimum charge for all charging policies
+  minchg = f("{config['config']['minAmpsPerTWC']}A")
+  debugLog(1, f("Charge when above {colored(minchg, 'magenta')} (minAmpsPerTWC)."))
 
   # Update Sensors with min/max amp values
   for module in master.getModulesByType('Status'):

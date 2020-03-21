@@ -5,7 +5,6 @@ from datetime import datetime
 import json
 import os.path
 import queue
-import serial
 from termcolor import colored
 import threading
 import time
@@ -73,7 +72,6 @@ class TWCMaster:
   overrideMasterHeartbeatData = b''
   policyCheckInterval = 30
   protocolVersion     = 2
-  ser                 = None
   settings            = {
     'chargeNowAmps'            : 0,
     'chargeStopMode'           : "1",
@@ -143,9 +141,6 @@ class TWCMaster:
 
     # Register ourself as a module, allows lookups via the Module architecture
     self.registerModule({ "name": "master", "ref": self, "type": "Master" })
-
-    # Connect to serial port
-    self.ser = serial.Serial(config['config']['rs485adapter'], config['config']['baud'], timeout=0)
 
   def addkWhDelivered(self, kWh):
     self.settings['kWhDelivered'] = self.settings.get('kWhDelivered', 0) + kWh
@@ -373,9 +368,6 @@ class TWCMaster:
         return (True, self.settings['chargeLimits'][str(ID)] )
     return (False, None)
 
-  def getSerial(self):
-    return self.ser
-
   def getSlaveByID(self, twcid):
     return self.slaveTWCs[twcid]
 
@@ -548,7 +540,7 @@ class TWCMaster:
     # This function is used during module instantiation to either reference a
     # previously loaded module, or to instantiate a module for the first time
     if (not module['ref'] and not module['modulename']):
-      debugLog(2, "registerModule called for module " + str(module['name']) + " without an existing reference or a module to instantiate.")
+      debugLog(2, f("registerModule called for module {colored(module['name'], 'red')} without an existing reference or a module to instantiate."))
     elif (module['ref']):
       # If the reference is passed, it means this module has already been
       # instantiated and we should just refer to the existing instance
@@ -559,9 +551,9 @@ class TWCMaster:
           "ref": module['ref'],
           "type": module['type']
         }
-        self.debugLog(7, "TWCMaster ", "Registered module " + module['name'])
+        self.debugLog(7, "TWCMaster ", f("Registered module {colored(module['name'], 'red')}"))
       else:
-        self.debugLog(7, "TWCMaster ", "Avoided re-registration of module " + module['name'] + ", which has already been loaded")
+        self.debugLog(7, "TWCMaster ", f("Avoided re-registration of module {colored(module['name'], 'red')}, which has already been loaded"))
 
   def releaseBackgroundTasksLock(self):
     self.backgroundTasksLock.release()
@@ -601,7 +593,7 @@ class TWCMaster:
 
   def send_master_linkready1(self):
 
-    self.debugLog(1, "TWCMaster ", "Send master linkready1")
+    self.debugLog(8, "TWCMaster ", "Send master linkready1")
 
     # When master is powered on or reset, it sends 5 to 7 copies of this
     # linkready1 message followed by 5 copies of linkready2 (I've never seen
@@ -653,7 +645,7 @@ class TWCMaster:
 
   def send_master_linkready2(self):
 
-    self.debugLog(1, "TWCMaster ", "Send master linkready2")
+    self.debugLog(8, "TWCMaster ", "Send master linkready2")
 
     # This linkready2 message is also sent 5 times when master is booted/reset
     # and then not sent again if no other TWCs are heard from on the network.
@@ -724,7 +716,7 @@ class TWCMaster:
       for match, condition, value in zip(policy['match'], policy['condition'], policy['value']):
 
         iter += 1
-        self.debugLog(8, "TWCMaster ", f("Evaluating Policy match ({match}), condition ({condition}), value ({value}), iteration ({iter})"))
+        self.debugLog(8, "TWCMaster ", f("Evaluating Policy match ({colored(match, 'red')}), condition ({colored(condition, 'red')}), value ({colored(value, 'red')}), iteration ({colored(iter, 'red')})"))
         # Start by not having matched the condition
         is_matched = 0
         match = self.policyValue(match)
@@ -770,7 +762,7 @@ class TWCMaster:
           if (len(policy['match']) == iter):
 
             # Yes, we will now enforce policy
-            self.debugLog(7, "TWCMaster ", "All policy conditions have matched. Policy chosen is " + str(policy['name']))
+            self.debugLog(7, "TWCMaster ", f("All policy conditions have matched. Policy chosen is {colored(policy['name'], 'red')}"))
             self.active_policy = str(policy['name'])
 
             # Determine which value to set the charging to
