@@ -4,14 +4,6 @@
         # interface
         "settingsPath": "/etc/twcmanager",
 
-        # Most users will have only one ttyUSB adapter plugged in and the default value
-        # of '/dev/ttyUSB0' below will work. If not, run 'dmesg |grep ttyUSB' on the
-        # command line to find your rs485 adapter and put its ttyUSB# value in the
-        # parameter below.
-        # If you're using a non-USB adapter like an RS485 shield, the value may need to
-        # be something like '/dev/serial0'.
-        "rs485adapter": "/dev/ttyUSB0",
-
         # Set wiringMaxAmpsAllTWCs to the maximum number of amps your charger wiring
         # can handle. I default this to a low 6A which should be safe with the minimum
         # standard of wiring in the areas of the world that I'm aware of.
@@ -152,11 +144,34 @@
         #                      unless you use the debugging web interface
         #                      (index.php?debugTWC=1) to send messages.
         "fakeMaster": 1,
+    },
+
+    # The interface section of the configuration is where we configure the
+    # way in which we talk to the TWC Slaves. This is usually going to be
+    # RS485, which is enabled by default.
+    #
+    # Note that only one interface can be enabled for a valid configuration.
+    # If you enable more than one, only the first enabled interface will be used
+    "interface": {
+      "RS485": {
+        "enabled": true,
 
         # TWC's rs485 port runs at 9600 baud which has been verified with an
         # oscilloscope. Don't change this unless something changes in future hardware.
-        "baud": 9600
-    },
+        "baud": 9600,
+
+        # Most users will have only one ttyUSB adapter plugged in and the default value
+        # of '/dev/ttyUSB0' below will work. If not, run 'dmesg |grep ttyUSB' on the
+        # command line to find your rs485 adapter and put its ttyUSB# value in the
+        # parameter below.
+        # If you're using a non-USB adapter like an RS485 shield, the value may need to
+        # be something like '/dev/serial0'.
+        "port": "/dev/ttyUSB0"
+
+      },
+      "TCP": {
+        "enabled": false
+      }
     "control": {
       "HTTP": {
         "enabled": true,

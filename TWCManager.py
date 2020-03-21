@@ -48,6 +48,7 @@ from lib.TWCManager.TWCMaster import TWCMaster
 # All listed modules will be loaded at boot time
 modules_available = [
   "Interface.RS485",
+  "Interface.TCP",
   "Vehicle.TeslaAPI",
   "Control.HTTPControl",
   "Control.MQTTControl",

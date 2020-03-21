@@ -1,14 +1,15 @@
-class RS485:
+import socket
 
-  import serial
+class TCP:
+
   import time
 
-  baud             = 9600
   debugLevel       = 0
-  enabled          = True
+  enabled          = False
   master           = None
-  port             = None
-  ser              = None
+  port             = 6000
+  server           = None
+  sock             = None
   timeLastTx       = 0
 
   def __init__(self, master):
@@ -18,43 +19,27 @@ class RS485:
     except KeyError:
         pass
 
-    # There are two places that the baud rate for the RS485 adapter may be stored.
-    # The first is the legacy configuration path, and the second is the new
-    # dedicated interface configuration. We check either/both for this value
-    bauda = master.config['config'].get('baud', 0)
-    baudb = None
-    if "interface" in master.config:
-      baudb = master.config['interface']['RS485'].get('baud', 0)
-    if baudb:
-      self.baud = baudb
-    elif bauda:
-      self.baud = bauda
+    if self.enabled:
 
-    # Similarly, there are two places to check for a port defined.
-    porta = master.config['config'].get('rs485adapter', '')
-    portb = None
-    if "interface" in master.config:
-      portb = master.config['interface']['RS485'].get('port', '')
-    if portb:
-      self.port = portb
-    elif porta:
-      self.port = porta
+      # Create TCP socket
+      self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    # Connect to serial port
-    self.ser = self.serial.Serial(self.port, self.baud, timeout=0)
+      # If we are configured to listen, open the listening socket
+      self.sock.bind(('localhost', self.port))
+      self.sock.listen(1)
 
   def close(self):
-    # Close the serial interface
-    return self.ser.close()
+    # Close the TCP socket interface
+    self.sock.close()
 
   def getBufferLen(self):
     # This function returns the size of the recieve buffer.
     # This is used by read functions to determine if information is waiting
-    return self.ser.inWaiting()
+    return 0
 
   def read(self, len):
     # Read the specified amount of data from the serial interface
-    return self.ser.read(len)
+    return 0
 
   def send(self, msg):
     # Send msg on the RS485 network. We'll escape bytes with a special meaning,
@@ -89,9 +74,9 @@ class RS485:
         i = i + 1
 
     msg = bytearray(b'\xc0' + msg + b'\xc0')
-    self.master.debugLog(9, "IfaceRS485", "Tx@: " + self.master.hex_str(msg))
+    self.master.debugLog(9, "IfaceTCP  ", "Tx@: " + self.master.hex_str(msg))
 
-    self.ser.write(msg)
+    #self.ser.write(msg)
 
     self.timeLastTx = self.time.time()
 
