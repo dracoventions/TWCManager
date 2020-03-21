@@ -52,6 +52,10 @@ make install
 ### Configure TWCManager
 After performing the installation tasks above, edit the /etc/twcmanager/config.json file and customize to suit your environment.
 
+The following documents provide detail on specific areas of configuration:
+
+   * [Policy Customization](PolicyCustomization.md)
+
 ### Running the script
 Once the above steps are complete, start the TWCManager script with the following command:
 

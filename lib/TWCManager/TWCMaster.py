@@ -6,8 +6,10 @@ import json
 import os.path
 import queue
 import serial
+from termcolor import colored
 import threading
 import time
+from ww import f
 
 class TWCMaster:
 
@@ -185,9 +187,12 @@ class TWCMaster:
   def countSlaveTWC(self):
     return int(len(self.slaveTWCRoundRobin))
 
-  def debugLog(self, minlevel, message):
+  def debugLog(self, minlevel, function, message):
     if (self.debugLevel >= minlevel):
-      print("TWCMaster: (" + str(minlevel) + ") " + message)
+      print(colored(self.time_now() + " ", 'yellow') + \
+            colored(f("{function}"), 'green') + \
+            colored(f(" {minlevel} "), 'cyan') + \
+            f("{message}"))
 
   def deleteBackgroundTask(self, task):
     del self.backgroundTasksCmds[task['cmd']]
@@ -395,8 +400,7 @@ class TWCMaster:
     for module in self.getModulesByType('Status'):
       module['ref'].setStatus(bytes("all", 'UTF-8'), "total_amps_in_use", "totalAmpsInUse", totalAmps)
 
-    if(self.config['config']['debugLevel'] >= 10):
-      print("Total amps all slaves are using: " + str(totalAmps))
+    self.debugLog(10, "TWCMaster ", "Total amps all slaves are using: " + str(totalAmps))
     return totalAmps
 
   def hex_str(self, s:str):
@@ -418,11 +422,11 @@ class TWCMaster:
       try:
         self.settings = json.load(inconfig)
       except Exception as e:
-        self.debugLog(1, "There was an exception whilst loading settings file " + self.config['config']['settingsPath'] + '/settings.json')
-        self.debugLog(1, "Some data may have been loaded. This may be because the file is being created for the first time.")
-        self.debugLog(1, "It may also be because you are upgrading from a TWCManager version prior to v1.1.4, which used the old settings file format.")
-        self.debugLog(1, "If this is the case, you may need to locate the old config file and migrate some settings manually.")
-        self.debugLog(11, str(e))
+        self.debugLog(1, "TWCMaster ", "There was an exception whilst loading settings file " + self.config['config']['settingsPath'] + '/settings.json')
+        self.debugLog(1, "TWCMaster ", "Some data may have been loaded. This may be because the file is being created for the first time.")
+        self.debugLog(1, "TWCMaster ", "It may also be because you are upgrading from a TWCManager version prior to v1.1.4, which used the old settings file format.")
+        self.debugLog(1, "TWCMaster ", "If this is the case, you may need to locate the old config file and migrate some settings manually.")
+        self.debugLog(11, "TWCMaster ", str(e))
 
     # Step 2 - Send settings to other modules
     carapi = self.getModuleByName("TeslaAPI")
@@ -470,8 +474,7 @@ class TWCMaster:
     for slaveTWC in self.getSlaveTWCs():
         if(slaveTWC.reportedAmpsActual >= 1.0):
             carsCharging += 1
-            if(self.config['config']['debugLevel'] >= 10):
-                print("BUGFIX: Number of cars charging now: " + str(carsCharging))
+            self.debugLog(10, "TWCMaster ", "Number of cars charging now: " + str(carsCharging))
             for module in self.getModulesByType('Status'):
               module['ref'].setStatus(slaveTWC.TWCID, "cars_charging", "carsCharging", carsCharging)
     return carsCharging
@@ -556,9 +559,9 @@ class TWCMaster:
           "ref": module['ref'],
           "type": module['type']
         }
-        self.debugLog(7, "Registered module " + module['name'])
+        self.debugLog(7, "TWCMaster ", "Registered module " + module['name'])
       else:
-        self.debugLog(7, "Avoided re-registration of module " + module['name'] + ", which has already been loaded")
+        self.debugLog(7, "TWCMaster ", "Avoided re-registration of module " + module['name'] + ", which has already been loaded")
 
   def releaseBackgroundTasksLock(self):
     self.backgroundTasksLock.release()
@@ -598,8 +601,7 @@ class TWCMaster:
 
   def send_master_linkready1(self):
 
-    if(self.config['config']['debugLevel'] >= 1):
-        print(self.time_now() + ": Send master linkready1")
+    self.debugLog(1, "TWCMaster ", "Send master linkready1")
 
     # When master is powered on or reset, it sends 5 to 7 copies of this
     # linkready1 message followed by 5 copies of linkready2 (I've never seen
@@ -651,8 +653,7 @@ class TWCMaster:
 
   def send_master_linkready2(self):
 
-    if(self.config['config']['debugLevel'] >= 1):
-        print(self.time_now() + ": Send master linkready2")
+    self.debugLog(1, "TWCMaster ", "Send master linkready2")
 
     # This linkready2 message is also sent 5 times when master is booted/reset
     # and then not sent again if no other TWCs are heard from on the network.
@@ -691,9 +692,9 @@ class TWCMaster:
     # Accepts a number of amps to define the amperage at which we
     # should charge
     if (amps > self.config['config']['wiringMaxAmpsAllTWCs']):
-      self.debugLog(1, "setChargeNowAmps failed because specified amps are above wiringMaxAmpsAllTWCs")
+      self.debugLog(1, "TWCMaster ", "setChargeNowAmps failed because specified amps are above wiringMaxAmpsAllTWCs")
     elif (amps < 0):
-      self.debugLog(1, "setChargeNowAmps failed as specified amps is less than 0")
+      self.debugLog(1, "TWCMaster ", "setChargeNowAmps failed as specified amps is less than 0")
     else:
       self.settings['chargeNowAmps'] = amps
 
@@ -723,7 +724,7 @@ class TWCMaster:
       for match, condition, value in zip(policy['match'], policy['condition'], policy['value']):
 
         iter += 1
-        self.debugLog(8, "Evaluating Policy match (" + str(match) + "), condition (" + condition + "), value (" + str(value) + "), iteration (" + str(iter) + ")")
+        self.debugLog(8, "TWCMaster ", f("Evaluating Policy match ({match}), condition ({condition}), value ({value}), iteration ({iter})"))
         # Start by not having matched the condition
         is_matched = 0
         match = self.policyValue(match)
@@ -769,16 +770,16 @@ class TWCMaster:
           if (len(policy['match']) == iter):
 
             # Yes, we will now enforce policy
-            self.debugLog(7, "All policy conditions have matched. Policy chosen is " + str(policy['name']))
+            self.debugLog(7, "TWCMaster ", "All policy conditions have matched. Policy chosen is " + str(policy['name']))
             self.active_policy = str(policy['name'])
 
             # Determine which value to set the charging to
             if (policy['charge_amps'] == "value"):
               self.setMaxAmpsToDivideAmongSlaves(int(policy['value']))
-              self.debugLog(10, 'Charge at %.2f' % int(policy['value']))
+              self.debugLog(10, "TWCMaster ", 'Charge at %.2f' % int(policy['value']))
             else:
               self.setMaxAmpsToDivideAmongSlaves(self.policyValue(policy['charge_amps']))
-              self.debugLog(10, 'Charge at %.2f' % self.policyValue(policy['charge_amps']))
+              self.debugLog(10, "TWCMaster ", 'Charge at %.2f' % self.policyValue(policy['charge_amps']))
 
             # If a background task is defined for this policy, queue it
             bgt = policy.get('background_task', None)
@@ -795,10 +796,10 @@ class TWCMaster:
             return
 
           else:
-            self.debugLog(8, "This policy condition has matched, but there are more to process.")
+            self.debugLog(8, "TWCMaster ", "This policy condition has matched, but there are more to process.")
 
         else:
-          self.debugLog(8, "Policy conditions were not matched.")
+          self.debugLog(8, "TWCMaster ", "Policy conditions were not matched.")
           break
 
   def setConsumption(self, source, value):
@@ -838,7 +839,7 @@ class TWCMaster:
     if(amps > self.config['config']['wiringMaxAmpsAllTWCs']):
       # Never tell the slaves to draw more amps than the physical charger
       # wiring can handle.
-      self.debugLog(1, "ERROR: specified maxAmpsToDivideAmongSlaves " + str(amps) +
+      self.debugLog(1, "TWCMaster ", "ERROR: specified maxAmpsToDivideAmongSlaves " + str(amps) +
        " > wiringMaxAmpsAllTWCs " + str(self.config['config']['wiringMaxAmpsAllTWCs']) +
        ".\nSee notes above wiringMaxAmpsAllTWCs in the 'Configuration parameters' section.")
       amps = self.config['config']['wiringMaxAmpsAllTWCs']

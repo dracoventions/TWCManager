@@ -1,4 +1,6 @@
-# Tesla Powerwall 2
+# Tesla Powerwall 2 EMS Module
+
+from ww import f
 
 class TeslaPowerwall2:
 
@@ -254,12 +256,12 @@ class TeslaPowerwall2:
                 "Multiple Powerwall sites linked to your Tesla account.  Please specify the correct site ID in your config.json.",
             )
             for (site,name) in products:
-                self.debugLog(1, f"   {site}: {name}")
+                self.debugLog(1, f("   {site}: {name}"))
           else:
             self.debugLog(1, "Couldn't find a Powerwall on your Tesla account.")
 
         if self.cloudID:
-          url = f"https://owner-api.teslamotors.com/api/1/energy_sites/{self.cloudID}/live_status"
+          url = f("https://owner-api.teslamotors.com/api/1/energy_sites/{self.cloudID}/live_status")
           bodyjson = None
           result = dict()
 

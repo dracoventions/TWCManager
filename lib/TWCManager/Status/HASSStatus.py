@@ -1,6 +1,9 @@
 # HomeAssistant Status Output
 # Publishes the provided sensor key and value pair to a HomeAssistant instance
 
+from termcolor import colored
+from ww import f
+
 class HASSStatus:
 
   import time
@@ -11,6 +14,7 @@ class HASSStatus:
   configConfig     = None
   configHASS       = None
   debugLevel       = 0
+  master           = None
   msgRate          = {}
   msgRatePerSensor = 60
   status           = False
@@ -20,6 +24,7 @@ class HASSStatus:
 
   def __init__(self, master):
     self.config         = master.config
+    self.master         = master
     try:
       self.configConfig = self.config['config']
     except KeyError:
@@ -33,10 +38,6 @@ class HASSStatus:
     self.serverPort     = self.configHASS.get('serverPort', 8123)
     self.apiKey         = self.configHASS.get('apiKey', None)
     self.debugLevel     = self.configConfig.get('debugLevel', 0)
-
-  def debugLog(self, minlevel, message):
-    if (self.debugLevel >= minlevel):
-      print("debugLog: (" + str(minlevel) + ") " + message)
 
   def setStatus(self, twcid, key_underscore, key_camelcase, value):
 
@@ -71,17 +72,17 @@ class HASSStatus:
       }
 
       try:
-          self.debugLog(8, "Sending POST request to HomeAssistant for sensor " + sensor + "(value " + str(value) + ").")
+          self.master.debugLog(8, "HASSStatus", "Sending POST request to HomeAssistant for sensor " + sensor + "(value " + str(value) + ").")
           self.requests.post(url, json={"state":value}, timeout=self.timeout, headers=headers)
       except self.requests.exceptions.ConnectionError as e:
-        self.debugLog(4, "Error connecting to HomeAssistant to publish sensor values")
-        self.debugLog(10, str(e))
+        self.master.debugLog(4, "HASSStatus", "Error connecting to HomeAssistant to publish sensor values")
+        self.master.debugLog(10, "HASSStatus", str(e))
         return False
       except self.requests.exceptions.ReadTimeout as e:
-        self.debugLog(4, "Error connecting to HomeAssistant to publish sensor values")
-        self.debugLog(10, str(e))
+        self.master.debugLog(4, "HASSStatus", "Error connecting to HomeAssistant to publish sensor values")
+        self.master.debugLog(10, "HASSStatus", str(e))
         return False
       except Exception as e:
-        self.debugLog(4, "Error during publishing HomeAssistant sensor values")
-        self.debugLog(10, str(e))
+        self.master.debugLog(4, "HASSStatus", "Error during publishing HomeAssistant sensor values")
+        self.master.debugLog(10, "HASSStatus", str(e))
         return False

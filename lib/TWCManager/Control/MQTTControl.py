@@ -65,8 +65,9 @@ class MQTTControl:
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
-      print("MQTTControl: (" + str(minlevel) + ") " + message)
- 
+      print(colored(self.master.time_now() + " ", 'yellow') + \
+            colored("MQTTCtrl:   ", 'green') + f("({minlevel}) {message}"))
+
   def mqttConnect(self, client, userdata, flags, rc):
     self.debugLog(5, "MQTT Connected.")
     self.debugLog(5, "Subscribe to " + self.topicPrefix + "/#")

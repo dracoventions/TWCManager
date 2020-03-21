@@ -1,8 +1,10 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
+from termcolor import colored
 import threading
 import time
 import urllib.parse
+from ww import f
 
 # Global reference to master
 master = None
@@ -16,12 +18,12 @@ class HTTPControl:
   configHTTP   = {}
   debugLevel   = 1
   httpPort     = 8080
+  master       = None
   status       = False
 
-  def __init__(self, masterref):
+  def __init__(self, master):
 
-    global master
-    master = masterref
+    self.master = master
     try:
       self.configConfig = master.config['config']
     except KeyError:
@@ -36,12 +38,8 @@ class HTTPControl:
 
     if (self.status):
       httpd = ThreadingSimpleServer(("", self.httpPort), HTTPControlHandler)
-      self.debugLog(1, "Serving at port: " + str(self.httpPort))
+      self.master.debugLog(1, "HTTPCtrl  ", "Serving at port: " + str(self.httpPort))
       threading.Thread(target=httpd.serve_forever, daemon=True).start()
-
-  def debugLog(self, minlevel, message):
-    if (self.debugLevel >= minlevel):
-      print("HTTPControl: (" + str(minlevel) + ") " + message)
 
 class HTTPControlHandler(BaseHTTPRequestHandler):
 

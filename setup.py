@@ -13,7 +13,9 @@ setup(
       "paho_mqtt>=1.5.0",
       "pyserial>=3.4",
       "requests>=2.23.0",
-      "sysv_ipc>=1.0.1"
+      "sysv_ipc>=1.0.1",
+      "termcolor>=1.1.0",
+      "ww>=0.2.1"
     ],
 
     # Package Metadata

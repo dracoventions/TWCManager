@@ -1,6 +1,9 @@
 # MQTT Status Output
 # Publishes the provided key and value pair to the provided topic prefix
 
+from termcolor import colored
+from ww import f
+
 class MQTTStatus:
 
   import time
@@ -13,6 +16,7 @@ class MQTTStatus:
   configMQTT      = {}
   connectionState = 0
   debugLevel      = 0
+  master          = None
   msgQueue        = []
   msgQueueBuffer  = []
   msgQueueMax     = 16
@@ -26,6 +30,7 @@ class MQTTStatus:
   
   def __init__(self, master):
     self.config         = master.config
+    self.master         = master
     try:
       self.configConfig = self.config['config']
     except KeyError:
@@ -43,8 +48,11 @@ class MQTTStatus:
 
   def debugLog(self, minlevel, message):
     if (self.debugLevel >= minlevel):
-      print("MQTTStatus: (" + str(minlevel) + ") " + message)
-    
+      print(colored(self.master.time_now() + " ", 'yellow') + \
+            colored("MQTTStatus", 'green') + \
+            colored(f(" {minlevel} "), 'cyan') + \
+            f("{message}"))
+
   def setStatus(self, twcid, key_underscore, key_camelcase, value):
     if (self.status):
 
