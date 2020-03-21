@@ -1,7 +1,6 @@
 # HomeAssistant Status Output
 # Publishes the provided sensor key and value pair to a HomeAssistant instance
 
-from termcolor import colored
 from ww import f
 
 class HASSStatus:
@@ -72,7 +71,7 @@ class HASSStatus:
       }
 
       try:
-          self.master.debugLog(8, "HASSStatus", "Sending POST request to HomeAssistant for sensor " + sensor + "(value " + str(value) + ").")
+          self.master.debugLog(8, "HASSStatus", f("Sending POST request to HomeAssistant for sensor {sensor} (value {value})."))
           self.requests.post(url, json={"state":value}, timeout=self.timeout, headers=headers)
       except self.requests.exceptions.ConnectionError as e:
         self.master.debugLog(4, "HASSStatus", "Error connecting to HomeAssistant to publish sensor values")
