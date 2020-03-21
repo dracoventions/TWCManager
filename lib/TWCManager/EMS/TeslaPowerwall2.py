@@ -44,6 +44,7 @@ class TeslaPowerwall2:
     self.password          = self.configPowerwall.get('password', None)
     self.minSOE            = self.configPowerwall.get('minBatteryLevel', 90)
     self.cloudID           = self.configPowerwall.get('cloudID', None)
+    self.cloudCacheTime    = self.configConfig.get('cloudUpdateInterval',1800)
     self.httpSession       = self.requests.session()
     if self.status and self.debugLevel < 11:
       # PW uses self-signed certificates; squelch warnings

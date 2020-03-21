@@ -121,6 +121,10 @@
         # you will need to un-comment it to have it take effect.
         #"minChargeLevel": 10,
 
+        # The cloudUpdateInterval determines how often to poll certain
+        # data retrieved from the Tesla API to evaluate policy.
+        "cloudUpdateInterval": 1800,
+
         # These parameters enable you to specify different charge limits
         # for different charging policies.  The car's 'outside' limit
         # will be restored whenever GPS indicates the car has left home.
