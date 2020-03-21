@@ -14,6 +14,19 @@ class RS485:
     except KeyError:
         pass
 
+  def close(self):
+    # Close the serial interface
+    return self.ser.close()
+
+  def getBufferLen(self):
+    # This function returns the size of the recieve buffer.
+    # This is used by read functions to determine if information is waiting
+    return self.ser.inWaiting()
+
+  def read(self, len):
+    # Read the specified amount of data from the serial interface
+    return self.ser.read(len)
+
   def send(self, msg):
     # Send msg on the RS485 network. We'll escape bytes with a special meaning,
     # add a CRC byte to the message end, and add a C0 byte to the start and end

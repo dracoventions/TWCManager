@@ -376,13 +376,12 @@ while True:
         webipccontrol.processIPC()
 
         ########################################################################
-        # See if there's an incoming message on the RS485 interface.
+        # See if there's an incoming message on the input interface.
 
         timeMsgRxStart = time.time()
-        ser = master.getSerial()
         while True:
             now = time.time()
-            dataLen = ser.inWaiting()
+            dataLen = master.getModuleByName("RS485").getBufferLen()
             if(dataLen == 0):
                 if(msgLen == 0):
                     # No message data waiting and we haven't received the
@@ -404,7 +403,7 @@ while True:
                     continue
             else:
                 dataLen = 1
-                data = ser.read(dataLen)
+                data = master.getModuleByName("RS485").read(dataLen)
 
             if(dataLen != 1):
                 # This should never happen
@@ -1004,7 +1003,8 @@ while True:
 # this program.
 master.backgroundTasksQueue.join()
 
-ser.close()
+# Close the input module
+master.getModuleByName("RS485").close()
 
 #
 # End main program
