@@ -26,7 +26,7 @@ policy changes, and to cars which arrive while the policy is in effect.  The
 car's original charge limit is remembered and restored when the car leaves or
 when a new policy does not apply a limit.
 
-Acceptable value are 50-100; -1 means not to apply a limit / restore the car's
+Acceptable values are 50-100; -1 means not to apply a limit / restore the car's
 original limit.
 
 These limits are not exposed through the web interface, but can be configured in
