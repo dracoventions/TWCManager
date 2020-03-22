@@ -94,8 +94,19 @@ The values in a policy definition are:
     - `minBatteryLevelAtHome`:  The lowest battery level (0-100) of any Tesla
       currently believed to be at home; `10000` if unknown / no cars are home.
 
-Note that TWCManager does not know which vehicle is connected to which TWC,
-so only aggregate properties of all vehicles at home can be accessed.
+(Note that TWCManager does not know which vehicle is connected to which TWC, so
+only aggregate properties of all vehicles at home can be accessed.)
+
+The comparisons which can be employed are:
+
+- `gt`: Match must be greater than value
+- `gte`: Match must be greater than or equal to value
+- `lt`: Match must be less than value
+- `lte`: Match must be less than or equal to value
+- `eq`: Match must be equal to value
+- `ne`: Match must not be equal to value
+- `false`: Never true, regardless of values
+- `none`: Always true, regardless of values
 
 ### Background Tasks
 
