@@ -763,7 +763,9 @@ class TWCMaster:
 
             # Yes, we will now enforce policy
             self.debugLog(7, "TWCMaster ", f("All policy conditions have matched. Policy chosen is {colored(policy['name'], 'red')}"))
-            self.active_policy = str(policy['name'])
+            if self.active_policy != str(policy['name']):
+              self.debugLog(1, "TWCMaster ", f("New policy selected; changing to {colored(policy['name'], 'red')}"))
+              self.active_policy = str(policy['name'])
 
             # Determine which value to set the charging to
             if (policy['charge_amps'] == "value"):

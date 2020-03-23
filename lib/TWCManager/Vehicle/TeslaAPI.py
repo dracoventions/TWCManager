@@ -160,7 +160,7 @@ class TeslaAPI:
                 self.master.debugLog(10, "TeslaAPI  ", 'Car API vehicle list' + str(apiResponseDict) + '\n')
 
                 for i in range(0, apiResponseDict['count']):
-                    self.addVehicle(apiResponseDict['response'][i]['id'])
+                    self.addVehicle(apiResponseDict['response'][i])
             except (KeyError, TypeError):
                 # This catches cases like trying to access
                 # apiResponseDict['response'] when 'response' doesn't exist in
@@ -647,7 +647,13 @@ class TeslaAPI:
         self.master.debugLog(8, "TeslaAPI  ", 'applyChargeLimit return because car_api_available() == False')
         return 'error'
 
-    self.lastChargeLimitApplied = limit
+    if self.lastChargeLimitApplied != limit:
+        if limit != -1:
+            self.master.debugLog(2, "TeslaAPI  ", 'Attempting to apply limit of ' + str(limit) + '% to all vehicles at home')
+        else:
+            self.master.debugLog(2, "TeslaAPI  ", 'Attempting to restore charge limits for all vehicles at home')
+        self.lastChargeLimitApplied = limit
+
     self.carApiLastChargeLimitApplyTime = now
 
     for vehicle in self.carApiVehicles:
@@ -660,6 +666,7 @@ class TeslaAPI:
             # We're removing any applied limit
             if(found):
                 if( vehicle.apply_charge_limit(target) ):
+                    self.master.debugLog(2, "TeslaAPI  ", 'Restoring ' + vehicle.name + ' to charge limit ' + str(target))
                     self.master.removeNormalChargeLimit(vehicle.ID)
                     vehicle.stopTryingToApplyLimit = True
             else:
@@ -673,7 +680,9 @@ class TeslaAPI:
                     # We failed to read the "normal" limit; don't risk changing it.
                     continue
 
-            vehicle.stopTryingToApplyLimit = vehicle.apply_charge_limit(limit)
+            if vehicle.apply_charge_limit(limit):
+                self.master.debugLog(2, "TeslaAPI  ", 'Set ' + vehicle.name + ' to charge limit ' + str(limit))
+                vehicle.stopTryingToApplyLimit = True
 
   def getCarApiBearerToken(self):
     return self.carApiBearerToken
@@ -779,6 +788,7 @@ class CarApiVehicle:
     config     = None
     debuglevel = 0
     ID         = None
+    name       = ''
 
     firstWakeAttemptTime = 0
     lastWakeAttemptTime = 0
@@ -797,11 +807,12 @@ class CarApiVehicle:
     lon = 10000
     atHome = False
 
-    def __init__(self, ID, carapi, config):
+    def __init__(self, json, carapi, config):
         self.carapi     = carapi
         self.config     = config
         self.debugLevel = config['config']['debugLevel']
-        self.ID         = ID
+        self.ID         = json['id']
+        self.name       = json['display_name']
 
     def ready(self, wake=True):
         if(self.carapi.getCarApiRetryRemaining(self.lastErrorTime)):
@@ -997,7 +1008,7 @@ class CarApiVehicle:
                             # in the standard error handler.
                             self.carapi.master.debugLog(1, "TeslaVehic", "Car API returned '"
                                         + error
-                                        + "' when trying to start charging.  Try again in 1 minute.")
+                                        + "' when trying to set charge limit.  Try again in 1 minute.")
                             time.sleep(60)
                             foundKnownError = True
                             break
