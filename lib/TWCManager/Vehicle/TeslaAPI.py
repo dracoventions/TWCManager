@@ -668,7 +668,7 @@ class TeslaAPI:
                 if limit != -1:
                     self.master.debugLog(2, "TeslaAPI  ", vehicle.name + ' has departed')
                 if( vehicle.apply_charge_limit(target) ):
-                    self.master.debugLog(2, "TeslaAPI  ", 'Restoring ' + vehicle.name + ' to charge limit ' + str(target))
+                    self.master.debugLog(2, "TeslaAPI  ", 'Restoring ' + vehicle.name + ' to charge limit ' + str(target) + '%')
                     self.master.removeNormalChargeLimit(vehicle.ID)
                     vehicle.stopTryingToApplyLimit = True
             else:
@@ -684,7 +684,7 @@ class TeslaAPI:
                     continue
 
             if vehicle.apply_charge_limit(limit):
-                self.master.debugLog(2, "TeslaAPI  ", 'Set ' + vehicle.name + ' to charge limit ' + str(limit))
+                self.master.debugLog(2, "TeslaAPI  ", 'Set ' + vehicle.name + ' to charge limit of ' + str(limit) + '%')
                 vehicle.stopTryingToApplyLimit = True
 
   def getCarApiBearerToken(self):
