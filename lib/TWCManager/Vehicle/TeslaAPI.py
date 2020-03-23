@@ -665,6 +665,8 @@ class TeslaAPI:
         if( limit == -1 or (located and not vehicle.atHome) ):
             # We're removing any applied limit
             if(found):
+                if limit != -1:
+                    self.master.debugLog(2, "TeslaAPI  ", vehicle.name + ' has departed')
                 if( vehicle.apply_charge_limit(target) ):
                     self.master.debugLog(2, "TeslaAPI  ", 'Restoring ' + vehicle.name + ' to charge limit ' + str(target))
                     self.master.removeNormalChargeLimit(vehicle.ID)
@@ -674,6 +676,7 @@ class TeslaAPI:
         else:
             # We're applying a new limit
             if( not found ):
+                self.master.debugLog(2, "TeslaAPI  ", vehicle.name + ' has arrived')
                 if( vehicle.update_charge() ):
                     self.master.saveNormalChargeLimit(vehicle.ID, vehicle.chargeLimit)
                 else:
