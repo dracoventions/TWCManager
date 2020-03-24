@@ -662,30 +662,31 @@ class TeslaAPI:
 
         located = vehicle.update_location()
         (found, target) = self.master.getNormalChargeLimit(vehicle.ID)
+        forgetVehicle = False
+        if( not found and located and vehicle.atHome ):
+            self.master.debugLog(2, "TeslaAPI  ", vehicle.name + ' has arrived')
+            if( vehicle.update_charge() ):
+                self.master.saveNormalChargeLimit(vehicle.ID, vehicle.chargeLimit)
+            else:
+                # We failed to read the "normal" limit; don't risk changing it.
+                continue
+        if( found and located and not vehicle.atHome ):
+            self.master.debugLog(2, "TeslaAPI  ", vehicle.name + ' has departed')
+            forgetVehicle = True
+
         if( limit == -1 or (located and not vehicle.atHome) ):
             # We're removing any applied limit
             if(found):
-                if limit != -1:
-                    self.master.debugLog(2, "TeslaAPI  ", vehicle.name + ' has departed')
                 if( vehicle.apply_charge_limit(target) ):
                     self.master.debugLog(2, "TeslaAPI  ", 'Restoring ' + vehicle.name + ' to charge limit ' + str(target) + '%')
-                    self.master.removeNormalChargeLimit(vehicle.ID)
                     vehicle.stopTryingToApplyLimit = True
+                    if( forgetVehicle ):
+                        self.master.removeNormalChargeLimit(vehicle.ID)
             else:
                 vehicle.stopTryingToApplyLimit = True
-        else:
-            # We're applying a new limit
-            if( not found ):
-                self.master.debugLog(2, "TeslaAPI  ", vehicle.name + ' has arrived')
-                if( vehicle.update_charge() ):
-                    self.master.saveNormalChargeLimit(vehicle.ID, vehicle.chargeLimit)
-                else:
-                    # We failed to read the "normal" limit; don't risk changing it.
-                    continue
-
-            if vehicle.apply_charge_limit(limit):
-                self.master.debugLog(2, "TeslaAPI  ", 'Set ' + vehicle.name + ' to charge limit of ' + str(limit) + '%')
-                vehicle.stopTryingToApplyLimit = True
+        elif vehicle.apply_charge_limit(limit):
+            self.master.debugLog(2, "TeslaAPI  ", 'Set ' + vehicle.name + ' to charge limit of ' + str(limit) + '%')
+            vehicle.stopTryingToApplyLimit = True
 
   def getCarApiBearerToken(self):
     return self.carApiBearerToken
