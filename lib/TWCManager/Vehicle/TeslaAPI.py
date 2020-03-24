@@ -457,7 +457,7 @@ class TeslaAPI:
 
     for vehicle in self.getCarApiVehicles():
         if(charge and vehicle.stopAskingToStartCharging):
-            self.master.debugLog(8, "TeslaAPI  ", "Don't charge vehicle " + vehicle.name
+            self.master.debugLog(8, "TeslaAPI  ", "Don't charge " + vehicle.name
                       + " because vehicle.stopAskingToStartCharging == True")
             continue
 
@@ -574,7 +574,7 @@ class TeslaAPI:
                             # Remember, this only means at least one car in the
                             # list wants us to stop asking and we don't know
                             # which car in the list is connected to our TWC.
-                            self.master.debugLog(1, "TeslaAPI  ", 'Vehicle ' + vehicle.name
+                            self.master.debugLog(1, "TeslaAPI  ", vehicle.name
                                       + ' is done charging or already trying to charge.  Stop asking to start charging.')
                             vehicle.stopAskingToStartCharging = True
                         else:
