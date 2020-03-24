@@ -638,12 +638,12 @@ class TeslaAPI:
     # We do NOT opportunistically check for arrivals, because that would be a
     # continuous API poll.
     for vehicle in self.carApiVehicles:
-        (found, target) = self.master.getNormalChargeLimit(vehicle.ID)
-        if((found and (
+        (wasAtHome, target) = self.master.getNormalChargeLimit(vehicle.ID)
+        if((wasAtHome and (
                 limit != self.lastChargeLimitApplied or
                 checkDeparture or
                 (vehicle.update_location(wake=False) and not vehicle.atHome))) or
-            (not found and limit != -1 and checkArrival)):
+            (not wasAtHome and limit != -1 and checkArrival)):
             vehicle.stopTryingToApplyLimit = False
 
     if(self.car_api_available(applyLimit = True) == False):
@@ -664,22 +664,22 @@ class TeslaAPI:
             continue
 
         located = vehicle.update_location()
-        (found, target) = self.master.getNormalChargeLimit(vehicle.ID)
+        (wasAtHome, target) = self.master.getNormalChargeLimit(vehicle.ID)
         forgetVehicle = False
-        if( not found and located and vehicle.atHome ):
+        if( not wasAtHome and located and vehicle.atHome ):
             self.master.debugLog(2, "TeslaAPI  ", vehicle.name + ' has arrived')
             if( vehicle.update_charge() ):
                 self.master.saveNormalChargeLimit(vehicle.ID, vehicle.chargeLimit)
             else:
                 # We failed to read the "normal" limit; don't risk changing it.
                 continue
-        if( found and located and not vehicle.atHome ):
+        if( wasAtHome and located and not vehicle.atHome ):
             self.master.debugLog(2, "TeslaAPI  ", vehicle.name + ' has departed')
             forgetVehicle = True
 
         if( limit == -1 or (located and not vehicle.atHome) ):
             # We're removing any applied limit
-            if(found):
+            if(wasAtHome):
                 if( vehicle.apply_charge_limit(target) ):
                     self.master.debugLog(2, "TeslaAPI  ", 'Restoring ' + vehicle.name + ' to charge limit ' + str(target) + '%')
                     vehicle.stopTryingToApplyLimit = True
