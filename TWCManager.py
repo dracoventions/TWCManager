@@ -181,6 +181,8 @@ def background_tasks_thread():
             carapi.applyChargeLimit(limit=carapi.lastChargeLimitApplied, checkArrival=True)
         elif(task['cmd'] == 'checkDeparture'):
             carapi.applyChargeLimit(limit=carapi.lastChargeLimitApplied, checkDeparture=True)
+        elif(task['cmd'] == 'checkCharge'):
+            carapi.updateChargeAtHome()
 
         # Delete task['cmd'] from backgroundTasksCmds such that
         # queue_background_task() can queue another task['cmd'] in the future.
