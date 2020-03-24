@@ -12,7 +12,7 @@ This document logs the changes per release of TWCManager.
   * Make policy match operators case-insensitive (thanks @MikeBishop)
   * Re-order policy to avoid Track Green Energy overriding scheduled charging, and to add a new emergency policy entry point at the start of the policy (thanks @MikeBishop)
   * Improved logging system which clearly shows the module which produced the log message and the log priority.
-  * Completed the modularization of the RS485 interface code to allow alternative interfaces
+  * Completed the modularization of the RS485 interface code to allow alternative interfaces, and introduced two new interface modules (Dummy and TCP)
   * Bugfixes
     * Remove duplicate conditional check in TeslaAPI module (thanks @MikeBishop)
 

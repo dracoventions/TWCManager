@@ -47,6 +47,7 @@ from lib.TWCManager.TWCMaster import TWCMaster
 # Define available modules for the instantiator
 # All listed modules will be loaded at boot time
 modules_available = [
+  "Interface.Dummy",
   "Interface.RS485",
   "Interface.TCP",
   "Vehicle.TeslaAPI",
@@ -180,6 +181,8 @@ def background_tasks_thread():
             carapi.applyChargeLimit(limit=carapi.lastChargeLimitApplied, checkArrival=True)
         elif(task['cmd'] == 'checkDeparture'):
             carapi.applyChargeLimit(limit=carapi.lastChargeLimitApplied, checkDeparture=True)
+        elif(task['cmd'] == 'checkCharge'):
+            carapi.updateChargeAtHome()
 
         # Delete task['cmd'] from backgroundTasksCmds such that
         # queue_background_task() can queue another task['cmd'] in the future.
