@@ -12,6 +12,8 @@ class TeslaAPI:
   carApiLastStartOrStopChargeTime = 0
   carApiLastChargeLimitApplyTime = 0
   lastChargeLimitApplied = 0
+  lastChargeCheck     = 0
+  chargeUpdateInterval = 1800
   carApiVehicles      = []
   config              = None
   debugLevel          = 0
@@ -40,6 +42,7 @@ class TeslaAPI:
         self.config = master.config
         self.debugLevel = self.config['config']['debugLevel']
         self.minChargeLevel = self.config['config']['minChargeLevel']
+        self.chargeUpdateInterval = self.config['config'].get('cloudUpdateInterval', 1800)
     except KeyError:
         pass
 
@@ -674,6 +677,9 @@ class TeslaAPI:
                     continue
 
             vehicle.stopTryingToApplyLimit = vehicle.apply_charge_limit(limit)
+    
+    if checkArrival:
+        self.updateChargeAtHome()
 
   def getCarApiBearerToken(self):
     return self.carApiBearerToken
@@ -758,12 +764,20 @@ class TeslaAPI:
     self.carApiLastStartOrStopChargeTime = self.time.time()
     return True
 
+  def updateChargeAtHome(self):
+    for car in self.carApiVehicles:
+        if car.atHome:
+            car.update_charge(wake=False)
+    self.lastChargeCheck = self.time.time()
+
   @property
   def numCarsAtHome(self):
       return len([car for car in self.carApiVehicles if car.atHome])
 
   @property
   def minBatteryLevelAtHome(self):
+      if self.time.time() - self.lastChargeCheck > self.chargeUpdateInterval:
+          self.updateChargeAtHome()
       return min(
           [car.batteryLevel for car in self.carApiVehicles if car.atHome],
           default=10000
