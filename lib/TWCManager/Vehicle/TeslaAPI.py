@@ -163,7 +163,7 @@ class TeslaAPI:
                 self.master.debugLog(10, "TeslaAPI  ", 'Car API vehicle list' + str(apiResponseDict) + '\n')
 
                 for i in range(0, apiResponseDict['count']):
-                    self.addVehicle(apiResponseDict['response'][i]['id'])
+                    self.addVehicle(apiResponseDict['response'][i])
             except (KeyError, TypeError):
                 # This catches cases like trying to access
                 # apiResponseDict['response'] when 'response' doesn't exist in
@@ -180,13 +180,13 @@ class TeslaAPI:
                     # Vehicle is in a state (complete or charging) already
                     # which doesn't make sense for us to keep requesting it
                     # to start charging, so we will stop.
-                    self.master.debugLog(11, "TeslaAPI  ", "Don't repeatedly request API to charge vehicle "
-                        + str(vehicle.ID) + ", because vehicle.stopAskingToStartCharging "
+                    self.master.debugLog(11, "TeslaAPI  ", "Don't repeatedly request API to charge "
+                        + vehicle.name + ", because vehicle.stopAskingToStartCharging "
                         + " == True - it has already been requested.")
                     continue
 
                 if(applyLimit == True and vehicle.stopTryingToApplyLimit):
-                    self.master.debugLog(8, "TeslaAPI  ", "Don't wake vehicle " + str(vehicle.ID)
+                    self.master.debugLog(11, "TeslaAPI  ", "Don't wake " + vehicle.name
                               + " to set the charge limit - it has already been set")
                     continue
 
@@ -194,7 +194,7 @@ class TeslaAPI:
                     # It's been under carApiErrorRetryMins minutes since the car
                     # API generated an error on this vehicle. Don't send it more
                     # commands yet.
-                    self.master.debugLog(11, "TeslaAPI  ", "Don't send commands to vehicle " + str(vehicle.ID)
+                    self.master.debugLog(11, "TeslaAPI  ", "Don't send commands to " + vehicle.name
                               + " because it returned an error in the last "
                               + str(self.getCarApiErrorRetryMins()) + " minutes.")
                     continue
@@ -457,7 +457,7 @@ class TeslaAPI:
 
     for vehicle in self.getCarApiVehicles():
         if(charge and vehicle.stopAskingToStartCharging):
-            self.master.debugLog(8, "TeslaAPI  ", "Don't charge vehicle " + str(vehicle.ID)
+            self.master.debugLog(8, "TeslaAPI  ", "Don't charge " + vehicle.name
                       + " because vehicle.stopAskingToStartCharging == True")
             continue
 
@@ -484,7 +484,7 @@ class TeslaAPI:
 
             if(not vehicle.atHome):
                 # Vehicle is not at home, so don't change its charge state.
-                self.master.debugLog(1, "TeslaAPI  ", 'Vehicle ID ' + str(vehicle.ID) +
+                self.master.debugLog(1, "TeslaAPI  ", vehicle.name +
                           ' is not at home.  Do not ' + startOrStop + ' charge.')
                 continue
 
@@ -512,7 +512,7 @@ class TeslaAPI:
                 pass
 
             try:
-                self.master.debugLog(4, "TeslaAPI  ", 'Car API TWC ID: ' + str(vehicle.ID) + ": " + startOrStop + ' charge response' + str(apiResponseDict))
+                self.master.debugLog(4, "TeslaAPI  ", vehicle.name + ": " + startOrStop + ' charge response' + str(apiResponseDict))
                 # Responses I've seen in apiResponseDict:
                 # Car is done charging:
                 #   {'response': {'result': False, 'reason': 'complete'}}
@@ -574,7 +574,7 @@ class TeslaAPI:
                             # Remember, this only means at least one car in the
                             # list wants us to stop asking and we don't know
                             # which car in the list is connected to our TWC.
-                            self.master.debugLog(1, "TeslaAPI  ", 'Vehicle ' + str(vehicle.ID)
+                            self.master.debugLog(1, "TeslaAPI  ", vehicle.name
                                       + ' is done charging or already trying to charge.  Stop asking to start charging.')
                             vehicle.stopAskingToStartCharging = True
                         else:
@@ -634,23 +634,29 @@ class TeslaAPI:
     #   - We think the car is at home and we've been asked to check for departures
     #   - We think the car is at home and we notice it gone
     #   - We think the car is away from home and we've been asked to check for arrivals
-    # 
+    #
     # We do NOT opportunistically check for arrivals, because that would be a
     # continuous API poll.
     for vehicle in self.carApiVehicles:
-        (found, target) = self.master.getNormalChargeLimit(vehicle.ID)
-        if((found and (
-                limit != self.lastChargeLimitApplied or
+        (wasAtHome, outside, lastApplied) = self.master.getNormalChargeLimit(vehicle.ID)
+        if((wasAtHome and (
+                limit != lastApplied or
                 checkDeparture or
                 (vehicle.update_location(wake=False) and not vehicle.atHome))) or
-            (not found and limit != -1 and checkArrival)):
+            (not wasAtHome and checkArrival)):
             vehicle.stopTryingToApplyLimit = False
 
     if(self.car_api_available(applyLimit = True) == False):
         self.master.debugLog(8, "TeslaAPI  ", 'applyChargeLimit return because car_api_available() == False')
         return 'error'
 
-    self.lastChargeLimitApplied = limit
+    if self.lastChargeLimitApplied != limit:
+        if limit != -1:
+            self.master.debugLog(2, "TeslaAPI  ", 'Attempting to apply limit of ' + str(limit) + '% to all vehicles at home')
+        else:
+            self.master.debugLog(2, "TeslaAPI  ", 'Attempting to restore charge limits for all vehicles at home')
+        self.lastChargeLimitApplied = limit
+
     self.carApiLastChargeLimitApplyTime = now
 
     for vehicle in self.carApiVehicles:
@@ -658,26 +664,39 @@ class TeslaAPI:
             continue
 
         located = vehicle.update_location()
-        (found, target) = self.master.getNormalChargeLimit(vehicle.ID)
+        (wasAtHome, outside, lastApplied) = self.master.getNormalChargeLimit(vehicle.ID)
+        forgetVehicle = False
+        if( not vehicle.update_charge() ):
+            # We failed to read the "normal" limit; don't risk changing it.
+            continue
+
+        if( not wasAtHome and located and vehicle.atHome ):
+            self.master.debugLog(2, "TeslaAPI  ", vehicle.name + ' has arrived')
+            outside = vehicle.chargeLimit
+        elif( wasAtHome and located and not vehicle.atHome ):
+            self.master.debugLog(2, "TeslaAPI  ", vehicle.name + ' has departed')
+            forgetVehicle = True
+
         if( limit == -1 or (located and not vehicle.atHome) ):
-            # We're removing any applied limit
-            if(found):
-                if( vehicle.apply_charge_limit(target) ):
-                    self.master.removeNormalChargeLimit(vehicle.ID)
+            # We're removing any applied limit, provided it hasn't been manually changed
+            if(wasAtHome and vehicle.chargeLimit == lastApplied):
+                if( vehicle.apply_charge_limit(outside) ):
+                    self.master.debugLog(2, "TeslaAPI  ", 'Restoring ' + vehicle.name + ' to charge limit ' + str(target) + '%')
                     vehicle.stopTryingToApplyLimit = True
+                    if( forgetVehicle ):
+                        self.master.removeNormalChargeLimit(vehicle.ID)
             else:
                 vehicle.stopTryingToApplyLimit = True
         else:
-            # We're applying a new limit
-            if( not found ):
-                if( vehicle.update_charge() ):
-                    self.master.saveNormalChargeLimit(vehicle.ID, vehicle.chargeLimit)
-                else:
-                    # We failed to read the "normal" limit; don't risk changing it.
-                    continue
+            if vehicle.chargeLimit != limit:
+                if( vehicle.apply_charge_limit(limit) ):
+                    self.master.debugLog(2, "TeslaAPI  ", 'Set ' + vehicle.name + ' to charge limit of ' + str(limit) + '%')
+                    vehicle.stopTryingToApplyLimit = True
+                    self.master.saveNormalChargeLimit(vehicle.ID, outside, limit)
+            else:
+                vehicle.stopTryingToApplyLimit = True
+                self.master.saveNormalChargeLimit(vehicle.ID, outside, limit)
 
-            vehicle.stopTryingToApplyLimit = vehicle.apply_charge_limit(limit)
-    
     if checkArrival:
         self.updateChargeAtHome()
 
@@ -793,6 +812,7 @@ class CarApiVehicle:
     config     = None
     debuglevel = 0
     ID         = None
+    name       = ''
 
     firstWakeAttemptTime = 0
     lastWakeAttemptTime = 0
@@ -811,17 +831,18 @@ class CarApiVehicle:
     lon = 10000
     atHome = False
 
-    def __init__(self, ID, carapi, config):
+    def __init__(self, json, carapi, config):
         self.carapi     = carapi
         self.config     = config
         self.debugLevel = config['config']['debugLevel']
-        self.ID         = ID
+        self.ID         = json['id']
+        self.name       = json['display_name']
 
     def ready(self, wake=True):
         if(self.carapi.getCarApiRetryRemaining(self.lastErrorTime)):
             # It's been under carApiErrorRetryMins minutes since the car API
             # generated an error on this vehicle. Return that car is not ready.
-            self.master.debugLog(8, "TeslaAPI  ", 'Vehicle ' + str(self.ID)
+            self.master.debugLog(8, "TeslaAPI  ", self.name
                     + ' not ready because of recent lastErrorTime '
                     + str(self.lastErrorTime))
             return False
@@ -836,7 +857,7 @@ class CarApiVehicle:
             # was issued.  Times I've tested: 1:35, 1:57, 2:30
             return True
 
-        self.carapi.master.debugLog(8, "TeslaVehic", 'Vehicle ' + str(self.ID) + " not ready because it wasn't woken in the last 2 minutes.")
+        self.carapi.master.debugLog(8, "TeslaVehic", self.name + " not ready because it wasn't woken in the last 2 minutes.")
         return False
 
     def get_car_api(self, url, wake=True):
@@ -902,7 +923,7 @@ class CarApiVehicle:
                 # This catches cases like trying to access
                 # apiResponseDict['response'] when 'response' doesn't exist in
                 # apiResponseDict.
-                self.carapi.master.debugLog(1, "TeslaVehic", "ERROR: Can't access vehicle status " + str(self.ID) + \
+                self.carapi.master.debugLog(1, "TeslaVehic", "ERROR: Can't access vehicle status for " + self.name + \
                           ".  Will try again later.")
                 self.lastErrorTime = self.time.time()
                 return (False, None)
@@ -1011,7 +1032,7 @@ class CarApiVehicle:
                             # in the standard error handler.
                             self.carapi.master.debugLog(1, "TeslaVehic", "Car API returned '"
                                         + error
-                                        + "' when trying to start charging.  Try again in 1 minute.")
+                                        + "' when trying to set charge limit.  Try again in 1 minute.")
                             time.sleep(60)
                             foundKnownError = True
                             break

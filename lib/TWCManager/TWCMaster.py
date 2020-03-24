@@ -365,8 +365,11 @@ class TWCMaster:
 
   def getNormalChargeLimit(self, ID):
     if 'chargeLimits' in self.settings and str(ID) in self.settings['chargeLimits']:
-        return (True, self.settings['chargeLimits'][str(ID)] )
-    return (False, None)
+        result = self.settings['chargeLimits'][str(ID)]
+        if type(result) is int:
+          result = (result, 0)
+        return (True, result[0], result[1])
+    return (False, None, None)
 
   def getSlaveByID(self, twcid):
     return self.slaveTWCs[twcid]
@@ -569,11 +572,11 @@ class TWCMaster:
     self.settings['chargeNowAmps'] = 0
     self.settings['chargeNowTimeEnd'] = 0
 
-  def saveNormalChargeLimit(self, ID, limit):
+  def saveNormalChargeLimit(self, ID, outsideLimit, lastApplied):
     if( not 'chargeLimits' in self.settings ):
       self.settings['chargeLimits'] = dict()
 
-    self.settings['chargeLimits'][str(ID)] = limit
+    self.settings['chargeLimits'][str(ID)] = (outsideLimit, lastApplied)
     self.saveSettings()
 
   def saveSettings(self):
@@ -763,7 +766,9 @@ class TWCMaster:
 
             # Yes, we will now enforce policy
             self.debugLog(7, "TWCMaster ", f("All policy conditions have matched. Policy chosen is {colored(policy['name'], 'red')}"))
-            self.active_policy = str(policy['name'])
+            if self.active_policy != str(policy['name']):
+              self.debugLog(1, "TWCMaster ", f("New policy selected; changing to {colored(policy['name'], 'red')}"))
+              self.active_policy = str(policy['name'])
 
             # Determine which value to set the charging to
             if (policy['charge_amps'] == "value"):
