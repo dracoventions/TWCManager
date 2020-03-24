@@ -638,9 +638,9 @@ class TeslaAPI:
     # We do NOT opportunistically check for arrivals, because that would be a
     # continuous API poll.
     for vehicle in self.carApiVehicles:
-        (wasAtHome, target) = self.master.getNormalChargeLimit(vehicle.ID)
+        (wasAtHome, outside, lastApplied) = self.master.getNormalChargeLimit(vehicle.ID)
         if((wasAtHome and (
-                limit != self.lastChargeLimitApplied or
+                limit != lastApplied or
                 checkDeparture or
                 (vehicle.update_location(wake=False) and not vehicle.atHome))) or
             (not wasAtHome and checkArrival)):
@@ -664,23 +664,23 @@ class TeslaAPI:
             continue
 
         located = vehicle.update_location()
-        (wasAtHome, target) = self.master.getNormalChargeLimit(vehicle.ID)
+        (wasAtHome, outside, lastApplied) = self.master.getNormalChargeLimit(vehicle.ID)
         forgetVehicle = False
+        if( not vehicle.update_charge() ):
+            # We failed to read the "normal" limit; don't risk changing it.
+            continue
+
         if( not wasAtHome and located and vehicle.atHome ):
             self.master.debugLog(2, "TeslaAPI  ", vehicle.name + ' has arrived')
-            if( vehicle.update_charge() ):
-                self.master.saveNormalChargeLimit(vehicle.ID, vehicle.chargeLimit)
-            else:
-                # We failed to read the "normal" limit; don't risk changing it.
-                continue
-        if( wasAtHome and located and not vehicle.atHome ):
+            outside = vehicle.chargeLimit
+        elif( wasAtHome and located and not vehicle.atHome ):
             self.master.debugLog(2, "TeslaAPI  ", vehicle.name + ' has departed')
             forgetVehicle = True
 
         if( limit == -1 or (located and not vehicle.atHome) ):
-            # We're removing any applied limit
-            if(wasAtHome):
-                if( vehicle.apply_charge_limit(target) ):
+            # We're removing any applied limit, provided it hasn't been manually changed
+            if(wasAtHome and vehicle.chargeLimit == lastApplied):
+                if( vehicle.apply_charge_limit(outside) ):
                     self.master.debugLog(2, "TeslaAPI  ", 'Restoring ' + vehicle.name + ' to charge limit ' + str(target) + '%')
                     vehicle.stopTryingToApplyLimit = True
                     if( forgetVehicle ):
@@ -690,6 +690,7 @@ class TeslaAPI:
         elif vehicle.apply_charge_limit(limit):
             self.master.debugLog(2, "TeslaAPI  ", 'Set ' + vehicle.name + ' to charge limit of ' + str(limit) + '%')
             vehicle.stopTryingToApplyLimit = True
+            self.master.saveNormalChargeLimit(vehicle.ID, outside, limit)
 
     if checkArrival:
         self.updateChargeAtHome()

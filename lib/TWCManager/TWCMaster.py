@@ -365,8 +365,11 @@ class TWCMaster:
 
   def getNormalChargeLimit(self, ID):
     if 'chargeLimits' in self.settings and str(ID) in self.settings['chargeLimits']:
-        return (True, self.settings['chargeLimits'][str(ID)] )
-    return (False, None)
+        result = self.settings['chargeLimits'][str(ID)]
+        if type(result) is int:
+          result = (result, 0)
+        return (True,) + result
+    return (False, None, None)
 
   def getSlaveByID(self, twcid):
     return self.slaveTWCs[twcid]
@@ -569,11 +572,11 @@ class TWCMaster:
     self.settings['chargeNowAmps'] = 0
     self.settings['chargeNowTimeEnd'] = 0
 
-  def saveNormalChargeLimit(self, ID, limit):
+  def saveNormalChargeLimit(self, ID, outsideLimit, lastApplied):
     if( not 'chargeLimits' in self.settings ):
       self.settings['chargeLimits'] = dict()
 
-    self.settings['chargeLimits'][str(ID)] = limit
+    self.settings['chargeLimits'][str(ID)] = (outsideLimit, lastApplied)
     self.saveSettings()
 
   def saveSettings(self):
