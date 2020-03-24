@@ -634,7 +634,7 @@ class TeslaAPI:
     #   - We think the car is at home and we've been asked to check for departures
     #   - We think the car is at home and we notice it gone
     #   - We think the car is away from home and we've been asked to check for arrivals
-    # 
+    #
     # We do NOT opportunistically check for arrivals, because that would be a
     # continuous API poll.
     for vehicle in self.carApiVehicles:
@@ -643,7 +643,7 @@ class TeslaAPI:
                 limit != self.lastChargeLimitApplied or
                 checkDeparture or
                 (vehicle.update_location(wake=False) and not vehicle.atHome))) or
-            (not wasAtHome and limit != -1 and checkArrival)):
+            (not wasAtHome and checkArrival)):
             vehicle.stopTryingToApplyLimit = False
 
     if(self.car_api_available(applyLimit = True) == False):
