@@ -368,7 +368,7 @@ class TWCMaster:
         result = self.settings['chargeLimits'][str(ID)]
         if type(result) is int:
           result = (result, 0)
-        return (True,) + result
+        return (True, result[0], result[1])
     return (False, None, None)
 
   def getSlaveByID(self, twcid):
