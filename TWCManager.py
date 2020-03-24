@@ -47,6 +47,7 @@ from lib.TWCManager.TWCMaster import TWCMaster
 # Define available modules for the instantiator
 # All listed modules will be loaded at boot time
 modules_available = [
+  "Interface.Dummy",
   "Interface.RS485",
   "Interface.TCP",
   "Vehicle.TeslaAPI",

@@ -131,7 +131,7 @@
         # 9 includes raw RS-485 messages transmitted and received (2-3 per sec)
         # 10 is all info.
         # 11 is more than all info.  ;)
-        "debugLevel": 11,
+        "debugLevel": 1,
 
         # Choose whether to display milliseconds after time on each line of debug info.
         "displayMilliseconds": false,
@@ -153,6 +153,14 @@
     # Note that only one interface can be enabled for a valid configuration.
     # If you enable more than one, only the first enabled interface will be used
     "interface": {
+      "Dummy": {
+        "enabled": false,
+
+        # The dummy module is used for testing. It will simulate an actual
+        # slave TWC for the purpose of offline testing of TWCManager.
+        # Most people would not enable this module.
+        "twcID": 1234
+      },
       "RS485": {
         "enabled": true,
 
@@ -171,6 +179,10 @@
       },
       "TCP": {
         "enabled": false
+
+        # The TCP module allows communications over a TCP listener or client
+        # socket. This can be used to integrate with network-based RS485
+        # interfaces.
       }
     "control": {
       "HTTP": {
