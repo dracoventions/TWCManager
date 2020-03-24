@@ -687,10 +687,15 @@ class TeslaAPI:
                         self.master.removeNormalChargeLimit(vehicle.ID)
             else:
                 vehicle.stopTryingToApplyLimit = True
-        elif vehicle.apply_charge_limit(limit):
-            self.master.debugLog(2, "TeslaAPI  ", 'Set ' + vehicle.name + ' to charge limit of ' + str(limit) + '%')
-            vehicle.stopTryingToApplyLimit = True
-            self.master.saveNormalChargeLimit(vehicle.ID, outside, limit)
+        else:
+            if vehicle.chargeLimit != limit:
+                if( vehicle.apply_charge_limit(limit) ):
+                    self.master.debugLog(2, "TeslaAPI  ", 'Set ' + vehicle.name + ' to charge limit of ' + str(limit) + '%')
+                    vehicle.stopTryingToApplyLimit = True
+                    self.master.saveNormalChargeLimit(vehicle.ID, outside, limit)
+            else:
+                vehicle.stopTryingToApplyLimit = True
+                self.master.saveNormalChargeLimit(vehicle.ID, outside, limit)
 
     if checkArrival:
         self.updateChargeAtHome()
