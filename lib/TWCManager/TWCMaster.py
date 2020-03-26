@@ -714,61 +714,73 @@ class TWCMaster:
 
     for policy in self.charge_policy:
 
+      # Check if the policy is within its latching period
+      latched = False
+      if '__latchTime' in policy:
+        if time.time() < policy['__latchTime']:
+          latched = True
+        else:
+          del policy['__latchTime']
+
       # Iterate through each set of match, condition and value sets
       iter = 0
       for match, condition, value in zip(policy['match'], policy['condition'], policy['value']):
 
-        iter += 1
-        self.debugLog(8, "TWCMaster ", f("Evaluating Policy match ({colored(match, 'red')}), condition ({colored(condition, 'red')}), value ({colored(value, 'red')}), iteration ({colored(iter, 'red')})"))
-        # Start by not having matched the condition
-        is_matched = 0
-        match = self.policyValue(match)
-        value = self.policyValue(value)
-
-        # Perform comparison
-        if (condition == "gt"):
-          # Match must be greater than value
-          if (match > value):
-            is_matched = 1
-        elif (condition == "gte"):
-          # Match must be greater than or equal to value
-          if (match >= value):
-            is_matched = 1
-        elif (condition == "lt"):
-          # Match must be less than value
-          if (match < value):
-            is_matched = 1
-        elif (condition == "lte"):
-          # Match must be less than or equal to value
-          if (match <= value):
-            is_matched = 1
-        elif (condition == "eq"):
-          # Match must be equal to value
-          if (match == value):
-            is_matched = 1
-        elif (condition == "ne"):
-          # Match must not be equal to value
-          if (match != value):
-            is_matched = 1
-        elif (condition == "false"):
-          # Condition: false is a method to ensure a policy entry
-          # is never matched, possibly for testing purposes
+        if not latched:
+          iter += 1
+          self.debugLog(8, "TWCMaster ", f("Evaluating Policy match ({colored(match, 'red')}), condition ({colored(condition, 'red')}), value ({colored(value, 'red')}), iteration ({colored(iter, 'red')})"))
+          # Start by not having matched the condition
           is_matched = 0
-        elif (condition == "none"):
-          # No condition exists.
-          is_matched = 1
+          match = self.policyValue(match)
+          value = self.policyValue(value)
+
+          # Perform comparison
+          if (condition == "gt"):
+            # Match must be greater than value
+            if (match > value):
+              is_matched = 1
+          elif (condition == "gte"):
+            # Match must be greater than or equal to value
+            if (match >= value):
+              is_matched = 1
+          elif (condition == "lt"):
+            # Match must be less than value
+            if (match < value):
+              is_matched = 1
+          elif (condition == "lte"):
+            # Match must be less than or equal to value
+            if (match <= value):
+              is_matched = 1
+          elif (condition == "eq"):
+            # Match must be equal to value
+            if (match == value):
+              is_matched = 1
+          elif (condition == "ne"):
+            # Match must not be equal to value
+            if (match != value):
+              is_matched = 1
+          elif (condition == "false"):
+            # Condition: false is a method to ensure a policy entry
+            # is never matched, possibly for testing purposes
+            is_matched = 0
+          elif (condition == "none"):
+            # No condition exists.
+            is_matched = 1
 
         # Check if we have met all criteria
-        if (is_matched):
+        if (latched or is_matched):
 
           # Have we checked all policy conditions yet?
-          if (len(policy['match']) == iter):
+          if (latched or len(policy['match']) == iter):
 
             # Yes, we will now enforce policy
             self.debugLog(7, "TWCMaster ", f("All policy conditions have matched. Policy chosen is {colored(policy['name'], 'red')}"))
             if self.active_policy != str(policy['name']):
               self.debugLog(1, "TWCMaster ", f("New policy selected; changing to {colored(policy['name'], 'red')}"))
               self.active_policy = str(policy['name'])
+
+            if not latched and 'latch_period' in policy:
+              policy['__latchTime'] = time.time() + policy['latch_period'] * 60
 
             # Determine which value to set the charging to
             if (policy['charge_amps'] == "value"):
