@@ -66,6 +66,8 @@ The values in a policy definition are:
   effect (optional)
 - `background_task`:  A background task to be run periodically while the policy
   is in effect (optional)
+- `latch_period`:  If the conditions for this policy are ever matched, treat
+  them as matched for this many minutes, even if they change. (optional)
 
 ### Policy Values
 
