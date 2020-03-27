@@ -681,7 +681,7 @@ class TeslaAPI:
             # We're removing any applied limit, provided it hasn't been manually changed
             if(wasAtHome and vehicle.chargeLimit == lastApplied):
                 if( vehicle.apply_charge_limit(outside) ):
-                    self.master.debugLog(2, "TeslaAPI  ", 'Restoring ' + vehicle.name + ' to charge limit ' + str(target) + '%')
+                    self.master.debugLog(2, "TeslaAPI  ", 'Restoring ' + vehicle.name + ' to charge limit ' + str(outside) + '%')
                     vehicle.stopTryingToApplyLimit = True
                     if( forgetVehicle ):
                         self.master.removeNormalChargeLimit(vehicle.ID)
