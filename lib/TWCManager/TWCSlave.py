@@ -545,6 +545,14 @@ class TWCSlave:
         if self.minAmpsTWCSupports > minAmpsToOffer:
             minAmpsToOffer = self.minAmpsTWCSupports
 
+        flex = self.master.getAllowedFlex()
+        if (
+            desiredAmpsOffered < minAmpsToOffer
+            and desiredAmpsOffered + flex >= minAmpsToOffer
+            and self.reportedAmpsActual >= 1.0
+        ):
+            desiredAmpsOffered = minAmpsToOffer
+
         if desiredAmpsOffered < minAmpsToOffer:
             self.master.debugLog(
                 10,
