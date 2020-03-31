@@ -452,14 +452,7 @@ class TWCSlave:
         desiredAmpsOffered = self.master.getMaxAmpsToDivideAmongSlaves()
 
         if (numCarsCharging > 0):
-            for slaveTWC in self.master.getSlaveTWCs():
-                if(slaveTWC.TWCID != self.TWCID):
-                    # To avoid exceeding maxAmpsToDivideAmongSlaves, we must
-                    # subtract the actual amps being used by this TWC from the amps
-                    # we will offer.
-                    desiredAmpsOffered -= slaveTWC.reportedAmpsActual
-                    if(slaveTWC.reportedAmpsActual >= 1.0):
-                        numCarsCharging += 1
+            desiredAmpsOffered -= sum(slaveTWC.reportedAmpsActual for slaveTWC in self.master.getSlaveTWCs() if slaveTWC.TWCID != self.TWCID)
 
             # Allocate this slave a fraction of maxAmpsToDivideAmongSlaves divided
             # by the number of cars actually charging.

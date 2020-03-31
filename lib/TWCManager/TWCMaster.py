@@ -467,11 +467,18 @@ class TWCMaster:
 
     carsCharging = 0
     for slaveTWC in self.getSlaveTWCs():
-        if(slaveTWC.reportedAmpsActual >= 1.0):
-            carsCharging += 1
-            self.debugLog(10, "TWCMaster ", "Number of cars charging now: " + str(carsCharging))
-            for module in self.getModulesByType('Status'):
-              module['ref'].setStatus(slaveTWC.TWCID, "cars_charging", "carsCharging", carsCharging)
+        charging = 1 if slaveTWC.reportedAmpsActual >= 1.0 else 0
+        carsCharging += charging
+        for module in self.getModulesByType('Status'):
+          module['ref'].setStatus(slaveTWC.TWCID, "cars_charging", "carsCharging", charging)
+    self.debugLog(10, "TWCMaster ", "Number of cars charging now: " + str(carsCharging))
+    return carsCharging
+
+
+    carsCharging = len([slaveTWC for slaveTWC in self.getSlaveTWCs() if slaveTWC.reportedAmpsActual >= 1.0])
+    self.debugLog(10, "TWCMaster ", "Number of cars charging now: " + str(carsCharging))
+    for module in self.getModulesByType('Status'):
+      module['ref'].setStatus(slaveTWC.TWCID, "cars_charging", "carsCharging", carsCharging)
     return carsCharging
 
   def policyValue(self, value):
