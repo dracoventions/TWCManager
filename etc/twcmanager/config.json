@@ -77,22 +77,22 @@
         # a car not at home being stopped from charging by the API.
         "onlyChargeMultiCarsAtHome": true,
 
-        # After determining how much green energy is available for charging, we add
-        # greenEnergyAmpsOffset to the value. This is most often given a negative value
+        # When determining how much green energy is available for charging, we count
+        # greenEnergyAmpsOffset as consumption. This is most often given a value
         # equal to the average amount of power consumed by everything other than car
         # charging. For example, if your house uses an average of 2.8A to power
         # computers, lights, etc while you expect the car to be charging, set
-        # greenEnergyAmpsOffset = -2.8.
+        # greenEnergyAmpsOffset = 2.8.
         #
         # If you have solar panels, look at your utility meter while your car charges.
         # If it says you're using 0.67kW, that means you should set
-        # greenEnergyAmpsOffset = -0.67kW * 1000 / 240V = -2.79A assuming you're on the
+        # greenEnergyAmpsOffset = 0.67kW * 1000 / 240V = 2.79A assuming you're on the
         # North American 240V grid. In other words, during car charging, you want your
         # utility meter to show a value close to 0kW meaning no energy is being sent to
         # or from the grid.
-
-        # If you are able to obtain consumption details from HomeAssistant, this value is
-        # not needed and can be set to 0
+        #
+        # If you are able to obtain consumption details from an energy management system,
+        # this value can be set to 0 unless you wish to manually adjust what it returns.
         "greenEnergyAmpsOffset": 0,
 
         # In some environments, the consumption meter value that we obtain will
