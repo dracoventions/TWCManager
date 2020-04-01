@@ -47,37 +47,38 @@ from lib.TWCManager.TWCMaster import TWCMaster
 # Define available modules for the instantiator
 # All listed modules will be loaded at boot time
 modules_available = [
-  "Interface.Dummy",
-  "Interface.RS485",
-  "Interface.TCP",
-  "Vehicle.TeslaAPI",
-  "Control.HTTPControl",
-  "Control.MQTTControl",
-  "EMS.Fronius",
-  "EMS.HASS",
-  "EMS.TeslaPowerwall2",
-  "EMS.TED",
-  "Status.HASSStatus",
-  "Status.MQTTStatus"
+    "Interface.Dummy",
+    "Interface.RS485",
+    "Interface.TCP",
+    "Vehicle.TeslaAPI",
+    "Control.HTTPControl",
+    "Control.MQTTControl",
+    "EMS.Fronius",
+    "EMS.HASS",
+    "EMS.TeslaPowerwall2",
+    "EMS.TED",
+    "Status.HASSStatus",
+    "Status.MQTTStatus",
 ]
 
 # Enable support for Python Visual Studio Debugger
-if 'DEBUG_SECRET' in os.environ:
+if "DEBUG_SECRET" in os.environ:
     import ptvsd
-    ptvsd.enable_attach(os.environ['DEBUG_SECRET'])
+
+    ptvsd.enable_attach(os.environ["DEBUG_SECRET"])
     ptvsd.wait_for_attach()
 
 ##########################
 # Load Configuration File
 config = None
 jsonconfig = None
-if (os.path.isfile('/etc/twcmanager/config.json')):
-    jsonconfig = open('/etc/twcmanager/config.json')
+if os.path.isfile("/etc/twcmanager/config.json"):
+    jsonconfig = open("/etc/twcmanager/config.json")
 else:
-    if (os.path.isfile('config.json')):
-        jsonconfig = open('config.json')
+    if os.path.isfile("config.json"):
+        jsonconfig = open("config.json")
 
-if (jsonconfig):
+if jsonconfig:
     config = commentjson.load(jsonconfig)
 else:
     print("Unable to find a configuration file.")
@@ -89,7 +90,7 @@ else:
 # This isn't really too important because even if this ID matches another TWC on
 # the network, that TWC will pick its own new random ID as soon as it sees ours
 # conflicts.
-fakeTWCID = bytearray(b'\x77\x77')
+fakeTWCID = bytearray(b"\x77\x77")
 
 #
 # End configuration parameters
@@ -102,25 +103,33 @@ fakeTWCID = bytearray(b'\x77\x77')
 # Begin functions
 #
 
-def debugLog(minlevel, message):
-  if (config['config']['debugLevel'] >= minlevel):
-    print(colored(master.time_now() + " ", 'yellow') + \
-          colored("TWCManager", 'green') + \
-          colored(f(" {minlevel} "), 'cyan') + \
-          f("{message}"))
 
-def hex_str(s:str):
+def debugLog(minlevel, message):
+    if config["config"]["debugLevel"] >= minlevel:
+        print(
+            colored(master.time_now() + " ", "yellow")
+            + colored("TWCManager", "green")
+            + colored(f(" {minlevel} "), "cyan")
+            + f("{message}")
+        )
+
+
+def hex_str(s: str):
     return " ".join("{:02X}".format(ord(c)) for c in s)
 
-def hex_str(ba:bytearray):
+
+def hex_str(ba: bytearray):
     return " ".join("{:02X}".format(c) for c in ba)
+
 
 def time_now():
     global config
-    return(datetime.now().strftime("%H:%M:%S" + (
-        ".%f" if config['config']['displayMilliseconds'] else "")))
+    return datetime.now().strftime(
+        "%H:%M:%S" + (".%f" if config["config"]["displayMilliseconds"] else "")
+    )
 
-def unescape_msg(msg:bytearray, msgLen):
+
+def unescape_msg(msg: bytearray, msgLen):
     # Given a message received on the RS485 network, remove leading and trailing
     # C0 byte, unescape special byte values, and verify its data matches the CRC
     # byte.
@@ -132,29 +141,32 @@ def unescape_msg(msg:bytearray, msgLen):
     # the end looking at i+1.
     i = 0
     while i < len(msg):
-        if(msg[i] == 0xdb):
-            if(msg[i+1] == 0xdc):
+        if msg[i] == 0xDB:
+            if msg[i + 1] == 0xDC:
                 # Replace characters at msg[i] and msg[i+1] with 0xc0,
                 # shortening the string by one character. In Python, msg[x:y]
                 # refers to a substring starting at x and ending immediately
                 # before y. y - x is the length of the substring.
-                msg[i:i+2] = [0xc0]
-            elif(msg[i+1] == 0xdd):
-                msg[i:i+2] = [0xdb]
+                msg[i : i + 2] = [0xC0]
+            elif msg[i + 1] == 0xDD:
+                msg[i : i + 2] = [0xDB]
             else:
-                debugLog(1, "ERROR: Special character 0xDB in message is " \
-                  "followed by invalid character 0x%02X.  " \
-                  "Message may be corrupted." %
-                  (msg[i+1]))
+                debugLog(
+                    1,
+                    "ERROR: Special character 0xDB in message is "
+                    "followed by invalid character 0x%02X.  "
+                    "Message may be corrupted." % (msg[i + 1]),
+                )
 
                 # Replace the character with something even though it's probably
                 # not the right thing.
-                msg[i:i+2] = [0xdb]
-        i = i+1
+                msg[i : i + 2] = [0xDB]
+        i = i + 1
 
     # Remove leading and trailing C0 byte.
-    msg = msg[1:len(msg)-1]
+    msg = msg[1 : len(msg) - 1]
     return msg
+
 
 def background_tasks_thread():
     global master
@@ -163,25 +175,29 @@ def background_tasks_thread():
     while True:
         task = master.getBackgroundTask()
 
-        if(task['cmd'] == 'charge'):
+        if task["cmd"] == "charge":
             # car_api_charge does nothing if it's been under 60 secs since it
             # was last used so we shouldn't have to worry about calling this
             # too frequently.
-            carapi.car_api_charge(task['charge'])
-        elif(task['cmd'] == 'carApiEmailPassword'):
+            carapi.car_api_charge(task["charge"])
+        elif task["cmd"] == "carApiEmailPassword":
             carapi.setCarApiLastErrorTime(0)
-            carapi.car_api_available(task['email'], task['password'])
-        elif(task['cmd'] == 'checkGreenEnergy'):
+            carapi.car_api_available(task["email"], task["password"])
+        elif task["cmd"] == "checkGreenEnergy":
             check_green_energy()
-        elif(task['cmd'] == 'updateStatus'):
+        elif task["cmd"] == "updateStatus":
             update_statuses()
-        elif(task['cmd'] == 'applyChargeLimit'):
-            carapi.applyChargeLimit(limit=task['limit'])
-        elif(task['cmd'] == 'checkArrival'):
-            carapi.applyChargeLimit(limit=carapi.lastChargeLimitApplied, checkArrival=True)
-        elif(task['cmd'] == 'checkDeparture'):
-            carapi.applyChargeLimit(limit=carapi.lastChargeLimitApplied, checkDeparture=True)
-        elif(task['cmd'] == 'checkCharge'):
+        elif task["cmd"] == "applyChargeLimit":
+            carapi.applyChargeLimit(limit=task["limit"])
+        elif task["cmd"] == "checkArrival":
+            carapi.applyChargeLimit(
+                limit=carapi.lastChargeLimitApplied, checkArrival=True
+            )
+        elif task["cmd"] == "checkDeparture":
+            carapi.applyChargeLimit(
+                limit=carapi.lastChargeLimitApplied, checkDeparture=True
+            )
+        elif task["cmd"] == "checkCharge":
             carapi.updateChargeAtHome()
 
         # Delete task['cmd'] from backgroundTasksCmds such that
@@ -193,6 +209,7 @@ def background_tasks_thread():
         # in the queue are done.
         master.doneBackgroundTask()
 
+
 def check_green_energy():
     global config, hass, master
 
@@ -203,38 +220,60 @@ def check_green_energy():
     # to match those used in your environment. This is configured
     # in the config section at the top of this file.
     #
-    master.setConsumption('Manual', (config['config']['greenEnergyAmpsOffset'] * 240))
+    master.setConsumption("Manual", (config["config"]["greenEnergyAmpsOffset"] * 240))
     # Poll all loaded EMS modules for consumption and generation values
-    for module in master.getModulesByType('EMS'):
-      master.setConsumption(module["name"], module["ref"].getConsumption())
-      master.setGeneration(module["name"], module["ref"].getGeneration())
+    for module in master.getModulesByType("EMS"):
+        master.setConsumption(module["name"], module["ref"].getConsumption())
+        master.setGeneration(module["name"], module["ref"].getGeneration())
+
 
 def update_statuses():
 
-  # Print a status update if we are on track green energy showing the
-  # generation and consumption figures
-  maxamps = f("{master.getMaxAmpsToDivideAmongSlaves():.2f}A")
-  if (master.active_policy == "Track Green Energy"):
-    genwatts = f("{master.getGeneration():.0f}W")
-    conwatts = f("{master.getConsumption():.0f}W")
-    chgwatts = f("{master.getChargerLoad():.0f}W")
-    debugLog(1, f("Green energy generates {colored(genwatts, 'magenta')}, Consumption {colored(conwatts, 'magenta')}, Charger Load {colored(chgwatts, 'magenta')}"))
-    generation = f("{master.getGeneration() / 240:.2f}A")
-    consumption = f("{master.getGenerationOffset() / 240:.2f}A")
-    debugLog(1, f("Limiting charging to {colored(generation, 'magenta')} - {colored(consumption, 'magenta')} = {colored(maxamps, 'magenta')}."))
+    # Print a status update if we are on track green energy showing the
+    # generation and consumption figures
+    maxamps = f("{master.getMaxAmpsToDivideAmongSlaves():.2f}A")
+    if master.active_policy == "Track Green Energy":
+        genwatts = f("{master.getGeneration():.0f}W")
+        conwatts = f("{master.getConsumption():.0f}W")
+        chgwatts = f("{master.getChargerLoad():.0f}W")
+        debugLog(
+            1,
+            f(
+                "Green energy generates {colored(genwatts, 'magenta')}, Consumption {colored(conwatts, 'magenta')}, Charger Load {colored(chgwatts, 'magenta')}"
+            ),
+        )
+        generation = f("{master.getGeneration() / 240:.2f}A")
+        consumption = f("{master.getGenerationOffset() / 240:.2f}A")
+        debugLog(
+            1,
+            f(
+                "Limiting charging to {colored(generation, 'magenta')} - {colored(consumption, 'magenta')} = {colored(maxamps, 'magenta')}."
+            ),
+        )
 
-  else:
-    # For all other modes, simply show the Amps to charge at
-    debugLog(1, f("Limiting charging to {colored(maxamps, 'magenta')}."))
+    else:
+        # For all other modes, simply show the Amps to charge at
+        debugLog(1, f("Limiting charging to {colored(maxamps, 'magenta')}."))
 
-  # Print minimum charge for all charging policies
-  minchg = f("{config['config']['minAmpsPerTWC']}A")
-  debugLog(1, f("Charge when above {colored(minchg, 'magenta')} (minAmpsPerTWC)."))
+    # Print minimum charge for all charging policies
+    minchg = f("{config['config']['minAmpsPerTWC']}A")
+    debugLog(1, f("Charge when above {colored(minchg, 'magenta')} (minAmpsPerTWC)."))
 
-  # Update Sensors with min/max amp values
-  for module in master.getModulesByType('Status'):
-    module['ref'].setStatus(bytes("config", 'UTF-8'), "min_amps_per_twc", "minAmpsPerTWC", config['config']['minAmpsPerTWC'])
-    module['ref'].setStatus(bytes("all", 'UTF-8'), "max_amps_for_slaves", "maxAmpsForSlaves", master.getMaxAmpsToDivideAmongSlaves())
+    # Update Sensors with min/max amp values
+    for module in master.getModulesByType("Status"):
+        module["ref"].setStatus(
+            bytes("config", "UTF-8"),
+            "min_amps_per_twc",
+            "minAmpsPerTWC",
+            config["config"]["minAmpsPerTWC"],
+        )
+        module["ref"].setStatus(
+            bytes("all", "UTF-8"),
+            "max_amps_for_slaves",
+            "maxAmpsForSlaves",
+            master.getMaxAmpsToDivideAmongSlaves(),
+        )
+
 
 #
 # End functions
@@ -246,7 +285,7 @@ def update_statuses():
 # Begin global vars
 #
 
-data = ''
+data = ""
 dataLen = 0
 ignoredData = bytearray()
 msg = bytearray()
@@ -260,7 +299,7 @@ timeLastkWhDelivered = time.time()
 timeLastkWhSaved = time.time()
 timeLastHeartbeatDebugOutput = 0
 
-webMsgPacked = ''
+webMsgPacked = ""
 webMsgMaxSize = 300
 webMsgResult = 0
 
@@ -283,17 +322,19 @@ master = TWCMaster(fakeTWCID, config)
 
 # Instantiate all modules in the modules_available list automatically
 for module in modules_available:
-  modulename = []
-  if str(module).find(".") != -1:
-    modulename = str(module).split(".")
+    modulename = []
+    if str(module).find(".") != -1:
+        modulename = str(module).split(".")
 
-  moduleref = importlib.import_module("lib.TWCManager." + module)
-  modclassref = getattr(moduleref, modulename[1])
-  modinstance = modclassref(master)
+    moduleref = importlib.import_module("lib.TWCManager." + module)
+    modclassref = getattr(moduleref, modulename[1])
+    modinstance = modclassref(master)
 
-  # Register the new module with master class, so every other module can
-  # interact with it
-  master.registerModule({ "name": modulename[1], "ref": modinstance, "type": modulename[0] })
+    # Register the new module with master class, so every other module can
+    # interact with it
+    master.registerModule(
+        {"name": modulename[1], "ref": modinstance, "type": modulename[0]}
+    )
 
 webipccontrol = WebIPCControl(master)
 
@@ -303,13 +344,20 @@ master.loadSettings()
 # Create a background thread to handle tasks that take too long on the main
 # thread.  For a primer on threads in Python, see:
 # http://www.laurentluce.com/posts/python-threads-synchronization-locks-rlocks-semaphores-conditions-events-and-queues/
-backgroundTasksThread = threading.Thread(target=background_tasks_thread, args = ())
+backgroundTasksThread = threading.Thread(target=background_tasks_thread, args=())
 backgroundTasksThread.daemon = True
 backgroundTasksThread.start()
 
-debugLog(1, "TWC Manager starting as fake %s with id %02X%02X and sign %02X" \
-    % ( ("Master" if config['config']['fakeMaster'] else "Slave"), \
-    ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(master.getSlaveSign())))
+debugLog(
+    1,
+    "TWC Manager starting as fake %s with id %02X%02X and sign %02X"
+    % (
+        ("Master" if config["config"]["fakeMaster"] else "Slave"),
+        ord(fakeTWCID[0:1]),
+        ord(fakeTWCID[1:2]),
+        ord(master.getSlaveSign()),
+    ),
+)
 
 while True:
     try:
@@ -327,18 +375,18 @@ while True:
 
         now = time.time()
 
-        if(config['config']['fakeMaster'] == 1):
+        if config["config"]["fakeMaster"] == 1:
             # A real master sends 5 copies of linkready1 and linkready2 whenever
             # it starts up, which we do here.
             # It doesn't seem to matter if we send these once per second or once
             # per 100ms so I do once per 100ms to get them over with.
-            if(numInitMsgsToSend > 5):
+            if numInitMsgsToSend > 5:
                 master.send_master_linkready1()
-                time.sleep(0.1) # give slave time to respond
+                time.sleep(0.1)  # give slave time to respond
                 numInitMsgsToSend -= 1
-            elif(numInitMsgsToSend > 0):
+            elif numInitMsgsToSend > 0:
                 master.send_master_linkready2()
-                time.sleep(0.1) # give slave time to respond
+                time.sleep(0.1)  # give slave time to respond
                 numInitMsgsToSend = numInitMsgsToSend - 1
             else:
                 # After finishing the 5 startup linkready1 and linkready2
@@ -348,29 +396,32 @@ while True:
                 # as long as no slave was connected, but since real slaves send
                 # linkready once every 10 seconds till they're connected to a
                 # master, we'll just wait for that.
-                if(time.time() - master.getTimeLastTx() >= 1.0):
+                if time.time() - master.getTimeLastTx() >= 1.0:
                     # It's been about a second since our last heartbeat.
-                    if(master.countSlaveTWC() > 0):
+                    if master.countSlaveTWC() > 0:
                         slaveTWC = master.getSlaveTWC(idxSlaveToSendNextHeartbeat)
-                        if(time.time() - slaveTWC.timeLastRx > 26):
+                        if time.time() - slaveTWC.timeLastRx > 26:
                             # A real master stops sending heartbeats to a slave
                             # that hasn't responded for ~26 seconds. It may
                             # still send the slave a heartbeat every once in
                             # awhile but we're just going to scratch the slave
                             # from our little black book and add them again if
                             # they ever send us a linkready.
-                            debugLog(1, "WARNING: We haven't heard from slave " \
-                                "%02X%02X for over 26 seconds.  " \
-                                "Stop sending them heartbeat messages." % \
-                                (slaveTWC.TWCID[0], slaveTWC.TWCID[1]))
+                            debugLog(
+                                1,
+                                "WARNING: We haven't heard from slave "
+                                "%02X%02X for over 26 seconds.  "
+                                "Stop sending them heartbeat messages."
+                                % (slaveTWC.TWCID[0], slaveTWC.TWCID[1]),
+                            )
                             master.deleteSlaveTWC(slaveTWC.TWCID)
                         else:
                             slaveTWC.send_master_heartbeat()
 
                         idxSlaveToSendNextHeartbeat = idxSlaveToSendNextHeartbeat + 1
-                        if(idxSlaveToSendNextHeartbeat >= master.countSlaveTWC()):
+                        if idxSlaveToSendNextHeartbeat >= master.countSlaveTWC():
                             idxSlaveToSendNextHeartbeat = 0
-                        time.sleep(0.1) # give slave time to respond
+                        time.sleep(0.1)  # give slave time to respond
         else:
             # As long as a slave is running, it sends link ready messages every
             # 10 seconds. They trigger any master on the network to handshake
@@ -382,11 +433,21 @@ while True:
             # I've also verified that masters don't care if we stop sending link
             # ready as long as we send status updates in response to master's
             # status updates.
-            if(config['config']['fakeMaster'] != 2 and time.time() - master.getTimeLastTx() >= 10.0):
-                debugLog(1, "Advertise fake slave %02X%02X with sign %02X is " \
-                          "ready to link once per 10 seconds as long as master " \
-                          "hasn't sent a heartbeat in the last 10 seconds." % \
-                        (ord(fakeTWCID[0:1]), ord(fakeTWCID[1:2]), ord(master.getSlaveSign())))
+            if (
+                config["config"]["fakeMaster"] != 2
+                and time.time() - master.getTimeLastTx() >= 10.0
+            ):
+                debugLog(
+                    1,
+                    "Advertise fake slave %02X%02X with sign %02X is "
+                    "ready to link once per 10 seconds as long as master "
+                    "hasn't sent a heartbeat in the last 10 seconds."
+                    % (
+                        ord(fakeTWCID[0:1]),
+                        ord(fakeTWCID[1:2]),
+                        ord(master.getSlaveSign()),
+                    ),
+                )
                 master.send_slave_linkready()
 
         ########################################################################
@@ -401,8 +462,8 @@ while True:
         while True:
             now = time.time()
             dataLen = master.getModuleByName("RS485").getBufferLen()
-            if(dataLen == 0):
-                if(msgLen == 0):
+            if dataLen == 0:
+                if msgLen == 0:
                     # No message data waiting and we haven't received the
                     # start of a new message yet. Break out of inner while
                     # to continue at top of outer while loop where we may
@@ -411,9 +472,14 @@ while True:
                 else:
                     # No message data waiting but we've received a partial
                     # message that we should wait to finish receiving.
-                    if(now - timeMsgRxStart >= 2.0):
-                        debugLog(9, "Msg timeout (" + hex_str(ignoredData) +
-                                  ') ' + hex_str(msg[0:msgLen]))
+                    if now - timeMsgRxStart >= 2.0:
+                        debugLog(
+                            9,
+                            "Msg timeout ("
+                            + hex_str(ignoredData)
+                            + ") "
+                            + hex_str(msg[0:msgLen]),
+                        )
                         msgLen = 0
                         ignoredData = bytearray()
                         break
@@ -424,20 +490,20 @@ while True:
                 dataLen = 1
                 data = master.getModuleByName("RS485").read(dataLen)
 
-            if(dataLen != 1):
+            if dataLen != 1:
                 # This should never happen
                 debugLog(1, "WARNING: No data available.")
                 break
 
             timeMsgRxStart = now
             timeLastRx = now
-            if(msgLen == 0 and data[0] != 0xc0):
+            if msgLen == 0 and data[0] != 0xC0:
                 # We expect to find these non-c0 bytes between messages, so
                 # we don't print any warning at standard debug levels.
                 debugLog(11, "Ignoring byte %02X between messages." % (data[0]))
                 ignoredData += data
                 continue
-            elif(msgLen > 0 and msgLen < 15 and data[0] == 0xc0):
+            elif msgLen > 0 and msgLen < 15 and data[0] == 0xC0:
                 # If you see this when the program is first started, it
                 # means we started listening in the middle of the TWC
                 # sending a message so we didn't see the whole message and
@@ -447,14 +513,17 @@ while True:
                 # happen every once in awhile but there may be a problem
                 # such as incorrect termination or bias resistors on the
                 # rs485 wiring if you see it frequently.
-                debugLog(10, "Found end of message before full-length message received.  " \
-                          "Discard and wait for new message.")
+                debugLog(
+                    10,
+                    "Found end of message before full-length message received.  "
+                    "Discard and wait for new message.",
+                )
 
                 msg = data
                 msgLen = 1
                 continue
 
-            if(msgLen == 0):
+            if msgLen == 0:
                 msg = bytearray()
             msg += data
             msgLen += 1
@@ -484,10 +553,10 @@ while True:
             #   http://www.ti.com/lit/an/slyt514/slyt514.pdf
             # This explains what happens without "termination" resistors:
             #   https://e2e.ti.com/blogs_/b/analogwire/archive/2016/07/28/rs-485-basics-when-termination-is-necessary-and-how-to-do-it-properly
-            if(msgLen >= 16 and data[0] == 0xc0):
+            if msgLen >= 16 and data[0] == 0xC0:
                 break
 
-        if(msgLen >= 16):
+        if msgLen >= 16:
             msg = unescape_msg(msg, msgLen)
             # Set msgLen = 0 at start so we don't have to do it on errors below.
             # len($msg) now contains the unescaped message length.
@@ -501,15 +570,20 @@ while True:
             # to the sent message.  Never set lastTWCResponseMsg to a commonly
             # repeated message like master or slave linkready, heartbeat, or
             # voltage/kWh report.
-            if(master.lastTWCResponseMsg == b''
-               and msg[0:2] != b'\xFB\xE0' and msg[0:2] != b'\xFD\xE0'
-               and msg[0:2] != b'\xFC\xE1' and msg[0:2] != b'\xFB\xE2'
-               and msg[0:2] != b'\xFD\xE2' and msg[0:2] != b'\xFB\xEB'
-               and msg[0:2] != b'\xFD\xEB' and msg[0:2] != b'\xFD\xE0'
+            if (
+                master.lastTWCResponseMsg == b""
+                and msg[0:2] != b"\xFB\xE0"
+                and msg[0:2] != b"\xFD\xE0"
+                and msg[0:2] != b"\xFC\xE1"
+                and msg[0:2] != b"\xFB\xE2"
+                and msg[0:2] != b"\xFD\xE2"
+                and msg[0:2] != b"\xFB\xEB"
+                and msg[0:2] != b"\xFD\xEB"
+                and msg[0:2] != b"\xFD\xE0"
             ):
                 master.lastTWCResponseMsg = msg
 
-            debugLog(9, "Rx@" + ": (" + hex_str(ignoredData) + ') ' + hex_str(msg) + "")
+            debugLog(9, "Rx@" + ": (" + hex_str(ignoredData) + ") " + hex_str(msg) + "")
 
             ignoredData = bytearray()
 
@@ -517,9 +591,12 @@ while True:
             # trailing C0 bytes, the messages we know about are always 14 bytes
             # long in original TWCs, or 16 bytes in newer TWCs (protocolVersion
             # == 2).
-            if(len(msg) != 14 and len(msg) != 16):
-                debugLog(1, "ERROR: Ignoring message of unexpected length %d: %s" % \
-                       (len(msg), hex_str(msg)))
+            if len(msg) != 14 and len(msg) != 16:
+                debugLog(
+                    1,
+                    "ERROR: Ignoring message of unexpected length %d: %s"
+                    % (len(msg), hex_str(msg)),
+                )
                 continue
 
             checksumExpected = msg[len(msg) - 1]
@@ -527,12 +604,15 @@ while True:
             for i in range(1, len(msg) - 1):
                 checksum += msg[i]
 
-            if((checksum & 0xFF) != checksumExpected):
-                debugLog(1, "ERROR: Checksum %X does not match %02X.  Ignoring message: %s" %
-                    (checksum, checksumExpected, hex_str(msg)))
+            if (checksum & 0xFF) != checksumExpected:
+                debugLog(
+                    1,
+                    "ERROR: Checksum %X does not match %02X.  Ignoring message: %s"
+                    % (checksum, checksumExpected, hex_str(msg)),
+                )
                 continue
 
-            if(config['config']['fakeMaster'] == 1):
+            if config["config"]["fakeMaster"] == 1:
                 ############################
                 # Pretend to be a master TWC
 
@@ -542,8 +622,10 @@ while True:
                 # end of the string (even without the re.MULTILINE option), and
                 # sometimes our strings do end with a newline character that is
                 # actually the CRC byte with a value of 0A or 0D.
-                msgMatch = re.search(b'^\xfd\xe2(..)(.)(..)\x00\x00\x00\x00\x00\x00.+\Z', msg, re.DOTALL)
-                if(msgMatch and foundMsgMatch == False):
+                msgMatch = re.search(
+                    b"^\xfd\xe2(..)(.)(..)\x00\x00\x00\x00\x00\x00.+\Z", msg, re.DOTALL
+                )
+                if msgMatch and foundMsgMatch == False:
                     # Handle linkready message from slave.
                     #
                     # We expect to see one of these before we start sending our
@@ -560,11 +642,13 @@ while True:
                     sign = msgMatch.group(2)
                     maxAmps = ((msgMatch.group(3)[0] << 8) + msgMatch.group(3)[1]) / 100
 
-                    debugLog(1, "%.2f amp slave TWC %02X%02X is ready to link.  Sign: %s" % \
-                            (maxAmps, senderID[0], senderID[1],
-                            hex_str(sign)))
+                    debugLog(
+                        1,
+                        "%.2f amp slave TWC %02X%02X is ready to link.  Sign: %s"
+                        % (maxAmps, senderID[0], senderID[1], hex_str(sign)),
+                    )
 
-                    if(maxAmps >= 80):
+                    if maxAmps >= 80:
                         # U.S. chargers need a spike to 21A to cancel a 6A
                         # charging limit imposed in an Oct 2017 Tesla car
                         # firmware update. See notes where
@@ -576,10 +660,13 @@ while True:
                         # tested.
                         master.setSpikeAmps(16)
 
-                    if(senderID == fakeTWCID):
-                        debugLog(1, "Slave TWC %02X%02X reports same TWCID as master.  " \
-                              "Slave should resolve by changing its TWCID." % \
-                              (senderID[0], senderID[1]))
+                    if senderID == fakeTWCID:
+                        debugLog(
+                            1,
+                            "Slave TWC %02X%02X reports same TWCID as master.  "
+                            "Slave should resolve by changing its TWCID."
+                            % (senderID[0], senderID[1]),
+                        )
                         # I tested sending a linkready to a real master with the
                         # same TWCID as master and instead of master sending back
                         # its heartbeat message, it sent 5 copies of its
@@ -599,27 +686,42 @@ while True:
                     # devices.
                     slaveTWC = master.newSlave(senderID, maxAmps)
 
-                    if(slaveTWC.protocolVersion == 1 and slaveTWC.minAmpsTWCSupports == 6):
-                        if(len(msg) == 14):
+                    if (
+                        slaveTWC.protocolVersion == 1
+                        and slaveTWC.minAmpsTWCSupports == 6
+                    ):
+                        if len(msg) == 14:
                             slaveTWC.protocolVersion = 1
                             slaveTWC.minAmpsTWCSupports = 5
-                        elif(len(msg) == 16):
+                        elif len(msg) == 16:
                             slaveTWC.protocolVersion = 2
                             slaveTWC.minAmpsTWCSupports = 6
 
-                        debugLog(1, "Set slave TWC %02X%02X protocolVersion to %d, minAmpsTWCSupports to %d." % \
-                                 (senderID[0], senderID[1], slaveTWC.protocolVersion, slaveTWC.minAmpsTWCSupports))
+                        debugLog(
+                            1,
+                            "Set slave TWC %02X%02X protocolVersion to %d, minAmpsTWCSupports to %d."
+                            % (
+                                senderID[0],
+                                senderID[1],
+                                slaveTWC.protocolVersion,
+                                slaveTWC.minAmpsTWCSupports,
+                            ),
+                        )
 
                     # We expect maxAmps to be 80 on U.S. chargers and 32 on EU
                     # chargers. Either way, don't allow
                     # slaveTWC.wiringMaxAmps to be greater than maxAmps.
-                    if(slaveTWC.wiringMaxAmps > maxAmps):
-                        debugLog(1, "\n\n!!! DANGER DANGER !!!\nYou have set wiringMaxAmpsPerTWC to "
-                              + str(config['config']['wiringMaxAmpsPerTWC'])
-                              + " which is greater than the max "
-                              + str(maxAmps) + " amps your charger says it can handle.  " \
-                              "Please review instructions in the source code and consult an " \
-                              "electrician if you don't know what to do.")
+                    if slaveTWC.wiringMaxAmps > maxAmps:
+                        debugLog(
+                            1,
+                            "\n\n!!! DANGER DANGER !!!\nYou have set wiringMaxAmpsPerTWC to "
+                            + str(config["config"]["wiringMaxAmpsPerTWC"])
+                            + " which is greater than the max "
+                            + str(maxAmps)
+                            + " amps your charger says it can handle.  "
+                            "Please review instructions in the source code and consult an "
+                            "electrician if you don't know what to do.",
+                        )
                         slaveTWC.wiringMaxAmps = maxAmps / 4
 
                     # Make sure we print one SHB message after a slave
@@ -627,13 +729,15 @@ while True:
                     # lastHeartbeatDebugOutput. This helps with debugging
                     # cases where I can't tell if we responded with a
                     # heartbeat or not.
-                    slaveTWC.lastHeartbeatDebugOutput = ''
+                    slaveTWC.lastHeartbeatDebugOutput = ""
 
                     slaveTWC.timeLastRx = time.time()
                     slaveTWC.send_master_heartbeat()
                 else:
-                    msgMatch = re.search(b'\A\xfd\xe0(..)(..)(.......+?).\Z', msg, re.DOTALL)
-                if(msgMatch and foundMsgMatch == False):
+                    msgMatch = re.search(
+                        b"\A\xfd\xe0(..)(..)(.......+?).\Z", msg, re.DOTALL
+                    )
+                if msgMatch and foundMsgMatch == False:
                     # Handle heartbeat message from slave.
                     #
                     # These messages come in as a direct response to each
@@ -654,12 +758,15 @@ while True:
                         # Normally, a slave only sends us a heartbeat message if
                         # we send them ours first, so it's not expected we would
                         # hear heartbeat from a slave that's not in our list.
-                        debugLog(1, "ERROR: Received heartbeat message from " \
-                                "slave %02X%02X that we've not met before." % \
-                                (senderID[0], senderID[1]))
+                        debugLog(
+                            1,
+                            "ERROR: Received heartbeat message from "
+                            "slave %02X%02X that we've not met before."
+                            % (senderID[0], senderID[1]),
+                        )
                         continue
 
-                    if(fakeTWCID == receiverID):
+                    if fakeTWCID == receiverID:
                         slaveTWC.receive_slave_heartbeat(heartbeatData)
                     else:
                         # I've tried different fakeTWCID values to verify a
@@ -669,13 +776,21 @@ while True:
                         # I'm not sure why it sent 0000 and it only happened
                         # once so far, so it could have been corruption in the
                         # data or an unusual case.
-                        debugLog(1, "WARNING: Slave TWC %02X%02X status data: " \
-                                  "%s sent to unknown TWC %02X%02X." % \
-                                (senderID[0], senderID[1],
-                                hex_str(heartbeatData), receiverID[0], receiverID[1]))
+                        debugLog(
+                            1,
+                            "WARNING: Slave TWC %02X%02X status data: "
+                            "%s sent to unknown TWC %02X%02X."
+                            % (
+                                senderID[0],
+                                senderID[1],
+                                hex_str(heartbeatData),
+                                receiverID[0],
+                                receiverID[1],
+                            ),
+                        )
                 else:
-                    msgMatch = re.search(b'\A\xfd\xeb(..)(..)(.+?).\Z', msg, re.DOTALL)
-                if(msgMatch and foundMsgMatch == False):
+                    msgMatch = re.search(b"\A\xfd\xeb(..)(..)(.+?).\Z", msg, re.DOTALL)
+                if msgMatch and foundMsgMatch == False:
                     # Handle kWh total and voltage message from slave.
                     #
                     # This message can only be generated by TWCs running newer
@@ -703,49 +818,69 @@ while True:
                     receiverID = msgMatch.group(2)
                     data = msgMatch.group(3)
 
-                    debugLog(1, "Slave TWC %02X%02X unexpectedly reported kWh and voltage data: %s." % \
-                            (senderID[0], senderID[1],
-                            hex_str(data)))
+                    debugLog(
+                        1,
+                        "Slave TWC %02X%02X unexpectedly reported kWh and voltage data: %s."
+                        % (senderID[0], senderID[1], hex_str(data)),
+                    )
 
                 else:
-                    msgMatch = re.search(b'\A\xfd\xee(..)(.+?).\Z', msg, re.DOTALL)
-                if(msgMatch and foundMsgMatch == False):
-                        # Get last 7 characters of VIN from slave. (usually only 3 digits)
-                        #
-                        # This message can only be generated by TWCs running newer
-                        # firmware.  I believe it's only sent as a response to a
-                        # message from Master in this format:
-                        #   FB EE <Master TWCID> <Slave TWCID> 00 00 00 00 00 00 00 00 00
+                    msgMatch = re.search(b"\A\xfd\xee(..)(.+?).\Z", msg, re.DOTALL)
+                if msgMatch and foundMsgMatch == False:
+                    # Get last 7 characters of VIN from slave. (usually only 3 digits)
+                    #
+                    # This message can only be generated by TWCs running newer
+                    # firmware.  I believe it's only sent as a response to a
+                    # message from Master in this format:
+                    #   FB EE <Master TWCID> <Slave TWCID> 00 00 00 00 00 00 00 00 00
 
-                        # Response message is FD EE <Slave TWCID> VV VV VV VV VV VV VV where VV is an ascii character code
-                        # representing a letter or number. VV will be all zero when car CAN communication is disabled
-                        # (DIP switch 2 down) or when a non-Tesla vehicle is plugged in using something like a JDapter.
+                    # Response message is FD EE <Slave TWCID> VV VV VV VV VV VV VV where VV is an ascii character code
+                    # representing a letter or number. VV will be all zero when car CAN communication is disabled
+                    # (DIP switch 2 down) or when a non-Tesla vehicle is plugged in using something like a JDapter.
 
-                        foundMsgMatch = True
-                        senderID = msgMatch.group(1)
-                        data = msgMatch.group(2)
-
-                        debugLog(1, "Slave TWC %02X%02X reported VIN data: %s." % \
-                                (senderID[0], senderID[1], hex_str(data)))
-
-                else:
-                    msgMatch = re.search(b'\A\xfc(\xe1|\xe2)(..)(.)\x00\x00\x00\x00\x00\x00\x00\x00.+\Z', msg, re.DOTALL)
-                if(msgMatch and foundMsgMatch == False):
                     foundMsgMatch = True
-                    debugLog(1, "ERROR: TWC is set to Master mode so it can't be controlled by TWCManager.  " \
-                           "Search installation instruction PDF for 'rotary switch' and set " \
-                           "switch so its arrow points to F on the dial.")
-                if(foundMsgMatch == False):
-                    debugLog(1, "*** UNKNOWN MESSAGE FROM SLAVE:" + hex_str(msg)
-                          + "\nPlease private message user CDragon at http://teslamotorsclub.com " \
-                          "with a copy of this error.")
+                    senderID = msgMatch.group(1)
+                    data = msgMatch.group(2)
+
+                    debugLog(
+                        1,
+                        "Slave TWC %02X%02X reported VIN data: %s."
+                        % (senderID[0], senderID[1], hex_str(data)),
+                    )
+
+                else:
+                    msgMatch = re.search(
+                        b"\A\xfc(\xe1|\xe2)(..)(.)\x00\x00\x00\x00\x00\x00\x00\x00.+\Z",
+                        msg,
+                        re.DOTALL,
+                    )
+                if msgMatch and foundMsgMatch == False:
+                    foundMsgMatch = True
+                    debugLog(
+                        1,
+                        "ERROR: TWC is set to Master mode so it can't be controlled by TWCManager.  "
+                        "Search installation instruction PDF for 'rotary switch' and set "
+                        "switch so its arrow points to F on the dial.",
+                    )
+                if foundMsgMatch == False:
+                    debugLog(
+                        1,
+                        "*** UNKNOWN MESSAGE FROM SLAVE:"
+                        + hex_str(msg)
+                        + "\nPlease private message user CDragon at http://teslamotorsclub.com "
+                        "with a copy of this error.",
+                    )
             else:
                 ###########################
                 # Pretend to be a slave TWC
 
                 foundMsgMatch = False
-                msgMatch = re.search(b'\A\xfc\xe1(..)(.)\x00\x00\x00\x00\x00\x00\x00\x00+?.\Z', msg, re.DOTALL)
-                if(msgMatch and foundMsgMatch == False):
+                msgMatch = re.search(
+                    b"\A\xfc\xe1(..)(.)\x00\x00\x00\x00\x00\x00\x00\x00+?.\Z",
+                    msg,
+                    re.DOTALL,
+                )
+                if msgMatch and foundMsgMatch == False:
                     # Handle linkready1 from master.
                     # See notes in send_master_linkready1() for details.
                     foundMsgMatch = True
@@ -756,10 +891,13 @@ while True:
                     # This message seems to always contain seven 00 bytes in its
                     # data area. If we ever get this message with non-00 data
                     # we'll print it as an unexpected message.
-                    debugLog(1, "Master TWC %02X%02X Linkready1.  Sign: %s" % \
-                            (senderID[0], senderID[1], hex_str(sign)))
+                    debugLog(
+                        1,
+                        "Master TWC %02X%02X Linkready1.  Sign: %s"
+                        % (senderID[0], senderID[1], hex_str(sign)),
+                    )
 
-                    if(senderID == fakeTWCID):
+                    if senderID == fakeTWCID:
                         master.master_id_conflict()
 
                     # Other than picking a new fakeTWCID if ours conflicts with
@@ -768,8 +906,12 @@ while True:
                     # linkready2.
 
                 else:
-                    msgMatch = re.search(b'\A\xfb\xe2(..)(.)\x00\x00\x00\x00\x00\x00\x00\x00+?.\Z', msg, re.DOTALL)
-                if(msgMatch and foundMsgMatch == False):
+                    msgMatch = re.search(
+                        b"\A\xfb\xe2(..)(.)\x00\x00\x00\x00\x00\x00\x00\x00+?.\Z",
+                        msg,
+                        re.DOTALL,
+                    )
+                if msgMatch and foundMsgMatch == False:
                     # Handle linkready2 from master.
                     # See notes in send_master_linkready2() for details.
                     foundMsgMatch = True
@@ -781,14 +923,19 @@ while True:
                     # data area. If we ever get this message with non-00 data
                     # we'll print it as an unexpected message.
 
-                    debugLog(1, "Master TWC %02X%02X Linkready2.  Sign: %s" % \
-                            (senderID[0], senderID[1], hex_str(sign)))
+                    debugLog(
+                        1,
+                        "Master TWC %02X%02X Linkready2.  Sign: %s"
+                        % (senderID[0], senderID[1], hex_str(sign)),
+                    )
 
-                    if(senderID == fakeTWCID):
+                    if senderID == fakeTWCID:
                         master.master_id_conflict()
                 else:
-                    msgMatch = re.search(b'\A\xfb\xe0(..)(..)(.......+?).\Z', msg, re.DOTALL)
-                if(msgMatch and foundMsgMatch == False):
+                    msgMatch = re.search(
+                        b"\A\xfb\xe0(..)(..)(.......+?).\Z", msg, re.DOTALL
+                    )
+                if msgMatch and foundMsgMatch == False:
                     # Handle heartbeat message from Master.
                     foundMsgMatch = True
                     senderID = msgMatch.group(1)
@@ -802,48 +949,67 @@ while True:
 
                     slaveTWC.masterHeartbeatData = heartbeatData
 
-                    if(receiverID != fakeTWCID):
+                    if receiverID != fakeTWCID:
                         # This message was intended for another slave.
                         # Ignore it.
-                        debugLog(11, "Master %02X%02X sent " \
-                                "heartbeat message %s to receiver %02X%02X " \
-                                "that isn't our fake slave." % \
-                                (senderID[0], senderID[1],
+                        debugLog(
+                            11,
+                            "Master %02X%02X sent "
+                            "heartbeat message %s to receiver %02X%02X "
+                            "that isn't our fake slave."
+                            % (
+                                senderID[0],
+                                senderID[1],
                                 hex_str(heartbeatData),
-                                receiverID[0], receiverID[1]))
+                                receiverID[0],
+                                receiverID[1],
+                            ),
+                        )
                         continue
 
-                    amps = (master.slaveHeartbeatData[1] << 8) + master.slaveHeartbeatData[2]
-                    master.addkWhDelivered(((240 * (amps/100)) / 1000 / 60 / 60) * (now - timeLastkWhDelivered))
+                    amps = (
+                        master.slaveHeartbeatData[1] << 8
+                    ) + master.slaveHeartbeatData[2]
+                    master.addkWhDelivered(
+                        ((240 * (amps / 100)) / 1000 / 60 / 60)
+                        * (now - timeLastkWhDelivered)
+                    )
                     timeLastkWhDelivered = now
-                    if(time.time() - timeLastkWhSaved >= 300.0):
+                    if time.time() - timeLastkWhSaved >= 300.0:
                         timeLastkWhSaved = now
-                        debugLog(9, "Fake slave has delivered %.3fkWh" % \
-                               (master.getkWhDelivered()))
+                        debugLog(
+                            9,
+                            "Fake slave has delivered %.3fkWh"
+                            % (master.getkWhDelivered()),
+                        )
                         # Save settings to file
                         master.saveSettings()
 
-                    if(heartbeatData[0] == 0x07):
+                    if heartbeatData[0] == 0x07:
                         # Lower amps in use (not amps allowed) by 2 for 10
                         # seconds. Set state to 07.
                         master.slaveHeartbeatData[0] = heartbeatData[0]
                         timeToRaise2A = now + 10
                         amps -= 280
-                        master.slaveHeartbeatData[3] = ((amps >> 8) & 0xFF)
-                        master.slaveHeartbeatData[4] = (amps & 0xFF)
-                    elif(heartbeatData[0] == 0x06):
+                        master.slaveHeartbeatData[3] = (amps >> 8) & 0xFF
+                        master.slaveHeartbeatData[4] = amps & 0xFF
+                    elif heartbeatData[0] == 0x06:
                         # Raise amp setpoint by 2 permanently and reply with
                         # state 06.  After 44 seconds, report state 0A.
                         timeTo0Aafter06 = now + 44
                         master.slaveHeartbeatData[0] = heartbeatData[0]
                         amps += 200
-                        master.slaveHeartbeatData[1] = ((amps >> 8) & 0xFF)
-                        master.slaveHeartbeatData[2] = (amps & 0xFF)
+                        master.slaveHeartbeatData[1] = (amps >> 8) & 0xFF
+                        master.slaveHeartbeatData[2] = amps & 0xFF
                         amps -= 80
-                        master.slaveHeartbeatData[3] = ((amps >> 8) & 0xFF)
-                        master.slaveHeartbeatData[4] = (amps & 0xFF)
-                    elif(heartbeatData[0] == 0x05 or heartbeatData[0] == 0x08 or heartbeatData[0] == 0x09):
-                        if(((heartbeatData[1] << 8) + heartbeatData[2]) > 0):
+                        master.slaveHeartbeatData[3] = (amps >> 8) & 0xFF
+                        master.slaveHeartbeatData[4] = amps & 0xFF
+                    elif (
+                        heartbeatData[0] == 0x05
+                        or heartbeatData[0] == 0x08
+                        or heartbeatData[0] == 0x09
+                    ):
+                        if ((heartbeatData[1] << 8) + heartbeatData[2]) > 0:
                             # A real slave mimics master's status bytes [1]-[2]
                             # representing max charger power even if the master
                             # sends it a crazy value.
@@ -852,13 +1018,13 @@ while True:
 
                             ampsUsed = (heartbeatData[1] << 8) + heartbeatData[2]
                             ampsUsed -= 80
-                            master.slaveHeartbeatData[3] = ((ampsUsed >> 8) & 0xFF)
-                            master.slaveHeartbeatData[4] = (ampsUsed & 0xFF)
-                    elif(heartbeatData[0] == 0):
-                        if(timeTo0Aafter06 > 0 and timeTo0Aafter06 < now):
+                            master.slaveHeartbeatData[3] = (ampsUsed >> 8) & 0xFF
+                            master.slaveHeartbeatData[4] = ampsUsed & 0xFF
+                    elif heartbeatData[0] == 0:
+                        if timeTo0Aafter06 > 0 and timeTo0Aafter06 < now:
                             timeTo0Aafter06 = 0
                             master.slaveHeartbeatData[0] = 0x0A
-                        elif(timeToRaise2A > 0 and timeToRaise2A < now):
+                        elif timeToRaise2A > 0 and timeToRaise2A < now:
                             # Real slave raises amps used by 2 exactly 10
                             # seconds after being sent into state 07. It raises
                             # a bit slowly and sets its state to 0A 13 seconds
@@ -866,23 +1032,29 @@ while True:
                             # timing here but hopefully close enough.
                             timeToRaise2A = 0
                             amps -= 80
-                            master.slaveHeartbeatData[3] = ((amps >> 8) & 0xFF)
-                            master.slaveHeartbeatData[4] = (amps & 0xFF)
+                            master.slaveHeartbeatData[3] = (amps >> 8) & 0xFF
+                            master.slaveHeartbeatData[4] = amps & 0xFF
                             master.slaveHeartbeatData[0] = 0x0A
-                    elif(heartbeatData[0] == 0x02):
-                        debugLog(1, "Master heartbeat contains error %ld: %s" % \
-                                (heartbeatData[1], hex_str(heartbeatData)))
+                    elif heartbeatData[0] == 0x02:
+                        debugLog(
+                            1,
+                            "Master heartbeat contains error %ld: %s"
+                            % (heartbeatData[1], hex_str(heartbeatData)),
+                        )
                     else:
-                        debugLog(1, "UNKNOWN MHB state %s" % \
-                                (hex_str(heartbeatData)))
+                        debugLog(1, "UNKNOWN MHB state %s" % (hex_str(heartbeatData)))
 
                     # Slaves always respond to master's heartbeat by sending
                     # theirs back.
                     slaveTWC.send_slave_heartbeat(senderID)
                     slaveTWC.print_status(master.slaveHeartbeatData)
                 else:
-                    msgMatch = re.search(b'\A\xfc\x1d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00+?.\Z', msg, re.DOTALL)
-                if(msgMatch and foundMsgMatch == False):
+                    msgMatch = re.search(
+                        b"\A\xfc\x1d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00+?.\Z",
+                        msg,
+                        re.DOTALL,
+                    )
+                if msgMatch and foundMsgMatch == False:
                     # Handle 2-hour idle message
                     #
                     # This message is sent from a Master TWC three times in a
@@ -901,27 +1073,38 @@ while True:
                     foundMsgMatch = True
                     debugLog(1, "Received 2-hour idle message from Master.")
                 else:
-                    msgMatch = re.search(b'\A\xfd\xe2(..)(.)(..)\x00\x00\x00\x00\x00\x00.+\Z', msg, re.DOTALL)
-                if(msgMatch and foundMsgMatch == False):
+                    msgMatch = re.search(
+                        b"\A\xfd\xe2(..)(.)(..)\x00\x00\x00\x00\x00\x00.+\Z",
+                        msg,
+                        re.DOTALL,
+                    )
+                if msgMatch and foundMsgMatch == False:
                     # Handle linkready message from slave on network that
                     # presumably isn't us.
                     foundMsgMatch = True
                     senderID = msgMatch.group(1)
                     sign = msgMatch.group(2)
                     maxAmps = ((msgMatch.group(3)[0] << 8) + msgMatch.group(3)[1]) / 100
-                    debugLog(1, "%.2f amp slave TWC %02X%02X is ready to link.  Sign: %s" % \
-                            (maxAmps, senderID[0], senderID[1],
-                            hex_str(sign)))
-                    if(senderID == fakeTWCID):
-                        debugLog(1, "ERROR: Received slave heartbeat message from " \
-                                "slave %02X%02X that has the same TWCID as our fake slave." % \
-                                (senderID[0], senderID[1]))
+                    debugLog(
+                        1,
+                        "%.2f amp slave TWC %02X%02X is ready to link.  Sign: %s"
+                        % (maxAmps, senderID[0], senderID[1], hex_str(sign)),
+                    )
+                    if senderID == fakeTWCID:
+                        debugLog(
+                            1,
+                            "ERROR: Received slave heartbeat message from "
+                            "slave %02X%02X that has the same TWCID as our fake slave."
+                            % (senderID[0], senderID[1]),
+                        )
                         continue
 
                     master.newSlave(senderID, maxAmps)
                 else:
-                    msgMatch = re.search(b'\A\xfd\xe0(..)(..)(.......+?).\Z', msg, re.DOTALL)
-                if(msgMatch and foundMsgMatch == False):
+                    msgMatch = re.search(
+                        b"\A\xfd\xe0(..)(..)(.......+?).\Z", msg, re.DOTALL
+                    )
+                if msgMatch and foundMsgMatch == False:
                     # Handle heartbeat message from slave on network that
                     # presumably isn't us.
                     foundMsgMatch = True
@@ -929,10 +1112,13 @@ while True:
                     receiverID = msgMatch.group(2)
                     heartbeatData = msgMatch.group(3)
 
-                    if(senderID == fakeTWCID):
-                        debugLog(1, "ERROR: Received slave heartbeat message from " \
-                                "slave %02X%02X that has the same TWCID as our fake slave." % \
-                                (senderID[0], senderID[1]))
+                    if senderID == fakeTWCID:
+                        debugLog(
+                            1,
+                            "ERROR: Received slave heartbeat message from "
+                            "slave %02X%02X that has the same TWCID as our fake slave."
+                            % (senderID[0], senderID[1]),
+                        )
                         continue
 
                     try:
@@ -945,38 +1131,67 @@ while True:
 
                     slaveTWC.print_status(heartbeatData)
                 else:
-                    msgMatch = re.search(b'\A\xfb\xeb(..)(..)(\x00\x00\x00\x00\x00\x00\x00\x00\x00+?).\Z', msg, re.DOTALL)
-                if(msgMatch and foundMsgMatch == False):
+                    msgMatch = re.search(
+                        b"\A\xfb\xeb(..)(..)(\x00\x00\x00\x00\x00\x00\x00\x00\x00+?).\Z",
+                        msg,
+                        re.DOTALL,
+                    )
+                if msgMatch and foundMsgMatch == False:
                     # Handle voltage request message.  This is only supported in
                     # Protocol 2 so we always reply with a 16-byte message.
                     foundMsgMatch = True
                     senderID = msgMatch.group(1)
                     receiverID = msgMatch.group(2)
 
-                    if(senderID == fakeTWCID):
-                        debugLog(1, "ERROR: Received voltage request message from " \
-                                "TWC %02X%02X that has the same TWCID as our fake slave." % \
-                                (senderID[0], senderID[1]))
+                    if senderID == fakeTWCID:
+                        debugLog(
+                            1,
+                            "ERROR: Received voltage request message from "
+                            "TWC %02X%02X that has the same TWCID as our fake slave."
+                            % (senderID[0], senderID[1]),
+                        )
                         continue
 
-                    debugLog(8, "VRQ from %02X%02X to %02X%02X" % \
-                            (senderID[0], senderID[1], receiverID[0], receiverID[1]))
+                    debugLog(
+                        8,
+                        "VRQ from %02X%02X to %02X%02X"
+                        % (senderID[0], senderID[1], receiverID[0], receiverID[1]),
+                    )
 
-                    if(receiverID == fakeTWCID):
+                    if receiverID == fakeTWCID:
                         kWhCounter = int(master.getkWhDelivered())
-                        kWhPacked = bytearray([((kWhCounter >> 24) & 0xFF),
-                                      ((kWhCounter >> 16) & 0xFF),
-                                      ((kWhCounter >> 8) & 0xFF),
-                                      (kWhCounter & 0xFF)])
-                        debugLog(1, "VRS %02X%02X: %dkWh (%s) %dV %dV %dV" % \
-                            (fakeTWCID[0], fakeTWCID[1],
-                            kWhCounter, hex_str(kWhPacked), 240, 0, 0))
-                        master.getModuleByName("RS485").send(bytearray(b'\xFD\xEB') + fakeTWCID
-                                 + kWhPacked
-                                 + bytearray(b'\x00\xF0\x00\x00\x00\x00\x00'))
+                        kWhPacked = bytearray(
+                            [
+                                ((kWhCounter >> 24) & 0xFF),
+                                ((kWhCounter >> 16) & 0xFF),
+                                ((kWhCounter >> 8) & 0xFF),
+                                (kWhCounter & 0xFF),
+                            ]
+                        )
+                        debugLog(
+                            1,
+                            "VRS %02X%02X: %dkWh (%s) %dV %dV %dV"
+                            % (
+                                fakeTWCID[0],
+                                fakeTWCID[1],
+                                kWhCounter,
+                                hex_str(kWhPacked),
+                                240,
+                                0,
+                                0,
+                            ),
+                        )
+                        master.getModuleByName("RS485").send(
+                            bytearray(b"\xFD\xEB")
+                            + fakeTWCID
+                            + kWhPacked
+                            + bytearray(b"\x00\xF0\x00\x00\x00\x00\x00")
+                        )
                 else:
-                    msgMatch = re.search(b'\A\xfd\xeb(..)(.........+?).\Z', msg, re.DOTALL)
-                if(msgMatch and foundMsgMatch == False):
+                    msgMatch = re.search(
+                        b"\A\xfd\xeb(..)(.........+?).\Z", msg, re.DOTALL
+                    )
+                if msgMatch and foundMsgMatch == False:
                     # Handle voltage response message.
                     # Example US value:
                     #   FD EB 7777 00000014 00F6 0000 0000 00
@@ -985,22 +1200,36 @@ while True:
                     foundMsgMatch = True
                     senderID = msgMatch.group(1)
                     data = msgMatch.group(2)
-                    kWhCounter = (data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3]
+                    kWhCounter = (
+                        (data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3]
+                    )
                     voltsPhaseA = (data[4] << 8) + data[5]
                     voltsPhaseB = (data[6] << 8) + data[7]
                     voltsPhaseC = (data[8] << 8) + data[9]
 
-                    if(senderID == fakeTWCID):
-                        debugLog(1, "ERROR: Received voltage response message from " \
-                                "TWC %02X%02X that has the same TWCID as our fake slave." % \
-                                (senderID[0], senderID[1]))
+                    if senderID == fakeTWCID:
+                        debugLog(
+                            1,
+                            "ERROR: Received voltage response message from "
+                            "TWC %02X%02X that has the same TWCID as our fake slave."
+                            % (senderID[0], senderID[1]),
+                        )
                         continue
 
-                    debugLog(1, "VRS %02X%02X: %dkWh %dV %dV %dV" % \
-                            (senderID[0], senderID[1],
-                            kWhCounter, voltsPhaseA, voltsPhaseB, voltsPhaseC))
+                    debugLog(
+                        1,
+                        "VRS %02X%02X: %dkWh %dV %dV %dV"
+                        % (
+                            senderID[0],
+                            senderID[1],
+                            kWhCounter,
+                            voltsPhaseA,
+                            voltsPhaseB,
+                            voltsPhaseC,
+                        ),
+                    )
 
-                if(foundMsgMatch == False):
+                if foundMsgMatch == False:
                     debugLog(1, "***UNKNOWN MESSAGE from master: " + hex_str(msg))
 
     except KeyboardInterrupt:
