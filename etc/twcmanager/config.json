@@ -95,6 +95,12 @@
         # not needed and can be set to 0
         "greenEnergyAmpsOffset": 0,
 
+        # If green energy dips below the target charge amount while already charging,
+        # how much extra current should be drawn to keep charging?  This avoids frequently
+        # stopping and starting charging on a day with variable solar output, at the cost
+        # of drawing energy from sources other than solar.
+        "greenEnergyFlexAmps": 0,
+
         # In some environments, the consumption meter value that we obtain will
         # include the charger's consumption, whilst others will not.
         # This switch, if set to true, will subtract the charger's load from the

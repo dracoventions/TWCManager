@@ -14,6 +14,7 @@ from ww import f
 class TWCMaster:
 
     active_policy = None
+    allowed_flex = 0
     backgroundTasksQueue = queue.Queue()
     backgroundTasksCmds = {}
     backgroundTasksLock = threading.Lock()
@@ -56,6 +57,7 @@ class TWCMaster:
             "value": [6, 20, "tm_hour"],
             "charge_amps": "getMaxAmpsToDivideGreenEnergy()",
             "background_task": "checkGreenEnergy",
+            "allowed_flex": "config.greenEnergyFlexAmps",
             "charge_limit": "config.greenEnergyLimit",
         },
         # If all else fails (ie no other policy match), we will charge at
@@ -226,6 +228,9 @@ class TWCMaster:
         # backgroundTasksQueue.join() can then be used to block until all tasks
         # in the queue are done.
         self.backgroundTasksQueue.task_done()
+
+    def getAllowedFlex(self):
+        return self.allowedFlex
 
     def getBackgroundTask(self):
         return self.backgroundTasksQueue.get()
@@ -794,6 +799,9 @@ class TWCMaster:
 
         self.getModuleByName("RS485").send(msg)
 
+    def setAllowedFlex(self, amps):
+        self.allowedFlex = amps if amps >= 0 else 0
+
     def setChargeNowAmps(self, amps):
         # Accepts a number of amps to define the amperage at which we
         # should charge
@@ -941,6 +949,11 @@ class TWCMaster:
                                 "Charge at %.2f"
                                 % self.policyValue(policy["charge_amps"]),
                             )
+
+                        # Set flex, if any
+                        self.setAllowedFlex(
+                            self.policyValue(policy.get("allowed_flex", 0))
+                        )
 
                         # If a background task is defined for this policy, queue it
                         bgt = policy.get("background_task", None)

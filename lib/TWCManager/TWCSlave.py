@@ -511,6 +511,7 @@ class TWCSlave:
         # Determine how many cars are charging and how many amps they're using
         numCarsCharging = self.master.num_cars_charging_now()
         desiredAmpsOffered = self.master.getMaxAmpsToDivideAmongSlaves()
+        flex = 0
 
         if numCarsCharging > 0:
             desiredAmpsOffered -= sum(
@@ -518,6 +519,7 @@ class TWCSlave:
                 for slaveTWC in self.master.getSlaveTWCs()
                 if slaveTWC.TWCID != self.TWCID
             )
+            flex = self.master.getAllowedFlex() / numCarsCharging
 
             # Allocate this slave a fraction of maxAmpsToDivideAmongSlaves divided
             # by the number of cars actually charging.
@@ -544,6 +546,13 @@ class TWCSlave:
         minAmpsToOffer = self.config["config"]["minAmpsPerTWC"]
         if self.minAmpsTWCSupports > minAmpsToOffer:
             minAmpsToOffer = self.minAmpsTWCSupports
+
+        if (
+            desiredAmpsOffered < minAmpsToOffer
+            and desiredAmpsOffered + flex >= minAmpsToOffer
+            and self.reportedAmpsActual >= 1.0
+        ):
+            desiredAmpsOffered = minAmpsToOffer
 
         if desiredAmpsOffered < minAmpsToOffer:
             self.master.debugLog(
