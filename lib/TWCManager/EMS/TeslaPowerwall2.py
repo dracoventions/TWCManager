@@ -110,7 +110,7 @@ class TeslaPowerwall2:
 
     def debugLog(self, minlevel, message):
         if self.debugLevel >= minlevel:
-            print("Powerwall2: (" + str(minlevel) + ") " + message)
+            self.master.debugLog(minlevel, "Powerwall2", message)
 
     def doPowerwallLogin(self):
         # If we have password authentication configured, this function will submit
