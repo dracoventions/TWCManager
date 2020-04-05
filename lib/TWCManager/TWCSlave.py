@@ -410,7 +410,7 @@ class TWCSlave:
                 # when next plugged in.
                 self.master.stopCarsCharging()
             elif (
-                self.lastAmpsOffered >= 5.0
+                self.lastAmpsOffered >= self.config["config"]["minAmpsPerTWC"]
                 and self.reportedAmpsActual < 2.0
                 and self.reportedState != 0x02
             ):
