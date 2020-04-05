@@ -1072,7 +1072,7 @@ class CarApiVehicle:
         if self.carapi.getCarApiRetryRemaining(self.lastErrorTime):
             # It's been under carApiErrorRetryMins minutes since the car API
             # generated an error on this vehicle. Return that car is not ready.
-            self.master.debugLog(
+            self.carapi.master.debugLog(
                 8,
                 "TeslaAPI  ",
                 self.name
