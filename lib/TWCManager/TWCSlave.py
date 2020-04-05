@@ -403,11 +403,6 @@ class TWCSlave:
                 # more than once per minute. Once the car gets the message to
                 # stop, reportedAmpsActualSignificantChangeMonitor should drop
                 # to near zero within a few seconds.
-                # WARNING: If you own two vehicles and one is charging at home but
-                # the other is charging away from home, this command will stop
-                # them both from charging.  If the away vehicle is not currently
-                # charging, I'm not sure if this would prevent it from charging
-                # when next plugged in.
                 self.master.stopCarsCharging()
             elif (
                 self.lastAmpsOffered >= self.config["config"]["minAmpsPerTWC"]
