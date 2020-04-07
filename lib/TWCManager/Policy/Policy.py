@@ -77,19 +77,26 @@ class Policy:
                 # extensions
                 self.charge_policy = config_policy.get("override")
             else:
-                # Insert optional policy extensions into policy list
-                # After - Inserted before Non-Scheduled Charging
                 config_extend = config_policy.get("extend", {})
-                if len(config_extend.get("after", [])) > 0:
-                    self.charge_policy[3:3] = config_extend.get("after")
 
-                # Before - Inserted after Charge Now
-                if len(config_extend.get("before", [])) > 0:
-                    self.charge_policy[1:1] = config_extend.get("before")
+                # Get additional restrictions
+                for (name, restrictions) in config_extend.get(
+                    "restrictions", []
+                ).items():
+                    restricted = next(
+                        policy
+                        for policy in self.charge_policy
+                        if policy["name"] == name
+                    )
+                    for key in ("match", "condition", "value"):
+                        restricted[key] += restrictions.get(key, [])
 
-                # Emergency - Inserted at the beginning
-                if len(config_extend.get("emergency", [])) > 0:
-                    self.charge_policy[0:0] = config_extend.get("emergency")
+                # Insert optional policy extensions into policy list:
+                #   After - Inserted before Non-Scheduled Charging
+                #   Before - Inserted after Charge Now
+                #   Emergency - Inserted at the beginning
+                for (name, position) in [("after", 3), ("before", 1), ("emergency", 0)]:
+                    self.charge_policy[position:position] = config_extend.get(name, [])
 
             # Set the Policy Check Interval if specified
             policy_engine = config_policy.get("engine")
@@ -123,7 +130,9 @@ class Policy:
                 else:
                     del policy["__latchTime"]
 
-            if latched or self.checkConditions(policy["match"], policy["condition"], policy["value"]):
+            if latched or self.checkConditions(
+                policy["match"], policy["condition"], policy["value"]
+            ):
                 # Yes, we will now enforce policy
                 self.master.debugLog(
                     7,
@@ -143,19 +152,13 @@ class Policy:
                     self.active_policy = str(policy["name"])
 
                 if not latched and "latch_period" in policy:
-                    policy["__latchTime"] = (
-                        time.time() + policy["latch_period"] * 60
-                    )
+                    policy["__latchTime"] = time.time() + policy["latch_period"] * 60
 
                 # Determine which value to set the charging to
                 if policy["charge_amps"] == "value":
-                    self.master.setMaxAmpsToDivideAmongSlaves(
-                        int(policy["value"])
-                    )
+                    self.master.setMaxAmpsToDivideAmongSlaves(int(policy["value"]))
                     self.master.debugLog(
-                        10,
-                        "Policy    ",
-                        "Charge at %.2f" % int(policy["value"]),
+                        10, "Policy    ", "Charge at %.2f" % int(policy["value"])
                     )
                 else:
                     self.master.setMaxAmpsToDivideAmongSlaves(
@@ -164,8 +167,7 @@ class Policy:
                     self.master.debugLog(
                         10,
                         "Policy    ",
-                        "Charge at %.2f"
-                        % self.policyValue(policy["charge_amps"]),
+                        "Charge at %.2f" % self.policyValue(policy["charge_amps"]),
                     )
 
                 # Set flex, if any
@@ -300,7 +302,7 @@ class Policy:
 
     # exitOn = False returns True if all conditions are True, else False ==> AND
     # exitOn = True returns True if any condition is True, else False ==> OR
-    def checkConditions(self, matches, conditions, values, exitOn = False):
+    def checkConditions(self, matches, conditions, values, exitOn=False):
         for match, condition, value in zip(matches, conditions, values):
             if self.doesConditionMatch(match, condition, value, exitOn) == exitOn:
                 return exitOn
