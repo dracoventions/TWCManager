@@ -123,107 +123,76 @@ class Policy:
                 else:
                     del policy["__latchTime"]
 
-            # Iterate through each set of match, condition and value sets
-            iter = 0
-            for match, condition, value in zip(
-                policy["match"], policy["condition"], policy["value"]
-            ):
-
-                if not latched:
-                    iter += 1
+            if latched or self.checkConditions(policy["match"], policy["condition"], policy["value"]):
+                # Yes, we will now enforce policy
+                self.master.debugLog(
+                    7,
+                    "Policy    ",
+                    f(
+                        "All policy conditions have matched. Policy chosen is {colored(policy['name'], 'red')}"
+                    ),
+                )
+                if self.active_policy != str(policy["name"]):
                     self.master.debugLog(
-                        8,
+                        1,
                         "Policy    ",
                         f(
-                            "Evaluating Policy match ({colored(match, 'red')}), condition ({colored(condition, 'red')}), value ({colored(value, 'red')}), iteration ({colored(iter, 'red')})"
+                            "New policy selected; changing to {colored(policy['name'], 'red')}"
                         ),
                     )
-                    # Start by not having matched the condition
-                    is_matched = self.doesConditionMatch(match, condition, value)
+                    self.active_policy = str(policy["name"])
 
-                # Check if we have met all criteria
-                if latched or is_matched:
-
-                    # Have we checked all policy conditions yet?
-                    if latched or len(policy["match"]) == iter:
-
-                        # Yes, we will now enforce policy
-                        self.master.debugLog(
-                            7,
-                            "Policy    ",
-                            f(
-                                "All policy conditions have matched. Policy chosen is {colored(policy['name'], 'red')}"
-                            ),
-                        )
-                        if self.active_policy != str(policy["name"]):
-                            self.master.debugLog(
-                                1,
-                                "Policy    ",
-                                f(
-                                    "New policy selected; changing to {colored(policy['name'], 'red')}"
-                                ),
-                            )
-                            self.active_policy = str(policy["name"])
-
-                        if not latched and "latch_period" in policy:
-                            policy["__latchTime"] = (
-                                time.time() + policy["latch_period"] * 60
-                            )
-
-                        # Determine which value to set the charging to
-                        if policy["charge_amps"] == "value":
-                            self.master.setMaxAmpsToDivideAmongSlaves(
-                                int(policy["value"])
-                            )
-                            self.master.debugLog(
-                                10,
-                                "Policy    ",
-                                "Charge at %.2f" % int(policy["value"]),
-                            )
-                        else:
-                            self.master.setMaxAmpsToDivideAmongSlaves(
-                                self.policyValue(policy["charge_amps"])
-                            )
-                            self.master.debugLog(
-                                10,
-                                "Policy    ",
-                                "Charge at %.2f"
-                                % self.policyValue(policy["charge_amps"]),
-                            )
-
-                        # Set flex, if any
-                        self.master.setAllowedFlex(
-                            self.policyValue(policy.get("allowed_flex", 0))
-                        )
-
-                        # If a background task is defined for this policy, queue it
-                        bgt = policy.get("background_task", None)
-                        if bgt:
-                            self.master.queue_background_task({"cmd": bgt})
-
-                        # If a charge limit is defined for this policy, apply it
-                        limit = self.policyValue(policy.get("charge_limit", -1))
-                        if not (limit >= 50 and limit <= 100):
-                            limit = -1
-                        self.master.queue_background_task(
-                            {"cmd": "applyChargeLimit", "limit": limit}
-                        )
-
-                        # Now, finish processing
-                        return
-
-                    else:
-                        self.master.debugLog(
-                            8,
-                            "Policy    ",
-                            "This policy condition has matched, but there are more to process.",
-                        )
-
-                else:
-                    self.master.debugLog(
-                        8, "Policy    ", "Policy conditions were not matched."
+                if not latched and "latch_period" in policy:
+                    policy["__latchTime"] = (
+                        time.time() + policy["latch_period"] * 60
                     )
-                    break
+
+                # Determine which value to set the charging to
+                if policy["charge_amps"] == "value":
+                    self.master.setMaxAmpsToDivideAmongSlaves(
+                        int(policy["value"])
+                    )
+                    self.master.debugLog(
+                        10,
+                        "Policy    ",
+                        "Charge at %.2f" % int(policy["value"]),
+                    )
+                else:
+                    self.master.setMaxAmpsToDivideAmongSlaves(
+                        self.policyValue(policy["charge_amps"])
+                    )
+                    self.master.debugLog(
+                        10,
+                        "Policy    ",
+                        "Charge at %.2f"
+                        % self.policyValue(policy["charge_amps"]),
+                    )
+
+                # Set flex, if any
+                self.master.setAllowedFlex(
+                    self.policyValue(policy.get("allowed_flex", 0))
+                )
+
+                # If a background task is defined for this policy, queue it
+                bgt = policy.get("background_task", None)
+                if bgt:
+                    self.master.queue_background_task({"cmd": bgt})
+
+                # If a charge limit is defined for this policy, apply it
+                limit = self.policyValue(policy.get("charge_limit", -1))
+                if not (limit >= 50 and limit <= 100):
+                    limit = -1
+                self.master.queue_background_task(
+                    {"cmd": "applyChargeLimit", "limit": limit}
+                )
+
+                # Now, finish processing
+                return
+            else:
+                self.master.debugLog(
+                    8, "Policy    ", "Policy conditions were not matched."
+                )
+                continue
 
     def policyValue(self, value):
         # policyValue is a macro to allow charging policy to refer to things
@@ -286,6 +255,14 @@ class Policy:
         )
 
     def doesConditionMatch(self, match, condition, value):
+        self.master.debugLog(
+            8,
+            "Policy    ",
+            f(
+                "Evaluating Policy match ({colored(match, 'red')}), condition ({colored(condition, 'red')}), value ({colored(value, 'red')}), iteration ({colored(iter, 'red')})"
+            ),
+        )
+
         match = self.policyValue(match)
         value = self.policyValue(value)
 
@@ -317,3 +294,11 @@ class Policy:
             return True
         else:
             raise ValueError("Unknown condition " + condition)
+
+    # exitOn = False returns True if all conditions are True, else False
+    # exitOn = True returns True if any condition is True, else False
+    def checkConditions(self, matches, conditions, values, exitOn = False):
+        for match, condition, value in zip(matches, conditions, values):
+            if self.doesConditionMatch(match, condition, value) == exitOn:
+                return exitOn
+        return not exitOn
