@@ -254,7 +254,7 @@ class Policy:
             else False
         )
 
-    def doesConditionMatch(self, match, condition, value):
+    def doesConditionMatch(self, match, condition, value, exitOn):
         self.master.debugLog(
             8,
             "Policy    ",
@@ -265,6 +265,9 @@ class Policy:
 
         match = self.policyValue(match)
         value = self.policyValue(value)
+
+        if all([isinstance(a, list) for a in (match, condition, value)]):
+            return self.checkConditions(match, condition, value, not exitOn)
 
         # Perform comparison
         if condition == "gt":
@@ -295,10 +298,10 @@ class Policy:
         else:
             raise ValueError("Unknown condition " + condition)
 
-    # exitOn = False returns True if all conditions are True, else False
-    # exitOn = True returns True if any condition is True, else False
+    # exitOn = False returns True if all conditions are True, else False ==> AND
+    # exitOn = True returns True if any condition is True, else False ==> OR
     def checkConditions(self, matches, conditions, values, exitOn = False):
         for match, condition, value in zip(matches, conditions, values):
-            if self.doesConditionMatch(match, condition, value) == exitOn:
+            if self.doesConditionMatch(match, condition, value, exitOn) == exitOn:
                 return exitOn
         return not exitOn
