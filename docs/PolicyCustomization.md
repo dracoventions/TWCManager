@@ -12,7 +12,25 @@ the web interface:
 - **Non-Scheduled Charging** charges at a specified rate (typically zero) at all
   other times
 
-The basic properties of these policies are set through the web interface.
+The basic properties of these policies are set through the web interface, but can
+be further adjusted using the config file.
+
+## Additional Restrictions
+
+If you want to impose additional restrictions on when these policies run, use
+the `restrictions` node in the config file.  For example:
+
+    "restrictions":{
+      "Charge Now":{
+        "match":[ "modules.TeslaPowerwall2.gridStatus" ],
+        "condition":[ "eq" ],
+        "value":[ true ]
+      }
+    }
+
+This prevents the Charge Now policy from matching when the Powerwall EMS reports that
+there is a utility outage.  See a more detailed description of policy restrictions
+in the custom policy section.
 
 ## Charge Limits
 
@@ -44,14 +62,14 @@ If you wish to add additional policies, they can be specified in the
 
 ## Anatomy of a Policy
 
-Here is a sample policy:
+Here is a simple policy:
 
-    { "name": "Grid Offline",
-      "match": [ "modules.TeslaPowerwall2.gridStatus" ],
-      "condition": [ "eq" ],
-      "value": [ "False" ],
-      "charge_amps": 0,
-      "charge_limit": -1
+    { "name": "Storm Watch",
+      "match": [ "modules.TeslaPowerwall2.gridStatus", "modules.TeslaPowerwall2.stormWatch" ],
+      "condition": [ "eq", "eq" ],
+      "value": [ true, true ],
+      "charge_amps": "settings.chargeNowAmps",
+      "charge_limit": 90
     }
 
 The values in a policy definition are:
@@ -74,9 +92,8 @@ The values in a policy definition are:
 `match` and `value` can contain several different properties to check.
 
 - Literal strings or numbers
-- `true` and `false`: Boolean values; not case-sensitive
-- `now`: The current time as seconds past the epoch; not case-sensitive
-- `tm_hour`:  The current hour as an integer (0-23); not case-sensitive
+- `now`: The current time as seconds past the epoch
+- `tm_hour`:  The current hour as an integer (0-23)
 - `config.*`: Retrieves a value from `config.json`
 - `settings.*`:  Retrieves a value from `settings.json`
 - `modules.*`:  Retrieves a value exposed by the specified module.  Some useful
@@ -95,9 +112,12 @@ The values in a policy definition are:
       at home
     - `minBatteryLevelAtHome`:  The lowest battery level (0-100) of any Tesla
       currently believed to be at home; `10000` if unknown / no cars are home.
+- Sub-lists
 
 (Note that TWCManager does not know which vehicle is connected to which TWC, so
 only aggregate properties of all vehicles at home can be accessed.)
+
+### Comparisons
 
 The comparisons which can be employed are:
 
@@ -109,6 +129,27 @@ The comparisons which can be employed are:
 - `ne`: Match must not be equal to value
 - `false`: Never true, regardless of values
 - `none`: Always true, regardless of values
+
+### Grouping of Requirements
+
+The top-level list of requirements are AND'd together.  If a sub-list is used,
+the sub-list is OR'd together; further sub-lists continue to alternate AND/OR.
+Here is a more complex policy which combines conditions:
+
+    { "name": "Powerwall Full",
+      "match": [
+        "modules.TeslaPowerwall2.batteryLevel",
+        [ "modules.TeslaPowerwall2.exportW",
+          "modules.TeslaPowerwall2.gridStatus" ] ],
+      "condition": [ "gte", [ "gte", "eq" ] ],
+      "value": [ 95, [ 1500, false ] ],
+      "charge_amps": "config.minAmpsPerTWC",
+      "charge_limit": 90,
+      "latch_period": 30
+    }
+
+This policy will match when the Powerwall battery level is at least 95%, and either
+power is being exported to the grid or the grid is unavailable.
 
 ### Background Tasks
 
