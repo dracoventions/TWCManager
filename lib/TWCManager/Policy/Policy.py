@@ -139,42 +139,7 @@ class Policy:
                         ),
                     )
                     # Start by not having matched the condition
-                    is_matched = 0
-                    match = self.policyValue(match)
-                    value = self.policyValue(value)
-
-                    # Perform comparison
-                    if condition == "gt":
-                        # Match must be greater than value
-                        if match > value:
-                            is_matched = 1
-                    elif condition == "gte":
-                        # Match must be greater than or equal to value
-                        if match >= value:
-                            is_matched = 1
-                    elif condition == "lt":
-                        # Match must be less than value
-                        if match < value:
-                            is_matched = 1
-                    elif condition == "lte":
-                        # Match must be less than or equal to value
-                        if match <= value:
-                            is_matched = 1
-                    elif condition == "eq":
-                        # Match must be equal to value
-                        if match == value:
-                            is_matched = 1
-                    elif condition == "ne":
-                        # Match must not be equal to value
-                        if match != value:
-                            is_matched = 1
-                    elif condition == "false":
-                        # Condition: false is a method to ensure a policy entry
-                        # is never matched, possibly for testing purposes
-                        is_matched = 0
-                    elif condition == "none":
-                        # No condition exists.
-                        is_matched = 1
+                    is_matched = self.doesConditionMatch(match, condition, value)
 
                 # Check if we have met all criteria
                 if latched or is_matched:
@@ -319,3 +284,36 @@ class Policy:
             == "getMaxAmpsToDivideGreenEnergy()"
             else False
         )
+
+    def doesConditionMatch(self, match, condition, value):
+        match = self.policyValue(match)
+        value = self.policyValue(value)
+
+        # Perform comparison
+        if condition == "gt":
+            # Match must be greater than value
+            return True if match > value else False
+        elif condition == "gte":
+            # Match must be greater than or equal to value
+            return True if match >= value else False
+        elif condition == "lt":
+            # Match must be less than value
+            return True if match < value else False
+        elif condition == "lte":
+            # Match must be less than or equal to value
+            return True if match <= value else False
+        elif condition == "eq":
+            # Match must be equal to value
+            return True if match == value else False
+        elif condition == "ne":
+            # Match must not be equal to value
+            return True if match != value else False
+        elif condition == "false":
+            # Condition: false is a method to ensure a policy entry
+            # is never matched, possibly for testing purposes
+            return False
+        elif condition == "none":
+            # No condition exists.
+            return True
+        else:
+            raise ValueError("Unknown condition " + condition)
