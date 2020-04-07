@@ -13,76 +13,19 @@ from ww import f
 
 class TWCMaster:
 
-    active_policy = None
     allowed_flex = 0
     backgroundTasksQueue = queue.Queue()
     backgroundTasksCmds = {}
     backgroundTasksLock = threading.Lock()
-    charge_policy = [
-        # The first policy table entry is for chargeNow. This will fire if
-        # chargeNowAmps is set to a positive integer and chargeNowTimeEnd
-        # is less than or equal to the current timestamp
-        {
-            "name": "Charge Now",
-            "match": [
-                "settings.chargeNowAmps",
-                "settings.chargeNowTimeEnd",
-                "settings.chargeNowTimeEnd",
-            ],
-            "condition": ["gt", "gt", "gt"],
-            "value": [0, 0, "now"],
-            "charge_amps": "settings.chargeNowAmps",
-            "charge_limit": "config.chargeNowLimit",
-        },
-        # Check if we are currently within the Scheduled Amps charging schedule.
-        # If so, charge at the specified number of amps.
-        {
-            "name": "Scheduled Charging",
-            "match": ["checkScheduledCharging()"],
-            "condition": ["eq"],
-            "value": [1],
-            "charge_amps": "settings.scheduledAmpsMax",
-            "charge_limit": "config.scheduledLimit",
-        },
-        # If we are within Track Green Energy schedule, charging will be
-        # performed based on the amount of solar energy being produced.
-        # Don't bother to check solar generation before 6am or after
-        # 8pm. Sunrise in most U.S. areas varies from a little before
-        # 6am in Jun to almost 7:30am in Nov before the clocks get set
-        # back an hour. Sunset can be ~4:30pm to just after 8pm.
-        {
-            "name": "Track Green Energy",
-            "match": ["tm_hour", "tm_hour", "settings.hourResumeTrackGreenEnergy"],
-            "condition": ["gte", "lt", "lte"],
-            "value": [6, 20, "tm_hour"],
-            "charge_amps": "getMaxAmpsToDivideGreenEnergy()",
-            "background_task": "checkGreenEnergy",
-            "allowed_flex": "config.greenEnergyFlexAmps",
-            "charge_limit": "config.greenEnergyLimit",
-        },
-        # If all else fails (ie no other policy match), we will charge at
-        # nonScheduledAmpsMax
-        {
-            "name": "Non Scheduled Charging",
-            "match": ["none"],
-            "condition": ["none"],
-            "value": [0],
-            "charge_amps": "settings.nonScheduledAmpsMax",
-            "charge_limit": "config.nonScheduledLimit",
-        },
-    ]
-
     config = None
     consumptionValues = {}
     debugLevel = 0
     generationValues = {}
-    lastPolicyCheck = 0
     lastTWCResponseMsg = None
     masterTWCID = ""
     maxAmpsToDivideAmongSlaves = 0
     modules = {}
     overrideMasterHeartbeatData = b""
-    policyCheckInterval = 30
     protocolVersion = 2
     settings = {
         "chargeNowAmps": 0,
@@ -123,35 +66,6 @@ class TWCMaster:
         self.debugLevel = config["config"]["debugLevel"]
         self.TWCID = TWCID
         self.subtractChargerLoad = config["config"]["subtractChargerLoad"]
-
-        # Override Charge Policy if specified
-        config_policy = config.get("policy")
-        if config_policy:
-            if len(config_policy.get("override", [])) > 0:
-                # Policy override specified, just override in place without processing the
-                # extensions
-                self.charge_policy = config_policy.get("override")
-            else:
-                # Insert optional policy extensions into policy list
-                # After - Inserted before Non-Scheduled Charging
-                config_extend = config_policy.get("extend", {})
-                if len(config_extend.get("after", [])) > 0:
-                    self.charge_policy[3:3] = config_extend.get("after")
-
-                # Before - Inserted after Charge Now
-                if len(config_extend.get("before", [])) > 0:
-                    self.charge_policy[1:1] = config_extend.get("before")
-
-                # Emergency - Inserted at the beginning
-                if len(config_extend.get("emergency", [])) > 0:
-                    self.charge_policy[0:0] = config_extend.get("emergency")
-
-        # Set the Policy Check Interval if specified
-        if config_policy:
-            policy_engine = config_policy.get("engine")
-            if policy_engine:
-                if policy_engine.get("policyCheckInterval"):
-                    self.policyCheckInterval = policy_engine.get("policyCheckInterval")
 
         # Register ourself as a module, allows lookups via the Module architecture
         self.registerModule({"name": "master", "ref": self, "type": "Master"})
@@ -560,55 +474,6 @@ class TWCMaster:
             )
         return carsCharging
 
-    def policyValue(self, value):
-        # policyValue is a macro to allow charging policy to refer to things
-        # such as EMS module values or settings. This allows us to control
-        # charging via policy.
-        ltNow = time.localtime()
-
-        casefold = str(value).casefold()
-
-        # Boolean values
-        if casefold == "true":
-            return True
-        if casefold == "false":
-            return False
-
-        # If value is "now", substitute with current timestamp
-        if casefold == "now":
-            return time.time()
-
-        # If value is "tm_hour", substitute with current hour
-        if casefold == "tm_hour":
-            return ltNow.tm_hour
-
-        # The remaining checks are case-sensitive!
-        #
-        # If value refers to a function, execute the function and capture the
-        # output
-        if str(value) == "getMaxAmpsToDivideGreenEnergy()":
-            return self.getMaxAmpsToDivideGreenEnergy()
-        elif str(value) == "checkScheduledCharging()":
-            return self.checkScheduledCharging()
-
-        # If value is tiered, split it up
-        if str(value).find(".") != -1:
-            pieces = str(value).split(".")
-
-            # If value refers to a setting, return the setting
-            if pieces[0] == "settings":
-                return self.settings.get(pieces[1], 0)
-            elif pieces[0] == "config":
-                return self.config["config"].get(pieces[1], 0)
-            elif pieces[0] == "modules":
-                module = None
-                if pieces[1] in self.modules:
-                    module = self.getModuleByName(pieces[1])
-                    return getattr(module, pieces[2], value)
-
-        # None of the macro conditions matched, return the value as is
-        return value
-
     def queue_background_task(self, task):
 
         if task["cmd"] in self.backgroundTasksCmds:
@@ -822,167 +687,6 @@ class TWCMaster:
 
     def setChargeNowTimeEnd(self, timeadd):
         self.settings["chargeNowTimeEnd"] = time.time() + timeadd
-
-    def setChargingPerPolicy(self):
-        # This function is called for the purpose of evaluating the charging
-        # policy and matching the first rule which matches our scenario.
-
-        # Once we have determined the maximum number of amps for all slaves to
-        # share based on the policy, we call setMaxAmpsToDivideAmongSlaves to
-        # distribute the designated power amongst slaves.
-
-        # First, determine if it has been less than 30 seconds since the last
-        # policy check. If so, skip for now
-        if (self.lastPolicyCheck + self.policyCheckInterval) > time.time():
-            return
-        else:
-            # Update last policy check time
-            self.lastPolicyCheck = time.time()
-
-        for policy in self.charge_policy:
-
-            # Check if the policy is within its latching period
-            latched = False
-            if "__latchTime" in policy:
-                if time.time() < policy["__latchTime"]:
-                    latched = True
-                else:
-                    del policy["__latchTime"]
-
-            # Iterate through each set of match, condition and value sets
-            iter = 0
-            for match, condition, value in zip(
-                policy["match"], policy["condition"], policy["value"]
-            ):
-
-                if not latched:
-                    iter += 1
-                    self.debugLog(
-                        8,
-                        "TWCMaster ",
-                        f(
-                            "Evaluating Policy match ({colored(match, 'red')}), condition ({colored(condition, 'red')}), value ({colored(value, 'red')}), iteration ({colored(iter, 'red')})"
-                        ),
-                    )
-                    # Start by not having matched the condition
-                    is_matched = 0
-                    match = self.policyValue(match)
-                    value = self.policyValue(value)
-
-                    # Perform comparison
-                    if condition == "gt":
-                        # Match must be greater than value
-                        if match > value:
-                            is_matched = 1
-                    elif condition == "gte":
-                        # Match must be greater than or equal to value
-                        if match >= value:
-                            is_matched = 1
-                    elif condition == "lt":
-                        # Match must be less than value
-                        if match < value:
-                            is_matched = 1
-                    elif condition == "lte":
-                        # Match must be less than or equal to value
-                        if match <= value:
-                            is_matched = 1
-                    elif condition == "eq":
-                        # Match must be equal to value
-                        if match == value:
-                            is_matched = 1
-                    elif condition == "ne":
-                        # Match must not be equal to value
-                        if match != value:
-                            is_matched = 1
-                    elif condition == "false":
-                        # Condition: false is a method to ensure a policy entry
-                        # is never matched, possibly for testing purposes
-                        is_matched = 0
-                    elif condition == "none":
-                        # No condition exists.
-                        is_matched = 1
-
-                # Check if we have met all criteria
-                if latched or is_matched:
-
-                    # Have we checked all policy conditions yet?
-                    if latched or len(policy["match"]) == iter:
-
-                        # Yes, we will now enforce policy
-                        self.debugLog(
-                            7,
-                            "TWCMaster ",
-                            f(
-                                "All policy conditions have matched. Policy chosen is {colored(policy['name'], 'red')}"
-                            ),
-                        )
-                        if self.active_policy != str(policy["name"]):
-                            self.debugLog(
-                                1,
-                                "TWCMaster ",
-                                f(
-                                    "New policy selected; changing to {colored(policy['name'], 'red')}"
-                                ),
-                            )
-                            self.active_policy = str(policy["name"])
-
-                        if not latched and "latch_period" in policy:
-                            policy["__latchTime"] = (
-                                time.time() + policy["latch_period"] * 60
-                            )
-
-                        # Determine which value to set the charging to
-                        if policy["charge_amps"] == "value":
-                            self.setMaxAmpsToDivideAmongSlaves(int(policy["value"]))
-                            self.debugLog(
-                                10,
-                                "TWCMaster ",
-                                "Charge at %.2f" % int(policy["value"]),
-                            )
-                        else:
-                            self.setMaxAmpsToDivideAmongSlaves(
-                                self.policyValue(policy["charge_amps"])
-                            )
-                            self.debugLog(
-                                10,
-                                "TWCMaster ",
-                                "Charge at %.2f"
-                                % self.policyValue(policy["charge_amps"]),
-                            )
-
-                        # Set flex, if any
-                        self.setAllowedFlex(
-                            self.policyValue(policy.get("allowed_flex", 0))
-                        )
-
-                        # If a background task is defined for this policy, queue it
-                        bgt = policy.get("background_task", None)
-                        if bgt:
-                            self.queue_background_task({"cmd": bgt})
-
-                        # If a charge limit is defined for this policy, apply it
-                        limit = self.policyValue(policy.get("charge_limit", -1))
-                        if not (limit >= 50 and limit <= 100):
-                            limit = -1
-                        self.queue_background_task(
-                            {"cmd": "applyChargeLimit", "limit": limit}
-                        )
-
-                        # Now, finish processing
-                        return
-
-                    else:
-                        self.debugLog(
-                            8,
-                            "TWCMaster ",
-                            "This policy condition has matched, but there are more to process.",
-                        )
-
-                else:
-                    self.debugLog(
-                        8, "TWCMaster ", "Policy conditions were not matched."
-                    )
-                    break
 
     def setConsumption(self, source, value):
         # Accepts consumption values from one or more data sources

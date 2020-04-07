@@ -42,8 +42,8 @@ class TeslaAPI:
         self.master = master
         try:
             self.config = master.config
-            self.debugLevel = self.config["config"]["debugLevel"]
-            self.minChargeLevel = self.config["config"]["minChargeLevel"]
+            self.debugLevel = self.config["config"].get("debugLevel", 1)
+            self.minChargeLevel = self.config["config"].get("minChargeLevel", -1)
             self.chargeUpdateInterval = self.config["config"].get(
                 "cloudUpdateInterval", 1800
             )
