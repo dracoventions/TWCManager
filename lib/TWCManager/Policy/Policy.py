@@ -2,6 +2,7 @@ import time
 from ww import f
 from termcolor import colored
 
+
 class Policy:
 
     active_policy = None
@@ -303,3 +304,18 @@ class Policy:
 
         # None of the macro conditions matched, return the value as is
         return value
+
+    def policyIsGreen(self):
+        current_policy = next(
+            policy
+            for policy in self.charge_policy
+            if policy["name"] == self.active_policy
+        )
+
+        return (
+            True
+            if current_policy.get("background_task", "") == "checkGreenEnergy"
+            and current_policy.get("charge_amps", "")
+            == "getMaxAmpsToDivideGreenEnergy()"
+            else False
+        )

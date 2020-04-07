@@ -233,7 +233,7 @@ def update_statuses():
     # Print a status update if we are on track green energy showing the
     # generation and consumption figures
     maxamps = f("{master.getMaxAmpsToDivideAmongSlaves():.2f}A")
-    if master.getModuleByName("Policy").active_policy == "Track Green Energy":
+    if master.getModuleByName("Policy").policyIsGreen():
         genwatts = f("{master.getGeneration():.0f}W")
         conwatts = f("{master.getConsumption():.0f}W")
         chgwatts = f("{master.getChargerLoad():.0f}W")
