@@ -32,14 +32,10 @@ class TeslaPowerwall2:
     def __init__(self, master):
         self.master = master
         self.config = master.config
-        try:
-            self.configConfig = self.config["config"]
-        except KeyError:
-            self.configConfig = {}
-        try:
-            self.configPowerwall = self.config["sources"]["Powerwall2"]
-        except KeyError:
-            self.configPowerwall = {}
+        self.configConfig = self.config.get("config", dict())
+        self.configPowerwall = self.config.get("sources", dict()).get(
+            "Powerwall2", dict()
+        )
         self.debugLevel = self.configConfig.get("debugLevel", 0)
         self.status = self.configPowerwall.get("enabled", False)
         self.serverIP = self.configPowerwall.get("serverIP", None)
@@ -58,50 +54,50 @@ class TeslaPowerwall2:
     @property
     def generatedW(self):
         value = self.getPWValues()
-        return float(value["solar"]["instant_power"])
+        return float(value.get("solar", dict()).get("instant_power", 0))
 
     @property
     def consumedW(self):
         value = self.getPWValues()
-        return float(value["load"]["instant_power"])
+        return float(value.get("load", dict()).get("instant_power", 0))
 
     @property
     def importW(self):
         value = self.getPWValues()
-        gridW = float(value["site"]["instant_power"])
+        gridW = float(value.get("site", dict()).get("instant_power", 0))
         return gridW if gridW > 0 else 0
 
     @property
     def exportW(self):
         value = self.getPWValues()
-        gridW = float(value["site"]["instant_power"])
+        gridW = float(value.get("site", dict()).get("instant_power", 0))
         return abs(gridW) if gridW < 0 else 0
 
     @property
     def gridStatus(self):
         value = self.getStatus()
         # There are actually two types of disconnected, but let's simplify that away
-        return True if value["grid_status"] == "SystemGridConnected" else False
+        return True if value.get("grid_status", "") == "SystemGridConnected" else False
 
     @property
     def voltage(self):
         value = self.getPWValues()
-        return int(value["site"]["instant_average_voltage"])
+        return int(value.get("site", dict()).get("instant_average_voltage", 0))
 
     @property
     def batteryLevel(self):
         value = self.getSOE()
-        return float(value["percentage"])
+        return float(value.get("percentage", 0))
 
     @property
     def operatingMode(self):
         value = self.getOperation()
-        return value["real_mode"]
+        return value.get("real_mode", "")
 
     @property
     def reservePercent(self):
         value = self.getOperation()
-        return float(value["backup_reserve_percent"])
+        return float(value.get("backup_reserve_percent", 0))
 
     @property
     def stormWatch(self):
@@ -193,7 +189,7 @@ class TeslaPowerwall2:
     def getPWJson(self, path):
 
         (lastTime, lastData) = (
-            self.lastFetch[path] if path in self.lastFetch else (0, None)
+            self.lastFetch[path] if path in self.lastFetch else (0, dict())
         )
 
         if (int(self.time.time()) - lastTime) > self.cacheTime:
@@ -204,7 +200,7 @@ class TeslaPowerwall2:
             self.doPowerwallLogin()
 
             url = "https://" + self.serverIP + ":" + self.serverPort + path
-            headers = {}
+            headers = dict()
 
             try:
                 r = self.httpSession.get(
@@ -216,7 +212,7 @@ class TeslaPowerwall2:
                     4, "Error connecting to Tesla Powerwall 2 to fetch " + path
                 )
                 self.debugLog(10, str(e))
-                return False
+                return lastData
 
             lastData = r.json()
             self.lastFetch[path] = (self.time.time(), r.json())
@@ -313,7 +309,7 @@ class TeslaPowerwall2:
 
         url = "https://" + self.serverIP + ":" + self.serverPort
         url += "/api/sitemaster/run"
-        headers = {}
+        headers = dict()
 
         try:
             r = self.httpSession.get(
