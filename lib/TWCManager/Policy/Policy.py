@@ -81,7 +81,7 @@ class Policy:
 
                 # Get additional restrictions
                 for (name, restrictions) in config_extend.get(
-                    "restrictions", []
+                    "restrictions", {}
                 ).items():
                     restricted = next(
                         policy
