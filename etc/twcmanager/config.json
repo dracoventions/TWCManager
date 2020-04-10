@@ -234,10 +234,25 @@
         # Rules in the before section here are evaluated after the Charge Now rule
         "before":[
         ],
-        # Rules in the after section here are evaluted before the Unscheduled Charging
+        # Rules in the after section here are evaluated before the Unscheduled Charging
         # rule at the end of the policy.
         "after":[
-        ]
+        ],
+
+        # Rather than defining additional policies, these values place additional constraints
+        # on the built-in policies.
+        "restrictions":{
+          #"Track Green Energy":{
+          #  "match":[],
+          #  "condition":[],
+          #  "value":[]
+          #},
+          #"Charge Now":{
+            #  "match":[],
+            #  "condition":[],
+            #  "value":[]
+            #},
+        }
       },
       # NOTE: Override and Extend are mutually exclusive options. Once you override, you
       # can no longer extend the inbuilt policy.
