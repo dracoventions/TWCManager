@@ -813,10 +813,15 @@ class TeslaAPI:
         #
         # We do NOT opportunistically check for arrivals, because that would be a
         # continuous API poll.
+        needToWake = False
         for vehicle in self.carApiVehicles:
             (wasAtHome, outside, lastApplied) = self.master.getNormalChargeLimit(
                 vehicle.ID
             )
+            # Don't wake cars to tell them about reduced limits;
+            # only wake if they might be able to charge further now
+            if wasAtHome and limit > lastApplied:
+                needToWake = True
             if (
                 wasAtHome
                 and (
@@ -827,7 +832,7 @@ class TeslaAPI:
             ) or (not wasAtHome and checkArrival):
                 vehicle.stopTryingToApplyLimit = False
 
-        if self.car_api_available(applyLimit=True) == False:
+        if needToWake and self.car_api_available(applyLimit=True) == False:
             self.master.debugLog(
                 8,
                 "TeslaAPI  ",
