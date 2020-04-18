@@ -814,7 +814,7 @@ class TeslaAPI:
             )
             # Don't wake cars to tell them about reduced limits;
             # only wake if they might be able to charge further now
-            if wasAtHome and limit > lastApplied:
+            if wasAtHome and limit > (lastApplied if lastApplied != -1 else outside):
                 needToWake = True
             if (
                 wasAtHome
