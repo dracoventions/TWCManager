@@ -821,7 +821,7 @@ class TeslaAPI:
                 and (
                     limit != lastApplied
                     or checkDeparture
-                    or (vehicle.update_location() and not vehicle.atHome)
+                    or (vehicle.update_location(cacheTime=3600) and not vehicle.atHome)
                 )
             ) or (not wasAtHome and checkArrival):
                 vehicle.stopTryingToApplyLimit = False
@@ -1195,14 +1195,14 @@ class CarApiVehicle:
 
             return (True, response)
 
-    def update_location(self):
+    def update_location(self, cacheTime=60):
 
         url = "https://owner-api.teslamotors.com/api/1/vehicles/"
         url = url + str(self.ID) + "/data_request/drive_state"
 
         now = self.time.time()
 
-        if now - self.lastDriveStatusTime < (60 if wake else 3600):
+        if now - self.lastDriveStatusTime < cacheTime:
             return True
 
         (result, response) = self.get_car_api(url)
