@@ -1077,7 +1077,7 @@ class CarApiVehicle:
         self.ID = json["id"]
         self.name = json["display_name"]
 
-    def inError(self):
+    def ready(self):
         if self.carapi.getCarApiRetryRemaining(self.lastErrorTime):
             # It's been under carApiErrorRetryMins minutes since the car API
             # generated an error on this vehicle. Return that car is not ready.
@@ -1088,11 +1088,6 @@ class CarApiVehicle:
                 + " not ready because of recent lastErrorTime "
                 + str(self.lastErrorTime),
             )
-            return True
-        return False
-
-    def ready(self):
-        if self.inError():
             return False
 
         if (
@@ -1218,7 +1213,7 @@ class CarApiVehicle:
         (result, response) = self.get_car_api(url)
 
         if result:
-            self.lastDriveStatusTime = self.time.time()
+            self.lastDriveStatusTime = now
             self.lat = response["latitude"]
             self.lon = response["longitude"]
             self.atHome = self.carapi.is_location_home(self.lat, self.lon)
@@ -1259,7 +1254,6 @@ class CarApiVehicle:
             return False
 
         self.lastLimitAttemptTime = now
-        self.lastAPIAccessTime = now
 
         url = "https://owner-api.teslamotors.com/api/1/vehicles/"
         url = url + str(self.ID) + "/command/set_charge_limit"
@@ -1292,6 +1286,7 @@ class CarApiVehicle:
 
             if result == True or reason == "already_set":
                 self.stopTryingToApplyLimit = True
+                self.lastAPIAccessTime = now
                 return True
             elif reason == "could_not_wake_buses":
                 time.sleep(5)
