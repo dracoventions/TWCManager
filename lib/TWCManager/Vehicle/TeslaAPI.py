@@ -875,6 +875,8 @@ class TeslaAPI:
 
             if limit == -1 or (located and not vehicle.atHome):
                 # We're removing any applied limit, provided it hasn't been manually changed
+                #
+                # If lastApplied == -1, the manual-change path is always selected.
                 if wasAtHome and vehicle.chargeLimit == lastApplied:
                     if vehicle.apply_charge_limit(outside):
                         self.master.debugLog(
@@ -887,10 +889,17 @@ class TeslaAPI:
                             + "%",
                         )
                         vehicle.stopTryingToApplyLimit = True
-                        if forgetVehicle:
-                            self.master.removeNormalChargeLimit(vehicle.ID)
                 else:
+                    # If the charge limit has been manually changed, user action overrides the
+                    # saved charge limit.  Leave it alone.
                     vehicle.stopTryingToApplyLimit = True
+                    outside = vehicle.chargeLimit
+
+                if vehicle.stopTryingToApplyLimit:
+                    if forgetVehicle:
+                        self.master.removeNormalChargeLimit(vehicle.ID)
+                    else:
+                        self.master.saveNormalChargeLimit(vehicle.ID, outside, -1)
             else:
                 if vehicle.chargeLimit != limit:
                     if vehicle.apply_charge_limit(limit):
