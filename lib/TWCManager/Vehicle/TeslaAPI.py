@@ -913,9 +913,10 @@ class TeslaAPI:
                             + "%",
                         )
                         vehicle.stopTryingToApplyLimit = True
-                        self.master.saveNormalChargeLimit(vehicle.ID, outside, limit)
                 else:
                     vehicle.stopTryingToApplyLimit = True
+
+                if vehicle.stopTryingToApplyLimit:
                     self.master.saveNormalChargeLimit(vehicle.ID, outside, limit)
 
         if checkArrival:
