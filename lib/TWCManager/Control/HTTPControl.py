@@ -6,9 +6,6 @@ import time
 import urllib.parse
 from ww import f
 
-# Global reference to master
-master = None
-
 
 class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
     pass
@@ -40,6 +37,7 @@ class HTTPControl:
 
         if self.status:
             httpd = ThreadingSimpleServer(("", self.httpPort), HTTPControlHandler)
+            httpd.master = master
             self.master.debugLog(
                 1, "HTTPCtrl  ", "Serving at port: " + str(self.httpPort)
             )
@@ -194,11 +192,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
           <td>
   <select name='chargeStopMode'>"""
         page += '<option value="1" '
-        if master.settings.get("chargeStopMode", "1") == "1":
+        if self.server.master.settings.get("chargeStopMode", "1") == "1":
             page += "selected"
         page += ">Tesla API</option>"
         page += '<option value="2" '
-        if master.settings.get("chargeStopMode", "1") == "2":
+        if self.server.master.settings.get("chargeStopMode", "1") == "2":
             page += "selected"
         page += ">Stop Responding to Slaves</option>"
         page += """
@@ -217,7 +215,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         return page
 
     def do_GET(self):
-        global master
         url = urllib.parse.urlparse(self.path)
 
         if (
@@ -247,7 +244,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             if url.path == "/apiacct/False":
                 page += "<font color='red'><b>Failed to log in to Tesla Account. Please check username and password and try again.</b></font>"
 
-            if not master.teslaLoginAskLater and url.path != "/apiacct/True":
+            if not self.server.master.teslaLoginAskLater and url.path != "/apiacct/True":
                 page += self.request_teslalogin()
 
             if url.path == "/apiacct/True":
@@ -283,7 +280,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         self.send_response(404)
 
     def do_POST(self):
-        global master
 
         # Parse URL
         url = urllib.parse.urlparse(self.path)
@@ -318,8 +314,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         for key in self.fields:
             keya = str(key).replace("b'", "")
             vala = self.fields[key][0].replace("'", "")
-            master.settings[keya] = vala
-        master.saveSettings()
+            self.server.master.settings[keya] = vala
+        self.server.master.saveSettings()
 
         # Redirect to the index page
         self.send_response(302)
@@ -331,7 +327,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     def process_teslalogin(self):
         # Check if we are skipping Tesla Login submission
 
-        if not master.teslaLoginAskLater:
+        if not self.server.master.teslaLoginAskLater:
             later = False
             try:
                 later = len(self.fields["later"])
@@ -339,9 +335,9 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 later = False
 
             if later:
-                master.teslaLoginAskLater = True
+                self.server.master.teslaLoginAskLater = True
 
-        if not master.teslaLoginAskLater:
+        if not self.server.master.teslaLoginAskLater:
             # Connect to Tesla API
 
             carapi = self.master.getModuleByName("TeslaAPI")
@@ -389,53 +385,52 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         return page
 
     def show_status(self):
-        global master
 
         page = "<table width = '100%'><tr width = '100%'><td width='30%'>"
         page += "<table class='table table-dark' width='100%'>"
         page += "<tr><th>Amps to share across all TWCs:</th>"
-        page += "<td>" + str(master.getMaxAmpsToDivideAmongSlaves()) + "</td>"
+        page += "<td>" + str(self.server.master.getMaxAmpsToDivideAmongSlaves()) + "</td>"
         page += "<td>amps</td></tr>"
 
         page += "<tr><th>Current Generation</th>"
-        page += "<td>" + str(master.getGeneration()) + "</td>"
+        page += "<td>" + str(self.server.master.getGeneration()) + "</td>"
         page += "<td>watts</td>"
         genamps = 0
-        if master.getGeneration():
-            genamps = master.getGeneration() / 240
+        if self.server.master.getGeneration():
+            genamps = self.server.master.getGeneration() / 240
         page += "<td>" + str(genamps) + "</td><td>amps</td></tr>"
 
         page += "<tr><th>Current Consumption</th>"
-        page += "<td>" + str(master.getConsumption()) + "</td>"
+        page += "<td>" + str(self.server.master.getConsumption()) + "</td>"
         page += "<td>watts</td>"
         conamps = 0
-        if master.getConsumption():
-            conamps = master.getConsumption() / 240
+        if self.server.master.getConsumption():
+            conamps = self.server.master.getConsumption() / 240
         page += "<td>" + str(conamps) + "</td><td>amps</td></tr>"
 
         page += "<tr><th>Current Charger Load</th>"
-        page += "<td>" + str(master.getChargerLoad()) + "</td>"
+        page += "<td>" + str(self.server.master.getChargerLoad()) + "</td>"
         page += "<td>watts</td>"
         page += "</tr>"
 
         page += "<tr><th>Number of Cars Charging</th>"
-        page += "<td>" + str(master.num_cars_charging_now()) + "</td>"
+        page += "<td>" + str(self.server.master.num_cars_charging_now()) + "</td>"
         page += "<td>cars</td></tr></table></td>"
 
         page += "<td width='30%'>"
         page += "<table class='table table-dark' width='100%'>"
         page += "<tr><th>Scheduled Charging Amps</th>"
-        page += "<td>" + str(master.getScheduledAmpsMax()) + "</td></tr>"
+        page += "<td>" + str(self.server.master.getScheduledAmpsMax()) + "</td></tr>"
 
         page += "<tr><th>Scheduled Charging Start Hour</th>"
-        page += "<td>" + str(master.getScheduledAmpsStartHour()) + "</td></tr>"
+        page += "<td>" + str(self.server.master.getScheduledAmpsStartHour()) + "</td></tr>"
 
         page += "<tr><th>Scheduled Charging End Hour</th>"
-        page += "<td>" + str(master.getScheduledAmpsEndHour()) + "</td>"
+        page += "<td>" + str(self.server.master.getScheduledAmpsEndHour()) + "</td>"
         page += "</tr>"
 
         page += "<tr><th>Resume Tracking Green Energy at</th>"
-        page += "<td>" + str(master.getHourResumeTrackGreenEnergy()) + "</td>"
+        page += "<td>" + str(self.server.master.getHourResumeTrackGreenEnergy()) + "</td>"
         page += "</tr>"
         page += "</table></td>"
 
@@ -451,7 +446,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         return page
 
     def show_twcs(self):
-        global master
 
         page = "<table class='darkTable'>\n"
         page += "<thead><tr>"
@@ -466,7 +460,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         lastAmpsTotal = 0
         maxAmpsTotal = 0
         totalAmps = 0
-        for slaveTWC in master.getSlaveTWCs():
+        for slaveTWC in self.server.master.getSlaveTWCs():
             page += "<tr>"
             page += "<td>%02X%02X</td>" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
             page += "<td>" + str(slaveTWC.reportedState) + "</td>"
