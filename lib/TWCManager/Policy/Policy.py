@@ -130,9 +130,11 @@ class Policy:
                 else:
                     del policy["__latchTime"]
 
-            if latched or self.checkConditions(
+            matched = self.checkConditions(
                 policy["match"], policy["condition"], policy["value"]
-            ):
+            )
+
+            if latched or matched:
                 # Yes, we will now enforce policy
                 self.master.debugLog(
                     7,
@@ -151,7 +153,7 @@ class Policy:
                     )
                     self.active_policy = str(policy["name"])
 
-                if not latched and "latch_period" in policy:
+                if matched and "latch_period" in policy:
                     policy["__latchTime"] = time.time() + policy["latch_period"] * 60
 
                 # Determine which value to set the charging to
