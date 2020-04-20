@@ -1102,6 +1102,7 @@ class CarApiVehicle:
         # This can check whether the car is online; if so, it will likely stay online for
         # two minutes.
         if self.is_awake():
+            self.firstWakeAttemptTime = 0
             return True
 
         self.carapi.master.debugLog(
