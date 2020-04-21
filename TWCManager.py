@@ -227,6 +227,8 @@ def check_green_energy():
         master.setConsumption(module["name"], module["ref"].getConsumption())
         master.setGeneration(module["name"], module["ref"].getGeneration())
 
+    master.setMaxAmpsToDivideAmongSlaves(master.getMaxAmpsToDivideGreenEnergy())
+
 
 def update_statuses():
 
