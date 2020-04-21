@@ -261,13 +261,7 @@ class Policy:
             if policy["name"] == self.active_policy
         )
 
-        return (
-            True
-            if current_policy.get("background_task", "") == "checkGreenEnergy"
-            and current_policy.get("charge_amps", "")
-            == "getMaxAmpsToDivideGreenEnergy()"
-            else False
-        )
+        return current_policy.get("background_task", "") == "checkGreenEnergy"
 
     def doesConditionMatch(self, match, condition, value, exitOn):
         self.master.debugLog(
