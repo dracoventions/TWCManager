@@ -75,6 +75,11 @@ Note:
   true.  It also does not prevent the Track Green Energy policy from deciding
   there is insufficient power to charge, but see Flex below.
 
+Caution:
+: Exercise care with latching.  If a policy is restricted to apply only when the
+  grid is online, but latches, it will continue operating during the beginning
+  of a grid outage.
+
 The Track Green Energy policy can be latched using the `greenEnergyLatch` value.
 Custom policies can be latched using the `latch_period` attribute.
 
