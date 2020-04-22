@@ -55,6 +55,26 @@ the `config.json` file:
 - `greenEnergyLimit`
 - `nonScheduledLimit`
 
+## Latching
+
+Sometimes, the conditions that trigger a policy could cause those conditions no
+longer to be true.  This does not occur with the built-in policy conditions, but
+could with custom conditions.  For example, a policy that allows charging when
+power is being exported could increase consumption and eliminate the export.
+
+Alternatively, you might have a condition which occasionally fails to match. If
+you restrict Track Green Energy to run only when generation is above a certain
+level, a passing cloud might cause you to exit and later re-enter the policy.
+
+To handle these cases, policies support latching.  When a policy is defined to
+latch, the conditions are treated as continuing to be true for a specified
+number of minutes after they last evaluated true.  (Note:  This does not prevent
+a policy change if an earlier policy's conditions become true.)
+
+The Track Green Energy policy can be latched using the `greenEnergyLatch` value.
+Custom policies can be latched using the `latch_period` attribute.
+
+
 # Defining Custom Policies
 
 If you wish to add additional policies, they can be specified in the
