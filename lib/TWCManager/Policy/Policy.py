@@ -149,52 +149,7 @@ class Policy:
                         "All policy conditions have matched. Policy chosen is {colored(policy['name'], 'red')}"
                     ),
                 )
-                if self.active_policy != str(policy["name"]):
-                    self.master.debugLog(
-                        1,
-                        "Policy    ",
-                        f(
-                            "New policy selected; changing to {colored(policy['name'], 'red')}"
-                        ),
-                    )
-                    self.active_policy = str(policy["name"])
-
-                if matched and "latch_period" in policy:
-                    policy["__latchTime"] = time.time() + policy["latch_period"] * 60
-
-                # Determine which value to set the charging to
-                if policy["charge_amps"] == "value":
-                    self.master.setMaxAmpsToDivideAmongSlaves(int(policy["value"]))
-                    self.master.debugLog(
-                        10, "Policy    ", "Charge at %.2f" % int(policy["value"])
-                    )
-                else:
-                    self.master.setMaxAmpsToDivideAmongSlaves(
-                        self.policyValue(policy["charge_amps"])
-                    )
-                    self.master.debugLog(
-                        10,
-                        "Policy    ",
-                        "Charge at %.2f" % self.policyValue(policy["charge_amps"]),
-                    )
-
-                # Set flex, if any
-                self.master.setAllowedFlex(
-                    self.policyValue(policy.get("allowed_flex", 0))
-                )
-
-                # If a background task is defined for this policy, queue it
-                bgt = policy.get("background_task", None)
-                if bgt:
-                    self.master.queue_background_task({"cmd": bgt})
-
-                # If a charge limit is defined for this policy, apply it
-                limit = self.policyValue(policy.get("charge_limit", -1))
-                if not (limit >= 50 and limit <= 100):
-                    limit = -1
-                self.master.queue_background_task(
-                    {"cmd": "applyChargeLimit", "limit": limit}
-                )
+                self.enforcePolicy(policy, matched)
 
                 # Now, finish processing
                 return
@@ -203,6 +158,56 @@ class Policy:
                     8, "Policy    ", "Policy conditions were not matched."
                 )
                 continue
+
+        # No policy has matched; keep the current policy
+        current_policy = next(
+            policy
+            for policy in self.charge_policy
+            if policy["name"] == self.active_policy
+        )
+        self.enforcePolicy(current_policy)
+
+    def enforcePolicy(self, policy, updateLatch=False):
+        if self.active_policy != str(policy["name"]):
+            self.master.debugLog(
+                1,
+                "Policy    ",
+                f("New policy selected; changing to {colored(policy['name'], 'red')}"),
+            )
+            self.active_policy = str(policy["name"])
+
+        if updateLatch and "latch_period" in policy:
+            policy["__latchTime"] = time.time() + policy["latch_period"] * 60
+
+        # Determine which value to set the charging to
+        if policy["charge_amps"] == "value":
+            self.master.setMaxAmpsToDivideAmongSlaves(int(policy["value"]))
+            self.master.debugLog(
+                10, "Policy    ", "Charge at %.2f" % int(policy["value"])
+            )
+        else:
+            self.master.setMaxAmpsToDivideAmongSlaves(
+                self.policyValue(policy["charge_amps"])
+            )
+            self.master.debugLog(
+                10,
+                "Policy    ",
+                "Charge at %.2f" % self.policyValue(policy["charge_amps"]),
+            )
+
+        # Set flex, if any
+        self.master.setAllowedFlex(self.policyValue(policy.get("allowed_flex", 0)))
+
+        # If a background task is defined for this policy, queue it
+        bgt = policy.get("background_task", None)
+        if bgt:
+            self.master.queue_background_task({"cmd": bgt})
+
+        # If a charge limit is defined for this policy, apply it
+        limit = self.policyValue(policy.get("charge_limit", -1))
+        if not (limit >= 50 and limit <= 100):
+            limit = -1
+        self.master.queue_background_task({"cmd": "applyChargeLimit", "limit": limit})
 
     def policyValue(self, value):
         # policyValue is a macro to allow charging policy to refer to things

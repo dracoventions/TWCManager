@@ -32,6 +32,13 @@ This prevents the Charge Now policy from matching when the Powerwall EMS reports
 there is a utility outage.  See a more detailed description of policy restrictions
 in the custom policy section.
 
+Note:
+: If no policy matches, the last policy chosen continues to apply despite its
+  conditions no longer matching.  This is probably not what you want.  This
+  cannot happen unless additional restrictions are added to the "Non-Scheduled
+  Charging" policy or you have fully replaced the set of policies. Therefore,
+  neither of these is recommended.
+
 ## Charge Limits
 
 Each of these policies has the ability to apply a different charge limit to your
