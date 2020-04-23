@@ -232,29 +232,46 @@ def update_statuses():
 
     # Print a status update if we are on track green energy showing the
     # generation and consumption figures
-    maxamps = f("{master.getMaxAmpsToDivideAmongSlaves():.2f}A")
+    maxamps = master.getMaxAmpsToDivideAmongSlaves()
+    maxampsDisplay = f("{maxamps:.2f}A")
     if master.getModuleByName("Policy").policyIsGreen():
-        genwatts = f("{master.getGeneration():.0f}W")
-        conwatts = f("{master.getConsumption():.0f}W")
-        chgwatts = f("{master.getChargerLoad():.0f}W")
+        genwatts = master.getGeneration()
+        conwatts = master.getConsumption()
+        chgwatts = master.getChargerLoad()
+        genwattsDisplay = f("{genwatts:.0f}W")
+        conwattsDisplay = f("{conwatts:.0f}W")
+        chgwattsDisplay = f("{chgwatts:.0f}W")
         debugLog(
             1,
             f(
-                "Green energy generates {colored(genwatts, 'magenta')}, Consumption {colored(conwatts, 'magenta')}, Charger Load {colored(chgwatts, 'magenta')}"
+                "Green energy generates {colored(genwattsDisplay, 'magenta')}, Consumption {colored(conwattsDisplay, 'magenta')}, Charger Load {colored(chgwattsDisplay, 'magenta')}"
             ),
         )
-        generation = f("{master.getGeneration() / 240:.2f}A")
-        consumption = f("{master.getGenerationOffset() / 240:.2f}A")
+        nominalOffer = (
+            genwatts
+            - (conwatts - (chgwatts if config["config"]["subtractChargerLoad"] else 0))
+        ) / 240
+        if abs(maxamps - nominalOffer) > 0.005:
+            nominalOfferDisplay = f("{nominalOffer:.2f}A")
+            debugLog(
+                10,
+                f(
+                    "Offering {maxampsDisplay} instead of {nominalOfferDisplay} to compensate for inexact current draw"
+                ),
+            )
+            conwatts = genwatts - (maxamps * 240)
+        generation = f("{genwatts / 240:.2f}A")
+        consumption = f("{conwatts / 240:.2f}A")
         debugLog(
             1,
             f(
-                "Limiting charging to {colored(generation, 'magenta')} - {colored(consumption, 'magenta')} = {colored(maxamps, 'magenta')}."
+                "Limiting charging to {colored(generation, 'magenta')} - {colored(consumption, 'magenta')} = {colored(maxampsDisplay, 'magenta')}."
             ),
         )
 
     else:
         # For all other modes, simply show the Amps to charge at
-        debugLog(1, f("Limiting charging to {colored(maxamps, 'magenta')}."))
+        debugLog(1, f("Limiting charging to {colored(maxampsDisplay, 'magenta')}."))
 
     # Print minimum charge for all charging policies
     minchg = f("{config['config']['minAmpsPerTWC']}A")
