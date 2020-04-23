@@ -55,6 +55,50 @@ the `config.json` file:
 - `greenEnergyLimit`
 - `nonScheduledLimit`
 
+## Latching
+
+Sometimes, the conditions that trigger a policy could cause those conditions no
+longer to be true.  This does not occur with the built-in policy conditions, but
+could with custom conditions.  For example, a policy that allows charging when
+power is being exported could increase consumption and eliminate the export.
+
+Alternatively, you might have a condition which occasionally fails to match. If
+you restrict Track Green Energy to run only when generation is above a certain
+level, a passing cloud might cause you to exit and later re-enter the policy.
+
+To handle these cases, policies support latching.  When a policy is defined to
+latch, the conditions are treated as continuing to be true for a specified
+number of minutes after they last evaluated true.
+
+Note:
+: This does not prevent a policy change if an earlier policy's conditions become
+  true.  It also does not prevent the Track Green Energy policy from deciding
+  there is insufficient power to charge, but see Flex below.
+
+Caution:
+: Exercise care with latching.  If a policy is restricted to apply only when the
+  grid is online, but latches, it will continue operating during the beginning
+  of a grid outage.
+
+The Track Green Energy policy can be latched using the `greenEnergyLatch` value.
+Custom policies can be latched using the `latch_period` attribute.
+
+## Flexibility
+
+The Track Green Energy policy attempts to send only excess power to the car.
+However, on cloudy days, this power might be inconsistent.  Setting an amount of
+Flex current permits the policy to continue charging at the minimum rate,
+drawing up to the specified amount from the grid, even if Green Energy becomes
+insufficient temporarily.
+
+The policy will stop charging if available power drops too low even with the
+flex, and will not wake a car to start charging until there is sufficient power
+without considering the flex.
+
+Flex for the Track Green Energy policy can be set using the
+`greenEnergyFlexAmps` value; custom policies can include an `allowed_flex`
+attribute.
+
 # Defining Custom Policies
 
 If you wish to add additional policies, they can be specified in the
@@ -86,6 +130,9 @@ The values in a policy definition are:
   is in effect (optional)
 - `latch_period`:  If the conditions for this policy are ever matched, treat
   them as matched for this many minutes, even if they change. (optional)
+- `allowed_flex`:  If the available current is reduced below the minimum for
+  charging, continue to supply the minimum.  Only useful for policies where the
+  charge amps vary.
 
 ### Policy Values
 

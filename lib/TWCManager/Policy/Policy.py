@@ -91,6 +91,12 @@ class Policy:
                     for key in ("match", "condition", "value"):
                         restricted[key] += restrictions.get(key, [])
 
+                # Green Energy Latching
+                if "greenEnergyLatch" in self.config["config"]:
+                    self.charge_policy[2]["latch_period"] = self.config["config"][
+                        "greenEnergyLatch"
+                    ]
+
                 # Insert optional policy extensions into policy list:
                 #   After - Inserted before Non-Scheduled Charging
                 #   Before - Inserted after Charge Now
@@ -130,9 +136,11 @@ class Policy:
                 else:
                     del policy["__latchTime"]
 
-            if latched or self.checkConditions(
+            matched = self.checkConditions(
                 policy["match"], policy["condition"], policy["value"]
-            ):
+            )
+
+            if latched or matched:
                 # Yes, we will now enforce policy
                 self.master.debugLog(
                     7,
@@ -151,7 +159,7 @@ class Policy:
                     )
                     self.active_policy = str(policy["name"])
 
-                if not latched and "latch_period" in policy:
+                if matched and "latch_period" in policy:
                     policy["__latchTime"] = time.time() + policy["latch_period"] * 60
 
                 # Determine which value to set the charging to

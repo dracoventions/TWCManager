@@ -101,6 +101,11 @@
         # of drawing energy from sources other than solar.
         "greenEnergyFlexAmps": 0,
 
+        # If the conditions for green energy briefly fail to match, how long should the
+        # Track Green Energy policy continue to run?  (Mainly useful if you're adding
+        # non-time-based restrictions below.)
+        #"greenEnergyLatch": 15,
+
         # In some environments, the consumption meter value that we obtain will
         # include the charger's consumption, whilst others will not.
         # This switch, if set to true, will subtract the charger's load from the
