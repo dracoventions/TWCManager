@@ -9,13 +9,18 @@ This document logs the changes per release of TWCManager.
   * New module instantiation system removing static references to most modules
      * Integration of Tesla Vehicle API into module architecture (thanks @MikeBishop)
   * Query Tesla API to fetch Stormwatch detection data (thanks @MikeBishop)
-  * Make policy match operators case-insensitive (thanks @MikeBishop)
-  * Re-order policy to avoid Track Green Energy overriding scheduled charging, and to add a new emergency policy entry point at the start of the policy (thanks @MikeBishop)
+  * Policy Handling improvements
+     * Modularization of the Policy engine, with ability to add additional constraints to policy definitions and to perform OR comparisons in policy conditions (thanks @MikeBishop)
+     * Make policy match operators case-insensitive (thanks @MikeBishop)
+     * Re-order policy to avoid Track Green Energy overriding scheduled charging, and to add a new emergency policy entry point at the start of the policy (thanks @MikeBishop)
+     * Addition of Policy Latching and Flex for advanced policy use-cases (thanks @MikeBishop)
+     * Documentation explaining the policy system (thanks @MikeBishop)
   * Improved logging system which clearly shows the module which produced the log message and the log priority.
   * Completed the modularization of the RS485 interface code to allow alternative interfaces, and introduced two new interface modules (Dummy and TCP)
-  * Modularization of the Policy engine, with ability to add additional constraints to policy definitions and to perform OR comparisons in policy conditions (thanks @MikeBishop)
+  * Improved Arrival/Departure detection via the Tesla API (thanks @MikeBishop)
   * Bugfixes
     * Remove duplicate conditional check in TeslaAPI module (thanks @MikeBishop)
+    * Clarify the polarity of amperage offset in configuration file (thanks @MikeBishop)
 
 ## v1.1.7 - 2020-03-09
 
