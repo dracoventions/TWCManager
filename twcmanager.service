@@ -1,0 +1,13 @@
+[Unit]
+Description=Tesla Wallcharger Manager
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/TWCManager
+ExecStart=/usr/bin/python3 -u -m TWCManager
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
