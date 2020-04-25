@@ -42,6 +42,6 @@ The following table shows the available configuration parameters for the MQTT Co
 
 | MQTT Topic                     | Value | Description |
 | ------------------------------ | ----- | ----------- |
-| *prefix*/control/chargeNow     | TBA | Starts charging immediately. |
-| *prefix*/control/chargeNowEnd  | TBA | Stops immediate charging. |
+| *prefix*/control/chargeNow     | AA,SS | Starts charging at AA amps for SS seconds immediately. e.g. `8,3600` = 8 Amps for 1 hour |
+| *prefix*/control/chargeNowEnd  | None | Stops immediate charging. |
 | *prefix*/control/stop          | None | Stops TWCManager. |
