@@ -294,22 +294,27 @@ class TWCMaster:
         # that many amps.
 
         # Calculate our current generation and consumption in watts
-        solarW = float(self.getGeneration() - self.getGenerationOffset())
+        generationW = float(self.getGeneration())
+        consumptionW = float(self.getConsumption())
 
-        # Generation may be below zero if consumption is greater than generation
-        if solarW < 0:
-            solarW = 0
+        # Calculate how much consumption to offset generation with
+        # Fetches and uses consumptionW separately
+        generationOffset = self.getGenerationOffset()
 
-        # Watts = Volts * Amps
-        # Car charges at 240 volts in North America so we figure
-        # out how many amps * 240 = solarW and limit the car to
-        # that many amps.
-        maxAmpsToDivide = solarW / 240
+        # This is the *de novo* calculation of how much we can offer
+        solarW = float(generationW - generationOffset)
 
-        if maxAmpsToDivide > 0:
-            return maxAmpsToDivide
-        else:
-            return 0
+        # Now temper this with reality -- the current offered shouldn't
+        # increase more than / must decrease at least the current gap
+        # between generation and consumption.
+        return max(
+            min(
+                self.getMaxAmpsToDivideAmongSlaves()
+                + ((generationW - consumptionW) / 240),
+                solarW / 240,
+            ),
+            0,
+        )
 
     def getNormalChargeLimit(self, ID):
         if "chargeLimits" in self.settings and str(ID) in self.settings["chargeLimits"]:
