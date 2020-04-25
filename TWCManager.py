@@ -609,7 +609,7 @@ while True:
             # trailing C0 bytes, the messages we know about are always 14 bytes
             # long in original TWCs, or 16 bytes in newer TWCs (protocolVersion
             # == 2).
-            if len(msg) != 14 and len(msg) != 16:
+            if(len(msg) != 14 and len(msg) != 16 and len(msg) != 20):
                 debugLog(
                     1,
                     "ERROR: Ignoring message of unexpected length %d: %s"
