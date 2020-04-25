@@ -56,7 +56,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         font-family: 'Arial Black', Gadget, sans-serif;
         border: 2px solid #000000;
         background-color: #717171;
-        width: 40%;
+        width: 60%;
         height: 200px;
         text-align: center;
         border-collapse: collapse;
@@ -92,6 +92,24 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       #vertical thead,#vertical tbody{
         display:inline-block;
       }
+
+      table.borderless {
+        font-family: 'Arial Black', Gadget, sans-serif;
+        border: 0px;
+        width: 40%;
+        height: 200px;
+        text-align: center;
+        border-collapse: collapse;
+      }
+
+      table.borderless th {
+        font-size: 15px;
+        font-weight: bold;
+        color: #FFFFFF;
+        background: #212529;
+        text-align: center;
+      }
+
       
       """
         page += "</style>"
@@ -99,7 +117,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
     def do_chargeSchedule(self):
         page = """
-    <table class='table table-borderless'>
+    <table class='borderless'>
       <thead>
         <th scope='col'>&nbsp;</th>
         <th scope='col'>Sun</th>
@@ -111,8 +129,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         <th scope='col'>Sat</th>
       </thead>
       <tbody>"""
-        for i in (x for y in (range(6, 24), range(0, 5)) for x in y):
-            page += "<tr><th scope='row'>%02d</th><td>&nbsp;</td></tr>" % (i)
+        for i in (x for y in (range(6, 24), range(0, 6)) for x in y):
+            page += "<tr><th scope='row'>%02d</th>" % (i)
+            for day in (range(0,6)):
+              page += "<td>&nbsp;</td>"
+            page += "</tr>"
         page += "</tbody>"
         page += "</table>"
 
@@ -163,6 +184,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       </ul>
       <ul class="navbar-nav mr-auto">
         <li class="nav-item">
+          <a class="nav-link" href="/policy">Policy</a>
+        </li>
+      </ul>
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item">
           <a class="nav-link" href="#">Schedule</a>
         </li>
       </ul>
@@ -178,6 +204,28 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       </ul>
       <span class="navbar-text">v1.1.8</span>
     </nav>"""
+        return page
+
+    def do_get_policy(self):
+        page = """
+    <html>
+    <head><title>Policy</title></head>
+    <body>
+      <table>
+        <tr><td>Emergency</td></tr>
+        """
+        for policy in self.server.master.getModuleByName("Policy").charge_policy:
+          page += "<tr><td>" + policy['name'] + "</td></tr>"
+          for i in range(0, len(policy['match'])):
+            page += "<tr><td>&nbsp;</td>"
+            page += "<td>" + policy['match'][i] + "</td>"
+            page += "<td>" + policy['condition'][i] + "</td>"
+            page += "<td>" + str(policy['value'][i]) + "</td></tr>"
+
+        page += """
+      </table>
+    </body>
+        """
         return page
 
     def do_get_settings(self):
@@ -238,14 +286,17 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             page += "</head>"
             page += "<body>"
             page += self.do_navbar()
-            page += "<table border='0' padding='0' margin='0'><tr>"
+            page += "<table border='0' padding='0' margin='0' width='100%'><tr>"
             page += "<td valign='top'>"
 
             if url.path == "/apiacct/False":
                 page += "<font color='red'><b>Failed to log in to Tesla Account. Please check username and password and try again.</b></font>"
 
             if not self.server.master.teslaLoginAskLater and url.path != "/apiacct/True":
-                page += self.request_teslalogin()
+                # Check if we have already stored the Tesla credentials
+                # If we can access the Tesla API okay, don't prompt
+                if (not self.server.master.getModuleByName("TeslaAPI").car_api_available()):
+                  page += self.request_teslalogin()
 
             if url.path == "/apiacct/True":
                 page += "<b>Thank you, successfully fetched Tesla API token."
@@ -257,6 +308,14 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             page += "</table>"
             page += "</html>"
 
+            self.wfile.write(page.encode("utf-8"))
+            return
+
+        if url.path == "/policy":
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            page = self.do_get_policy()
             self.wfile.write(page.encode("utf-8"))
             return
 
@@ -386,7 +445,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
     def show_status(self):
 
-        page = "<table width = '100%'><tr width = '100%'><td width='30%'>"
+        page = "<table width = '100%'><tr width = '100%'><td width='35%'>"
         page += "<table class='table table-dark' width='100%'>"
         page += "<tr><th>Amps to share across all TWCs:</th>"
         page += "<td>" + str(self.server.master.getMaxAmpsToDivideAmongSlaves()) + "</td>"
@@ -419,6 +478,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
         page += "<td width='30%'>"
         page += "<table class='table table-dark' width='100%'>"
+        page += "<tr><th>Current Policy</th>"
+        page += "<td>" + str(self.server.master.getModuleByName("Policy").active_policy) + "</td></tr>"
         page += "<tr><th>Scheduled Charging Amps</th>"
         page += "<td>" + str(self.server.master.getScheduledAmpsMax()) + "</td></tr>"
 
@@ -429,15 +490,18 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "<td>" + str(self.server.master.getScheduledAmpsEndHour()) + "</td>"
         page += "</tr>"
 
-        page += "<tr><th>Resume Tracking Green Energy at</th>"
-        page += "<td>" + str(self.server.master.getHourResumeTrackGreenEnergy()) + "</td>"
+        page += "<tr><th>Is a Green Policy?</th>"
+        if (self.server.master.getModuleByName("Policy").policyIsGreen()):
+          page += "<td>Yes</td>";
+        else:
+          page += "<td>No</td>";
         page += "</tr>"
         page += "</table></td>"
 
-        page += "<td width = '40%' rowspan = '3'>"
+        page += "<td width = '35%' rowspan = '3'>"
         page += self.do_chargeSchedule()
         page += "</td></tr>"
-        page += "<tr><td>"
+        page += "<tr><td width = '60%' colspan = '4'>"
         page += self.show_twcs()
         page += "</td></tr>"
 
