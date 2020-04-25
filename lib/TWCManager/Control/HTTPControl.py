@@ -340,7 +340,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         if not self.server.master.teslaLoginAskLater:
             # Connect to Tesla API
 
-            carapi = self.master.getModuleByName("TeslaAPI")
+            carapi = self.server.master.getModuleByName("TeslaAPI")
             carapi.setCarApiLastErrorTime(0)
             ret = carapi.car_api_available(
                 self.fields["email"][0], self.fields["password"][0]
