@@ -63,7 +63,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       }
       table.darkTable td, table.darkTable th {
         border: 1px solid #4A4A4A;
-        padding: 3px 2px;
+        padding: 2px 2px;
       }
       table.darkTable tbody td {
         font-size: 13px;
@@ -367,6 +367,9 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         self.wfile.write("".encode("utf-8"))
         return
 
+    def log_message(self, format, *args):
+        pass
+
     def process_settings(self):
 
         # Write settings
@@ -448,29 +451,24 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page = "<table width = '100%'><tr width = '100%'><td width='35%'>"
         page += "<table class='table table-dark' width='100%'>"
         page += "<tr><th>Amps to share across all TWCs:</th>"
-        page += "<td>" + str(self.server.master.getMaxAmpsToDivideAmongSlaves()) + "</td>"
-        page += "<td>amps</td></tr>"
+        page += "<td>%.2f</td><td>amps</td></tr>" % float(self.server.master.getMaxAmpsToDivideAmongSlaves())
 
         page += "<tr><th>Current Generation</th>"
-        page += "<td>" + str(self.server.master.getGeneration()) + "</td>"
-        page += "<td>watts</td>"
+        page += "<td>%.2f</td><td>watts</td>" % float(self.server.master.getGeneration())
         genamps = 0
         if self.server.master.getGeneration():
             genamps = self.server.master.getGeneration() / 240
-        page += "<td>" + str(genamps) + "</td><td>amps</td></tr>"
+        page += "<td>%.2f</td><td>amps</td></tr>" % float(genamps)
 
         page += "<tr><th>Current Consumption</th>"
-        page += "<td>" + str(self.server.master.getConsumption()) + "</td>"
-        page += "<td>watts</td>"
+        page += "<td>%.2f</td><td>watts</td>" % float(self.server.master.getConsumption())
         conamps = 0
         if self.server.master.getConsumption():
             conamps = self.server.master.getConsumption() / 240
-        page += "<td>" + str(conamps) + "</td><td>amps</td></tr>"
+        page += "<td>%.2f</td><td>amps</td></tr>" % float(conamps)
 
         page += "<tr><th>Current Charger Load</th>"
-        page += "<td>" + str(self.server.master.getChargerLoad()) + "</td>"
-        page += "<td>watts</td>"
-        page += "</tr>"
+        page += "<td>%.2f</td><td>watts</td></tr>" % float(self.server.master.getChargerLoad())
 
         page += "<tr><th>Number of Cars Charging</th>"
         page += "<td>" + str(self.server.master.num_cars_charging_now()) + "</td>"
@@ -519,11 +517,14 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "<th>Max Amps</th>"
         page += "<th>Amps Offered</th>"
         page += "<th>Amps In Use</th>"
+        page += "<th>Lifetime kWh</th>"
+        page += "<th>Voltage per Phase<br />1 / 2 / 3</th>"
         page += "<th>Last Heartbeat</th>"
         page += "</tr></thead>\n"
         lastAmpsTotal = 0
         maxAmpsTotal = 0
         totalAmps = 0
+        totalLtkWh = 0
         for slaveTWC in self.server.master.getSlaveTWCs():
             page += "<tr>"
             page += "<td>%02X%02X</td>" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
@@ -535,11 +536,15 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             lastAmpsTotal += float(slaveTWC.lastAmpsOffered)
             page += "<td>%.2f</td>" % float(slaveTWC.reportedAmpsActual)
             totalAmps += float(slaveTWC.reportedAmpsActual)
+            page += "<td>%d</td>" % slaveTWC.lifetimekWh
+            totalLtkWh += int(slaveTWC.lifetimekWh)
+            page += "<td>%d / %d / %d</td>" % (slaveTWC.voltsPhaseA, slaveTWC.voltsPhaseB, slaveTWC.voltsPhaseC)
             page += "<td>%.2f sec</td>" % float(time.time() - slaveTWC.timeLastRx)
             page += "</tr>\n"
         page += "<tr><td><b>Total</b><td>&nbsp;</td><td>&nbsp;</td>"
         page += "<td>%.2f</td>" % float(maxAmpsTotal)
         page += "<td>%.2f</td>" % float(lastAmpsTotal)
         page += "<td>%.2f</td>" % float(totalAmps)
+        page += "<td>%d</td>" % int(totalLtkWh)
         page += "</tr></table>\n"
         return page

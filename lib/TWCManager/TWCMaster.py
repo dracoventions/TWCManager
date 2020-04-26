@@ -215,6 +215,21 @@ class TWCMaster:
     def getScheduledAmpsEndHour(self):
         return self.settings.get("scheduledAmpsEndHour", -1)
 
+    def getSlaveLifetimekWh(self):
+
+        # This function is called from a Scheduled Task
+        # We delay the thread for 1 minute, then query all known Slave TWCs
+        # to determine their lifetime kWh and per-phase voltages
+        time.sleep(60)
+
+        for slaveTWC in self.getSlaveTWCs():
+          self.getModuleByName("RS485").send(
+            bytearray(b"\xFB\xEB")
+            + self.TWCID
+            + slaveTWC.TWCID
+            + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00")
+        )
+
     def getSlaveSign(self):
         return self.slaveSign
 
@@ -793,3 +808,31 @@ class TWCMaster:
         return datetime.now().strftime(
             "%H:%M:%S" + (".%f" if self.config["config"]["displayMilliseconds"] else "")
         )
+
+    def updateSlaveLifetime(self, senderA, senderB, kWh, vPA, vPB, vPC):
+      slaveID = "%02X%02X" % (senderA, senderB)
+      for slaveTWC in self.getSlaveTWCs():
+        thisSlave = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
+        if thisSlave == slaveID:
+          slaveTWC.setLifetimekWh(kWh)
+          slaveTWC.setVoltage(vPA, vPB, vPC)
+
+          # Publish Lifetime kWh Value via Status modules
+          for module in self.getModulesByType("Status"):
+            module["ref"].setStatus(
+                  slaveTWC.TWCID,
+                  "lifetime_kwh",
+                  "lifetimekWh",
+                  slaveTWC.lifetimekWh,
+            )
+
+            # Publish phase 1, 2 and 3 values via Status modules
+            for phase in ("A", "B", "C"):
+              for module in self.getModulesByType("Status"):
+                module["ref"].setStatus(
+                    slaveTWC.TWCID,
+                    "voltage_phase_" + phase,
+                    "voltagePhase" + phase,
+                    getattr(slaveTWC, "voltsPhase" + phase, 0),
+                )
+
