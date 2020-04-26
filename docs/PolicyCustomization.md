@@ -211,8 +211,8 @@ Most policies will not require a background task.  There are two exceptions:
 
 - If defining a policy that behaves like **Track Green Energy**, the background
   task `checkGreenEnergy` will track generation and consumption metrics from the
-  configured EMS plugins.  Set `charge_amps` to
-  `getMaxAmpsToDivideGreenEnergy()` to retrieve the calculated value.
+  configured EMS plugins.  Do not set `charge_amps`; the background task will
+  update it each time it runs.
 - If defining a policy that depends on `modules.TeslaAPI.minBatteryLevelAtHome`,
   the background task `checkBattery` will track the charge state of cars at home
   more closely while the policy is selected.

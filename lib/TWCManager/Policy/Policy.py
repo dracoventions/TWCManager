@@ -45,7 +45,6 @@ class Policy:
             "match": ["tm_hour", "tm_hour", "settings.hourResumeTrackGreenEnergy"],
             "condition": ["gte", "lt", "lte"],
             "value": [6, 20, "tm_hour"],
-            "charge_amps": "getMaxAmpsToDivideGreenEnergy()",
             "background_task": "checkGreenEnergy",
             "allowed_flex": "config.greenEnergyFlexAmps",
             "charge_limit": "config.greenEnergyLimit",
@@ -180,20 +179,21 @@ class Policy:
             policy["__latchTime"] = time.time() + policy["latch_period"] * 60
 
         # Determine which value to set the charging to
-        if policy["charge_amps"] == "value":
-            self.master.setMaxAmpsToDivideAmongSlaves(int(policy["value"]))
-            self.master.debugLog(
-                10, "Policy    ", "Charge at %.2f" % int(policy["value"])
-            )
-        else:
-            self.master.setMaxAmpsToDivideAmongSlaves(
-                self.policyValue(policy["charge_amps"])
-            )
-            self.master.debugLog(
-                10,
-                "Policy    ",
-                "Charge at %.2f" % self.policyValue(policy["charge_amps"]),
-            )
+        if "charge_amps" in policy:
+            if policy["charge_amps"] == "value":
+                self.master.setMaxAmpsToDivideAmongSlaves(int(policy["value"]))
+                self.master.debugLog(
+                    10, "Policy    ", "Charge at %.2f" % int(policy["value"])
+                )
+            else:
+                self.master.setMaxAmpsToDivideAmongSlaves(
+                    self.policyValue(policy["charge_amps"])
+                )
+                self.master.debugLog(
+                    10,
+                    "Policy    ",
+                    "Charge at %.2f" % self.policyValue(policy["charge_amps"]),
+                )
 
         # Set flex, if any
         self.master.setAllowedFlex(self.policyValue(policy.get("allowed_flex", 0)))
@@ -261,13 +261,7 @@ class Policy:
             if policy["name"] == self.active_policy
         )
 
-        return (
-            True
-            if current_policy.get("background_task", "") == "checkGreenEnergy"
-            and current_policy.get("charge_amps", "")
-            == "getMaxAmpsToDivideGreenEnergy()"
-            else False
-        )
+        return current_policy.get("background_task", "") == "checkGreenEnergy"
 
     def doesConditionMatch(self, match, condition, value, exitOn):
         self.master.debugLog(
