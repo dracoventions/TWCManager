@@ -48,6 +48,13 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
     fields = {}
 
+    def do_bootstrap(self):
+        page = (
+            "<meta name='viewport' content='width=device-width, initial-scale=1'>"
+        )
+        page += "<link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css' integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'>"
+        return page
+
     def do_css(self):
 
         page = "<style>"
@@ -179,7 +186,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       <link rel='icon' type='image/png' href='https://raw.githubusercontent.com/ngardiner/TWCManager/master/tree/v1.1.8/html/favicon.png'>
       <ul class="navbar-nav mr-auto">
         <li class="nav-item active">
-          <a class="nav-link" href="#">Home</a>
+          <a class="nav-link" href="/">Home</a>
         </li>
       </ul>
       <ul class="navbar-nav mr-auto">
@@ -207,18 +214,33 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         return page
 
     def do_get_policy(self):
-        page = self.do_navbar()
+        page = "<html><head>"
+        page += "<title>TWCManager</title>"
+        page += self.do_bootstrap()
+        page += self.do_css()
+        page += self.do_jsrefresh()
+        page += "</head>"
+        page += "<body>"
+        page += self.do_navbar()
         page += """
-    <html>
-    <head><title>Policy</title></head>
-    <body>
       <table>
-        <tr><td>Emergency</td></tr>
         """
+        j = 0
         for policy in self.server.master.getModuleByName("Policy").charge_policy:
-          page += "<tr><td>" + policy['name'] + "</td></tr>"
+          if (j == 0):
+            page += "<tr><th>Policy Override Point</th></tr>";
+            page += "<tr><td>Emergency</td></tr>";
+          if (j == 1):
+            page += "<tr><th>Policy Override Point</th></tr>";
+            page += "<tr><td>Before</td></tr>";
+          if (j == 3):
+            page += "<tr><th>Policy Override Point</th></tr>";
+            page += "<tr><td>After</td></tr>";
+          j += 1
+          page += "<tr><td>&nbsp;</td><td>" + policy['name'] + "</td></tr>"
+          page += "<tr><th>&nbsp;</th><th>&nbsp;</th><th>Match Criteria</th><th>Condition</th><th>Value</th></tr>"
           for i in range(0, len(policy['match'])):
-            page += "<tr><td>&nbsp;</td>"
+            page += "<tr><td>&nbsp;</td><td>&nbsp;</td>"
             page += "<td>" + policy['match'][i] + "</td>"
             page += "<td>" + policy['condition'][i] + "</td>"
             page += "<td>" + str(policy['value'][i]) + "</td></tr>"
@@ -230,7 +252,14 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         return page
 
     def do_get_settings(self):
-        page = self.do_navbar()
+        page = "<html><head>"
+        page += "<title>TWCManager</title>"
+        page += self.do_bootstrap()
+        page += self.do_css()
+        page += self.do_jsrefresh()
+        page += "</head>"
+        page += "<body>"
+        page += self.do_navbar()
         page += """
     <html>
     <head><title>Settings</title></head>
@@ -284,10 +313,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             # Send the html message
             page = "<html><head>"
             page += "<title>TWCManager</title>"
-            page += (
-                "<meta name='viewport' content='width=device-width, initial-scale=1'>"
-            )
-            page += "<link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css' integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'>"
+            page += self.do_bootstrap()
             page += self.do_css()
             page += self.do_jsrefresh()
             page += "</head>"

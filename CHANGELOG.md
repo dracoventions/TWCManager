@@ -25,10 +25,12 @@ This document logs the changes per release of TWCManager.
   * Support for tracking lifetime kWh and voltage per phase of slave TWCs, this includes:
     * Publishing of new Status (HASS and MQTT) values for lifetime kWh and voltage per phase
     * Polling of this value for TWCs with newer firmwares that provide it
+  * Implement Stop command for TWCs (not recommended, see linked documentation)
   * Bugfixes
     * Remove duplicate conditional check in TeslaAPI module (thanks @MikeBishop)
     * Clarify the polarity of amperage offset in configuration file (thanks @MikeBishop)
     * Fix message length restriction on newer firmwares (thanks @nean-and-i)
+    * Fix lag between Green Energy fetch and evaluation (thanks @MikeBishop)
 
 ## v1.1.7 - 2020-03-09
 
