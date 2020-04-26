@@ -207,7 +207,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         return page
 
     def do_get_policy(self):
-        page = """
+        page = self.do_navbar()
+        page += """
     <html>
     <head><title>Policy</title></head>
     <body>
@@ -229,7 +230,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         return page
 
     def do_get_settings(self):
-        page = """
+        page = self.do_navbar()
+        page += """
     <html>
     <head><title>Settings</title></head>
     <body>
@@ -247,6 +249,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         if self.server.master.settings.get("chargeStopMode", "1") == "2":
             page += "selected"
         page += ">Stop Responding to Slaves</option>"
+        page += '<option value="3" '
+        if self.server.master.settings.get("chargeStopMode", "1") == "3":
+            page += "selected"
+        page += ">Send Stop Command</option>"
+        page += "<p>Click <a href='https://github.com/ngardiner/TWCManager/docs/Settings.md' target='_new'>here</a> for detailed information on settings on this page</p>"
         page += """
   </select>
           </td>

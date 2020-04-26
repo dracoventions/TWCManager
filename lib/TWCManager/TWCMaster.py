@@ -690,6 +690,15 @@ class TWCMaster:
 
         self.getModuleByName("RS485").send(msg)
 
+    def sendStopCommand(self):
+        # This function will loop through each of the Slave TWCs, and send them the stop command.
+        for slaveTWC in self.getSlaveTWCs():
+          self.getModuleByName("RS485").send(
+            bytearray(b"\xFC\xB2")
+            + self.TWCID
+            + slaveTWC.TWCID
+        )
+
     def setAllowedFlex(self, amps):
         self.allowedFlex = amps if amps >= 0 else 0
 
@@ -795,6 +804,8 @@ class TWCMaster:
             self.queue_background_task({"cmd": "charge", "charge": True})
         if self.settings.get("chargeStopMode", "1") == "2":
             self.settings["respondToSlaves"] = 1
+        if self.settings.get("chargeStopMode", "1") == "3":
+            self.queue_background_task({"cmd": "charge", "charge": True})
 
     def stopCarsCharging(self):
         # This is called by components (mainly TWCSlave) who want to signal to us to
@@ -805,10 +816,13 @@ class TWCMaster:
 
         # 1 = Stop the car(s) charging via the Tesla API
         # 2 = Stop the car(s) charging by refusing to respond to slave TWCs
+        # 3 = Send TWC Stop command to each slave
         if self.settings.get("chargeStopMode", "1") == "1":
             self.queue_background_task({"cmd": "charge", "charge": False})
         if self.settings.get("chargeStopMode", "1") == "2":
             self.settings["respondToSlaves"] = 0
+        if self.settings.get("chargeStopMode", "1") == "3":
+            self.sendStopCommand()
 
     def time_now(self):
         return datetime.now().strftime(
