@@ -56,14 +56,14 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         font-family: 'Arial Black', Gadget, sans-serif;
         border: 2px solid #000000;
         background-color: #717171;
-        width: 40%;
+        width: 60%;
         height: 200px;
         text-align: center;
         border-collapse: collapse;
       }
       table.darkTable td, table.darkTable th {
         border: 1px solid #4A4A4A;
-        padding: 3px 2px;
+        padding: 2px 2px;
       }
       table.darkTable tbody td {
         font-size: 13px;
@@ -92,6 +92,24 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       #vertical thead,#vertical tbody{
         display:inline-block;
       }
+
+      table.borderless {
+        font-family: 'Arial Black', Gadget, sans-serif;
+        border: 0px;
+        width: 40%;
+        height: 200px;
+        text-align: center;
+        border-collapse: collapse;
+      }
+
+      table.borderless th {
+        font-size: 15px;
+        font-weight: bold;
+        color: #FFFFFF;
+        background: #212529;
+        text-align: center;
+      }
+
       
       """
         page += "</style>"
@@ -99,7 +117,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
     def do_chargeSchedule(self):
         page = """
-    <table class='table table-borderless'>
+    <table class='borderless'>
       <thead>
         <th scope='col'>&nbsp;</th>
         <th scope='col'>Sun</th>
@@ -111,8 +129,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         <th scope='col'>Sat</th>
       </thead>
       <tbody>"""
-        for i in (x for y in (range(6, 24), range(0, 5)) for x in y):
-            page += "<tr><th scope='row'>%02d</th><td>&nbsp;</td></tr>" % (i)
+        for i in (x for y in (range(6, 24), range(0, 6)) for x in y):
+            page += "<tr><th scope='row'>%02d</th>" % (i)
+            for day in (range(0,6)):
+              page += "<td>&nbsp;</td>"
+            page += "</tr>"
         page += "</tbody>"
         page += "</table>"
 
@@ -163,6 +184,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       </ul>
       <ul class="navbar-nav mr-auto">
         <li class="nav-item">
+          <a class="nav-link" href="/policy">Policy</a>
+        </li>
+      </ul>
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item">
           <a class="nav-link" href="#">Schedule</a>
         </li>
       </ul>
@@ -180,8 +206,32 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     </nav>"""
         return page
 
+    def do_get_policy(self):
+        page = self.do_navbar()
+        page += """
+    <html>
+    <head><title>Policy</title></head>
+    <body>
+      <table>
+        <tr><td>Emergency</td></tr>
+        """
+        for policy in self.server.master.getModuleByName("Policy").charge_policy:
+          page += "<tr><td>" + policy['name'] + "</td></tr>"
+          for i in range(0, len(policy['match'])):
+            page += "<tr><td>&nbsp;</td>"
+            page += "<td>" + policy['match'][i] + "</td>"
+            page += "<td>" + policy['condition'][i] + "</td>"
+            page += "<td>" + str(policy['value'][i]) + "</td></tr>"
+
+        page += """
+      </table>
+    </body>
+        """
+        return page
+
     def do_get_settings(self):
-        page = """
+        page = self.do_navbar()
+        page += """
     <html>
     <head><title>Settings</title></head>
     <body>
@@ -199,6 +249,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         if self.server.master.settings.get("chargeStopMode", "1") == "2":
             page += "selected"
         page += ">Stop Responding to Slaves</option>"
+        page += '<option value="3" '
+        if self.server.master.settings.get("chargeStopMode", "1") == "3":
+            page += "selected"
+        page += ">Send Stop Command</option>"
+        page += "<p>Click <a href='https://github.com/ngardiner/TWCManager/docs/Settings.md' target='_new'>here</a> for detailed information on settings on this page</p>"
         page += """
   </select>
           </td>
@@ -238,14 +293,17 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             page += "</head>"
             page += "<body>"
             page += self.do_navbar()
-            page += "<table border='0' padding='0' margin='0'><tr>"
+            page += "<table border='0' padding='0' margin='0' width='100%'><tr>"
             page += "<td valign='top'>"
 
             if url.path == "/apiacct/False":
                 page += "<font color='red'><b>Failed to log in to Tesla Account. Please check username and password and try again.</b></font>"
 
             if not self.server.master.teslaLoginAskLater and url.path != "/apiacct/True":
-                page += self.request_teslalogin()
+                # Check if we have already stored the Tesla credentials
+                # If we can access the Tesla API okay, don't prompt
+                if (not self.server.master.getModuleByName("TeslaAPI").car_api_available()):
+                  page += self.request_teslalogin()
 
             if url.path == "/apiacct/True":
                 page += "<b>Thank you, successfully fetched Tesla API token."
@@ -257,6 +315,14 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             page += "</table>"
             page += "</html>"
 
+            self.wfile.write(page.encode("utf-8"))
+            return
+
+        if url.path == "/policy":
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            page = self.do_get_policy()
             self.wfile.write(page.encode("utf-8"))
             return
 
@@ -308,6 +374,9 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         self.wfile.write("".encode("utf-8"))
         return
 
+    def log_message(self, format, *args):
+        pass
+
     def process_settings(self):
 
         # Write settings
@@ -340,7 +409,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         if not self.server.master.teslaLoginAskLater:
             # Connect to Tesla API
 
-            carapi = self.master.getModuleByName("TeslaAPI")
+            carapi = self.server.master.getModuleByName("TeslaAPI")
             carapi.setCarApiLastErrorTime(0)
             ret = carapi.car_api_available(
                 self.fields["email"][0], self.fields["password"][0]
@@ -386,32 +455,27 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
     def show_status(self):
 
-        page = "<table width = '100%'><tr width = '100%'><td width='30%'>"
+        page = "<table width = '100%'><tr width = '100%'><td width='35%'>"
         page += "<table class='table table-dark' width='100%'>"
         page += "<tr><th>Amps to share across all TWCs:</th>"
-        page += "<td>" + str(self.server.master.getMaxAmpsToDivideAmongSlaves()) + "</td>"
-        page += "<td>amps</td></tr>"
+        page += "<td>%.2f</td><td>amps</td></tr>" % float(self.server.master.getMaxAmpsToDivideAmongSlaves())
 
         page += "<tr><th>Current Generation</th>"
-        page += "<td>" + str(self.server.master.getGeneration()) + "</td>"
-        page += "<td>watts</td>"
+        page += "<td>%.2f</td><td>watts</td>" % float(self.server.master.getGeneration())
         genamps = 0
         if self.server.master.getGeneration():
             genamps = self.server.master.getGeneration() / 240
-        page += "<td>" + str(genamps) + "</td><td>amps</td></tr>"
+        page += "<td>%.2f</td><td>amps</td></tr>" % float(genamps)
 
         page += "<tr><th>Current Consumption</th>"
-        page += "<td>" + str(self.server.master.getConsumption()) + "</td>"
-        page += "<td>watts</td>"
+        page += "<td>%.2f</td><td>watts</td>" % float(self.server.master.getConsumption())
         conamps = 0
         if self.server.master.getConsumption():
             conamps = self.server.master.getConsumption() / 240
-        page += "<td>" + str(conamps) + "</td><td>amps</td></tr>"
+        page += "<td>%.2f</td><td>amps</td></tr>" % float(conamps)
 
         page += "<tr><th>Current Charger Load</th>"
-        page += "<td>" + str(self.server.master.getChargerLoad()) + "</td>"
-        page += "<td>watts</td>"
-        page += "</tr>"
+        page += "<td>%.2f</td><td>watts</td></tr>" % float(self.server.master.getChargerLoad())
 
         page += "<tr><th>Number of Cars Charging</th>"
         page += "<td>" + str(self.server.master.num_cars_charging_now()) + "</td>"
@@ -419,6 +483,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
         page += "<td width='30%'>"
         page += "<table class='table table-dark' width='100%'>"
+        page += "<tr><th>Current Policy</th>"
+        page += "<td>" + str(self.server.master.getModuleByName("Policy").active_policy) + "</td></tr>"
         page += "<tr><th>Scheduled Charging Amps</th>"
         page += "<td>" + str(self.server.master.getScheduledAmpsMax()) + "</td></tr>"
 
@@ -429,15 +495,18 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "<td>" + str(self.server.master.getScheduledAmpsEndHour()) + "</td>"
         page += "</tr>"
 
-        page += "<tr><th>Resume Tracking Green Energy at</th>"
-        page += "<td>" + str(self.server.master.getHourResumeTrackGreenEnergy()) + "</td>"
+        page += "<tr><th>Is a Green Policy?</th>"
+        if (self.server.master.getModuleByName("Policy").policyIsGreen()):
+          page += "<td>Yes</td>";
+        else:
+          page += "<td>No</td>";
         page += "</tr>"
         page += "</table></td>"
 
-        page += "<td width = '40%' rowspan = '3'>"
+        page += "<td width = '35%' rowspan = '3'>"
         page += self.do_chargeSchedule()
         page += "</td></tr>"
-        page += "<tr><td>"
+        page += "<tr><td width = '60%' colspan = '4'>"
         page += self.show_twcs()
         page += "</td></tr>"
 
@@ -455,11 +524,14 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "<th>Max Amps</th>"
         page += "<th>Amps Offered</th>"
         page += "<th>Amps In Use</th>"
+        page += "<th>Lifetime kWh</th>"
+        page += "<th>Voltage per Phase<br />1 / 2 / 3</th>"
         page += "<th>Last Heartbeat</th>"
         page += "</tr></thead>\n"
         lastAmpsTotal = 0
         maxAmpsTotal = 0
         totalAmps = 0
+        totalLtkWh = 0
         for slaveTWC in self.server.master.getSlaveTWCs():
             page += "<tr>"
             page += "<td>%02X%02X</td>" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
@@ -471,11 +543,15 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             lastAmpsTotal += float(slaveTWC.lastAmpsOffered)
             page += "<td>%.2f</td>" % float(slaveTWC.reportedAmpsActual)
             totalAmps += float(slaveTWC.reportedAmpsActual)
+            page += "<td>%d</td>" % slaveTWC.lifetimekWh
+            totalLtkWh += int(slaveTWC.lifetimekWh)
+            page += "<td>%d / %d / %d</td>" % (slaveTWC.voltsPhaseA, slaveTWC.voltsPhaseB, slaveTWC.voltsPhaseC)
             page += "<td>%.2f sec</td>" % float(time.time() - slaveTWC.timeLastRx)
             page += "</tr>\n"
         page += "<tr><td><b>Total</b><td>&nbsp;</td><td>&nbsp;</td>"
         page += "<td>%.2f</td>" % float(maxAmpsTotal)
         page += "<td>%.2f</td>" % float(lastAmpsTotal)
         page += "<td>%.2f</td>" % float(totalAmps)
+        page += "<td>%d</td>" % int(totalLtkWh)
         page += "</tr></table>\n"
         return page

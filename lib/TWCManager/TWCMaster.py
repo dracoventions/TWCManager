@@ -21,6 +21,7 @@ class TWCMaster:
     consumptionValues = {}
     debugLevel = 0
     generationValues = {}
+    lastkWhMessage = time.time()
     lastTWCResponseMsg = None
     masterTWCID = ""
     maxAmpsToDivideAmongSlaves = 0
@@ -126,6 +127,11 @@ class TWCMaster:
         return int(len(self.slaveTWCRoundRobin))
 
     def debugLog(self, minlevel, function, message):
+        # Trim/pad the module name as needed
+        if len(function) < 10:
+          for a in range(len(function), 10):
+            function += " "
+
         if self.debugLevel >= minlevel:
             print(
                 colored(self.time_now() + " ", "yellow")
@@ -215,6 +221,21 @@ class TWCMaster:
     def getScheduledAmpsEndHour(self):
         return self.settings.get("scheduledAmpsEndHour", -1)
 
+    def getSlaveLifetimekWh(self):
+
+        # This function is called from a Scheduled Task
+        # We delay the thread for 1 minute, then query all known Slave TWCs
+        # to determine their lifetime kWh and per-phase voltages
+        time.sleep(60)
+
+        for slaveTWC in self.getSlaveTWCs():
+          self.getModuleByName("RS485").send(
+            bytearray(b"\xFB\xEB")
+            + self.TWCID
+            + slaveTWC.TWCID
+            + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00")
+        )
+
     def getSlaveSign(self):
         return self.slaveSign
 
@@ -294,22 +315,27 @@ class TWCMaster:
         # that many amps.
 
         # Calculate our current generation and consumption in watts
-        solarW = float(self.getGeneration() - self.getGenerationOffset())
+        generationW = float(self.getGeneration())
+        consumptionW = float(self.getConsumption())
 
-        # Generation may be below zero if consumption is greater than generation
-        if solarW < 0:
-            solarW = 0
+        # Calculate how much consumption to offset generation with
+        # Fetches and uses consumptionW separately
+        generationOffset = self.getGenerationOffset()
 
-        # Watts = Volts * Amps
-        # Car charges at 240 volts in North America so we figure
-        # out how many amps * 240 = solarW and limit the car to
-        # that many amps.
-        maxAmpsToDivide = solarW / 240
+        # This is the *de novo* calculation of how much we can offer
+        solarW = float(generationW - generationOffset)
 
-        if maxAmpsToDivide > 0:
-            return maxAmpsToDivide
-        else:
-            return 0
+        # Now temper this with reality -- the current offered shouldn't
+        # increase more than / must decrease at least the current gap
+        # between generation and consumption.
+        return max(
+            min(
+                self.getMaxAmpsToDivideAmongSlaves()
+                + ((generationW - consumptionW) / 240),
+                solarW / 240,
+            ),
+            0,
+        )
 
     def getNormalChargeLimit(self, ID):
         if "chargeLimits" in self.settings and str(ID) in self.settings["chargeLimits"]:
@@ -664,6 +690,15 @@ class TWCMaster:
 
         self.getModuleByName("RS485").send(msg)
 
+    def sendStopCommand(self):
+        # This function will loop through each of the Slave TWCs, and send them the stop command.
+        for slaveTWC in self.getSlaveTWCs():
+          self.getModuleByName("RS485").send(
+            bytearray(b"\xFC\xB2")
+            + self.TWCID
+            + slaveTWC.TWCID
+        )
+
     def setAllowedFlex(self, amps):
         self.allowedFlex = amps if amps >= 0 else 0
 
@@ -769,6 +804,8 @@ class TWCMaster:
             self.queue_background_task({"cmd": "charge", "charge": True})
         if self.settings.get("chargeStopMode", "1") == "2":
             self.settings["respondToSlaves"] = 1
+        if self.settings.get("chargeStopMode", "1") == "3":
+            self.queue_background_task({"cmd": "charge", "charge": True})
 
     def stopCarsCharging(self):
         # This is called by components (mainly TWCSlave) who want to signal to us to
@@ -779,12 +816,43 @@ class TWCMaster:
 
         # 1 = Stop the car(s) charging via the Tesla API
         # 2 = Stop the car(s) charging by refusing to respond to slave TWCs
+        # 3 = Send TWC Stop command to each slave
         if self.settings.get("chargeStopMode", "1") == "1":
             self.queue_background_task({"cmd": "charge", "charge": False})
         if self.settings.get("chargeStopMode", "1") == "2":
             self.settings["respondToSlaves"] = 0
+        if self.settings.get("chargeStopMode", "1") == "3":
+            self.sendStopCommand()
 
     def time_now(self):
         return datetime.now().strftime(
             "%H:%M:%S" + (".%f" if self.config["config"]["displayMilliseconds"] else "")
         )
+
+    def updateSlaveLifetime(self, senderA, senderB, kWh, vPA, vPB, vPC):
+      slaveID = "%02X%02X" % (senderA, senderB)
+      for slaveTWC in self.getSlaveTWCs():
+        thisSlave = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
+        if thisSlave == slaveID:
+          slaveTWC.setLifetimekWh(kWh)
+          slaveTWC.setVoltage(vPA, vPB, vPC)
+
+          # Publish Lifetime kWh Value via Status modules
+          for module in self.getModulesByType("Status"):
+            module["ref"].setStatus(
+                  slaveTWC.TWCID,
+                  "lifetime_kwh",
+                  "lifetimekWh",
+                  slaveTWC.lifetimekWh,
+            )
+
+            # Publish phase 1, 2 and 3 values via Status modules
+            for phase in ("A", "B", "C"):
+              for module in self.getModulesByType("Status"):
+                module["ref"].setStatus(
+                    slaveTWC.TWCID,
+                    "voltage_phase_" + phase,
+                    "voltagePhase" + phase,
+                    getattr(slaveTWC, "voltsPhase" + phase, 0),
+                )
+

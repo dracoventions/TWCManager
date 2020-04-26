@@ -186,6 +186,8 @@ def background_tasks_thread():
             carapi.car_api_available(task["email"], task["password"])
         elif task["cmd"] == "checkGreenEnergy":
             check_green_energy()
+        elif task["cmd"] == "getLifetimekWh":
+            master.getSlaveLifetimekWh()
         elif task["cmd"] == "updateStatus":
             update_statuses()
         elif task["cmd"] == "applyChargeLimit":
@@ -226,37 +228,52 @@ def check_green_energy():
     for module in master.getModulesByType("EMS"):
         master.setConsumption(module["name"], module["ref"].getConsumption())
         master.setGeneration(module["name"], module["ref"].getGeneration())
-
     master.setMaxAmpsToDivideAmongSlaves(master.getMaxAmpsToDivideGreenEnergy())
-
 
 def update_statuses():
 
     # Print a status update if we are on track green energy showing the
     # generation and consumption figures
-    maxamps = f("{master.getMaxAmpsToDivideAmongSlaves():.2f}A")
+    maxamps = master.getMaxAmpsToDivideAmongSlaves()
+    maxampsDisplay = f("{maxamps:.2f}A")
     if master.getModuleByName("Policy").policyIsGreen():
-        genwatts = f("{master.getGeneration():.0f}W")
-        conwatts = f("{master.getConsumption():.0f}W")
-        chgwatts = f("{master.getChargerLoad():.0f}W")
+        genwatts = master.getGeneration()
+        conwatts = master.getConsumption()
+        chgwatts = master.getChargerLoad()
+        genwattsDisplay = f("{genwatts:.0f}W")
+        conwattsDisplay = f("{conwatts:.0f}W")
+        chgwattsDisplay = f("{chgwatts:.0f}W")
         debugLog(
             1,
             f(
-                "Green energy generates {colored(genwatts, 'magenta')}, Consumption {colored(conwatts, 'magenta')}, Charger Load {colored(chgwatts, 'magenta')}"
+                "Green energy generates {colored(genwattsDisplay, 'magenta')}, Consumption {colored(conwattsDisplay, 'magenta')}, Charger Load {colored(chgwattsDisplay, 'magenta')}"
             ),
         )
-        generation = f("{master.getGeneration() / 240:.2f}A")
-        consumption = f("{master.getGenerationOffset() / 240:.2f}A")
+        nominalOffer = (
+            genwatts
+            - (conwatts - (chgwatts if config["config"]["subtractChargerLoad"] else 0))
+        ) / 240
+        if abs(maxamps - nominalOffer) > 0.005:
+            nominalOfferDisplay = f("{nominalOffer:.2f}A")
+            debugLog(
+                10,
+                f(
+                    "Offering {maxampsDisplay} instead of {nominalOfferDisplay} to compensate for inexact current draw"
+                ),
+            )
+            conwatts = genwatts - (maxamps * 240)
+        generation = f("{genwatts / 240:.2f}A")
+        consumption = f("{conwatts / 240:.2f}A")
         debugLog(
             1,
             f(
-                "Limiting charging to {colored(generation, 'magenta')} - {colored(consumption, 'magenta')} = {colored(maxamps, 'magenta')}."
+                "Limiting charging to {colored(generation, 'magenta')} - {colored(consumption, 'magenta')} = {colored(maxampsDisplay, 'magenta')}."
             ),
         )
 
     else:
         # For all other modes, simply show the Amps to charge at
-        debugLog(1, f("Limiting charging to {colored(maxamps, 'magenta')}."))
+        debugLog(1, f("Limiting charging to {colored(maxampsDisplay, 'magenta')}."))
 
     # Print minimum charge for all charging policies
     minchg = f("{config['config']['minAmpsPerTWC']}A")
@@ -350,6 +367,9 @@ master.loadSettings()
 backgroundTasksThread = threading.Thread(target=background_tasks_thread, args=())
 backgroundTasksThread.daemon = True
 backgroundTasksThread.start()
+
+# Queue background task to regularly fetch slaves lifetime kWh readings
+master.queue_background_task({"cmd": "getLifetimekWh"})
 
 debugLog(
     1,
@@ -453,10 +473,13 @@ while True:
                 )
                 master.send_slave_linkready()
 
-        ########################################################################
         # See if there's any message from the web interface.
-
         webipccontrol.processIPC()
+
+        # If it has been more than 2 minutes since the last kWh value, queue the command to request it from slaves
+        if config["config"]["fakeMaster"] == 1 and ((time.time() - master.lastkWhMessage) > (60*2)):
+          master.lastkWhMessage = time.time()
+          master.queue_background_task({"cmd": "getLifetimekWh"})
 
         ########################################################################
         # See if there's an incoming message on the input interface.
@@ -594,7 +617,7 @@ while True:
             # trailing C0 bytes, the messages we know about are always 14 bytes
             # long in original TWCs, or 16 bytes in newer TWCs (protocolVersion
             # == 2).
-            if len(msg) != 14 and len(msg) != 16:
+            if(len(msg) != 14 and len(msg) != 16 and len(msg) != 20):
                 debugLog(
                     1,
                     "ERROR: Ignoring message of unexpected length %d: %s"
@@ -792,7 +815,7 @@ while True:
                             ),
                         )
                 else:
-                    msgMatch = re.search(b"\A\xfd\xeb(..)(..)(.+?).\Z", msg, re.DOTALL)
+                    msgMatch = re.search(b"\A\xfd\xeb(..)(....)(..)(..)(..)(.+?).\Z", msg, re.DOTALL)
                 if msgMatch and foundMsgMatch == False:
                     # Handle kWh total and voltage message from slave.
                     #
@@ -800,9 +823,6 @@ while True:
                     # firmware.  I believe it's only sent as a response to a
                     # message from Master in this format:
                     #   FB EB <Master TWCID> <Slave TWCID> 00 00 00 00 00 00 00 00 00
-                    # Since we never send such a message, I don't expect a slave
-                    # to ever send this message to us, but we handle it just in
-                    # case.
                     # According to FuzzyLogic, this message has the following
                     # format on an EU (3-phase) TWC:
                     #   FD EB <Slave TWCID> 00000038 00E6 00F1 00E8 00
@@ -818,14 +838,30 @@ while True:
                     # FD EB.
                     foundMsgMatch = True
                     senderID = msgMatch.group(1)
-                    receiverID = msgMatch.group(2)
-                    data = msgMatch.group(3)
+                    lifetimekWh = msgMatch.group(2)
+                    kWh = (lifetimekWh[0] << 24) + (lifetimekWh[1] << 16) + (lifetimekWh[2] << 8) + lifetimekWh[3]
+                    vPhaseA = msgMatch.group(3)
+                    voltsPhaseA = (vPhaseA[0] << 8) + vPhaseA[1]
+                    vPhaseB = msgMatch.group(4)
+                    voltsPhaseB = (vPhaseB[0] << 8) + vPhaseB[1]
+                    vPhaseC = msgMatch.group(5)
+                    voltsPhaseC = (vPhaseC[0] << 8) + vPhaseC[1]
+                    data = msgMatch.group(6)
 
                     debugLog(
                         1,
-                        "Slave TWC %02X%02X unexpectedly reported kWh and voltage data: %s."
-                        % (senderID[0], senderID[1], hex_str(data)),
+                        "Slave TWC %02X%02X: Delivered %d kWh, voltage per phase: (%d, %d, %d)."
+                        % (senderID[0], senderID[1], kWh, voltsPhaseA, voltsPhaseB, voltsPhaseC),
                     )
+
+                    # Update the timestamp of the last reciept of this message
+                    master.lastkWhMessage = time.time()
+
+                    # Every time we get this message, we re-queue the query
+                    master.queue_background_task({"cmd": "getLifetimekWh"})
+
+                    # Update this detail for the Slave TWC
+                    master.updateSlaveLifetime(senderID[0], senderID[1], kWh, voltsPhaseA, voltsPhaseB, voltsPhaseC)
 
                 else:
                     msgMatch = re.search(b"\A\xfd\xee(..)(.+?).\Z", msg, re.DOTALL)
@@ -1210,6 +1246,9 @@ while True:
                     voltsPhaseB = (data[6] << 8) + data[7]
                     voltsPhaseC = (data[8] << 8) + data[9]
 
+                    # Update this detail for the Slave TWC
+                    master.updateSlaveLifetime(senderID[0], senderID[1], kWhCounter, voltsPhaseA, voltsPhaseB, voltsPhaseC)
+
                     if senderID == fakeTWCID:
                         debugLog(
                             1,
@@ -1231,6 +1270,8 @@ while True:
                             voltsPhaseC,
                         ),
                     )
+
+                    # Record counter values for Slave TWC
 
                 if foundMsgMatch == False:
                     debugLog(1, "***UNKNOWN MESSAGE from master: " + hex_str(msg))

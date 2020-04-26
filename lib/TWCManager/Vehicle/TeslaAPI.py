@@ -258,10 +258,7 @@ class TeslaAPI:
                     if vehicle.ready():
                         continue
 
-                    if (
-                        now - vehicle.lastWakeAttemptTime
-                        <= vehicle.delayNextWakeAttempt
-                    ):
+                    if now - vehicle.lastAPIAccessTime <= vehicle.delayNextWakeAttempt:
                         self.master.debugLog(
                             10,
                             "TeslaAPI  ",
@@ -273,7 +270,7 @@ class TeslaAPI:
 
                     # It's been delayNextWakeAttempt seconds since we last failed to
                     # wake the car, or it's never been woken. Wake it.
-                    vehicle.lastWakeAttemptTime = now
+                    vehicle.lastAPIAccessTime = now
                     url = "https://owner-api.teslamotors.com/api/1/vehicles/"
                     url = url + str(vehicle.ID) + "/wake_up"
 
@@ -312,7 +309,7 @@ class TeslaAPI:
                         # when it periodically awakens for some reason.
                         vehicle.firstWakeAttemptTime = 0
                         vehicle.delayNextWakeAttempt = 0
-                        # Don't alter vehicle.lastWakeAttemptTime because
+                        # Don't alter vehicle.lastAPIAccessTime because
                         # vehicle.ready() uses it to return True if the last wake
                         # was under 2 mins ago.
                         needSleep = True
@@ -583,13 +580,10 @@ class TeslaAPI:
                 )
                 continue
 
-            if vehicle.ready(wake=charge) == False:
+            if not vehicle.ready():
                 continue
 
-            if (
-                vehicle.update_charge(wake=False)
-                and vehicle.batteryLevel < self.minChargeLevel
-            ):
+            if vehicle.update_charge() and vehicle.batteryLevel < self.minChargeLevel:
                 # If the vehicle's charge state is lower than the configured minimum,
                 #   don't stop it from charging, even if we'd otherwise not charge.
                 continue
@@ -813,21 +807,26 @@ class TeslaAPI:
         #
         # We do NOT opportunistically check for arrivals, because that would be a
         # continuous API poll.
+        needToWake = False
         for vehicle in self.carApiVehicles:
             (wasAtHome, outside, lastApplied) = self.master.getNormalChargeLimit(
                 vehicle.ID
             )
+            # Don't wake cars to tell them about reduced limits;
+            # only wake if they might be able to charge further now
+            if wasAtHome and limit > (lastApplied if lastApplied != -1 else outside):
+                needToWake = True
             if (
                 wasAtHome
                 and (
                     limit != lastApplied
                     or checkDeparture
-                    or (vehicle.update_location(wake=False) and not vehicle.atHome)
+                    or (vehicle.update_location(cacheTime=3600) and not vehicle.atHome)
                 )
             ) or (not wasAtHome and checkArrival):
                 vehicle.stopTryingToApplyLimit = False
 
-        if self.car_api_available(applyLimit=True) == False:
+        if needToWake and self.car_api_available(applyLimit=True) == False:
             self.master.debugLog(
                 8,
                 "TeslaAPI  ",
@@ -876,6 +875,8 @@ class TeslaAPI:
 
             if limit == -1 or (located and not vehicle.atHome):
                 # We're removing any applied limit, provided it hasn't been manually changed
+                #
+                # If lastApplied == -1, the manual-change path is always selected.
                 if wasAtHome and vehicle.chargeLimit == lastApplied:
                     if vehicle.apply_charge_limit(outside):
                         self.master.debugLog(
@@ -888,10 +889,17 @@ class TeslaAPI:
                             + "%",
                         )
                         vehicle.stopTryingToApplyLimit = True
-                        if forgetVehicle:
-                            self.master.removeNormalChargeLimit(vehicle.ID)
                 else:
+                    # If the charge limit has been manually changed, user action overrides the
+                    # saved charge limit.  Leave it alone.
                     vehicle.stopTryingToApplyLimit = True
+                    outside = vehicle.chargeLimit
+
+                if vehicle.stopTryingToApplyLimit:
+                    if forgetVehicle:
+                        self.master.removeNormalChargeLimit(vehicle.ID)
+                    else:
+                        self.master.saveNormalChargeLimit(vehicle.ID, outside, -1)
             else:
                 if vehicle.chargeLimit != limit:
                     if vehicle.apply_charge_limit(limit):
@@ -905,9 +913,10 @@ class TeslaAPI:
                             + "%",
                         )
                         vehicle.stopTryingToApplyLimit = True
-                        self.master.saveNormalChargeLimit(vehicle.ID, outside, limit)
                 else:
                     vehicle.stopTryingToApplyLimit = True
+
+                if vehicle.stopTryingToApplyLimit:
                     self.master.saveNormalChargeLimit(vehicle.ID, outside, limit)
 
         if checkArrival:
@@ -1015,7 +1024,7 @@ class TeslaAPI:
     def updateChargeAtHome(self):
         for car in self.carApiVehicles:
             if car.atHome:
-                car.update_charge(wake=False)
+                car.update_charge()
         self.lastChargeCheck = self.time.time()
 
     @property
@@ -1045,7 +1054,7 @@ class CarApiVehicle:
     name = ""
 
     firstWakeAttemptTime = 0
-    lastWakeAttemptTime = 0
+    lastAPIAccessTime = 0
     delayNextWakeAttempt = 0
     lastLimitAttemptTime = 0
 
@@ -1068,7 +1077,7 @@ class CarApiVehicle:
         self.ID = json["id"]
         self.name = json["display_name"]
 
-    def ready(self, wake=True):
+    def ready(self):
         if self.carapi.getCarApiRetryRemaining(self.lastErrorTime):
             # It's been under carApiErrorRetryMins minutes since the car API
             # generated an error on this vehicle. Return that car is not ready.
@@ -1081,15 +1090,19 @@ class CarApiVehicle:
             )
             return False
 
-        if wake == False or (
+        if (
             self.firstWakeAttemptTime == 0
-            and self.time.time() - self.lastWakeAttemptTime < 2 * 60
+            and self.time.time() - self.lastAPIAccessTime < 2 * 60
         ):
-            # If we need to wake the car, it's been
-            # less than 2 minutes since we successfully woke this car, so it
-            # should still be awake.  Tests on my car in energy saver mode show
-            # it returns to sleep state about two minutes after the last command
-            # was issued.  Times I've tested: 1:35, 1:57, 2:30
+            # If it's been less than 2 minutes since we successfully woke this car, it
+            # should still be awake.  No need to check.  It returns to sleep state about
+            # two minutes after the last command was issued.
+            return True
+
+        # This can check whether the car is online; if so, it will likely stay online for
+        # two minutes.
+        if self.is_awake():
+            self.firstWakeAttemptTime = 0
             return True
 
         self.carapi.master.debugLog(
@@ -1099,8 +1112,14 @@ class CarApiVehicle:
         )
         return False
 
-    def get_car_api(self, url, wake=True):
-        if self.ready(wake) == False:
+    # Permits opportunistic API requests
+    def is_awake(self):
+        url = "https://owner-api.teslamotors.com/api/1/vehicles/" + str(self.ID)
+        (result, response) = self.get_car_api(url, checkReady=False, provesOnline=False)
+        return result and response.get("state", "") == "online"
+
+    def get_car_api(self, url, checkReady=True, provesOnline=True):
+        if checkReady and not self.ready():
             return (False, None)
 
         apiResponseDict = {}
@@ -1132,11 +1151,6 @@ class CarApiVehicle:
                     foundKnownError = False
                     error = apiResponseDict["error"]
 
-                    # If we opted not to wake the vehicle, unavailable is expected.
-                    # Don't keep trying if that happens.
-                    unavailable = "vehicle unavailable"
-                    if wake == False and unavailable == error[0 : len(unavailable)]:
-                        return (False, None)
                     for knownError in self.carapi.getCarApiTransientErrors():
                         if knownError == error[0 : len(knownError)]:
                             # I see these errors often enough that I think
@@ -1182,29 +1196,32 @@ class CarApiVehicle:
                 self.lastErrorTime = self.time.time()
                 return (False, None)
 
+            if provesOnline:
+                self.lastAPIAccessTime = self.time.time()
+
             return (True, response)
 
-    def update_location(self, wake=True):
+    def update_location(self, cacheTime=60):
 
         url = "https://owner-api.teslamotors.com/api/1/vehicles/"
         url = url + str(self.ID) + "/data_request/drive_state"
 
         now = self.time.time()
 
-        if now - self.lastDriveStatusTime < (60 if wake else 3600):
+        if now - self.lastDriveStatusTime < cacheTime:
             return True
 
-        (result, response) = self.get_car_api(url, wake)
+        (result, response) = self.get_car_api(url)
 
         if result:
-            self.lastDriveStatusTime = self.time.time()
+            self.lastDriveStatusTime = now
             self.lat = response["latitude"]
             self.lon = response["longitude"]
             self.atHome = self.carapi.is_location_home(self.lat, self.lon)
 
         return result
 
-    def update_charge(self, wake=True):
+    def update_charge(self):
         url = "https://owner-api.teslamotors.com/api/1/vehicles/"
         url = url + str(self.ID) + "/data_request/charge_state"
 
@@ -1213,7 +1230,7 @@ class CarApiVehicle:
         if now - self.lastChargeStatusTime < 60:
             return True
 
-        (result, response) = self.get_car_api(url, wake=wake)
+        (result, response) = self.get_car_api(url)
 
         if result:
             self.lastChargeStatusTime = self.time.time()
@@ -1270,6 +1287,7 @@ class CarApiVehicle:
 
             if result == True or reason == "already_set":
                 self.stopTryingToApplyLimit = True
+                self.lastAPIAccessTime = now
                 return True
             elif reason == "could_not_wake_buses":
                 time.sleep(5)

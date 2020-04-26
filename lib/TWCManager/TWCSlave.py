@@ -46,6 +46,10 @@ class TWCSlave:
     timeLastHeartbeatDebugOutput = 0
     wiringMaxAmps = 0
     departureCheckTimes = list()
+    lifetimekWh = 0
+    voltsPhaseA = 0
+    voltsPhaseB = 0
+    voltsPhaseC = 0
 
     def __init__(self, TWCID, maxAmps, config, master):
         self.config = config
@@ -1010,3 +1014,11 @@ class TWCSlave:
             if self.lastAmpsOffered != oldLastAmpsOffered:
                 self.timeLastAmpsOfferedChanged = self.time.time()
         return self.lastAmpsOffered
+
+    def setLifetimekWh(self, kwh):
+      self.lifetimekWh = kwh
+
+    def setVoltage(self, pa, pb, pc):
+      self.voltsPhaseA = pa
+      self.voltsPhaseB = pb
+      self.voltsPhaseC = pc
