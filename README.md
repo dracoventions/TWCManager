@@ -1,5 +1,9 @@
 # TWCManager
 
+## Screenshots
+![Screenshot](docs/screenshot.png)
+![Screenshot](docs/screenshot2.png)
+
 ## How it works
 
 * In order to allow multiple Tesla Wall Connector (TWC) units to operate on a single power circuit, Tesla provides a Load-Sharing protocol to interconnect the Tesla Wall Connector units together, and to direct those units to charge at a specific rate based on the number of cars charging simtultaneously.
