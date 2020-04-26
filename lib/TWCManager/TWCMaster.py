@@ -126,6 +126,11 @@ class TWCMaster:
         return int(len(self.slaveTWCRoundRobin))
 
     def debugLog(self, minlevel, function, message):
+        # Trim/pad the module name as needed
+        if len(function) < 10:
+          for a in range(len(function), 10):
+            function += " "
+
         if self.debugLevel >= minlevel:
             print(
                 colored(self.time_now() + " ", "yellow")

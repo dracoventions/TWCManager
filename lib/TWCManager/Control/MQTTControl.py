@@ -42,7 +42,7 @@ class MQTTControl:
 
         # Subscribe to the specified topic prefix, and process incoming messages
         # to determine if they represent control messages
-        self.debugLog(10, "Attempting to Connect")
+        self.master.debugLog(10, "MQTTCtrl", "Attempting to Connect")
         if self.brokerIP:
             self.client = self.mqtt.Client("MQTTCtrl")
             if self.username and self.password:
@@ -55,33 +55,25 @@ class MQTTControl:
                     self.brokerIP, port=self.brokerPort, keepalive=30
                 )
             except ConnectionRefusedError as e:
-                self.debugLog(4, "Error connecting to MQTT Broker")
-                self.debugLog(10, str(e))
+                self.master.debugLog(4, "MQTTCtrl", "Error connecting to MQTT Broker")
+                self.master.debugLog(10, "MQTTCtrl", str(e))
                 return False
             except OSError as e:
-                self.debugLog(4, "Error connecting to MQTT Broker")
-                self.debugLog(10, str(e))
+                self.master.debugLog(4, "MQTTCtrl", "Error connecting to MQTT Broker")
+                self.master.debugLog(10, "MQTTCtrl", str(e))
                 return False
 
             self.connectionState = 1
             self.client.loop_start()
 
         else:
-            self.debugLog(4, "MQTTControl enabled but no brokerIP specified.")
-
-    def debugLog(self, minlevel, message):
-        if self.debugLevel >= minlevel:
-            print(
-                colored(self.master.time_now() + " ", "yellow")
-                + colored("MQTTCtrl:   ", "green")
-                + f("({minlevel}) {message}")
-            )
+            self.master.debugLog(4, "MQTTCtrl", "Module enabled but no brokerIP specified.")
 
     def mqttConnect(self, client, userdata, flags, rc):
-        self.debugLog(5, "MQTT Connected.")
-        self.debugLog(5, "Subscribe to " + self.topicPrefix + "/#")
+        self.master.debugLog(5, "MQTTCtrl", "MQTT Connected.")
+        self.master.debugLog(5, "MQTTCtrl", "Subscribe to " + self.topicPrefix + "/#")
         res = self.client.subscribe(self.topicPrefix + "/#", qos=0)
-        self.debugLog(5, "Res: " + str(res))
+        self.master.debugLog(5, "MQTTCtrl", "Res: " + str(res))
 
     def mqttMessage(self, client, userdata, message):
 
@@ -90,23 +82,23 @@ class MQTTControl:
         # eg. 24,3600
         if message.topic == self.topicPrefix + "/control/chargeNow":
             payload = str(message.payload.decode("utf-8"))
-            self.debugLog(3, "MQTT Message called chargeNow with payload " + payload)
+            self.master.debugLog(3, "MQTTCtrl", "MQTT Message called chargeNow with payload " + payload)
             plsplit = payload.split(",", 1)
             if len(plsplit) == 2:
                 self.master.setChargeNowAmps(int(plsplit[0]))
                 self.master.setChargeNowTimeEnd(int(plsplit[1]))
             else:
-                self.debugLog(
-                    1, "MQTT chargeNow command failed: Incorrect number of parameters"
+                self.master.debugLog(
+                    1, "MQTTCtrl", "MQTT chargeNow command failed: Incorrect number of parameters"
                 )
 
         if message.topic == self.topicPrefix + "/control/chargeNowEnd":
-            self.debugLog(3, "MQTT Message called chargeNowEnd")
+            self.master.debugLog(3, "MQTTCtrl", "MQTT Message called chargeNowEnd")
             self.master.resetChargeNowAmps()
 
         if message.topic == self.topicPrefix + "/control/stop":
-            self.debugLog(3, "MQTT Message called Stop")
+            self.master.debugLog(3, "MQTTCtrl", "MQTT Message called Stop")
             self._thread.interrupt_main()
 
     def mqttSubscribe(self, client, userdata, mid, granted_qos):
-        self.debugLog(1, "Subscribe operation completed with mid " + str(mid))
+        self.master.debugLog(1, "MQTTCtrl", "Subscribe operation completed with mid " + str(mid))
