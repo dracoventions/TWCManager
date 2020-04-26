@@ -2,7 +2,9 @@
 
 This document logs the changes per release of TWCManager.
 
-## v1.1.8 - Current development release
+## v1.2.0 - Current development branch
+
+## v1.1.8 - 2020-04-26
 
   * Significant improvements in Tesla Powerwall2 EMS module function and stability (thanks @MikeBishop)
   * New module instantiation system removing static references to most modules
