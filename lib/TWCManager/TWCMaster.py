@@ -21,6 +21,7 @@ class TWCMaster:
     consumptionValues = {}
     debugLevel = 0
     generationValues = {}
+    lastkWhMessage = time.time()
     lastTWCResponseMsg = None
     masterTWCID = ""
     maxAmpsToDivideAmongSlaves = 0

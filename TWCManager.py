@@ -186,7 +186,7 @@ def background_tasks_thread():
             carapi.car_api_available(task["email"], task["password"])
         elif task["cmd"] == "checkGreenEnergy":
             check_green_energy()
-        elif task["cmd"] == "getLifetimeKWh":
+        elif task["cmd"] == "getLifetimekWh":
             master.getSlaveLifetimekWh()
         elif task["cmd"] == "updateStatus":
             update_statuses()
@@ -368,7 +368,7 @@ backgroundTasksThread.daemon = True
 backgroundTasksThread.start()
 
 # Queue background task to regularly fetch slaves lifetime kWh readings
-master.queue_background_task({"cmd": "getLifetimeKWh"})
+master.queue_background_task({"cmd": "getLifetimekWh"})
 
 debugLog(
     1,
@@ -472,10 +472,13 @@ while True:
                 )
                 master.send_slave_linkready()
 
-        ########################################################################
         # See if there's any message from the web interface.
-
         webipccontrol.processIPC()
+
+        # If it has been more than 2 minutes since the last kWh value, queue the command to request it from slaves
+        if config["config"]["fakeMaster"] == 1 and ((time.time() - master.lastkWhMessage) > (60*2)):
+          master.lastkWhMessage = time.time()
+          master.queue_background_task({"cmd": "getLifetimekWh"})
 
         ########################################################################
         # See if there's an incoming message on the input interface.
@@ -850,8 +853,11 @@ while True:
                         % (senderID[0], senderID[1], kWh, voltsPhaseA, voltsPhaseB, voltsPhaseC),
                     )
 
+                    # Update the timestamp of the last reciept of this message
+                    master.lastkWhMessage = time.time()
+
                     # Every time we get this message, we re-queue the query
-                    master.queue_background_task({"cmd": "getLifetimeKWh"})
+                    master.queue_background_task({"cmd": "getLifetimekWh"})
 
                     # Update this detail for the Slave TWC
                     master.updateSlaveLifetime(senderID[0], senderID[1], kWh, voltsPhaseA, voltsPhaseB, voltsPhaseC)

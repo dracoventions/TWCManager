@@ -4,23 +4,31 @@ This document logs the changes per release of TWCManager.
 
 ## v1.1.8 - Current development release
 
-  * Introduce vehicle SOC charge limiting per policy (thanks @MikeBishop)
   * Significant improvements in Tesla Powerwall2 EMS module function and stability (thanks @MikeBishop)
   * New module instantiation system removing static references to most modules
      * Integration of Tesla Vehicle API into module architecture (thanks @MikeBishop)
-  * Query Tesla API to fetch Stormwatch detection data (thanks @MikeBishop)
   * Policy Handling improvements
      * Modularization of the Policy engine, with ability to add additional constraints to policy definitions and to perform OR comparisons in policy conditions (thanks @MikeBishop)
      * Make policy match operators case-insensitive (thanks @MikeBishop)
      * Re-order policy to avoid Track Green Energy overriding scheduled charging, and to add a new emergency policy entry point at the start of the policy (thanks @MikeBishop)
      * Addition of Policy Latching and Flex for advanced policy use-cases (thanks @MikeBishop)
      * Documentation explaining the policy system (thanks @MikeBishop)
+  * Tesla API & Vehicle Improvements
+    * Introduce vehicle SOC charge limiting per policy (thanks @MikeBishop)
+    * Query Tesla API to fetch Stormwatch detection data (thanks @MikeBishop)
+    * Improved Arrival/Departure detection via the Tesla API (thanks @MikeBishop)
+    * Reduced vehicle wake events due to opportunistic wake calls (thanks @MikeBishop)
   * Improved logging system which clearly shows the module which produced the log message and the log priority.
   * Completed the modularization of the RS485 interface code to allow alternative interfaces, and introduced two new interface modules (Dummy and TCP)
-  * Improved Arrival/Departure detection via the Tesla API (thanks @MikeBishop)
+  * Ensure that status output formula balances for improved readability (thanks @MikeBishop)
+  * Formatting improvements for the built-in webserver
+  * Support for tracking lifetime kWh and voltage per phase of slave TWCs, this includes:
+    * Publishing of new Status (HASS and MQTT) values for lifetime kWh and voltage per phase
+    * Polling of this value for TWCs with newer firmwares that provide it
   * Bugfixes
     * Remove duplicate conditional check in TeslaAPI module (thanks @MikeBishop)
     * Clarify the polarity of amperage offset in configuration file (thanks @MikeBishop)
+    * Fix message length restriction on newer firmwares (thanks @nean-and-i)
 
 ## v1.1.7 - 2020-03-09
 
