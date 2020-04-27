@@ -50,6 +50,8 @@ class TWCSlave:
     voltsPhaseA = 0
     voltsPhaseB = 0
     voltsPhaseC = 0
+    isCharging  = 0
+    VINData = list(range(0,3))
 
     def __init__(self, TWCID, maxAmps, config, master):
         self.config = config
@@ -944,7 +946,7 @@ class TWCSlave:
 
         self.master.debugLog(
             10,
-            "TWCSlave  ",
+            "TWCSlave",
             "set_last_amps_offered(TWCID="
             + self.master.hex_str(self.TWCID)
             + ", desiredAmpsOffered="

@@ -245,6 +245,23 @@ class TWCMaster:
     def getTimeLastTx(self):
         return self.getModuleByName("RS485").timeLastTx
 
+    def getVehicleVIN(self, slaveID, part):
+        prefixByte = None
+        if int(part) == 0:
+          prefixByte = bytearray(b"\xFB\xEE")
+        if int(part) == 1:
+          prefixByte = bytearray(b"\xFB\xEF")
+        if int(part) == 2:
+          prefixByte = bytearray(b"\xFB\xF1")
+
+        if prefixByte:
+          self.getModuleByName("RS485").send(
+            prefixByte
+            + self.TWCID
+            + slaveID
+            + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00")
+          )
+
     def deleteSlaveTWC(self, deleteSlaveID):
         for i in range(0, len(self.slaveTWCRoundRobin)):
             if self.slaveTWCRoundRobin[i].TWCID == deleteSlaveID:
@@ -377,7 +394,7 @@ class TWCMaster:
             )
 
         self.debugLog(
-            10, "TWCMaster ", "Total amps all slaves are using: " + str(totalAmps)
+            10, "TWCMaster", "Total amps all slaves are using: " + str(totalAmps)
         )
         return totalAmps
 
@@ -404,27 +421,27 @@ class TWCMaster:
             except Exception as e:
                 self.debugLog(
                     1,
-                    "TWCMaster ",
+                    "TWCMaster",
                     "There was an exception whilst loading settings file "
                     + self.config["config"]["settingsPath"]
                     + "/settings.json",
                 )
                 self.debugLog(
                     1,
-                    "TWCMaster ",
+                    "TWCMaster",
                     "Some data may have been loaded. This may be because the file is being created for the first time.",
                 )
                 self.debugLog(
                     1,
-                    "TWCMaster ",
+                    "TWCMaster",
                     "It may also be because you are upgrading from a TWCManager version prior to v1.1.4, which used the old settings file format.",
                 )
                 self.debugLog(
                     1,
-                    "TWCMaster ",
+                    "TWCMaster",
                     "If this is the case, you may need to locate the old config file and migrate some settings manually.",
                 )
-                self.debugLog(11, "TWCMaster ", str(e))
+                self.debugLog(11, "TWCMaster", str(e))
 
         # Step 2 - Send settings to other modules
         carapi = self.getModuleByName("TeslaAPI")
@@ -473,14 +490,21 @@ class TWCMaster:
 
         carsCharging = 0
         for slaveTWC in self.getSlaveTWCs():
-            charging = 1 if slaveTWC.reportedAmpsActual >= 1.0 else 0
-            carsCharging += charging
+            if slaveTWC.reportedAmpsActual >= 1.0:
+               if slaveTWC.isCharging == 0:
+                  # We have detected that a vehicle has started charging on this Slave TWC
+                  # Attempt to request the vehicle's VIN
+                  slaveTWC.isCharging = 1
+                  self.getVehicleVIN(slaveTWC.TWCID, 0)
+            else:
+               slaveTWC.isCharging = 0
+            carsCharging += slaveTWC.isCharging
             for module in self.getModulesByType("Status"):
                 module["ref"].setStatus(
-                    slaveTWC.TWCID, "cars_charging", "carsCharging", charging
+                    slaveTWC.TWCID, "cars_charging", "carsCharging", slaveTWC.isCharging
                 )
         self.debugLog(
-            10, "TWCMaster ", "Number of cars charging now: " + str(carsCharging)
+            10, "TWCMaster", "Number of cars charging now: " + str(carsCharging)
         )
         return carsCharging
 
@@ -492,7 +516,7 @@ class TWCMaster:
             ]
         )
         self.debugLog(
-            10, "TWCMaster ", "Number of cars charging now: " + str(carsCharging)
+            10, "TWCMaster", "Number of cars charging now: " + str(carsCharging)
         )
         for module in self.getModulesByType("Status"):
             module["ref"].setStatus(
@@ -538,13 +562,13 @@ class TWCMaster:
                 }
                 self.debugLog(
                     7,
-                    "TWCMaster ",
+                    "TWCMaster",
                     f("Registered module {colored(module['name'], 'red')}"),
                 )
             else:
                 self.debugLog(
                     7,
-                    "TWCMaster ",
+                    "TWCMaster",
                     f(
                         "Avoided re-registration of module {colored(module['name'], 'red')}, which has already been loaded"
                     ),
@@ -588,7 +612,7 @@ class TWCMaster:
 
     def send_master_linkready1(self):
 
-        self.debugLog(8, "TWCMaster ", "Send master linkready1")
+        self.debugLog(8, "TWCMaster", "Send master linkready1")
 
         # When master is powered on or reset, it sends 5 to 7 copies of this
         # linkready1 message followed by 5 copies of linkready2 (I've never seen
@@ -645,7 +669,7 @@ class TWCMaster:
 
     def send_master_linkready2(self):
 
-        self.debugLog(8, "TWCMaster ", "Send master linkready2")
+        self.debugLog(8, "TWCMaster", "Send master linkready2")
 
         # This linkready2 message is also sent 5 times when master is booted/reset
         # and then not sent again if no other TWCs are heard from on the network.
@@ -709,13 +733,13 @@ class TWCMaster:
         if amps > self.config["config"]["wiringMaxAmpsAllTWCs"]:
             self.debugLog(
                 1,
-                "TWCMaster ",
+                "TWCMaster",
                 "setChargeNowAmps failed because specified amps are above wiringMaxAmpsAllTWCs",
             )
         elif amps < 0:
             self.debugLog(
                 1,
-                "TWCMaster ",
+                "TWCMaster",
                 "setChargeNowAmps failed as specified amps is less than 0",
             )
         else:
@@ -763,7 +787,7 @@ class TWCMaster:
             # wiring can handle.
             self.debugLog(
                 1,
-                "TWCMaster ",
+                "TWCMaster",
                 "ERROR: specified maxAmpsToDivideAmongSlaves "
                 + str(amps)
                 + " > wiringMaxAmpsAllTWCs "
@@ -830,11 +854,9 @@ class TWCMaster:
             "%H:%M:%S" + (".%f" if self.config["config"]["displayMilliseconds"] else "")
         )
 
-    def updateSlaveLifetime(self, senderA, senderB, kWh, vPA, vPB, vPC):
-      slaveID = "%02X%02X" % (senderA, senderB)
+    def updateSlaveLifetime(self, sender, kWh, vPA, vPB, vPC):
       for slaveTWC in self.getSlaveTWCs():
-        thisSlave = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
-        if thisSlave == slaveID:
+        if slaveTWC.TWCID == sender:
           slaveTWC.setLifetimekWh(kWh)
           slaveTWC.setVoltage(vPA, vPB, vPC)
 
@@ -856,4 +878,3 @@ class TWCMaster:
                     "voltagePhase" + phase,
                     getattr(slaveTWC, "voltsPhase" + phase, 0),
                 )
-
