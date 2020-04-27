@@ -22,6 +22,7 @@ class TWCMaster:
     debugLevel = 0
     generationValues = {}
     lastkWhMessage = time.time()
+    lastkWhPoll = 0
     lastTWCResponseMsg = None
     masterTWCID = ""
     maxAmpsToDivideAmongSlaves = 0
@@ -222,19 +223,20 @@ class TWCMaster:
         return self.settings.get("scheduledAmpsEndHour", -1)
 
     def getSlaveLifetimekWh(self):
-
+        
         # This function is called from a Scheduled Task
-        # We delay the thread for 1 minute, then query all known Slave TWCs
+        # If it's been at least 1 minute, then query all known Slave TWCs
         # to determine their lifetime kWh and per-phase voltages
-        time.sleep(60)
-
-        for slaveTWC in self.getSlaveTWCs():
-          self.getModuleByName("RS485").send(
-            bytearray(b"\xFB\xEB")
-            + self.TWCID
-            + slaveTWC.TWCID
-            + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00")
-        )
+        now = time.time()
+        if now >= self.lastkWhPoll + 60:
+            for slaveTWC in self.getSlaveTWCs():
+                self.getModuleByName("RS485").send(
+                    bytearray(b"\xFB\xEB")
+                    + self.TWCID
+                    + slaveTWC.TWCID
+                    + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00")
+                )
+            self.lastkWhPoll = now
 
     def getSlaveSign(self):
         return self.slaveSign

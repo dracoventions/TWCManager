@@ -443,6 +443,8 @@ class TWCSlave:
     def receive_slave_heartbeat(self, heartbeatData):
         # Handle heartbeat message received from real slave TWC.
 
+        self.master.queue_background_task({"cmd": "getLifetimekWh"})
+
         now = self.time.time()
         self.timeLastRx = now
 
