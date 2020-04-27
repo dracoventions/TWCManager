@@ -306,9 +306,9 @@ class WebIPCControl:
                         + ", fakeMaster="
                         + str(self.config["config"]["fakeMaster"])
                         + ", rs485Adapter="
-                        + self.config["config"]["rs485adapter"]
+                        + str(self.config["interface"]["RS485"]["port"])
                         + ", baud="
-                        + str(self.config["config"]["baud"])
+                        + str(self.config["interface"]["RS485"]["baud"])
                         + ", wiringMaxAmpsAllTWCs="
                         + str(self.config["config"]["wiringMaxAmpsAllTWCs"])
                         + ", wiringMaxAmpsPerTWC="
