@@ -368,9 +368,6 @@ backgroundTasksThread = threading.Thread(target=background_tasks_thread, args=()
 backgroundTasksThread.daemon = True
 backgroundTasksThread.start()
 
-# Queue background task to regularly fetch slaves lifetime kWh readings
-master.queue_background_task({"cmd": "getLifetimekWh"})
-
 debugLog(
     1,
     "TWC Manager starting as fake %s with id %02X%02X and sign %02X"
