@@ -697,6 +697,7 @@ class TWCMaster:
             bytearray(b"\xFC\xB2")
             + self.TWCID
             + slaveTWC.TWCID
+            + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
         )
 
     def setAllowedFlex(self, amps):
