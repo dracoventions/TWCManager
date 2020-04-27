@@ -143,7 +143,7 @@ class Policy:
                 # Yes, we will now enforce policy
                 self.master.debugLog(
                     7,
-                    "Policy    ",
+                    "Policy",
                     f(
                         "All policy conditions have matched. Policy chosen is {colored(policy['name'], 'red')}"
                     ),
@@ -154,7 +154,7 @@ class Policy:
                 return
             else:
                 self.master.debugLog(
-                    8, "Policy    ", "Policy conditions were not matched."
+                    8, "Policy", "Policy conditions were not matched."
                 )
                 continue
 
@@ -170,7 +170,7 @@ class Policy:
         if self.active_policy != str(policy["name"]):
             self.master.debugLog(
                 1,
-                "Policy    ",
+                "Policy",
                 f("New policy selected; changing to {colored(policy['name'], 'red')}"),
             )
             self.active_policy = str(policy["name"])
@@ -183,7 +183,7 @@ class Policy:
             if policy["charge_amps"] == "value":
                 self.master.setMaxAmpsToDivideAmongSlaves(int(policy["value"]))
                 self.master.debugLog(
-                    10, "Policy    ", "Charge at %.2f" % int(policy["value"])
+                    10, "Policy", "Charge at %.2f" % int(policy["value"])
                 )
             else:
                 self.master.setMaxAmpsToDivideAmongSlaves(
@@ -191,7 +191,7 @@ class Policy:
                 )
                 self.master.debugLog(
                     10,
-                    "Policy    ",
+                    "Policy",
                     "Charge at %.2f" % self.policyValue(policy["charge_amps"]),
                 )
 
@@ -208,6 +208,12 @@ class Policy:
         if not (limit >= 50 and limit <= 100):
             limit = -1
         self.master.queue_background_task({"cmd": "applyChargeLimit", "limit": limit})
+
+    def getPolicyByName(self, name):
+        for policy in self.charge_policy:
+            if policy["name"] == name:
+                return policy
+        return None
 
     def policyValue(self, value):
         # policyValue is a macro to allow charging policy to refer to things
@@ -255,18 +261,14 @@ class Policy:
         return value
 
     def policyIsGreen(self):
-        current_policy = next(
-            policy
-            for policy in self.charge_policy
-            if policy["name"] == self.active_policy
-        )
-
-        return current_policy.get("background_task", "") == "checkGreenEnergy"
+        if (self.getPolicyByName(self.active_policy)):
+          return self.getPolicyByName(charge_policy).get("background_task", "") == "checkGreenEnergy"
+        return 0
 
     def doesConditionMatch(self, match, condition, value, exitOn):
         self.master.debugLog(
             8,
-            "Policy    ",
+            "Policy",
             f(
                 "Evaluating Policy match ({colored(match, 'red')}), condition ({colored(condition, 'red')}), value ({colored(value, 'red')}), iteration ({colored(iter, 'red')})"
             ),
