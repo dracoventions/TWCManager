@@ -649,6 +649,10 @@ def delete_slave(deleteSlaveID):
     except KeyError:
         pass
 
+def slave_count():
+    global slaveTWCs
+    return len(slaveTWCs)
+
 def total_amps_actual_all_twcs():
     global debugLevel, slaveTWCRoundRobin, wiringMaxAmpsAllTWCs
 
@@ -2559,17 +2563,21 @@ while True:
         now = time.time()
 
         if(fakeMaster == 1):
+            # If we have no slaves, try to re-establish the connection
+            if (numInitMsgsToSend == 0 and slave_count() == 0):
+                numInitMsgsToSend = 10
+                ser.close()
+                ser.open()
+
             # A real master sends 5 copies of linkready1 and linkready2 whenever
             # it starts up, which we do here.
-            # It doesn't seem to matter if we send these once per second or once
-            # per 100ms so I do once per 100ms to get them over with.
             if(numInitMsgsToSend > 5):
                 send_master_linkready1()
-                time.sleep(0.1) # give slave time to respond
+                time.sleep(1) # give slave time to respond
                 numInitMsgsToSend -= 1
             elif(numInitMsgsToSend > 0):
                 send_master_linkready2()
-                time.sleep(0.1) # give slave time to respond
+                time.sleep(1) # give slave time to respond
                 numInitMsgsToSend = numInitMsgsToSend - 1
             else:
                 # After finishing the 5 startup linkready1 and linkready2
