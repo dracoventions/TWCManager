@@ -885,7 +885,7 @@ class TWCMaster:
               for module in self.getModulesByType("Status"):
                 module["ref"].setStatus(
                     slaveTWC.TWCID,
-                    "voltage_phase_" + phase,
+                    "voltage_phase_" + phase.lower(),
                     "voltagePhase" + phase,
                     getattr(slaveTWC, "voltsPhase" + phase, 0),
                 )

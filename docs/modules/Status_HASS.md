@@ -1,1 +1,25 @@
 # HomeAssistant Status Module
+
+## Introduction
+
+The HomeAssistant Status Module provides a mechanism to publish sensor states to HomeAssistant via the HomeAssistant API.
+
+The module uses a long-term access key that is created through the HASS web interface, which allows the module to send updates to the sensors listed below without needing hard-coded credentials.
+
+## HomeAssistant Sensors
+
+The following sensors and their values are published to HomeAsssitant via the HomeAssistant HTTP API.
+
+| HomeAssistant Sensor                     | Value                              | Example |
+| ---------------------------------------- | ------------------------------------ | ----- |
+| sensor.twcmanager_all_total_amps_in_use  | Float: Amps in use across all slaves | 16.24 |
+| sensor.twcmanager_*charger*_amps_in_use  | Float: Amps in use for given Slave TWC | 8.52 |
+| sensor.twcmanager_*charger*_amps_max     | Integer: Reported maximum amperage per Slave TWC | 32 |
+| sensor.twcmanager_*charger*_cars_charging | Boolean: Will be 0 if Slave TWC does not have a connected charging vehicle, or 1 if it does. |
+| sensor.twcmanager_*charger*_current_vehicle_vin | String: The VIN of a vehicle currently charging from this Slave TWC. |
+| sensor.twcmanager_*charger*_last_vehicle_vin | String: The VIN of the vehicle previously charging from this Slave TWC. |
+| sensor.twcmanager_*charger*_lifetime_kwh  | Integer: Lifetime kWh output by specified charger. | 159 |
+| sensor.twcmanager_*charger*_voltage_phase_*phase* | Integer: Volts per phase (a/b/c) per Slave TWC  | 243 |
+| sensor.twcmanager_config_min_amps_per_twc | Integer: Minimum amps to charge per TWC (from config) | 6 |
+| sensor.twcmanager_config_max_amps_for_slaves | Integer: Total number of amps on power circuit to divide amongst Slave TWCs | 32 |
+
