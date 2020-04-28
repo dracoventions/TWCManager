@@ -19,7 +19,7 @@ The following sensors and their values are published to HomeAsssitant via the Ho
 | sensor.twcmanager_*charger*_current_vehicle_vin | String: The VIN of a vehicle currently charging from this Slave TWC. |
 | sensor.twcmanager_*charger*_last_vehicle_vin | String: The VIN of the vehicle previously charging from this Slave TWC. |
 | sensor.twcmanager_*charger*_lifetime_kwh  | Integer: Lifetime kWh output by specified charger. | 159 |
-| sensor.twcmanager_*charger*_voltage_phase_*phase* | Integer: Volts per phase (a/b/c) per Slave TWC  | 243 |
+| sensor.twcmanager_*charger*&#x5f;voltage_phase&#x5f;*phase* | Integer: Volts per phase (a/b/c) per Slave TWC  | 243 |
 | sensor.twcmanager_config_min_amps_per_twc | Integer: Minimum amps to charge per TWC (from config) | 6 |
 | sensor.twcmanager_config_max_amps_for_slaves | Integer: Total number of amps on power circuit to divide amongst Slave TWCs | 32 |
 
