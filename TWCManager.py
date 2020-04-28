@@ -2944,7 +2944,11 @@ while True:
             # trailing C0 bytes, the messages we know about are always 14 bytes
             # long in original TWCs, or 16 bytes in newer TWCs (protocolVersion
             # == 2).
-            if(len(msg) != 14 and len(msg) != 16):
+            if(len(msg) != 14 and len(msg) != 16 and len(msg) != 20):
+                # In firmware 4.5.3, FD EB (kWh and voltage report), FD ED, FD
+                # EE, FD EF, FD F1, and FB A4 messages are length 20 while most
+                # other messages are length 16. I'm not sure if there are any
+                # length 14 messages remaining.
                 print(time_now() + ": ERROR: Ignoring message of unexpected length %d: %s" % \
                        (len(msg), hex_str(msg)))
                 continue
