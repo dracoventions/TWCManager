@@ -553,6 +553,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "<th>Lifetime kWh</th>"
         page += "<th>Voltage per Phase<br />1 / 2 / 3</th>"
         page += "<th>Last Heartbeat</th>"
+        page += "<th>Vehicle Connected<br />Current / Last</th>"
         page += "</tr></thead>\n"
         lastAmpsTotal = 0
         maxAmpsTotal = 0
@@ -573,6 +574,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             totalLtkWh += int(slaveTWC.lifetimekWh)
             page += "<td>%d / %d / %d</td>" % (slaveTWC.voltsPhaseA, slaveTWC.voltsPhaseB, slaveTWC.voltsPhaseC)
             page += "<td>%.2f sec</td>" % float(time.time() - slaveTWC.timeLastRx)
+            page += "<td>C: %s<br />L: %s</td>" % (slaveTWC.currentVIN, slaveTWC.lastVIN)
             page += "</tr>\n"
         page += "<tr><td><b>Total</b><td>&nbsp;</td><td>&nbsp;</td>"
         page += "<td>%.2f</td>" % float(maxAmpsTotal)

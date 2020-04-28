@@ -880,7 +880,7 @@ while True:
                     data = msgMatch.group(3)
 
                     debugLog(
-                        5,
+                        6,
                         "Slave TWC %02X%02X reported VIN data: %s."
                         % (senderID[0], senderID[1], hex_str(data)),
                     )
@@ -892,10 +892,14 @@ while True:
                     if vinPart < 2:
                        vinPart += 1
                        master.getVehicleVIN(senderID, vinPart)
+                    else:
+                       slaveTWC.currentVIN = "".join(slaveTWC.VINData)
+                       master.updateVINStatus()
+                       vinPart += 1
                     debugLog(
-                        5,
+                        6,
                         "Current VIN string is: %s at part %d."
-                        % (str(slaveTWC.VINData), (vinPart - 1)),
+                        % (str(slaveTWC.VINData), vinPart),
                     )
 
                 else:

@@ -51,7 +51,9 @@ class TWCSlave:
     voltsPhaseB = 0
     voltsPhaseC = 0
     isCharging  = 0
-    VINData = list(range(0,3))
+    VINData = [ "", "", "" ]
+    currentVIN = ""
+    lastVIN = ""
 
     def __init__(self, TWCID, maxAmps, config, master):
         self.config = config

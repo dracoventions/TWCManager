@@ -499,6 +499,15 @@ class TWCMaster:
                   slaveTWC.isCharging = 1
                   self.getVehicleVIN(slaveTWC.TWCID, 0)
             else:
+               if slaveTWC.isCharging == 1:
+                  # A vehicle was previously charging and is no longer charging
+                  # Clear the VIN details for this slave and move the last
+                  # vehicle's VIN to lastVIN
+                  slaveTWC.VINData = [ "", "", "" ]
+                  if slaveTWC.currentVIN:
+                     slaveTWC.lastVIN = slaveTWC.currentVIN
+                  slaveTWC.currentVIN = ""
+                  self.updateVINStatus()
                slaveTWC.isCharging = 0
             carsCharging += slaveTWC.isCharging
             for module in self.getModulesByType("Status"):
@@ -880,3 +889,22 @@ class TWCMaster:
                     "voltagePhase" + phase,
                     getattr(slaveTWC, "voltsPhase" + phase, 0),
                 )
+
+    def updateVINStatus(self):
+        # update current and last VIN IDs for each Slave to all Status modules
+        for slaveTWC in self.getSlaveTWCs():
+            for module in self.getModulesByType("Status"):
+                module["ref"].setStatus(
+                    slaveTWC.TWCID,
+                    "current_vehicle_vin",
+                    "currentVehicleVIN",
+                    slaveTWC.currentVIN,
+                )
+            for module in self.getModulesByType("Status"):
+                module["ref"].setStatus(
+                    slaveTWC.TWCID,
+                    "last_vehicle_vin",
+                    "lastVehicleVIN",
+                    slaveTWC.lastVIN,
+                )
+

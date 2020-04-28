@@ -4,6 +4,12 @@ This document logs the changes per release of TWCManager.
 
 ## v1.2.0 - Current development branch
 
+  * Added systemd service definition (thanks @nean-and-i)
+  * Polling of Vehicle VIN on detection of charging vehicle (for those firmwares which support it) and access to Vehicle VIN via Status modules and Web Interface
+  * Bugfixes
+    * Fixed situation where fakeMaster == 2 installations do not recieve Status module lifetime kWh and voltage per phase readings [Backported to 1.1.8]
+    * Fixed unnecessary 60 second delay to processing background queue introduced by lifetime kWh and voltage per phase polling [Backported to 1.1.8] (Thanks @MikeBishop)
+
 ## v1.1.8 - 2020-04-26
 
   * Significant improvements in Tesla Powerwall2 EMS module function and stability (thanks @MikeBishop)
