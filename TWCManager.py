@@ -1287,7 +1287,7 @@ while True:
                     )
 
                     # Record counter values for Slave TWC
-                    master.updateSlaveLifetime(senderID[0], senderID[1], kWhCounter, voltsPhaseA, voltsPhaseB, voltsPhaseC)
+                    master.updateSlaveLifetime(senderID, kWhCounter, voltsPhaseA, voltsPhaseB, voltsPhaseC)
 
                 if foundMsgMatch == False:
                     debugLog(1, "***UNKNOWN MESSAGE from master: " + hex_str(msg))
