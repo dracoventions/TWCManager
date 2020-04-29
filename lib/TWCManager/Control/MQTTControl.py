@@ -89,7 +89,7 @@ class MQTTControl:
                 self.master.setChargeNowTimeEnd(int(plsplit[1]))
             else:
                 self.master.debugLog(
-                    1, "MQTT chargeNow command failed: Expecting comma seperated string in format amps,seconds"
+                    1, "MQTTCtrl", "MQTT chargeNow command failed: Expecting comma seperated string in format amps,seconds"
                 )
 
         if message.topic == self.topicPrefix + "/control/chargeNowEnd":
