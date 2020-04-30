@@ -214,7 +214,7 @@ Most policies will not require a background task.  There are two exceptions:
   configured EMS plugins.  Do not set `charge_amps`; the background task will
   update it each time it runs.
 - If defining a policy that depends on `modules.TeslaAPI.minBatteryLevelAtHome`,
-  the background task `checkBattery` will track the charge state of cars at home
+  the background task `checkCharge` will track the charge state of cars at home
   more closely while the policy is selected.
 
 ## Policy Extension Points
