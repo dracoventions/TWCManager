@@ -215,12 +215,13 @@
 
     # In the below policy segment of the configuration, we can tune the behaviour
     # of the policy engine. By default, the policy engine will:
+    # - Evaluate any user defined extensions in the emergency section below
     # - Check for the configuration of a "Charge Now" option, if so, start charging
     #   at the specified rate for the specified time.
     # - Evaluate any user defined extensions in the before section below
+    # - During Scheduled Charging hours, charge at the scheduled rate.
     # - Poll Green Energy Sources to see if they are supplying enough energy to charge
     #   (and within schedule), and if so, adjust charge rate to generated energy value
-    # - During Scheduled Charging hours, charge at the scheduled rate.
     # - Evaluate any user defined extensions in the after section below
     # - Outside Scheduled Charging, charge at unscheduled charge rate
     "policy":{
