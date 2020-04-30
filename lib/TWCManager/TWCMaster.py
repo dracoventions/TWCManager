@@ -725,6 +725,16 @@ class TWCMaster:
 
         self.getModuleByName("RS485").send(msg)
 
+    def sendStartCommand(self):
+        # This function will loop through each of the Slave TWCs, and send them the start command.
+        for slaveTWC in self.getSlaveTWCs():
+          self.getModuleByName("RS485").send(
+            bytearray(b"\xFC\xB1")
+            + self.TWCID
+            + slaveTWC.TWCID
+            + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+        )
+
     def sendStopCommand(self):
         # This function will loop through each of the Slave TWCs, and send them the stop command.
         for slaveTWC in self.getSlaveTWCs():

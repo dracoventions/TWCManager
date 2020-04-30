@@ -47,84 +47,30 @@ class HTTPControl:
 class HTTPControlHandler(BaseHTTPRequestHandler):
 
     fields = {}
+    focus = "onFocus='formHasFocus()' onBlur='formNoFocus()'"
+    version = "v1.2.0"
 
     def do_bootstrap(self):
-        page = (
-            "<meta name='viewport' content='width=device-width, initial-scale=1'>"
-        )
-        page += "<link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css' integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'>"
+        page = """
+        <meta name='viewport' content='width=device-width, initial-scale=1'>
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+        <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css' integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'>
+        """
         return page
 
     def do_css(self):
 
-        page = "<style>"
-        page += """
-      table.darkTable {
-        font-family: 'Arial Black', Gadget, sans-serif;
-        border: 2px solid #000000;
-        background-color: #717171;
-        width: 60%;
-        height: 200px;
-        text-align: center;
-        border-collapse: collapse;
-      }
-      table.darkTable td, table.darkTable th {
-        border: 1px solid #4A4A4A;
-        padding: 2px 2px;
-      }
-      table.darkTable tbody td {
-        font-size: 13px;
-        color: #E6E6E6;
-      }
-      table.darkTable tr:nth-child(even) {
-        background: #888888;
-      }
-      table.darkTable thead {
-        background: #000000;
-        border-bottom: 3px solid #000000;
-      }
-      table.darkTable thead th {
-        font-size: 15px;
-        font-weight: bold;
-        color: #E6E6E6;
-        text-align: center;
-        border-left: 2px solid #4A4A4A;
-      }
-      table.darkTable thead th:first-child {
-        border-left: none;
-      }
-      table.darkTable tfoot td {
-        font-size: 12px;
-      }
-      #vertical thead,#vertical tbody{
-        display:inline-block;
-      }
-
-      table.borderless {
-        font-family: 'Arial Black', Gadget, sans-serif;
-        border: 0px;
-        width: 40%;
-        height: 200px;
-        text-align: center;
-        border-collapse: collapse;
-      }
-
-      table.borderless th {
-        font-size: 15px;
-        font-weight: bold;
-        color: #FFFFFF;
-        background: #212529;
-        text-align: center;
-      }
-
-      
-      """
-        page += "</style>"
+        page = """
+          <style>
+          </style>
+        """
         return page
 
     def do_chargeSchedule(self):
         page = """
-    <table class='borderless'>
+    <table class='table table-sm'>
       <thead>
         <th scope='col'>&nbsp;</th>
         <th scope='col'>Sun</th>
@@ -174,6 +120,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
               location.reload(true);
           }
       }
+
+      // Enable tooltips
+      $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+      })
       </script> """
         return page
 
@@ -183,34 +134,41 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     <p>&nbsp;</p>
     <nav class='navbar fixed-top navbar-dark bg-dark' role='navigation'>
       <a class='navbar-brand' href='/'>TWCManager</a>
-      <link rel='icon' type='image/png' href='https://raw.githubusercontent.com/ngardiner/TWCManager/master/tree/v1.2.0/html/favicon.png'>
-      <ul class="navbar-nav mr-auto">
-        <li class="nav-item active">
-          <a class="nav-link" href="/">Home</a>
-        </li>
-      </ul>
-      <ul class="navbar-nav mr-auto">
-        <li class="nav-item">
-          <a class="nav-link" href="/policy">Policy</a>
-        </li>
-      </ul>
-      <ul class="navbar-nav mr-auto">
-        <li class="nav-item">
-          <a class="nav-link" href="#">Schedule</a>
-        </li>
-      </ul>
-      <ul class="navbar-nav mr-auto">
-        <li class="nav-item">
-          <a class="nav-link" href="/settings">Settings</a>
-        </li>
-      </ul>
-      <ul class='navbar-nav mr-auto'>
-        <li class='nav-item'>
-          <a class='nav-link' href='https://github.com/ngardiner/TWCManager'>GitHub</a>
-        </li>
-      </ul>
-      <span class="navbar-text">v1.2.0</span>
-    </nav>"""
+        """
+        page += "<link rel='icon' type='image/png' href='https://raw.githubusercontent.com/ngardiner/TWCManager/master/tree/%s/html/favicon.png'>" % self.version
+        page += self.navbar_item("/", "Home")
+        page += self.navbar_item("/policy", "Policy")
+        page += self.navbar_item("#", "Schedule")
+        page += self.navbar_item("/settings", "Settings")
+        page += self.navbar_item("/debug", "Debug")
+        page += self.navbar_item("https://github.com/ngardiner/TWCManager", "GitHub")
+        page += "<span class='navbar-text'>%s</span></nav>" % self.version
+        return page
+
+    def navbar_item(self, url, name):
+        active = ""
+        urlp = urllib.parse.urlparse(self.path)
+        if (urlp.path == url): active = "active"
+        page = "<ul class='navbar-nav mr-auto'>"
+        page += "<li class='nav-item %s'>" % active
+        page += "<a class='nav-link' href='%s'>%s</a>" % (url, name)
+        page += "</li></ul>"
+        return page
+
+    def do_get_debug(self):
+        page = "<html><head>"
+        page += "<title>TWCManager</title>"
+        page += self.do_bootstrap()
+        page += self.do_css()
+        page += self.do_jsrefresh()
+        page += "</head>"
+        page += "<body>"
+        page += self.do_navbar()
+        page += """
+          Debug Interface - Coming soon
+        </body>
+        </html>
+        """
         return page
 
     def do_get_policy(self):
@@ -269,33 +227,28 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         <tr>
           <th>Stop Charging Method</th>
           <td>
-  <select name='chargeStopMode'>"""
-        page += '<option value="1" '
-        if self.server.master.settings.get("chargeStopMode", "1") == "1":
-            page += "selected"
-        page += ">Tesla API</option>"
-        page += '<option value="2" '
-        if self.server.master.settings.get("chargeStopMode", "1") == "2":
-            page += "selected"
-        page += ">Stop Responding to Slaves</option>"
-        page += '<option value="3" '
-        if self.server.master.settings.get("chargeStopMode", "1") == "3":
-            page += "selected"
-        page += ">Send Stop Command</option>"
-        page += "<p>Click <a href='https://github.com/ngardiner/TWCManager/docs/Settings.md' target='_new'>here</a> for detailed information on settings on this page</p>"
+        """
+        page += self.optionList([[1,'Tesla API'],[2,'Stop Responding to Slaves'],[3,'Send Stop Command']], { "name": "chargeStopMode", "value": self.server.master.settings.get("chargeStopMode", "1") })
         page += """
-  </select>
+          </td>
+        </tr>
+        <tr>
+          <th>Non-scheduled power charge rate:</th>
+          <td>
+        """
+        page += self.optionList([[6,'6A'],[8,'8A'],[10,'10A'],[12,'12A'],[24,'24A'],[32,'32A']], { "name": "nonScheduledPower", "value": self.server.master.settings.get("nonScheduledPower", "6") } )
+        page += """
           </td>
         </tr>
         <tr>
           <td>&nbsp;</td>
-          <td><input type=submit /></td>
+          <td><input class='btn btn-outline-success' type=submit value='Save Settings' /></td>
         </tr>
       </table>
     </form>
-    </body>
-    </html>
-    """
+        """
+        page += "<p>Click <a href='https://github.com/ngardiner/TWCManager/tree/%s/docs/Settings.md' target='_new'>here</a> for detailed information on settings on this page</p>" % self.version
+        page += "</body></html>"
         return page
 
     def do_GET(self):
@@ -319,8 +272,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             page += "</head>"
             page += "<body>"
             page += self.do_navbar()
-            page += "<table border='0' padding='0' margin='0' width='100%'><tr>"
-            page += "<td valign='top'>"
+            page += "<table border='0' padding='0' margin='0' width='100%'>"
+            page += "<tr width='100%'><td valign='top' width='70%'>"
 
             if url.path == "/apiacct/False":
                 page += "<font color='red'><b>Failed to log in to Tesla Account. Please check username and password and try again.</b></font>"
@@ -335,12 +288,22 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 page += "<b>Thank you, successfully fetched Tesla API token."
 
             page += self.show_status()
-
+            page += "</td><td valign=top width='30%'>"
+            page += self.do_chargeSchedule()
+            page += "</td></tr>"
             page += "</table>"
             page += "</body>"
             page += "</table>"
             page += "</html>"
 
+            self.wfile.write(page.encode("utf-8"))
+            return
+
+        if url.path == "/debug":
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            page = self.do_get_debug()
             self.wfile.write(page.encode("utf-8"))
             return
 
@@ -380,7 +343,12 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         self.fields.clear()
         length = int(self.headers.get("content-length"))
         field_data = self.rfile.read(length)
-        self.fields = urllib.parse.parse_qs(str(field_data))
+        self.fields = urllib.parse.parse_qs(field_data.decode("utf-8"))
+
+        if url.path == "/settings/chargenow":
+            # Chargenow actions
+            self.process_chargenow()
+            return
 
         if url.path == "/settings/save":
             # User has submitted settings.
@@ -400,14 +368,66 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         self.wfile.write("".encode("utf-8"))
         return
 
+    def ifButton(self, button_def, extrargs):
+        # This is a macro which can display differing buttons based on a
+        # condition. It's a useful way to switch the text on a button based
+        # on current state.
+        page = ""
+        disabled = ""
+        for bdef in button_def:
+          if bdef[0] == bdef[1]:
+            if bdef[2] == "disabled":
+              disabled = "disabled"
+            page = "<input type='Submit' %s name='%s' value='%s' %s>" % (extrargs, bdef[2], bdef[3], disabled)
+            return page
+        return page
+
     def log_message(self, format, *args):
         pass
+
+    def optionList(self, list, opts = {}):
+      page = "<div class='form-group'>"
+      page += "<select class='form-control' name='%s' %s>" % (opts.get('name', ''), self.focus)
+      for option in list:
+        sel = ""
+        if (str(opts.get('value', '-1')) == str(option[0])):
+          sel = "selected"
+        page += "<option value='%s' %s>%s</option>" % (option[0], sel, option[1])
+      page += "</div>"
+      page += "</select>"
+      return page
+
+    def process_chargenow(self):
+
+        # Process request
+        if self.fields.get('cancel_chargenow', None):
+            self.server.master.resetChargeNowAmps()
+
+        if self.fields.get('start_chargenow', None):
+            rate = self.fields.get('chargeNowRate',[0])
+            durn = self.fields.get('chargeNowDuration',[0])
+            self.server.master.setChargeNowAmps(int(rate[0]))
+            self.server.master.setChargeNowTimeEnd(int(durn[0]))
+            self.server.master.saveSettings()
+
+        if self.fields.get('send_stop_command', None):
+            self.server.master.sendStopCommand()
+
+        if self.fields.get('send_start_command', None):
+            self.server.master.sendStartCommand()
+
+        # Redirect to the index page
+        self.send_response(302)
+        self.send_header("Location", "/")
+        self.end_headers()
+        self.wfile.write("".encode("utf-8"))
+        return
 
     def process_settings(self):
 
         # Write settings
         for key in self.fields:
-            keya = str(key).replace("b'", "")
+            keya = str(key)
             vala = self.fields[key][0].replace("'", "")
             self.server.master.settings[keya] = vala
         self.server.master.saveSettings()
@@ -468,9 +488,9 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "<p>"
         page += "<table>"
         page += "<tr><td>Tesla Account E-Mail:</td>"
-        page += "<td><input type='text' name='email' value='' onFocus='formHasFocus()' onBlur='formNoFocus()'></td></tr>"
+        page += "<td><input type='text' name='email' value='' %s></td></tr>" % self.focus
         page += "<tr><td>Password:</td>"
-        page += "<td><input type='password' name='password' onFocus='formHasFocus()' onBlur='formNoFocus()'></td></tr>"
+        page += "<td><input type='password' name='password' %s></td></tr>" % self.focus
         page += "<tr><td><input type='submit' name='submit' value='Log In'></td>"
         page += "<td><input type='submit' name='later' value='Ask Me Later'></td>"
         page += "</tr>"
@@ -479,10 +499,46 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "</form>"
         return page
 
+    def show_commands(self):
+ 
+        page = """
+          <form method=POST action='/settings/chargenow'>
+          <table class='table table-dark'>
+          <tr><th colspan=4 width = '30%'>Charge Now</th>
+          <th colspan=1 width = '30%'>Commands</th></tr>
+          <tr><td width = '8%'>Charge for:</td>
+          <td width = '7%'>
+        """
+        page += self.optionList([[3600,'1h'],[7200,'2h'],[10800,'3h'],[14400,'4h'],[21600,'6h'],[28800,'8h'],[36000,'10h'],[43200,'12h'],[57600,'16h'],[72000,'20h'],[86400,'24h']], { "name": "chargeNowDuration" })
+        page += """
+          </td>
+          <td width = '8%'>Charge Rate:</td>
+          <td width = '7%'>
+        """
+        page += self.optionList([[6,'6A'],[8,'8A'],[12,'12A'],[16,'16A'],[18,'18A'],[32,'32A']], { "name": "chargeNowRate" })
+        page += """
+          </td>
+          <td>
+            <input type="submit" class="btn btn-outline-danger" name="send_stop_command" value="Stop All Charging" data-toggle="tooltip" data-placement="top" title="WARNING: This function causes Tesla Vehicles to Stop Charging until they are physically re-connected to the TWC." />
+          </td></tr>
+          <tr><td colspan = '2'>
+        """
+        page += self.ifButton([[ self.server.master.getModuleByName("Policy").active_policy, "Charge Now", "start_chargenow", "Update Charge Now" ], [ "", "", "start_chargenow", "Start Charge Now"]], "class='btn btn-outline-success' data-toggle='tooltip' data-placement='top' title='Note: Charge Now command takes approximately 2 minutes to activate.'")
+        page += "</td><td colspan = '2'>"
+        page += self.ifButton([[ self.server.master.getModuleByName("Policy").active_policy, "Charge Now", "cancel_chargenow", "Cancel Charge Now" ], [ "", "", "disabled", "Cancel Charge Now"]], "class='btn btn-outline-danger'")
+        page += """
+          </td>
+          <td>
+            <input type="submit" class="btn btn-outline-success" name="send_start_command" value="Start All Charging" />
+          </td></tr>
+          </table></form>
+        """
+        return page
+
     def show_status(self):
 
-        page = "<table width = '100%'><tr width = '100%'><td width='35%'>"
-        page += "<table class='table table-dark' width='100%'>"
+        page = "<table width='100%'><tr><td width='60%'>"
+        page += "<table class='table table-dark'>"
         page += "<tr><th>Amps to share across all TWCs:</th>"
         page += "<td>%.2f</td><td>amps</td></tr>" % float(self.server.master.getMaxAmpsToDivideAmongSlaves())
 
@@ -507,8 +563,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "<td>" + str(self.server.master.num_cars_charging_now()) + "</td>"
         page += "<td>cars</td></tr></table></td>"
 
-        page += "<td width='30%'>"
-        page += "<table class='table table-dark' width='100%'>"
+        page += "<td width='40%'>"
+        page += "<table class='table table-dark'>"
         page += "<tr><th>Current Policy</th>"
         page += "<td>" + str(self.server.master.getModuleByName("Policy").active_policy) + "</td></tr>"
         page += "<tr><th>Scheduled Charging Amps</th>"
@@ -529,32 +585,34 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "</tr>"
         page += "</table></td>"
 
-        page += "<td width = '35%' rowspan = '3'>"
-        page += self.do_chargeSchedule()
-        page += "</td></tr>"
-        page += "<tr><td width = '60%' colspan = '4'>"
+        page += "<tr><td width = '100%' colspan = '2'>"
         page += self.show_twcs()
         page += "</td></tr>"
-
-        # Handle overflow from calendar
-        page += "<tr><td>&nbsp;</td></tr></table>"
+ 
+        page += "<tr><td width = '100%' colspan = '2'>"
+        page += self.show_commands()
+        page += "</td></tr></table>"
         return page
 
     def show_twcs(self):
 
-        page = "<table class='darkTable'>\n"
-        page += "<thead><tr>"
-        page += "<th>TWC ID</th>"
-        page += "<th>State</th>"
-        page += "<th>Version</th>"
-        page += "<th>Max Amps</th>"
-        page += "<th>Amps Offered</th>"
-        page += "<th>Amps In Use</th>"
-        page += "<th>Lifetime kWh</th>"
-        page += "<th>Voltage per Phase<br />1 / 2 / 3</th>"
-        page += "<th>Last Heartbeat</th>"
-        page += "<th>Vehicle Connected<br />Current / Last</th>"
-        page += "</tr></thead>\n"
+        page = """
+        <table><tr width = '100%'><td width='65%'>
+          <table class='table table-dark table-condensed table-striped'>
+          <thead class='thead-dark'><tr>
+            <th width='2%'>TWC ID</th>
+            <th width='1%'>State</th>
+            <th width='1%'>Version</th>
+            <th width='2%'>Max Amps</th>
+            <th width='2%'>Amps<br />Offered</th>
+            <th width='2%'>Amps<br />In Use</th>
+            <th width='2%'>Lifetime<br />kWh</th>
+            <th width='4%'>Voltage<br />per Phase<br />1 / 2 / 3</th>
+            <th width='2%'>Last Heartbeat</th>
+            <th width='6%'>Vehicle Connected<br />Current / Last</th>
+            <th width='2%'>Commands</th>
+          </tr></thead>
+        """
         lastAmpsTotal = 0
         maxAmpsTotal = 0
         totalAmps = 0
@@ -575,11 +633,21 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             page += "<td>%d / %d / %d</td>" % (slaveTWC.voltsPhaseA, slaveTWC.voltsPhaseB, slaveTWC.voltsPhaseC)
             page += "<td>%.2f sec</td>" % float(time.time() - slaveTWC.timeLastRx)
             page += "<td>C: %s<br />L: %s</td>" % (slaveTWC.currentVIN, slaveTWC.lastVIN)
+            page += """
+            <td>
+              <div class="dropdown">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Select</button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                  <a class="dropdown-item" href="#">Coming Soon</a>
+                </div>
+              </div>
+            </td>
+            """
             page += "</tr>\n"
         page += "<tr><td><b>Total</b><td>&nbsp;</td><td>&nbsp;</td>"
         page += "<td>%.2f</td>" % float(maxAmpsTotal)
         page += "<td>%.2f</td>" % float(lastAmpsTotal)
         page += "<td>%.2f</td>" % float(totalAmps)
         page += "<td>%d</td>" % int(totalLtkWh)
-        page += "</tr></table>\n"
+        page += "</tr></table></td></tr></table>"
         return page
