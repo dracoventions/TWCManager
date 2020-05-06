@@ -158,7 +158,7 @@
         #   Set fakeMaster = 2 to display received RS-485 messages but not send any
         #                      unless you use the debugging web interface
         #                      (index.php?debugTWC=1) to send messages.
-        "fakeMaster": 1,
+        "fakeMaster": 1
     },
 
     # The interface section of the configuration is where we configure the
@@ -199,6 +199,7 @@
         # socket. This can be used to integrate with network-based RS485
         # interfaces.
       }
+    },
     "control": {
       "HTTP": {
         "enabled": true,
