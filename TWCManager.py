@@ -41,7 +41,6 @@ import traceback
 from datetime import datetime
 import threading
 from ww import f
-from lib.TWCManager.Control.WebIPCControl import WebIPCControl
 from lib.TWCManager.TWCMaster import TWCMaster
 
 # Define available modules for the instantiator
@@ -52,6 +51,7 @@ modules_available = [
     "Interface.TCP",
     "Policy.Policy",
     "Vehicle.TeslaAPI",
+    "Control.WebIPCControl.WebIPCControl",
     "Control.HTTPControl",
     "Control.MQTTControl",
     "EMS.Fronius",
@@ -346,17 +346,23 @@ for module in modules_available:
     if str(module).find(".") != -1:
         modulename = str(module).split(".")
 
-    moduleref = importlib.import_module("lib.TWCManager." + module)
-    modclassref = getattr(moduleref, modulename[1])
-    modinstance = modclassref(master)
+    try:
+        moduleref = importlib.import_module("lib.TWCManager." + module)
+        modclassref = getattr(moduleref, modulename[1])
+        modinstance = modclassref(master)
 
-    # Register the new module with master class, so every other module can
-    # interact with it
-    master.registerModule(
-        {"name": modulename[1], "ref": modinstance, "type": modulename[0]}
-    )
+        # Register the new module with master class, so every other module can
+        # interact with it
+        master.registerModule(
+            {"name": modulename[1], "ref": modinstance, "type": modulename[0]}
+        )
+    except ModuleNotFoundError as e:
+        debugLog(1,colored('ModuleNotFoundError', 'red')+": "+str(e)+", when importing "+colored(module,'red')+", not using "+colored(module,'red'))
+    except:
+        raise
 
-webipccontrol = WebIPCControl(master)
+if 'WebIPCControl' in locals():
+    webipccontrol = WebIPCControl(master)
 
 # Load settings from file
 master.loadSettings()
@@ -471,7 +477,8 @@ while True:
                 master.send_slave_linkready()
 
         # See if there's any message from the web interface.
-        webipccontrol.processIPC()
+        if 'WebIPCControl' in locals():
+            webipccontrol.processIPC()
 
         # If it has been more than 2 minutes since the last kWh value, queue the command to request it from slaves
         if config["config"]["fakeMaster"] == 1 and ((time.time() - master.lastkWhMessage) > (60*2)):
