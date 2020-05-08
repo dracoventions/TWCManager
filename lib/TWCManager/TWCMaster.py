@@ -130,8 +130,8 @@ class TWCMaster:
     def debugLog(self, minlevel, function, message):
         # Trim/pad the module name as needed
         if len(function) < 10:
-          for a in range(len(function), 10):
-            function += " "
+            for a in range(len(function), 10):
+                function += " "
 
         if self.debugLevel >= minlevel:
             print(
@@ -223,7 +223,7 @@ class TWCMaster:
         return self.settings.get("scheduledAmpsEndHour", -1)
 
     def getSlaveLifetimekWh(self):
-        
+
         # This function is called from a Scheduled Task
         # If it's been at least 1 minute, then query all known Slave TWCs
         # to determine their lifetime kWh and per-phase voltages
@@ -250,19 +250,19 @@ class TWCMaster:
     def getVehicleVIN(self, slaveID, part):
         prefixByte = None
         if int(part) == 0:
-          prefixByte = bytearray(b"\xFB\xEE")
+            prefixByte = bytearray(b"\xFB\xEE")
         if int(part) == 1:
-          prefixByte = bytearray(b"\xFB\xEF")
+            prefixByte = bytearray(b"\xFB\xEF")
         if int(part) == 2:
-          prefixByte = bytearray(b"\xFB\xF1")
+            prefixByte = bytearray(b"\xFB\xF1")
 
         if prefixByte:
-          self.getModuleByName("RS485").send(
-            prefixByte
-            + self.TWCID
-            + slaveID
-            + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00")
-          )
+            self.getModuleByName("RS485").send(
+                prefixByte
+                + self.TWCID
+                + slaveID
+                + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00")
+            )
 
     def deleteSlaveTWC(self, deleteSlaveID):
         for i in range(0, len(self.slaveTWCRoundRobin)):
@@ -337,24 +337,26 @@ class TWCMaster:
         generationW = float(self.getGeneration())
         consumptionW = float(self.getConsumption())
 
-        # Calculate how much consumption to offset generation with
-        # Fetches and uses consumptionW separately
-        generationOffset = self.getGenerationOffset()
+        # Calculate what we should offer to align with green energy
+        #
+        # The current offered shouldn't increase more than / must
+        # decrease at least the current gap between generation and
+        # consumption.
+
+        currentOffer = max(
+            self.getMaxAmpsToDivideAmongSlaves(),
+            self.num_cars_charging_now() * self.config["config"]["minAmpsPerTWC"],
+        )
+        newOffer = currentOffer + ((generationW - consumptionW) / 240)
 
         # This is the *de novo* calculation of how much we can offer
+        #
+        # Fetches and uses consumptionW separately
+        generationOffset = self.getGenerationOffset()
         solarW = float(generationW - generationOffset)
 
-        # Now temper this with reality -- the current offered shouldn't
-        # increase more than / must decrease at least the current gap
-        # between generation and consumption.
-        return max(
-            min(
-                self.getMaxAmpsToDivideAmongSlaves()
-                + ((generationW - consumptionW) / 240),
-                solarW / 240,
-            ),
-            0,
-        )
+        # Offer the smaller of the two, but not less than zero.
+        return max(min(newOffer, solarW / 240), 0)
 
     def getNormalChargeLimit(self, ID):
         if "chargeLimits" in self.settings and str(ID) in self.settings["chargeLimits"]:
@@ -493,22 +495,22 @@ class TWCMaster:
         carsCharging = 0
         for slaveTWC in self.getSlaveTWCs():
             if slaveTWC.reportedAmpsActual >= 1.0:
-               if slaveTWC.isCharging == 0:
-                  # We have detected that a vehicle has started charging on this Slave TWC
-                  # Attempt to request the vehicle's VIN
-                  slaveTWC.isCharging = 1
-                  self.getVehicleVIN(slaveTWC.TWCID, 0)
+                if slaveTWC.isCharging == 0:
+                    # We have detected that a vehicle has started charging on this Slave TWC
+                    # Attempt to request the vehicle's VIN
+                    slaveTWC.isCharging = 1
+                    self.getVehicleVIN(slaveTWC.TWCID, 0)
             else:
-               if slaveTWC.isCharging == 1:
-                  # A vehicle was previously charging and is no longer charging
-                  # Clear the VIN details for this slave and move the last
-                  # vehicle's VIN to lastVIN
-                  slaveTWC.VINData = [ "", "", "" ]
-                  if slaveTWC.currentVIN:
-                     slaveTWC.lastVIN = slaveTWC.currentVIN
-                  slaveTWC.currentVIN = ""
-                  self.updateVINStatus()
-               slaveTWC.isCharging = 0
+                if slaveTWC.isCharging == 1:
+                    # A vehicle was previously charging and is no longer charging
+                    # Clear the VIN details for this slave and move the last
+                    # vehicle's VIN to lastVIN
+                    slaveTWC.VINData = ["", "", ""]
+                    if slaveTWC.currentVIN:
+                        slaveTWC.lastVIN = slaveTWC.currentVIN
+                    slaveTWC.currentVIN = ""
+                    self.updateVINStatus()
+                slaveTWC.isCharging = 0
             carsCharging += slaveTWC.isCharging
             for module in self.getModulesByType("Status"):
                 module["ref"].setStatus(
@@ -728,22 +730,22 @@ class TWCMaster:
     def sendStartCommand(self):
         # This function will loop through each of the Slave TWCs, and send them the start command.
         for slaveTWC in self.getSlaveTWCs():
-          self.getModuleByName("RS485").send(
-            bytearray(b"\xFC\xB1")
-            + self.TWCID
-            + slaveTWC.TWCID
-            + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
-        )
+            self.getModuleByName("RS485").send(
+                bytearray(b"\xFC\xB1")
+                + self.TWCID
+                + slaveTWC.TWCID
+                + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+            )
 
     def sendStopCommand(self):
         # This function will loop through each of the Slave TWCs, and send them the stop command.
         for slaveTWC in self.getSlaveTWCs():
-          self.getModuleByName("RS485").send(
-            bytearray(b"\xFC\xB2")
-            + self.TWCID
-            + slaveTWC.TWCID
-            + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
-        )
+            self.getModuleByName("RS485").send(
+                bytearray(b"\xFC\xB2")
+                + self.TWCID
+                + slaveTWC.TWCID
+                + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+            )
 
     def setAllowedFlex(self, amps):
         self.allowedFlex = amps if amps >= 0 else 0
@@ -876,29 +878,29 @@ class TWCMaster:
         )
 
     def updateSlaveLifetime(self, sender, kWh, vPA, vPB, vPC):
-      for slaveTWC in self.getSlaveTWCs():
-        if slaveTWC.TWCID == sender:
-          slaveTWC.setLifetimekWh(kWh)
-          slaveTWC.setVoltage(vPA, vPB, vPC)
+        for slaveTWC in self.getSlaveTWCs():
+            if slaveTWC.TWCID == sender:
+                slaveTWC.setLifetimekWh(kWh)
+                slaveTWC.setVoltage(vPA, vPB, vPC)
 
-          # Publish Lifetime kWh Value via Status modules
-          for module in self.getModulesByType("Status"):
-            module["ref"].setStatus(
-                  slaveTWC.TWCID,
-                  "lifetime_kwh",
-                  "lifetimekWh",
-                  slaveTWC.lifetimekWh,
-            )
+                # Publish Lifetime kWh Value via Status modules
+                for module in self.getModulesByType("Status"):
+                    module["ref"].setStatus(
+                        slaveTWC.TWCID,
+                        "lifetime_kwh",
+                        "lifetimekWh",
+                        slaveTWC.lifetimekWh,
+                    )
 
-            # Publish phase 1, 2 and 3 values via Status modules
-            for phase in ("A", "B", "C"):
-              for module in self.getModulesByType("Status"):
-                module["ref"].setStatus(
-                    slaveTWC.TWCID,
-                    "voltage_phase_" + phase.lower(),
-                    "voltagePhase" + phase,
-                    getattr(slaveTWC, "voltsPhase" + phase, 0),
-                )
+                    # Publish phase 1, 2 and 3 values via Status modules
+                    for phase in ("A", "B", "C"):
+                        for module in self.getModulesByType("Status"):
+                            module["ref"].setStatus(
+                                slaveTWC.TWCID,
+                                "voltage_phase_" + phase.lower(),
+                                "voltagePhase" + phase,
+                                getattr(slaveTWC, "voltsPhase" + phase, 0),
+                            )
 
     def updateVINStatus(self):
         # update current and last VIN IDs for each Slave to all Status modules
@@ -917,4 +919,3 @@ class TWCMaster:
                     "lastVehicleVIN",
                     slaveTWC.lastVIN,
                 )
-
