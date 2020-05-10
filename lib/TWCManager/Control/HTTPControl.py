@@ -1,6 +1,7 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from termcolor import colored
+import json
 import threading
 import time
 import urllib.parse
@@ -47,13 +48,13 @@ class HTTPControl:
 class HTTPControlHandler(BaseHTTPRequestHandler):
 
     fields = {}
-    focus = "onFocus='formHasFocus()' onBlur='formNoFocus()'"
+    path = ""
     version = "v1.2.0"
 
     def do_bootstrap(self):
         page = """
         <meta name='viewport' content='width=device-width, initial-scale=1'>
-        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha384-tsQFqpEReu7ZLhBV2VZlAu7zcOV+rXbYlF2cqB8txI/8aZajjp4Bqd+V6D5IgvKT" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
         <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css' integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'>
@@ -94,32 +95,107 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
     def do_jsrefresh(self):
         page = """
-      // Only refresh the main page if the browser window has focus, and if
-      // the input form does not have focus
       <script language = 'JavaScript'>
-      var formFocus = false;
-      var hasFocus= true;
 
-      function formNoFocus() {
-        formFocus = false;
-      }
+      // AJAJ refresh for getStatus API call
+      $(document).ready(function() {  
+          function requestStatus() {
+              $.ajax({
+                  url: "/api/getStatus",
+                  dataType: "text",
+                  cache: false,
+                  success: function(data) {
+                      var json = $.parseJSON(data);
+                      Object.keys(json).forEach(function(key) {
+                        $('#'+key).html(json[key]);
+                      });
 
-      function formHasFocus() {
-        formFocus = true;
-      }
-
-      window.onblur = function() {
-        hasFocus = false;
-      }
-      window.onfocus = function(){
-        hasFocus = true;
-      }
-      setInterval(reload, 5*1000);
-      function reload(){
-          if(hasFocus && !formFocus){
-              location.reload(true);
+                      // Change the state of the Charge Now button based on Charge Policy
+                      if (json["currentPolicy"] == "Charge Now") {
+                        document.getElementById("start_chargenow").value = "Update Charge Now";
+                        document.getElementById("cancel_chargenow").disabled = false;
+                      } else {
+                        document.getElementById("start_chargenow").value = "Start Charge Now";
+                        document.getElementById("cancel_chargenow").disabled = true;
+                      }
+                  }             
+              });
+              setTimeout(requestStatus, 3000);
           }
-      }
+
+          requestStatus();
+      });
+
+      // AJAJ refresh for getSlaveTWCs API call
+      $(document).ready(function() {
+          function requestSlaves() {
+              $.ajax({
+                  url: "/api/getSlaveTWCs",
+                  dataType: "text",
+                  cache: false,
+                  success: function(data) {
+                      var json = $.parseJSON(data);
+                      Object.keys(json).forEach(function(key) {
+                        var slvtwc = json[key];
+                        var twc = '#' + slvtwc['TWCID']
+                        Object.keys(slvtwc).forEach(function(key) {
+                          $(twc+'_'+key).html(slvtwc[key]);
+                        });
+                      });
+                  }
+              });
+              setTimeout(requestSlaves, 3000);
+          }
+
+          requestSlaves();
+      });
+
+      $(document).ready(function() {
+        $("#start_chargenow").click(function(e) {
+          e.preventDefault();
+          $.ajax({
+            type: "POST",
+            url: "/api/chargeNow",
+            data: {
+              chargeNowRate: $("#chargeNowRate").val(),
+              chargeNowDuration: $("#chargeNowDuration").val()
+            }
+          });
+        });
+      });
+
+      $(document).ready(function() {
+        $("#cancel_chargenow").click(function(e) {
+          e.preventDefault();
+          $.ajax({
+            type: "POST",
+            url: "/api/cancelChargeNow",
+            data: {}
+          });
+        });
+      });
+
+      $(document).ready(function() {
+        $("#send_start_command").click(function(e) {
+          e.preventDefault();
+          $.ajax({
+            type: "POST",
+            url: "/api/sendStartCommand",
+            data: {}
+          });
+        });
+      });
+
+      $(document).ready(function() {
+        $("#send_stop_command").click(function(e) {
+          e.preventDefault();
+          $.ajax({
+            type: "POST",
+            url: "/api/sendStopCommand",
+            data: {}
+          });
+        });
+      });
 
       // Enable tooltips
       $(function () {
@@ -154,6 +230,134 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "<a class='nav-link' href='%s'>%s</a>" % (url, name)
         page += "</li></ul>"
         return page
+
+    def do_API_GET(self):
+        url = urllib.parse.urlparse(self.path)
+        if (url.path == "/api/getSlaveTWCs"):
+          data = {}
+          totals = {
+            "lastAmpsOffered": 0,
+            "lifetimekWh": 0,
+            "maxAmps": 0,
+            "reportedAmpsActual": 0
+          }
+          for slaveTWC in self.server.master.getSlaveTWCs():
+            TWCID = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
+            data[TWCID] = {
+              "currentVIN": slaveTWC.currentVIN,
+              "lastAmpsOffered": "%.2f" % float(slaveTWC.lastAmpsOffered),
+              "lastHeartbeat": "%.2f" % float(time.time() - slaveTWC.timeLastRx),
+              "lastVIN": slaveTWC.lastVIN,
+              "lifetimekWh": str(slaveTWC.lifetimekWh),
+              "maxAmps": float(slaveTWC.maxAmps),
+              "reportedAmpsActual": "%.2f" % float(slaveTWC.reportedAmpsActual),
+              "state": str(slaveTWC.reportedState),
+              "version": str(slaveTWC.protocolVersion),
+              "voltsPhaseA": str(slaveTWC.voltsPhaseA),
+              "voltsPhaseB": str(slaveTWC.voltsPhaseB),
+              "voltsPhaseC": str(slaveTWC.voltsPhaseC),
+              "TWCID": "%s" % TWCID
+            }
+            totals["lastAmpsOffered"] += slaveTWC.lastAmpsOffered
+            totals["lifetimekWh"] += slaveTWC.lifetimekWh
+            totals["maxAmps"] += slaveTWC.maxAmps
+            totals["reportedAmpsActual"] += slaveTWC.reportedAmpsActual
+
+          data["total"] = {
+            "lastAmpsOffered": float(totals["lastAmpsOffered"]),
+            "lifetimekWh": totals["lifetimekWh"],
+            "maxAmps": totals["maxAmps"],
+            "reportedAmpsActual": "%.2f" % float(totals["reportedAmpsActual"]),
+            "TWCID": "total"
+          }
+
+          self.send_response(200)
+          self.send_header("Content-type", "text/html")
+          self.end_headers()
+
+          json_data = json.dumps(data)
+          self.wfile.write(json_data.encode("utf-8"))
+          return
+
+        if (url.path == "/api/getStatus"):
+          data = {
+            "carsCharging": self.server.master.num_cars_charging_now(),
+            "chargerLoadWatts": "%.2f" % float(self.server.master.getChargerLoad()),
+            "currentPolicy": str(self.server.master.getModuleByName("Policy").active_policy),
+            "maxAmpsToDivideAmongSlaves": "%.2f" % float(self.server.master.getMaxAmpsToDivideAmongSlaves())
+          }
+          consumption = float(self.server.master.getConsumption())
+          if consumption:
+            data["consumptionAmps"] = "%.2f" % (consumption / 240),
+            data["consumptionWatts"] = "%.2f" % consumption
+          else:
+            data["consumptionAmps"] = "%.2f" % 0
+            data["consumptionWatts"] = "%.2f" % 0
+          generation = float(self.server.master.getGeneration())
+          if generation:
+            data["generationAmps"] = "%.2f" % (generation / 240),
+            data["generationWatts"] = "%.2f" % generation
+          else:
+            data["generationAmps"] = "%.2f" % 0
+            data["generationWatts"] = "%.2f" % 0
+          if (self.server.master.getModuleByName("Policy").policyIsGreen()):
+            data["isGreenPolicy"] = "Yes"
+          else:
+            data["isGreenPolicy"] = "No"
+
+          self.send_response(200)
+          self.send_header("Content-type", "text/html")
+          self.end_headers()
+
+          json_data = json.dumps(data)
+          self.wfile.write(json_data.encode("utf-8")) 
+          return
+
+        # All other routes missed, return 404
+        self.send_response(404)
+        self.end_headers()
+        self.wfile.write("".encode("utf-8"))
+        return
+
+    def do_API_POST(self):
+
+        if self.url.path == "/api/chargeNow":
+            rate = self.fields.get('chargeNowRate',[0])
+            durn = self.fields.get('chargeNowDuration',[0])
+            self.server.master.setChargeNowAmps(int(rate[0]))
+            self.server.master.setChargeNowTimeEnd(int(durn[0]))
+            self.server.master.saveSettings()
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            return
+
+        if self.url.path == "/api/cancelChargeNow":
+            self.server.master.resetChargeNowAmps()
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            return
+
+        if self.url.path == "/api/sendStartCommand":
+            self.server.master.sendStartCommand()
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            return
+
+        if self.url.path == "/api/sendStopCommand":
+            self.server.master.sendStopCommand()
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            return
+
+        # All other routes missed, return 404
+        self.send_response(404)
+        self.end_headers()
+        self.wfile.write("".encode("utf-8"))
+        return
 
     def do_get_debug(self):
         page = "<html><head>"
@@ -254,6 +458,10 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         url = urllib.parse.urlparse(self.path)
 
+        if url.path.startswith("/api/"):
+          self.do_API_GET()
+          return
+
         if (
             url.path == "/"
             or url.path == "/apiacct/True"
@@ -337,7 +545,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     def do_POST(self):
 
         # Parse URL
-        url = urllib.parse.urlparse(self.path)
+        self.url = urllib.parse.urlparse(self.path)
 
         # Parse POST parameters
         self.fields.clear()
@@ -345,18 +553,17 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         field_data = self.rfile.read(length)
         self.fields = urllib.parse.parse_qs(field_data.decode("utf-8"))
 
-        if url.path == "/settings/chargenow":
-            # Chargenow actions
-            self.process_chargenow()
+        if self.url.path.startswith("/api/"):
+            self.do_API_POST()
             return
 
-        if url.path == "/settings/save":
+        if self.url.path == "/settings/save":
             # User has submitted settings.
             # Call dedicated function
             self.process_settings()
             return
 
-        if url.path == "/tesla-login":
+        if self.url.path == "/tesla-login":
             # User has submitted Tesla login.
             # Pass it to the dedicated process_teslalogin function
             self.process_teslalogin()
@@ -368,18 +575,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         self.wfile.write("".encode("utf-8"))
         return
 
-    def ifButton(self, button_def, extrargs):
+    def addButton(self, button_def, extrargs):
         # This is a macro which can display differing buttons based on a
         # condition. It's a useful way to switch the text on a button based
         # on current state.
-        page = ""
-        disabled = ""
-        for bdef in button_def:
-          if bdef[0] == bdef[1]:
-            if bdef[2] == "disabled":
-              disabled = "disabled"
-            page = "<input type='Submit' %s name='%s' value='%s' %s>" % (extrargs, bdef[2], bdef[3], disabled)
-            return page
+        page = "<input type='Submit' %s id='%s' value='%s'>" % (extrargs, button_def[0], button_def[1])
         return page
 
     def log_message(self, format, *args):
@@ -387,7 +587,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
     def optionList(self, list, opts = {}):
       page = "<div class='form-group'>"
-      page += "<select class='form-control' name='%s' %s>" % (opts.get('name', ''), self.focus)
+      page += "<select class='form-control' id='%s'>" % opts.get('name', '')
       for option in list:
         sel = ""
         if (str(opts.get('value', '-1')) == str(option[0])):
@@ -396,32 +596,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       page += "</div>"
       page += "</select>"
       return page
-
-    def process_chargenow(self):
-
-        # Process request
-        if self.fields.get('cancel_chargenow', None):
-            self.server.master.resetChargeNowAmps()
-
-        if self.fields.get('start_chargenow', None):
-            rate = self.fields.get('chargeNowRate',[0])
-            durn = self.fields.get('chargeNowDuration',[0])
-            self.server.master.setChargeNowAmps(int(rate[0]))
-            self.server.master.setChargeNowTimeEnd(int(durn[0]))
-            self.server.master.saveSettings()
-
-        if self.fields.get('send_stop_command', None):
-            self.server.master.sendStopCommand()
-
-        if self.fields.get('send_start_command', None):
-            self.server.master.sendStartCommand()
-
-        # Redirect to the index page
-        self.send_response(302)
-        self.send_header("Location", "/")
-        self.end_headers()
-        self.wfile.write("".encode("utf-8"))
-        return
 
     def process_settings(self):
 
@@ -488,9 +662,9 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "<p>"
         page += "<table>"
         page += "<tr><td>Tesla Account E-Mail:</td>"
-        page += "<td><input type='text' name='email' value='' %s></td></tr>" % self.focus
+        page += "<td><input type='text' name='email' value=''></td></tr>"
         page += "<tr><td>Password:</td>"
-        page += "<td><input type='password' name='password' %s></td></tr>" % self.focus
+        page += "<td><input type='password' name='password'></td></tr>"
         page += "<tr><td><input type='submit' name='submit' value='Log In'></td>"
         page += "<td><input type='submit' name='later' value='Ask Me Later'></td>"
         page += "</tr>"
@@ -502,7 +676,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     def show_commands(self):
  
         page = """
-          <form method=POST action='/settings/chargenow'>
           <table class='table table-dark'>
           <tr><th colspan=4 width = '30%'>Charge Now</th>
           <th colspan=1 width = '30%'>Commands</th></tr>
@@ -523,50 +696,55 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
           </td></tr>
           <tr><td colspan = '2'>
         """
-        page += self.ifButton([[ self.server.master.getModuleByName("Policy").active_policy, "Charge Now", "start_chargenow", "Update Charge Now" ], [ "", "", "start_chargenow", "Start Charge Now"]], "class='btn btn-outline-success' data-toggle='tooltip' data-placement='top' title='Note: Charge Now command takes approximately 2 minutes to activate.'")
+        page += self.addButton([ "start_chargenow", "Start Charge Now" ], "class='btn btn-outline-success' data-toggle='tooltip' data-placement='top' title='Note: Charge Now command takes approximately 2 minutes to activate.'")
         page += "</td><td colspan = '2'>"
-        page += self.ifButton([[ self.server.master.getModuleByName("Policy").active_policy, "Charge Now", "cancel_chargenow", "Cancel Charge Now" ], [ "", "", "disabled", "Cancel Charge Now"]], "class='btn btn-outline-danger'")
+        page += self.addButton([ "cancel_chargenow", "Cancel Charge Now" ], "class='btn btn-outline-danger'")
         page += """
           </td>
           <td>
-            <input type="submit" class="btn btn-outline-success" name="send_start_command" value="Start All Charging" />
+        """
+        page += self.addButton([ "send_start_command", "Start All Charging" ], "class='btn btn-outline-success'")
+        page += """
           </td></tr>
-          </table></form>
+          </table>
         """
         return page
 
     def show_status(self):
 
-        page = "<table width='100%'><tr><td width='60%'>"
-        page += "<table class='table table-dark'>"
-        page += "<tr><th>Amps to share across all TWCs:</th>"
-        page += "<td>%.2f</td><td>amps</td></tr>" % float(self.server.master.getMaxAmpsToDivideAmongSlaves())
-
-        page += "<tr><th>Current Generation</th>"
-        page += "<td>%.2f</td><td>watts</td>" % float(self.server.master.getGeneration())
-        genamps = 0
-        if self.server.master.getGeneration():
-            genamps = self.server.master.getGeneration() / 240
-        page += "<td>%.2f</td><td>amps</td></tr>" % float(genamps)
-
-        page += "<tr><th>Current Consumption</th>"
-        page += "<td>%.2f</td><td>watts</td>" % float(self.server.master.getConsumption())
-        conamps = 0
-        if self.server.master.getConsumption():
-            conamps = self.server.master.getConsumption() / 240
-        page += "<td>%.2f</td><td>amps</td></tr>" % float(conamps)
-
-        page += "<tr><th>Current Charger Load</th>"
-        page += "<td>%.2f</td><td>watts</td></tr>" % float(self.server.master.getChargerLoad())
-
-        page += "<tr><th>Number of Cars Charging</th>"
-        page += "<td>" + str(self.server.master.num_cars_charging_now()) + "</td>"
-        page += "<td>cars</td></tr></table></td>"
+        page = """
+        <table width='100%'><tr><td width='60%'>
+        <table class='table table-dark'>
+        <tr>
+          <th>Amps to share across all TWCs:</th>
+          <td><div id='maxAmpsToDivideAmongSlaves'></div></td><td>amps</td>
+        </tr>
+        <tr>
+          <th>Current Generation</th>
+          <td><div id='generationWatts'></div></td><td>watts</td>
+          <td><div id="generationAmps"></div></td><td>amps</td>
+        </tr>
+        <tr>
+          <th>Current Consumption</th>
+          <td><div id='consumptionWatts'></div></td><td>watts</td>
+          <td><div id='consumptionAmps'></div></td><td>amps</td>
+        </tr>
+        <tr>
+          <th>Current Charger Load</th>
+          <td><div id="chargerLoadWatts"></div></td><td>watts</td>
+        </tr>
+        <tr>
+          <th>Number of Cars Charging</th>
+          <td><div id="carsCharging"></div></td>
+          <td>cars</td>
+        </tr>
+        </table></td>
+        """
 
         page += "<td width='40%'>"
         page += "<table class='table table-dark'>"
         page += "<tr><th>Current Policy</th>"
-        page += "<td>" + str(self.server.master.getModuleByName("Policy").active_policy) + "</td></tr>"
+        page += "<td><div id='currentPolicy'></div></td></tr>"
         page += "<tr><th>Scheduled Charging Amps</th>"
         page += "<td>" + str(self.server.master.getScheduledAmpsMax()) + "</td></tr>"
 
@@ -575,15 +753,14 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
         page += "<tr><th>Scheduled Charging End Hour</th>"
         page += "<td>" + str(self.server.master.getScheduledAmpsEndHour()) + "</td>"
-        page += "</tr>"
-
-        page += "<tr><th>Is a Green Policy?</th>"
-        if (self.server.master.getModuleByName("Policy").policyIsGreen()):
-          page += "<td>Yes</td>";
-        else:
-          page += "<td>No</td>";
-        page += "</tr>"
-        page += "</table></td>"
+        page += """
+        </tr>
+        <tr>
+          <th>Is a Green Policy?</th>
+          <td><div id='isGreenPolicy'></div></td>
+        </tr>
+        </table></td>
+        """
 
         page += "<tr><td width = '100%' colspan = '2'>"
         page += self.show_twcs()
@@ -613,26 +790,19 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             <th width='2%'>Commands</th>
           </tr></thead>
         """
-        lastAmpsTotal = 0
-        maxAmpsTotal = 0
-        totalAmps = 0
-        totalLtkWh = 0
         for slaveTWC in self.server.master.getSlaveTWCs():
+            twcid = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
             page += "<tr>"
-            page += "<td>%02X%02X</td>" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
-            page += "<td>" + str(slaveTWC.reportedState) + "</td>"
-            page += "<td>" + str(slaveTWC.protocolVersion) + "</td>"
-            page += "<td>%.2f</td>" % float(slaveTWC.maxAmps)
-            maxAmpsTotal += float(slaveTWC.maxAmps)
-            page += "<td>%.2f</td>" % float(slaveTWC.lastAmpsOffered)
-            lastAmpsTotal += float(slaveTWC.lastAmpsOffered)
-            page += "<td>%.2f</td>" % float(slaveTWC.reportedAmpsActual)
-            totalAmps += float(slaveTWC.reportedAmpsActual)
-            page += "<td>%d</td>" % slaveTWC.lifetimekWh
-            totalLtkWh += int(slaveTWC.lifetimekWh)
-            page += "<td>%d / %d / %d</td>" % (slaveTWC.voltsPhaseA, slaveTWC.voltsPhaseB, slaveTWC.voltsPhaseC)
-            page += "<td>%.2f sec</td>" % float(time.time() - slaveTWC.timeLastRx)
-            page += "<td>C: %s<br />L: %s</td>" % (slaveTWC.currentVIN, slaveTWC.lastVIN)
+            page += "<td>%s</td>" % twcid
+            page += "<td><div id='%s_state'></div></td>" % twcid
+            page += "<td><div id='%s_version'></div></td>" % twcid
+            page += "<td><div id='%s_maxAmps'></div></td>" % twcid
+            page += "<td><div id='%s_lastAmpsOffered'></div></td>" % twcid
+            page += "<td><div id='%s_reportedAmpsActual'></div></td>" % twcid
+            page += "<td><div id='%s_lifetimekWh'></div></td>" % twcid
+            page += "<td><span id='%s_voltsPhaseA'></span> / <span id='%s_voltsPhaseB'></span> / <span id='%s_voltsPhaseC'></span></td>" % (twcid, twcid, twcid)
+            page += "<td><span id='%s_lastHeartbeat'></span> sec</td>" % twcid
+            page += "<td>C: <span id='%s_currentVIN'></span><br />L: <span id='%s_lastVIN'></span></td>" % (twcid, twcid)
             page += """
             <td>
               <div class="dropdown">
@@ -645,9 +815,9 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             """
             page += "</tr>\n"
         page += "<tr><td><b>Total</b><td>&nbsp;</td><td>&nbsp;</td>"
-        page += "<td>%.2f</td>" % float(maxAmpsTotal)
-        page += "<td>%.2f</td>" % float(lastAmpsTotal)
-        page += "<td>%.2f</td>" % float(totalAmps)
-        page += "<td>%d</td>" % int(totalLtkWh)
+        page += "<td><div id='total_maxAmps'></div></td>"
+        page += "<td><div id='total_lastAmpsOffered'></div></td>"
+        page += "<td><div id='total_reportedAmpsActual'></div></td>" 
+        page += "<td><div id='total_lifetimekWh'></div></td>"
         page += "</tr></table></td></tr></table>"
         return page
