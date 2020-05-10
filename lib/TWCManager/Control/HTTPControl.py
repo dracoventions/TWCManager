@@ -334,6 +334,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
         if self.url.path == "/api/cancelChargeNow":
             self.server.master.resetChargeNowAmps()
+            self.server.master.saveSettings()
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
