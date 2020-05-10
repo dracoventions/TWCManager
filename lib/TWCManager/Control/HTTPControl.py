@@ -233,6 +233,24 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
     def do_API_GET(self):
         url = urllib.parse.urlparse(self.path)
+        if (url.path == "/api/getConfig"):
+          self.send_response(200)
+          self.send_header("Content-type", "application/json")
+          self.end_headers()
+
+          json_data = json.dumps(self.server.master.config)
+          self.wfile.write(json_data.encode("utf-8"))
+          return
+
+        if (url.path == "/api/getPolicy"):
+          self.send_response(200)
+          self.send_header("Content-type", "application/json")
+          self.end_headers()
+
+          json_data = json.dumps(self.server.master.getModuleByName("Policy").charge_policy)
+          self.wfile.write(json_data.encode("utf-8"))
+          return
+ 
         if (url.path == "/api/getSlaveTWCs"):
           data = {}
           totals = {
@@ -264,7 +282,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             totals["reportedAmpsActual"] += slaveTWC.reportedAmpsActual
 
           data["total"] = {
-            "lastAmpsOffered": float(totals["lastAmpsOffered"]),
+            "lastAmpsOffered": "%.2f" % float(totals["lastAmpsOffered"]),
             "lifetimekWh": totals["lifetimekWh"],
             "maxAmps": totals["maxAmps"],
             "reportedAmpsActual": "%.2f" % float(totals["reportedAmpsActual"]),
@@ -272,7 +290,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
           }
 
           self.send_response(200)
-          self.send_header("Content-type", "text/html")
+          self.send_header("Content-type", "application/json")
           self.end_headers()
 
           json_data = json.dumps(data)
@@ -306,7 +324,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             data["isGreenPolicy"] = "No"
 
           self.send_response(200)
-          self.send_header("Content-type", "text/html")
+          self.send_header("Content-type", "application/json")
           self.end_headers()
 
           json_data = json.dumps(data)
