@@ -2,6 +2,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from termcolor import colored
 import json
+import re
 import threading
 import time
 import urllib.parse
@@ -239,6 +240,9 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
           self.end_headers()
 
           json_data = json.dumps(self.server.master.config)
+          # Scrub output of passwords and API keys
+          json_datas = re.sub(r'"password": ".*?",', '', json_data)
+          json_data = re.sub(r'"apiKey": ".*?",', '', json_datas)
           self.wfile.write(json_data.encode("utf-8"))
           return
 
