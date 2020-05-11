@@ -29,6 +29,19 @@ sudo apt-get install -y git python3 python3-setuptools
 
 TWCManager requires a minimum of python 3.3 to work correctly.
 
+### Raspbian Buster
+
+You may need to set python3 as your default python interpreter version on Debian Buster. The following command will set python 3.7 as your default interpreter.
+
+```
+sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
+sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.7 2
+```
+
+You can check that this command has been successful by running ```python --version``` and checking that the version is python3.
+
+### Raspbian Stretch
+
 You may need to set python3 as your default python interpreter version on Debian/Ubuntu. The following command will set python 3.5 as your default interpreter. 
 
 ```
@@ -42,10 +55,21 @@ You can check that this command has been successful by running ```python --versi
 
 During this step, the source code and all related files will be cloned from the GitHub repository and installed into the appropriate location on your system.
 
+We have two versions of the codebase that you may want to check out. The stable version is **v1.1.8**, which will only change for stability or urgent fixes. To check out **v1.1.8**, follow these steps:
+
 ```
 git clone https://github.com/ngardiner/TWCManager
 cd TWCManager
-git checkout v1.1.7
+git checkout v1.1.8
+sudo make install
+```
+
+Alternatively, the **v1.2.0** branch is the development branch, where all of the new ideas and features are tested prior to becoming the stable branch. This version has more features, but we can't guarantee stability.
+
+```
+git clone https://github.com/ngardiner/TWCManager
+cd TWCManager
+git checkout v1.2.0
 make install
 ```
 
@@ -60,7 +84,7 @@ The following documents provide detail on specific areas of configuration:
 Once the above steps are complete, start the TWCManager script with the following command:
 
 ```
-python3 -m TWCManager
+python -m TWCManager
 ```
 
 ## Monitoring the script operation
