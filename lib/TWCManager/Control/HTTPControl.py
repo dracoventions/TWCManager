@@ -725,7 +725,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
           <td width = '7%'>
         """
         amps = []
-        for amp in range(5,81):
+        maxamps = self.server.master.config['config'].get('wiringMaxAmpsPerTWC', 5)
+        for amp in range(5,(maxamps+1)):
           amps.append([amp, str(amp)+"A"])
         page += self.optionList(amps, { "name": "chargeNowRate" })
         page += """
