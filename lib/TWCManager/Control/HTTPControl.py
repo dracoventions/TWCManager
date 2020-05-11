@@ -50,6 +50,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
     fields = {}
     path = ""
+    post_data = ""
     version = "v1.2.0"
 
     def do_bootstrap(self):
@@ -157,10 +158,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
           $.ajax({
             type: "POST",
             url: "/api/chargeNow",
-            data: {
+            data: JSON.stringify({
               chargeNowRate: $("#chargeNowRate").val(),
               chargeNowDuration: $("#chargeNowDuration").val()
-            }
+            }),
+            dataType: "json"
           });
         });
       });
@@ -344,10 +346,17 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     def do_API_POST(self):
 
         if self.url.path == "/api/chargeNow":
-            rate = self.fields.get('chargeNowRate',[0])
-            durn = self.fields.get('chargeNowDuration',[0])
-            self.server.master.setChargeNowAmps(int(rate[0]))
-            self.server.master.setChargeNowTimeEnd(int(durn[0]))
+            data = json.loads(self.post_data.decode("UTF-8"))
+            rate = int(data.get('chargeNowRate', 0))
+            durn = int(data.get('chargeNowDuration', 0))
+
+            if (rate == 0 or durn == 0):
+              self.send_response(400)
+              self.end_headers()
+              return
+
+            self.server.master.setChargeNowAmps(rate)
+            self.server.master.setChargeNowTimeEnd(durn)
             self.server.master.saveSettings()
             self.send_response(200)
             self.send_header("Content-type", "application/json")
@@ -573,12 +582,13 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         # Parse POST parameters
         self.fields.clear()
         length = int(self.headers.get("content-length"))
-        field_data = self.rfile.read(length)
-        self.fields = urllib.parse.parse_qs(field_data.decode("utf-8"))
+        self.post_data = self.rfile.read(length)
 
         if self.url.path.startswith("/api/"):
             self.do_API_POST()
             return
+
+        self.fields = urllib.parse.parse_qs(field_data.decode("utf-8"))
 
         if self.url.path == "/settings/save":
             # User has submitted settings.
@@ -705,13 +715,19 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
           <tr><td width = '8%'>Charge for:</td>
           <td width = '7%'>
         """
-        page += self.optionList([[3600,'1h'],[7200,'2h'],[10800,'3h'],[14400,'4h'],[21600,'6h'],[28800,'8h'],[36000,'10h'],[43200,'12h'],[57600,'16h'],[72000,'20h'],[86400,'24h']], { "name": "chargeNowDuration" })
+        hours = []
+        for hour in range(1, 25):
+          hours.append([(hour*3600), str(hour)+"h"])
+        page += self.optionList(hours, { "name": "chargeNowDuration" })
         page += """
           </td>
           <td width = '8%'>Charge Rate:</td>
           <td width = '7%'>
         """
-        page += self.optionList([[6,'6A'],[8,'8A'],[12,'12A'],[16,'16A'],[18,'18A'],[32,'32A']], { "name": "chargeNowRate" })
+        amps = []
+        for amp in range(5,81):
+          amps.append([amp, str(amp)+"A"])
+        page += self.optionList(amps, { "name": "chargeNowRate" })
         page += """
           </td>
           <td>

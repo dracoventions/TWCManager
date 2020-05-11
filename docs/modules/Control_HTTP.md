@@ -54,3 +54,23 @@ The following table shows the available configuration parameters for the MQTT Co
 If you have enabled HTTPControl, access it via the specified port. For example if your TWCManager machine is 192.168.1.1 and listenPort is 8080, access the HTTP interface with the following URL:
 
 <a href="http://192.168.1.1:8080/">http://192.168.1.1:8080/</a>
+
+## Using the API Interface
+
+The HTTPControl web server provides an API interface under the /api URL root. The following methods are used when interacting with the API interface:
+
+   * GET requests for requesting information or parameters
+   * POST requests for performing actions or providing data
+
+The following API endpoints exist:
+
+| Endpoint  | Method | Description                                       |
+| --------- | ------ | ------------------------------------------------- |
+| cancelChargeNow | POST | Cancels active chargeNow configuration        |
+| <a href="docs/modules/Control_HTTP_API_chargeNow.md">chargeNow</a> | POST   | Instructs charger to start charging at specified rate |
+| getConfig | GET    | Provides the current configuration                |
+| getPolicy | GET    | Provides the policy configuration                 |
+| getSlaveTWCs | GET | Provides a list of connected Slave TWCs and their state |
+| getStatus | GET    | Provides the current status (Charge Rate, Policy) |
+| sendStartCommand | POST | Sends the Start command to all Slave TWCs    |
+| sendStopCommand  | POST | Sends the Stop command to all Slave TWCs     |
