@@ -7,6 +7,8 @@ This document logs the changes per release of TWCManager.
   * Added systemd service definition (thanks @nean-and-i)
   * Polling of Vehicle VIN on detection of charging vehicle (for those firmwares which support it) and access to Vehicle VIN via Status modules and Web Interface
   * Various updates to documentation (thanks @MikeBishop and @neilrees)
+  * Web interface now uses AJAJ for dynamic asyncrhonous updates rather than page refresh
+     * This change additionally introduces new REST API commands 
   * Bugfixes
     * Fixed situation where fakeMaster == 2 installations do not recieve Status module lifetime kWh and voltage per phase readings [Backported to 1.1.8]
     * Fixed unnecessary 60 second delay to processing background queue introduced by lifetime kWh and voltage per phase polling [Backported to 1.1.8] (Thanks @MikeBishop)
