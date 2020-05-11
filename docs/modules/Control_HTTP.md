@@ -67,10 +67,10 @@ The following API endpoints exist:
 | Endpoint  | Method | Description                                       |
 | --------- | ------ | ------------------------------------------------- |
 | <a href="/docs/modules/control_HTTP_API/cancelChargeNow.md">cancelChargeNow</a> | POST | Cancels active chargeNow configuration        |
-| <a href="/docs/modules/Control_HTTP_API/chargeNow.md">chargeNow</a> | POST   | Instructs charger to start charging at specified rate |
+| <a href="/docs/modules/control_HTTP_API/chargeNow.md">chargeNow</a> | POST   | Instructs charger to start charging at specified rate |
 | getConfig | GET    | Provides the current configuration                |
 | getPolicy | GET    | Provides the policy configuration                 |
 | getSlaveTWCs | GET | Provides a list of connected Slave TWCs and their state |
 | getStatus | GET    | Provides the current status (Charge Rate, Policy) |
 | sendStartCommand | POST | Sends the Start command to all Slave TWCs    |
-| sendStopCommand  | POST | Sends the Stop command to all Slave TWCs     |
+| <a href="/docs/modules/control_HTTP_API/sendStopCommand.md">sendStopCommand</a>  | POST | Sends the Stop command to all Slave TWCs     |
