@@ -51,7 +51,7 @@ modules_available = [
     "Interface.TCP",
     "Policy.Policy",
     "Vehicle.TeslaAPI",
-    "Control.WebIPCControl.WebIPCControl",
+    "Control.WebIPCControl",
     "Control.HTTPControl",
     "Control.MQTTControl",
     "EMS.Fronius",
@@ -361,8 +361,6 @@ for module in modules_available:
     except:
         raise
 
-if 'WebIPCControl' in locals():
-    webipccontrol = WebIPCControl(master)
 
 # Load settings from file
 master.loadSettings()
