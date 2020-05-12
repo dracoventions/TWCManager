@@ -26,6 +26,8 @@ Are you using the development version of TWCManager? If so, and if you are havin
 
       * USB-RS485-WE-1800-BT 
       * JBtek USB to RS485 Converter Adapter ch340T
+      * DSD TECH USB 2.0 to RS485 Serial Data Converter CP2102
+      * Raspberry Pi RS422 RS485 Shield
 
 ## Wiring
 
@@ -35,6 +37,12 @@ Are you using the development version of TWCManager? If so, and if you are havin
 
    * In some cases, messages can become corrupted unless a 120 ohm resistor is placed in parallel between the TX and RX lines. The following diagram (see the Half-Duplex diagram) provides a good overview of this: https://zone.ni.com/reference/en-XX/help/373197L-01/lvaddon11/987x_rs485termination/
 
+   * Similarly, some installations have seen corruption unless 680 ohm "bias" resistors are wired between the D+ (usually orange) wire and the Red (+5v) wire, and the D- (usually yellow) wire and Black (Gnd) wire.
+
+   * You should twist the pair of wires around each other to avoid cross-talk. As short as 6 inches of non-twisted wire is enough to cause cross-talk corruption. In addition, you should avoid long cable runs wherever possible.
+
+   * Check your terminals to ensure they are tightly screwed or wound.
+
 ## Messages
 
 The TWCManager communications protocol consists of messages sent back and forward between Master and Slave. Observing these messages will assist to identify issues with your configuration.
@@ -43,7 +51,7 @@ The TWCManager communications protocol consists of messages sent back and forwar
 
 The Slave linkready message is:
 
-```fd e2 .. .. .. .. .. 00 00 00 00 00 00``
+```fd e2 .. .. .. .. .. 00 00 00 00 00 00```
 
 (The .. sections being the Slave ID, Sign and Maximum Amps)
 
@@ -62,3 +70,15 @@ These messages are particularly important when debugging communication, as they 
 
    * A new message from a Slave that doesn't match previously known protocol signatures was recieved (unlikely), or
    * There is some issue with the wiring between the TWCs that causes the messages to be recieved in a corrupted form, or to run into one another.
+
+### Checksum incorrect
+
+If you see Checksum does not match messages, it means the checksum bit is not correct when computed from the data sent. This is a very strong sign of corruption between TWCManager and the Slave TWC(s).
+
+The recommendation here is to refer to the cabling section above and ensure everything is per the recommendations there.
+
+## LED Lights
+
+The LED lights on the TWC are useful for debugging what is happening.
+
+   * Continuous blinking red light on the TWC suggests that it is in slave mode and has not been in communication with a master for 30 seconds or more.

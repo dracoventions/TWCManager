@@ -181,6 +181,36 @@ If you have multiple cars, TWCManager will attempt to identify which cars are ho
    * TWCManager uses your Tesla login to obtain an API token. This API token is used to talk to your vehicle(s).
    * When the available charger capacity falls below minAmpsPerTWC, the TWCManager script will contact the Tesla API to tell the vehicle to stop charging. If this is not configured, your vehicle will continue to charge at 6A even when the charging policy dictates that we stop charging.
 
+### Why does my TWC increase charging momentarily to 21A or 17A around the time that it changes charging rates?
+
+There are a number of reasons for this:
+
+   * In the 2017.44 firmware version Tesla released around October 2017, a bug was introduced which led to vehicle charging rates falling to 6A when charging rates were raised. This is resolved by spiking the amps.
+
+### Why is it so hard to just stop a vehicle from charging?
+
+Good question:
+
+   * Version 1 of the TWC protocol (for TWCs produced prior to and during early 2017) has a command which will cleanly stop charging Tesla vehicles.
+
+   * For Version 2 TWCs produced after this time, there is no single approach which cleanly stops a Tesla vehicle from charging, without the vehicle itself wanting to stop charging. The options that exist are:
+
+      * Ask the vehicle to stop charging by sending a message via the Tesla vehicle API (obviously a Tesla-only approach)
+
+      * Stop communicating with the TWC for 30 seconds or more. This method stops the connected vehicle from charging, and will resume charging once the communications resume, however doing this a number of times will cause the vehicle to give up and the only way to resume charging is to unplug and replug the vehicle.
+
+      * Sending the Stop message to Slave TWCs. This method will cause charging to cease immediately by instructing the TWC to open its relay, causing the charger to de-energise. A lack of CAN bus communication with the vehicle means that whilst the vehicle will stop charging immediately, it will log a number of errors and refuse to re-start charging again until it is unplugged and re-plugged (and will show a red LED ring around the charger port).
+
+         * This method does work however if the DIP 2 switch is set in the **Down** position, which represents the use of legacy charge mode, which does not use CAN bus communication with Tesla vehicles. The usefulness of this configuration is equivalent to the "Stop communicating with slaves" behaviour above - it allows a number of stops and starts before the vehicle marks the charger as bad and refuses to charge until it is unplugged and re-plugged.
+
+So in summary, the lack of a reasonable approach to stopping charging from the TWC side necessitates an API based solution.
+
+### Why do only some people see vehicle VINs in the TWCManager interface?
+
+This feature was only introduced in firmware version 4.5.3, which is found on TWCs manufactured from March 2018 until the end of 2019.
+
+TWCs prior to this version will not respond to queries from TWCManager regarding the VIN of the vehicle connected. Unfortunately there is no sign that newer TWC firmwares are being installed by Tesla vehicles, and the TWCs themselves do not have internet access to upgrade themselves.
+
 ### What do we know about the various different Tesla Wall Charger revisions and how they operate?
 
    * The Tesla HPWC (Gen 1) wall charger was released in 2012 and was sold up until 2016, and can be identified by the LED. The Gen 1 used a bank of 4 DIP switches to configure the supplied amperage, rather than the rotary switch, and does not feature an RS458 bus at all. Gen 1 HPWC chargers are not capable of load sharing and cannot be used with TWCManager.
