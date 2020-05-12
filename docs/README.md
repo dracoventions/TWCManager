@@ -1,5 +1,9 @@
 # TWCManager Documentation
 
+## Having Trouble?
+
+If you're having trouble getting TWCManager working, check out our [Troubleshooting Guide](Troubleshooting.md) to see if any of our tips help you out!
+
 ## Physical (RS-485) Installation
 
 Please see the [Installation Guide](InstallationGuide.md) for detailed information on the installation of the Tesla Wall Connector interface to TWCManager.
