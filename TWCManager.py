@@ -356,8 +356,10 @@ for module in modules_available:
         master.registerModule(
             {"name": modulename[1], "ref": modinstance, "type": modulename[0]}
         )
+    except ImportError as e:
+        master.debugLog(1, 'TWCManager', colored('ImportError', 'red')+": "+str(e)+", when importing module "+colored(module,'red')+", not using "+colored(module,'red'))
     except ModuleNotFoundError as e:
-        debugLog(1,colored('ModuleNotFoundError', 'red')+": "+str(e)+", when importing "+colored(module,'red')+", not using "+colored(module,'red'))
+        master.debugLog(1, 'TWCManager', colored('ModuleNotFoundError', 'red')+": "+str(e)+", when importing "+colored(module,'red')+", not using "+colored(module,'red'))
     except:
         raise
 
