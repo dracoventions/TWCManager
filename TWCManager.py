@@ -475,8 +475,8 @@ while True:
                 master.send_slave_linkready()
 
         # See if there's any message from the web interface.
-        if 'WebIPCControl' in locals():
-            webipccontrol.processIPC()
+        if master.getModuleByName('WebIPCControl'):
+            master.getModuleByName("WebIPCControl").processIPC()
 
         # If it has been more than 2 minutes since the last kWh value, queue the command to request it from slaves
         if config["config"]["fakeMaster"] == 1 and ((time.time() - master.lastkWhMessage) > (60*2)):
