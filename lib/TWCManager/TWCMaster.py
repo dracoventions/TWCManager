@@ -9,6 +9,7 @@ from termcolor import colored
 import threading
 import time
 from ww import f
+import math
 
 
 class TWCMaster:
@@ -123,6 +124,14 @@ class TWCMaster:
                 ):
                     blnUseScheduledAmps = 1
         return blnUseScheduledAmps
+
+    def convertAmpsToWatts(self, amps):
+        (voltage, phases) = self.getVoltageMeasurement()
+        return math.sqrt(phases) * voltage * amps
+
+    def convertWattsToAmps(self, watts):
+        (voltage, phases) = self.getVoltageMeasurement()
+        return watts / (math.sqrt(phases) * voltage)
 
     def countSlaveTWC(self):
         return int(len(self.slaveTWCRoundRobin))
@@ -277,7 +286,7 @@ class TWCMaster:
     def getChargerLoad(self):
         # Calculate in watts the load that the charger is generating so
         # that we can exclude it from the consumption if necessary
-        return self.getTotalAmpsInUse() * 240
+        return self.convertAmpsToWatts(self.getTotalAmpsInUse())
 
     def getConsumption(self):
         consumptionVal = 0
@@ -328,11 +337,6 @@ class TWCMaster:
         return self.overrideMasterHeartbeatData
 
     def getMaxAmpsToDivideGreenEnergy(self):
-        # Watts = Volts * Amps
-        # Car charges at 240 volts in North America so we figure
-        # out how many amps * 240 = solarW and limit the car to
-        # that many amps.
-
         # Calculate our current generation and consumption in watts
         generationW = float(self.getGeneration())
         consumptionW = float(self.getConsumption())
@@ -347,7 +351,7 @@ class TWCMaster:
             self.getMaxAmpsToDivideAmongSlaves(),
             self.num_cars_charging_now() * self.config["config"]["minAmpsPerTWC"],
         )
-        newOffer = currentOffer + ((generationW - consumptionW) / 240)
+        newOffer = currentOffer + self.convertWattsToAmps(generationW - consumptionW)
 
         # This is the *de novo* calculation of how much we can offer
         #
@@ -356,7 +360,7 @@ class TWCMaster:
         solarW = float(generationW - generationOffset)
 
         # Offer the smaller of the two, but not less than zero.
-        return max(min(newOffer, solarW / 240), 0)
+        return max(min(newOffer, self.convertWattsToAmps(solarW)), 0)
 
     def getNormalChargeLimit(self, ID):
         if "chargeLimits" in self.settings and str(ID) in self.settings["chargeLimits"]:
@@ -401,6 +405,40 @@ class TWCMaster:
             10, "TWCMaster", "Total amps all slaves are using: " + str(totalAmps)
         )
         return totalAmps
+
+    def getVoltageMeasurement(self):
+        slavesWithVoltage = [
+            slave for slave in self.getSlaveTWCs() if slave.voltsPhaseA > 0
+        ]
+        if len(slavesWithVoltage) == 0:
+            # No slaves support returning voltage
+            return (240, 1)
+
+        total = 0
+        phases = 0
+        if any([slave.voltsPhaseC > 0 for slave in slavesWithVoltage]):
+            # Three-phase system
+            phases = 3
+            if all([slave.voltsPhaseC > 0 for slave in slavesWithVoltage]):
+                total = sum(
+                    [
+                        sum(slave.voltsPhaseA, slave.voltsPhaseB, slave.voltsPhaseC)
+                        for slave in slavesWithVoltage
+                    ]
+                )
+            else:
+                self.debugLog(
+                    1,
+                    "TWCMaster",
+                    "FATAL:  Mix of three-phase and single-phase not currently supported.",
+                )
+                return (240, 1)
+        else:
+            # Single-phase system
+            total = sum([slave.voltsPhaseA for slave in slavesWithVoltage])
+            phases = 1
+
+        return (total / (phases * len(slavesWithVoltage)), phases)
 
     def hex_str(self, s: str):
         return " ".join("{:02X}".format(ord(c)) for c in s)
