@@ -87,8 +87,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       <tbody>"""
         for i in (x for y in (range(6, 24), range(0, 6)) for x in y):
             page += "<tr><th scope='row'>%02d</th>" % (i)
-            for day in (range(0,6)):
-              page += "<td>&nbsp;</td>"
+            for day in range(0, 6):
+                page += "<td>&nbsp;</td>"
             page += "</tr>"
         page += "</tbody>"
         page += "</table>"
@@ -214,7 +214,10 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     <nav class='navbar fixed-top navbar-dark bg-dark' role='navigation'>
       <a class='navbar-brand' href='/'>TWCManager</a>
         """
-        page += "<link rel='icon' type='image/png' href='https://raw.githubusercontent.com/ngardiner/TWCManager/master/tree/%s/html/favicon.png'>" % self.version
+        page += (
+            "<link rel='icon' type='image/png' href='https://raw.githubusercontent.com/ngardiner/TWCManager/master/tree/%s/html/favicon.png'>"
+            % self.version
+        )
         page += self.navbar_item("/", "Home")
         page += self.navbar_item("/policy", "Policy")
         page += self.navbar_item("#", "Schedule")
@@ -227,7 +230,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     def navbar_item(self, url, name):
         active = ""
         urlp = urllib.parse.urlparse(self.path)
-        if (urlp.path == url): active = "active"
+        if urlp.path == url:
+            active = "active"
         page = "<ul class='navbar-nav mr-auto'>"
         page += "<li class='nav-item %s'>" % active
         page += "<a class='nav-link' href='%s'>%s</a>" % (url, name)
@@ -236,106 +240,115 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
     def do_API_GET(self):
         url = urllib.parse.urlparse(self.path)
-        if (url.path == "/api/getConfig"):
-          self.send_response(200)
-          self.send_header("Content-type", "application/json")
-          self.end_headers()
+        if url.path == "/api/getConfig":
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
 
-          json_data = json.dumps(self.server.master.config)
-          # Scrub output of passwords and API keys
-          json_datas = re.sub(r'"password": ".*?",', '', json_data)
-          json_data = re.sub(r'"apiKey": ".*?",', '', json_datas)
-          self.wfile.write(json_data.encode("utf-8"))
-          return
+            json_data = json.dumps(self.server.master.config)
+            # Scrub output of passwords and API keys
+            json_datas = re.sub(r'"password": ".*?",', "", json_data)
+            json_data = re.sub(r'"apiKey": ".*?",', "", json_datas)
+            self.wfile.write(json_data.encode("utf-8"))
+            return
 
-        if (url.path == "/api/getPolicy"):
-          self.send_response(200)
-          self.send_header("Content-type", "application/json")
-          self.end_headers()
+        if url.path == "/api/getPolicy":
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
 
-          json_data = json.dumps(self.server.master.getModuleByName("Policy").charge_policy)
-          self.wfile.write(json_data.encode("utf-8"))
-          return
- 
-        if (url.path == "/api/getSlaveTWCs"):
-          data = {}
-          totals = {
-            "lastAmpsOffered": 0,
-            "lifetimekWh": 0,
-            "maxAmps": 0,
-            "reportedAmpsActual": 0
-          }
-          for slaveTWC in self.server.master.getSlaveTWCs():
-            TWCID = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
-            data[TWCID] = {
-              "currentVIN": slaveTWC.currentVIN,
-              "lastAmpsOffered": "%.2f" % float(slaveTWC.lastAmpsOffered),
-              "lastHeartbeat": "%.2f" % float(time.time() - slaveTWC.timeLastRx),
-              "lastVIN": slaveTWC.lastVIN,
-              "lifetimekWh": str(slaveTWC.lifetimekWh),
-              "maxAmps": float(slaveTWC.maxAmps),
-              "reportedAmpsActual": "%.2f" % float(slaveTWC.reportedAmpsActual),
-              "state": str(slaveTWC.reportedState),
-              "version": str(slaveTWC.protocolVersion),
-              "voltsPhaseA": str(slaveTWC.voltsPhaseA),
-              "voltsPhaseB": str(slaveTWC.voltsPhaseB),
-              "voltsPhaseC": str(slaveTWC.voltsPhaseC),
-              "TWCID": "%s" % TWCID
+            json_data = json.dumps(
+                self.server.master.getModuleByName("Policy").charge_policy
+            )
+            self.wfile.write(json_data.encode("utf-8"))
+            return
+
+        if url.path == "/api/getSlaveTWCs":
+            data = {}
+            totals = {
+                "lastAmpsOffered": 0,
+                "lifetimekWh": 0,
+                "maxAmps": 0,
+                "reportedAmpsActual": 0,
             }
-            totals["lastAmpsOffered"] += slaveTWC.lastAmpsOffered
-            totals["lifetimekWh"] += slaveTWC.lifetimekWh
-            totals["maxAmps"] += slaveTWC.maxAmps
-            totals["reportedAmpsActual"] += slaveTWC.reportedAmpsActual
+            for slaveTWC in self.server.master.getSlaveTWCs():
+                TWCID = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
+                data[TWCID] = {
+                    "currentVIN": slaveTWC.currentVIN,
+                    "lastAmpsOffered": "%.2f" % float(slaveTWC.lastAmpsOffered),
+                    "lastHeartbeat": "%.2f" % float(time.time() - slaveTWC.timeLastRx),
+                    "lastVIN": slaveTWC.lastVIN,
+                    "lifetimekWh": str(slaveTWC.lifetimekWh),
+                    "maxAmps": float(slaveTWC.maxAmps),
+                    "reportedAmpsActual": "%.2f" % float(slaveTWC.reportedAmpsActual),
+                    "state": str(slaveTWC.reportedState),
+                    "version": str(slaveTWC.protocolVersion),
+                    "voltsPhaseA": str(slaveTWC.voltsPhaseA),
+                    "voltsPhaseB": str(slaveTWC.voltsPhaseB),
+                    "voltsPhaseC": str(slaveTWC.voltsPhaseC),
+                    "TWCID": "%s" % TWCID,
+                }
+                totals["lastAmpsOffered"] += slaveTWC.lastAmpsOffered
+                totals["lifetimekWh"] += slaveTWC.lifetimekWh
+                totals["maxAmps"] += slaveTWC.maxAmps
+                totals["reportedAmpsActual"] += slaveTWC.reportedAmpsActual
 
-          data["total"] = {
-            "lastAmpsOffered": "%.2f" % float(totals["lastAmpsOffered"]),
-            "lifetimekWh": totals["lifetimekWh"],
-            "maxAmps": totals["maxAmps"],
-            "reportedAmpsActual": "%.2f" % float(totals["reportedAmpsActual"]),
-            "TWCID": "total"
-          }
+            data["total"] = {
+                "lastAmpsOffered": "%.2f" % float(totals["lastAmpsOffered"]),
+                "lifetimekWh": totals["lifetimekWh"],
+                "maxAmps": totals["maxAmps"],
+                "reportedAmpsActual": "%.2f" % float(totals["reportedAmpsActual"]),
+                "TWCID": "total",
+            }
 
-          self.send_response(200)
-          self.send_header("Content-type", "application/json")
-          self.end_headers()
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
 
-          json_data = json.dumps(data)
-          self.wfile.write(json_data.encode("utf-8"))
-          return
+            json_data = json.dumps(data)
+            self.wfile.write(json_data.encode("utf-8"))
+            return
 
-        if (url.path == "/api/getStatus"):
-          data = {
-            "carsCharging": self.server.master.num_cars_charging_now(),
-            "chargerLoadWatts": "%.2f" % float(self.server.master.getChargerLoad()),
-            "currentPolicy": str(self.server.master.getModuleByName("Policy").active_policy),
-            "maxAmpsToDivideAmongSlaves": "%.2f" % float(self.server.master.getMaxAmpsToDivideAmongSlaves())
-          }
-          consumption = float(self.server.master.getConsumption())
-          if consumption:
-            data["consumptionAmps"] = "%.2f" % (consumption / 240),
-            data["consumptionWatts"] = "%.2f" % consumption
-          else:
-            data["consumptionAmps"] = "%.2f" % 0
-            data["consumptionWatts"] = "%.2f" % 0
-          generation = float(self.server.master.getGeneration())
-          if generation:
-            data["generationAmps"] = "%.2f" % (generation / 240),
-            data["generationWatts"] = "%.2f" % generation
-          else:
-            data["generationAmps"] = "%.2f" % 0
-            data["generationWatts"] = "%.2f" % 0
-          if (self.server.master.getModuleByName("Policy").policyIsGreen()):
-            data["isGreenPolicy"] = "Yes"
-          else:
-            data["isGreenPolicy"] = "No"
+        if url.path == "/api/getStatus":
+            data = {
+                "carsCharging": self.server.master.num_cars_charging_now(),
+                "chargerLoadWatts": "%.2f" % float(self.server.master.getChargerLoad()),
+                "currentPolicy": str(
+                    self.server.master.getModuleByName("Policy").active_policy
+                ),
+                "maxAmpsToDivideAmongSlaves": "%.2f"
+                % float(self.server.master.getMaxAmpsToDivideAmongSlaves()),
+            }
+            consumption = float(self.server.master.getConsumption())
+            if consumption:
+                data["consumptionAmps"] = (
+                    "%.2f" % self.server.master.convertWattsToAmps(consumption),
+                )
+                data["consumptionWatts"] = "%.2f" % consumption
+            else:
+                data["consumptionAmps"] = "%.2f" % 0
+                data["consumptionWatts"] = "%.2f" % 0
+            generation = float(self.server.master.getGeneration())
+            if generation:
+                data["generationAmps"] = (
+                    "%.2f" % self.server.master.convertWattsToAmps(generation),
+                )
+                data["generationWatts"] = "%.2f" % generation
+            else:
+                data["generationAmps"] = "%.2f" % 0
+                data["generationWatts"] = "%.2f" % 0
+            if self.server.master.getModuleByName("Policy").policyIsGreen():
+                data["isGreenPolicy"] = "Yes"
+            else:
+                data["isGreenPolicy"] = "No"
 
-          self.send_response(200)
-          self.send_header("Content-type", "application/json")
-          self.end_headers()
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
 
-          json_data = json.dumps(data)
-          self.wfile.write(json_data.encode("utf-8")) 
-          return
+            json_data = json.dumps(data)
+            self.wfile.write(json_data.encode("utf-8"))
+            return
 
         # All other routes missed, return 404
         self.send_response(404)
@@ -347,13 +360,13 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
         if self.url.path == "/api/chargeNow":
             data = json.loads(self.post_data.decode("UTF-8"))
-            rate = int(data.get('chargeNowRate', 0))
-            durn = int(data.get('chargeNowDuration', 0))
+            rate = int(data.get("chargeNowRate", 0))
+            durn = int(data.get("chargeNowDuration", 0))
 
-            if (rate == 0 or durn == 0):
-              self.send_response(400)
-              self.end_headers()
-              return
+            if rate == 0 or durn == 0:
+                self.send_response(400)
+                self.end_headers()
+                return
 
             self.server.master.setChargeNowAmps(rate)
             self.server.master.setChargeNowTimeEnd(durn)
@@ -421,23 +434,23 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         """
         j = 0
         for policy in self.server.master.getModuleByName("Policy").charge_policy:
-          if (j == 0):
-            page += "<tr><th>Policy Override Point</th></tr>";
-            page += "<tr><td>Emergency</td></tr>";
-          if (j == 1):
-            page += "<tr><th>Policy Override Point</th></tr>";
-            page += "<tr><td>Before</td></tr>";
-          if (j == 3):
-            page += "<tr><th>Policy Override Point</th></tr>";
-            page += "<tr><td>After</td></tr>";
-          j += 1
-          page += "<tr><td>&nbsp;</td><td>" + policy['name'] + "</td></tr>"
-          page += "<tr><th>&nbsp;</th><th>&nbsp;</th><th>Match Criteria</th><th>Condition</th><th>Value</th></tr>"
-          for i in range(0, len(policy['match'])):
-            page += "<tr><td>&nbsp;</td><td>&nbsp;</td>"
-            page += "<td>" + policy['match'][i] + "</td>"
-            page += "<td>" + policy['condition'][i] + "</td>"
-            page += "<td>" + str(policy['value'][i]) + "</td></tr>"
+            if j == 0:
+                page += "<tr><th>Policy Override Point</th></tr>"
+                page += "<tr><td>Emergency</td></tr>"
+            if j == 1:
+                page += "<tr><th>Policy Override Point</th></tr>"
+                page += "<tr><td>Before</td></tr>"
+            if j == 3:
+                page += "<tr><th>Policy Override Point</th></tr>"
+                page += "<tr><td>After</td></tr>"
+            j += 1
+            page += "<tr><td>&nbsp;</td><td>" + policy["name"] + "</td></tr>"
+            page += "<tr><th>&nbsp;</th><th>&nbsp;</th><th>Match Criteria</th><th>Condition</th><th>Value</th></tr>"
+            for i in range(0, len(policy["match"])):
+                page += "<tr><td>&nbsp;</td><td>&nbsp;</td>"
+                page += "<td>" + policy["match"][i] + "</td>"
+                page += "<td>" + policy["condition"][i] + "</td>"
+                page += "<td>" + str(policy["value"][i]) + "</td></tr>"
 
         page += """
       </table>
@@ -464,7 +477,17 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
           <th>Stop Charging Method</th>
           <td>
         """
-        page += self.optionList([[1,'Tesla API'],[2,'Stop Responding to Slaves'],[3,'Send Stop Command']], { "name": "chargeStopMode", "value": self.server.master.settings.get("chargeStopMode", "1") })
+        page += self.optionList(
+            [
+                [1, "Tesla API"],
+                [2, "Stop Responding to Slaves"],
+                [3, "Send Stop Command"],
+            ],
+            {
+                "name": "chargeStopMode",
+                "value": self.server.master.settings.get("chargeStopMode", "1"),
+            },
+        )
         page += """
           </td>
         </tr>
@@ -472,7 +495,13 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
           <th>Non-scheduled power charge rate:</th>
           <td>
         """
-        page += self.optionList([[6,'6A'],[8,'8A'],[10,'10A'],[12,'12A'],[24,'24A'],[32,'32A']], { "name": "nonScheduledPower", "value": self.server.master.settings.get("nonScheduledPower", "6") } )
+        page += self.optionList(
+            [[6, "6A"], [8, "8A"], [10, "10A"], [12, "12A"], [24, "24A"], [32, "32A"]],
+            {
+                "name": "nonScheduledPower",
+                "value": self.server.master.settings.get("nonScheduledPower", "6"),
+            },
+        )
         page += """
           </td>
         </tr>
@@ -483,7 +512,10 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       </table>
     </form>
         """
-        page += "<p>Click <a href='https://github.com/ngardiner/TWCManager/tree/%s/docs/Settings.md' target='_new'>here</a> for detailed information on settings on this page</p>" % self.version
+        page += (
+            "<p>Click <a href='https://github.com/ngardiner/TWCManager/tree/%s/docs/Settings.md' target='_new'>here</a> for detailed information on settings on this page</p>"
+            % self.version
+        )
         page += "</body></html>"
         return page
 
@@ -491,8 +523,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         url = urllib.parse.urlparse(self.path)
 
         if url.path.startswith("/api/"):
-          self.do_API_GET()
-          return
+            self.do_API_GET()
+            return
 
         if (
             url.path == "/"
@@ -518,11 +550,16 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             if url.path == "/apiacct/False":
                 page += "<font color='red'><b>Failed to log in to Tesla Account. Please check username and password and try again.</b></font>"
 
-            if not self.server.master.teslaLoginAskLater and url.path != "/apiacct/True":
+            if (
+                not self.server.master.teslaLoginAskLater
+                and url.path != "/apiacct/True"
+            ):
                 # Check if we have already stored the Tesla credentials
                 # If we can access the Tesla API okay, don't prompt
-                if (not self.server.master.getModuleByName("TeslaAPI").car_api_available()):
-                  page += self.request_teslalogin()
+                if not self.server.master.getModuleByName(
+                    "TeslaAPI"
+                ).car_api_available():
+                    page += self.request_teslalogin()
 
             if url.path == "/apiacct/True":
                 page += "<b>Thank you, successfully fetched Tesla API token."
@@ -612,23 +649,27 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         # This is a macro which can display differing buttons based on a
         # condition. It's a useful way to switch the text on a button based
         # on current state.
-        page = "<input type='Submit' %s id='%s' value='%s'>" % (extrargs, button_def[0], button_def[1])
+        page = "<input type='Submit' %s id='%s' value='%s'>" % (
+            extrargs,
+            button_def[0],
+            button_def[1],
+        )
         return page
 
     def log_message(self, format, *args):
         pass
 
-    def optionList(self, list, opts = {}):
-      page = "<div class='form-group'>"
-      page += "<select class='form-control' id='%s'>" % opts.get('name', '')
-      for option in list:
-        sel = ""
-        if (str(opts.get('value', '-1')) == str(option[0])):
-          sel = "selected"
-        page += "<option value='%s' %s>%s</option>" % (option[0], sel, option[1])
-      page += "</div>"
-      page += "</select>"
-      return page
+    def optionList(self, list, opts={}):
+        page = "<div class='form-group'>"
+        page += "<select class='form-control' id='%s'>" % opts.get("name", "")
+        for option in list:
+            sel = ""
+            if str(opts.get("value", "-1")) == str(option[0]):
+                sel = "selected"
+            page += "<option value='%s' %s>%s</option>" % (option[0], sel, option[1])
+        page += "</div>"
+        page += "</select>"
+        return page
 
     def process_settings(self):
 
@@ -707,7 +748,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         return page
 
     def show_commands(self):
- 
+
         page = """
           <table class='table table-dark'>
           <tr><th colspan=4 width = '30%'>Charge Now</th>
@@ -717,18 +758,18 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         """
         hours = []
         for hour in range(1, 25):
-          hours.append([(hour*3600), str(hour)+"h"])
-        page += self.optionList(hours, { "name": "chargeNowDuration" })
+            hours.append([(hour * 3600), str(hour) + "h"])
+        page += self.optionList(hours, {"name": "chargeNowDuration"})
         page += """
           </td>
           <td width = '8%'>Charge Rate:</td>
           <td width = '7%'>
         """
         amps = []
-        maxamps = self.server.master.config['config'].get('wiringMaxAmpsPerTWC', 5)
-        for amp in range(5,(maxamps+1)):
-          amps.append([amp, str(amp)+"A"])
-        page += self.optionList(amps, { "name": "chargeNowRate" })
+        maxamps = self.server.master.config["config"].get("wiringMaxAmpsPerTWC", 5)
+        for amp in range(5, (maxamps + 1)):
+            amps.append([amp, str(amp) + "A"])
+        page += self.optionList(amps, {"name": "chargeNowRate"})
         page += """
           </td>
           <td>
@@ -736,14 +777,22 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
           </td></tr>
           <tr><td colspan = '2'>
         """
-        page += self.addButton([ "start_chargenow", "Start Charge Now" ], "class='btn btn-outline-success' data-toggle='tooltip' data-placement='top' title='Note: Charge Now command takes approximately 2 minutes to activate.'")
+        page += self.addButton(
+            ["start_chargenow", "Start Charge Now"],
+            "class='btn btn-outline-success' data-toggle='tooltip' data-placement='top' title='Note: Charge Now command takes approximately 2 minutes to activate.'",
+        )
         page += "</td><td colspan = '2'>"
-        page += self.addButton([ "cancel_chargenow", "Cancel Charge Now" ], "class='btn btn-outline-danger'")
+        page += self.addButton(
+            ["cancel_chargenow", "Cancel Charge Now"], "class='btn btn-outline-danger'"
+        )
         page += """
           </td>
           <td>
         """
-        page += self.addButton([ "send_start_command", "Start All Charging" ], "class='btn btn-outline-success'")
+        page += self.addButton(
+            ["send_start_command", "Start All Charging"],
+            "class='btn btn-outline-success'",
+        )
         page += """
           </td></tr>
           </table>
@@ -789,7 +838,9 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "<td>" + str(self.server.master.getScheduledAmpsMax()) + "</td></tr>"
 
         page += "<tr><th>Scheduled Charging Start Hour</th>"
-        page += "<td>" + str(self.server.master.getScheduledAmpsStartHour()) + "</td></tr>"
+        page += (
+            "<td>" + str(self.server.master.getScheduledAmpsStartHour()) + "</td></tr>"
+        )
 
         page += "<tr><th>Scheduled Charging End Hour</th>"
         page += "<td>" + str(self.server.master.getScheduledAmpsEndHour()) + "</td>"
@@ -805,7 +856,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "<tr><td width = '100%' colspan = '2'>"
         page += self.show_twcs()
         page += "</td></tr>"
- 
+
         page += "<tr><td width = '100%' colspan = '2'>"
         page += self.show_commands()
         page += "</td></tr></table>"
@@ -840,9 +891,15 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             page += "<td><div id='%s_lastAmpsOffered'></div></td>" % twcid
             page += "<td><div id='%s_reportedAmpsActual'></div></td>" % twcid
             page += "<td><div id='%s_lifetimekWh'></div></td>" % twcid
-            page += "<td><span id='%s_voltsPhaseA'></span> / <span id='%s_voltsPhaseB'></span> / <span id='%s_voltsPhaseC'></span></td>" % (twcid, twcid, twcid)
+            page += (
+                "<td><span id='%s_voltsPhaseA'></span> / <span id='%s_voltsPhaseB'></span> / <span id='%s_voltsPhaseC'></span></td>"
+                % (twcid, twcid, twcid)
+            )
             page += "<td><span id='%s_lastHeartbeat'></span> sec</td>" % twcid
-            page += "<td>C: <span id='%s_currentVIN'></span><br />L: <span id='%s_lastVIN'></span></td>" % (twcid, twcid)
+            page += (
+                "<td>C: <span id='%s_currentVIN'></span><br />L: <span id='%s_lastVIN'></span></td>"
+                % (twcid, twcid)
+            )
             page += """
             <td>
               <div class="dropdown">
@@ -857,7 +914,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "<tr><td><b>Total</b><td>&nbsp;</td><td>&nbsp;</td>"
         page += "<td><div id='total_maxAmps'></div></td>"
         page += "<td><div id='total_lastAmpsOffered'></div></td>"
-        page += "<td><div id='total_reportedAmpsActual'></div></td>" 
+        page += "<td><div id='total_reportedAmpsActual'></div></td>"
         page += "<td><div id='total_lifetimekWh'></div></td>"
         page += "</tr></table></td></tr></table>"
         return page
