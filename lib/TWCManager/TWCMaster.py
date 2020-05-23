@@ -412,7 +412,10 @@ class TWCMaster:
         ]
         if len(slavesWithVoltage) == 0:
             # No slaves support returning voltage
-            return (240, 1)
+            return (
+                self.config["config"].get("defaultVoltage", 240),
+                self.config["config"].get("numberOfPhases", 1)
+            )
 
         total = 0
         phases = 0
