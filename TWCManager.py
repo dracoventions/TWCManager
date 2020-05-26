@@ -174,34 +174,39 @@ def background_tasks_thread():
     carapi = master.getModuleByName("TeslaAPI")
 
     while True:
-        task = master.getBackgroundTask()
+        try:
+            task = master.getBackgroundTask()
 
-        if task["cmd"] == "charge":
-            # car_api_charge does nothing if it's been under 60 secs since it
-            # was last used so we shouldn't have to worry about calling this
-            # too frequently.
-            carapi.car_api_charge(task["charge"])
-        elif task["cmd"] == "carApiEmailPassword":
-            carapi.setCarApiLastErrorTime(0)
-            carapi.car_api_available(task["email"], task["password"])
-        elif task["cmd"] == "checkGreenEnergy":
-            check_green_energy()
-        elif task["cmd"] == "getLifetimekWh":
-            master.getSlaveLifetimekWh()
-        elif task["cmd"] == "updateStatus":
-            update_statuses()
-        elif task["cmd"] == "applyChargeLimit":
-            carapi.applyChargeLimit(limit=task["limit"])
-        elif task["cmd"] == "checkArrival":
-            carapi.applyChargeLimit(
-                limit=carapi.lastChargeLimitApplied, checkArrival=True
-            )
-        elif task["cmd"] == "checkDeparture":
-            carapi.applyChargeLimit(
-                limit=carapi.lastChargeLimitApplied, checkDeparture=True
-            )
-        elif task["cmd"] == "checkCharge":
-            carapi.updateChargeAtHome()
+            if task["cmd"] == "charge":
+                # car_api_charge does nothing if it's been under 60 secs since it
+                # was last used so we shouldn't have to worry about calling this
+                # too frequently.
+                carapi.car_api_charge(task["charge"])
+            elif task["cmd"] == "carApiEmailPassword":
+                carapi.setCarApiLastErrorTime(0)
+                carapi.car_api_available(task["email"], task["password"])
+            elif task["cmd"] == "checkGreenEnergy":
+                check_green_energy()
+            elif task["cmd"] == "getLifetimekWh":
+                master.getSlaveLifetimekWh()
+            elif task["cmd"] == "updateStatus":
+                update_statuses()
+            elif task["cmd"] == "applyChargeLimit":
+                carapi.applyChargeLimit(limit=task["limit"])
+            elif task["cmd"] == "checkArrival":
+                carapi.applyChargeLimit(
+                    limit=carapi.lastChargeLimitApplied, checkArrival=True
+                )
+            elif task["cmd"] == "checkDeparture":
+                carapi.applyChargeLimit(
+                    limit=carapi.lastChargeLimitApplied, checkDeparture=True
+                )
+            elif task["cmd"] == "checkCharge":
+                carapi.updateChargeAtHome()
+
+        except:
+            master.debugLog(1, 'TWCManager', colored('BackgroundError', 'red')+": "+traceback.format_exc()+", occurred when processing background task")
+            pass
 
         # Delete task['cmd'] from backgroundTasksCmds such that
         # queue_background_task() can queue another task['cmd'] in the future.
