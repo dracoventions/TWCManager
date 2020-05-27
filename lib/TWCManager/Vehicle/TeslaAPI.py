@@ -565,9 +565,7 @@ class TeslaAPI:
 
         startOrStop = "start" if charge else "stop"
         result = "success"
-        self.master.debugLog(
-            8, "TeslaAPI", "startOrStop is set to " + str(startOrStop)
-        )
+        self.master.debugLog(8, "TeslaAPI", "startOrStop is set to " + str(startOrStop))
 
         for vehicle in self.getCarApiVehicles():
             if charge and vehicle.stopAskingToStartCharging:
@@ -583,7 +581,11 @@ class TeslaAPI:
             if not vehicle.ready():
                 continue
 
-            if vehicle.update_charge() and vehicle.batteryLevel < self.minChargeLevel:
+            if (
+                vehicle.update_charge()
+                and vehicle.batteryLevel < self.minChargeLevel
+                and not charge
+            ):
                 # If the vehicle's charge state is lower than the configured minimum,
                 #   don't stop it from charging, even if we'd otherwise not charge.
                 continue
@@ -622,6 +624,9 @@ class TeslaAPI:
                 # Waiting 2 seconds seems to consistently avoid the error, but let's
                 # wait 5 seconds in case of hardware differences between cars.
                 self.time.sleep(5)
+
+            if charge:
+                self.applyChargeLimit(self.lastChargeLimitApplied, checkArrival=True)
 
             url = "https://owner-api.teslamotors.com/api/1/vehicles/"
             url = url + str(vehicle.ID) + "/command/charge_" + startOrStop
