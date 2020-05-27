@@ -223,12 +223,15 @@ def check_green_energy():
     # to match those used in your environment. This is configured
     # in the config section at the top of this file.
     #
-    master.setConsumption("Manual", (config["config"]["greenEnergyAmpsOffset"] * 240))
+    master.setConsumption(
+        "Manual", master.convertAmpsToWatts(config["config"]["greenEnergyAmpsOffset"])
+    )
     # Poll all loaded EMS modules for consumption and generation values
     for module in master.getModulesByType("EMS"):
         master.setConsumption(module["name"], module["ref"].getConsumption())
         master.setGeneration(module["name"], module["ref"].getGeneration())
     master.setMaxAmpsToDivideAmongSlaves(master.getMaxAmpsToDivideGreenEnergy())
+
 
 def update_statuses():
 
@@ -249,10 +252,10 @@ def update_statuses():
                 "Green energy generates {colored(genwattsDisplay, 'magenta')}, Consumption {colored(conwattsDisplay, 'magenta')}, Charger Load {colored(chgwattsDisplay, 'magenta')}"
             ),
         )
-        nominalOffer = (
+        nominalOffer = master.convertWattsToAmps(
             genwatts
             - (conwatts - (chgwatts if config["config"]["subtractChargerLoad"] else 0))
-        ) / 240
+        )
         if abs(maxamps - nominalOffer) > 0.005:
             nominalOfferDisplay = f("{nominalOffer:.2f}A")
             debugLog(
@@ -261,9 +264,9 @@ def update_statuses():
                     "Offering {maxampsDisplay} instead of {nominalOfferDisplay} to compensate for inexact current draw"
                 ),
             )
-            conwatts = genwatts - (maxamps * 240)
-        generation = f("{genwatts / 240:.2f}A")
-        consumption = f("{conwatts / 240:.2f}A")
+            conwatts = genwatts - master.convertAmpsToWatts(maxamps)
+        generation = f("{master.convertWattsToAmps(genwatts):.2f}A")
+        consumption = f("{master.convertWattsToAmps(conwatts):.2f}A")
         debugLog(
             1,
             f(
@@ -357,9 +360,29 @@ for module in modules_available:
             {"name": modulename[1], "ref": modinstance, "type": modulename[0]}
         )
     except ImportError as e:
-        master.debugLog(1, 'TWCManager', colored('ImportError', 'red')+": "+str(e)+", when importing module "+colored(module,'red')+", not using "+colored(module,'red'))
+        master.debugLog(
+            1,
+            "TWCManager",
+            colored("ImportError", "red")
+            + ": "
+            + str(e)
+            + ", when importing module "
+            + colored(module, "red")
+            + ", not using "
+            + colored(module, "red"),
+        )
     except ModuleNotFoundError as e:
-        master.debugLog(1, 'TWCManager', colored('ModuleNotFoundError', 'red')+": "+str(e)+", when importing "+colored(module,'red')+", not using "+colored(module,'red'))
+        master.debugLog(
+            1,
+            "TWCManager",
+            colored("ModuleNotFoundError", "red")
+            + ": "
+            + str(e)
+            + ", when importing "
+            + colored(module, "red")
+            + ", not using "
+            + colored(module, "red"),
+        )
     except:
         raise
 
@@ -477,13 +500,15 @@ while True:
                 master.send_slave_linkready()
 
         # See if there's any message from the web interface.
-        if master.getModuleByName('WebIPCControl'):
+        if master.getModuleByName("WebIPCControl"):
             master.getModuleByName("WebIPCControl").processIPC()
 
         # If it has been more than 2 minutes since the last kWh value, queue the command to request it from slaves
-        if config["config"]["fakeMaster"] == 1 and ((time.time() - master.lastkWhMessage) > (60*2)):
-          master.lastkWhMessage = time.time()
-          master.queue_background_task({"cmd": "getLifetimekWh"})
+        if config["config"]["fakeMaster"] == 1 and (
+            (time.time() - master.lastkWhMessage) > (60 * 2)
+        ):
+            master.lastkWhMessage = time.time()
+            master.queue_background_task({"cmd": "getLifetimekWh"})
 
         ########################################################################
         # See if there's an incoming message on the input interface.
@@ -621,7 +646,7 @@ while True:
             # trailing C0 bytes, the messages we know about are always 14 bytes
             # long in original TWCs, or 16 bytes in newer TWCs (protocolVersion
             # == 2).
-            if(len(msg) != 14 and len(msg) != 16 and len(msg) != 20):
+            if len(msg) != 14 and len(msg) != 16 and len(msg) != 20:
                 debugLog(
                     1,
                     "ERROR: Ignoring message of unexpected length %d: %s"
@@ -819,7 +844,9 @@ while True:
                             ),
                         )
                 else:
-                    msgMatch = re.search(b"\A\xfd\xeb(..)(....)(..)(..)(..)(.+?).\Z", msg, re.DOTALL)
+                    msgMatch = re.search(
+                        b"\A\xfd\xeb(..)(....)(..)(..)(..)(.+?).\Z", msg, re.DOTALL
+                    )
                 if msgMatch and foundMsgMatch == False:
                     # Handle kWh total and voltage message from slave.
                     #
@@ -843,7 +870,12 @@ while True:
                     foundMsgMatch = True
                     senderID = msgMatch.group(1)
                     lifetimekWh = msgMatch.group(2)
-                    kWh = (lifetimekWh[0] << 24) + (lifetimekWh[1] << 16) + (lifetimekWh[2] << 8) + lifetimekWh[3]
+                    kWh = (
+                        (lifetimekWh[0] << 24)
+                        + (lifetimekWh[1] << 16)
+                        + (lifetimekWh[2] << 8)
+                        + lifetimekWh[3]
+                    )
                     vPhaseA = msgMatch.group(3)
                     voltsPhaseA = (vPhaseA[0] << 8) + vPhaseA[1]
                     vPhaseB = msgMatch.group(4)
@@ -855,7 +887,14 @@ while True:
                     debugLog(
                         1,
                         "Slave TWC %02X%02X: Delivered %d kWh, voltage per phase: (%d, %d, %d)."
-                        % (senderID[0], senderID[1], kWh, voltsPhaseA, voltsPhaseB, voltsPhaseC),
+                        % (
+                            senderID[0],
+                            senderID[1],
+                            kWh,
+                            voltsPhaseA,
+                            voltsPhaseB,
+                            voltsPhaseC,
+                        ),
                     )
 
                     # Update the timestamp of the last reciept of this message
@@ -865,10 +904,14 @@ while True:
                     master.queue_background_task({"cmd": "getLifetimekWh"})
 
                     # Update this detail for the Slave TWC
-                    master.updateSlaveLifetime(senderID, kWh, voltsPhaseA, voltsPhaseB, voltsPhaseC)
+                    master.updateSlaveLifetime(
+                        senderID, kWh, voltsPhaseA, voltsPhaseB, voltsPhaseC
+                    )
 
                 else:
-                    msgMatch = re.search(b"\A\xfd(\xee|\xef|\xf1)(..)(.+?).\Z", msg, re.DOTALL)
+                    msgMatch = re.search(
+                        b"\A\xfd(\xee|\xef|\xf1)(..)(.+?).\Z", msg, re.DOTALL
+                    )
                 if msgMatch and foundMsgMatch == False:
                     # Get 7 characters of VIN from slave. (XE is first 7, XF second 7)
                     #
@@ -892,17 +935,20 @@ while True:
                         % (senderID[0], senderID[1], hex_str(data)),
                     )
                     slaveTWC = master.getSlaveByID(senderID)
-                    if vinPart == b"\xee": vinPart = 0
-                    if vinPart == b"\xef": vinPart = 1
-                    if vinPart == b"\xf1": vinPart = 2
+                    if vinPart == b"\xee":
+                        vinPart = 0
+                    if vinPart == b"\xef":
+                        vinPart = 1
+                    if vinPart == b"\xf1":
+                        vinPart = 2
                     slaveTWC.VINData[vinPart] = data.decode("utf-8").rstrip("\x00")
                     if vinPart < 2:
-                       vinPart += 1
-                       master.getVehicleVIN(senderID, vinPart)
+                        vinPart += 1
+                        master.getVehicleVIN(senderID, vinPart)
                     else:
-                       slaveTWC.currentVIN = "".join(slaveTWC.VINData)
-                       master.updateVINStatus()
-                       vinPart += 1
+                        slaveTWC.currentVIN = "".join(slaveTWC.VINData)
+                        master.updateVINStatus()
+                        vinPart += 1
                     debugLog(
                         6,
                         "Current VIN string is: %s at part %d."
@@ -1032,7 +1078,7 @@ while True:
                         master.slaveHeartbeatData[1] << 8
                     ) + master.slaveHeartbeatData[2]
                     master.addkWhDelivered(
-                        ((240 * (amps / 100)) / 1000 / 60 / 60)
+                        (master.convertAmpsToWatts(amps / 100) / 1000 / 60 / 60)
                         * (now - timeLastkWhDelivered)
                     )
                     timeLastkWhDelivered = now
@@ -1269,7 +1315,9 @@ while True:
                     voltsPhaseC = (data[8] << 8) + data[9]
 
                     # Update this detail for the Slave TWC
-                    master.updateSlaveLifetime(senderID, kWhCounter, voltsPhaseA, voltsPhaseB, voltsPhaseC)
+                    master.updateSlaveLifetime(
+                        senderID, kWhCounter, voltsPhaseA, voltsPhaseB, voltsPhaseC
+                    )
 
                     if senderID == fakeTWCID:
                         debugLog(
@@ -1294,7 +1342,9 @@ while True:
                     )
 
                     # Record counter values for Slave TWC
-                    master.updateSlaveLifetime(senderID, kWhCounter, voltsPhaseA, voltsPhaseB, voltsPhaseC)
+                    master.updateSlaveLifetime(
+                        senderID, kWhCounter, voltsPhaseA, voltsPhaseB, voltsPhaseC
+                    )
 
                 if foundMsgMatch == False:
                     debugLog(1, "***UNKNOWN MESSAGE from master: " + hex_str(msg))

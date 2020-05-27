@@ -77,6 +77,12 @@
         # a car not at home being stopped from charging by the API.
         "onlyChargeMultiCarsAtHome": true,
 
+        # Newer TWCs can report actual voltages.  For older TWCs, you can specify
+        # what voltage should be assumed and whether the power is single (1) or
+        # 3-phase.
+        "defaultVoltage": 240,
+        "numberOfPhases": 1,
+
         # When determining how much green energy is available for charging, we count
         # greenEnergyAmpsOffset as consumption. This is most often given a value
         # equal to the average amount of power consumed by everything other than car
