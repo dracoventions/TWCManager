@@ -9,6 +9,9 @@ This document logs the changes per release of TWCManager.
   * Various updates to documentation (thanks @MikeBishop and @neilrees)
   * Web interface now uses AJAJ for dynamic asyncrhonous updates rather than page refresh
      * This change additionally introduces new REST API commands 
+  * Handling of module import issues such as modules not existing (thanks @AndySchroder)
+  * Use actual mains voltage per phase as reported by some TWC firmwares (thanks @MikeBishop)
+  * Report background thread exceptions to the console (thanks @neilrees)
   * Bugfixes
     * Fixed situation where fakeMaster == 2 installations do not recieve Status module lifetime kWh and voltage per phase readings [Backported to 1.1.8]
     * Fixed unnecessary 60 second delay to processing background queue introduced by lifetime kWh and voltage per phase polling [Backported to 1.1.8] (Thanks @MikeBishop)
