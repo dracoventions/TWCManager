@@ -17,6 +17,7 @@ class Fronius:
     importW = 0
     exportW = 0
     lastFetch = 0
+    master = None
     serverIP = None
     serverPort = 80
     status = False
@@ -24,6 +25,7 @@ class Fronius:
     voltage = 0
 
     def __init__(self, master):
+        self.master = master
         self.config = master.config
         try:
             self.configConfig = master.config["config"]
@@ -37,6 +39,11 @@ class Fronius:
         self.status = self.configFronius.get("enabled", False)
         self.serverIP = self.configFronius.get("serverIP", None)
         self.serverPort = self.configFronius.get("serverPort", "80")
+
+        # Unload if this module is disabled or misconfigured
+        if ((not self.status) or (not self.serverIP) 
+           or (int(self.serverPort) < 1)):
+          self.master.releaseModule("lib.TWCManager.EMS","Fronius");
 
     def debugLog(self, minlevel, message):
         if self.debugLevel >= minlevel:

@@ -47,6 +47,10 @@ class MQTTStatus:
         self.username = self.configMQTT.get("username", None)
         self.password = self.configMQTT.get("password", None)
 
+        # Unload if this module is disabled or misconfigured
+        if ((not self.status) or (not self.brokerIP)):
+          self.master.releaseModule("lib.TWCManager.Status","MQTTStatus");
+
     def setStatus(self, twcid, key_underscore, key_camelcase, value):
         if self.status:
 

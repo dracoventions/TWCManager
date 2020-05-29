@@ -5,6 +5,7 @@ from datetime import datetime
 import json
 import os.path
 import queue
+from sys import modules
 from termcolor import colored
 import threading
 import time
@@ -30,6 +31,7 @@ class TWCMaster:
     modules = {}
     overrideMasterHeartbeatData = b""
     protocolVersion = 2
+    releasedModules = []
     settings = {
         "chargeNowAmps": 0,
         "chargeStopMode": "1",
@@ -610,15 +612,16 @@ class TWCMaster:
 
             # Check this module has not already been instantiated
             if not self.modules.get(module["name"], None):
-                self.modules[module["name"]] = {
-                    "ref": module["ref"],
-                    "type": module["type"],
-                }
-                self.debugLog(
-                    7,
-                    "TWCMaster",
-                    f("Registered module {colored(module['name'], 'red')}"),
-                )
+                if not module["name"] in self.releasedModules:
+                    self.debugLog(
+                        7,
+                        "TWCMaster",
+                        f("Registered module {colored(module['name'], 'red')}"),
+                    )
+                    self.modules[module["name"]] = {
+                        "ref": module["ref"],
+                        "type": module["type"],
+                    }
             else:
                 self.debugLog(
                     7,
@@ -630,6 +633,24 @@ class TWCMaster:
 
     def releaseBackgroundTasksLock(self):
         self.backgroundTasksLock.release()
+
+    def releaseModule(self, path, module):
+        # Removes a module from the modules dict
+        # This ensures we do not continue to call the module if it is
+        # inoperable
+        self.releasedModules.append(module)
+        if self.modules.get(module, None):
+            del self.modules[module]
+
+        fullname = path + "." + module
+        if modules.get(fullname, None):
+            del modules[fullname]
+
+        self.debugLog(
+            7,
+            "TWCMaster",
+            f("Released module {colored(module, 'red')}"),
+        )
 
     def removeNormalChargeLimit(self, ID):
         if "chargeLimits" in self.settings and str(ID) in self.settings["chargeLimits"]:

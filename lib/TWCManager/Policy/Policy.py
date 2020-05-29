@@ -270,7 +270,7 @@ class Policy:
             8,
             "Policy",
             f(
-                "Evaluating Policy match ({colored(match, 'red')}), condition ({colored(condition, 'red')}), value ({colored(value, 'red')}), iteration ({colored(iter, 'red')})"
+                "Evaluating Policy match ({colored(match, 'red')}), condition ({colored(condition, 'red')}), value ({colored(value, 'red')})"
             ),
         )
 

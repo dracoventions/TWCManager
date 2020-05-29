@@ -169,8 +169,7 @@ def unescape_msg(msg: bytearray, msgLen):
     return msg
 
 
-def background_tasks_thread():
-    global master
+def background_tasks_thread(master):
     carapi = master.getModuleByName("TeslaAPI")
 
     while True:
@@ -398,7 +397,7 @@ master.loadSettings()
 # Create a background thread to handle tasks that take too long on the main
 # thread.  For a primer on threads in Python, see:
 # http://www.laurentluce.com/posts/python-threads-synchronization-locks-rlocks-semaphores-conditions-events-and-queues/
-backgroundTasksThread = threading.Thread(target=background_tasks_thread, args=())
+backgroundTasksThread = threading.Thread(target=background_tasks_thread, args=(master,))
 backgroundTasksThread.daemon = True
 backgroundTasksThread.start()
 
@@ -1344,11 +1343,6 @@ while True:
                             voltsPhaseB,
                             voltsPhaseC,
                         ),
-                    )
-
-                    # Record counter values for Slave TWC
-                    master.updateSlaveLifetime(
-                        senderID, kWhCounter, voltsPhaseA, voltsPhaseB, voltsPhaseC
                     )
 
                 if foundMsgMatch == False:

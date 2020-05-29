@@ -22,6 +22,10 @@ class Dummy:
             if "interface" in master.config:
                 self.twcID = master.config["interface"]["Dummy"].get("twcID", 1234)
 
+        # Unload if this module is disabled or misconfigured
+        if (not self.enabled):
+          self.master.releaseModule("lib.TWCManager.Interface","Dummy");
+
     def close(self):
         # NOOP - No need to close anything
         return 0

@@ -29,6 +29,11 @@ class TCP:
             self.sock.bind(("localhost", self.port))
             self.sock.listen(1)
 
+        # Unload if this module is disabled or misconfigured
+        if (not self.enabled):
+          self.master.releaseModule("lib.TWCManager.Interface","TCP");
+
+
     def close(self):
         # Close the TCP socket interface
         self.sock.close()
@@ -39,7 +44,7 @@ class TCP:
         return 0
 
     def read(self, len):
-        # Read the specified amount of data from the serial interface
+        # Read the specified amount of data from the TCP interface
         return 0
 
     def send(self, msg):

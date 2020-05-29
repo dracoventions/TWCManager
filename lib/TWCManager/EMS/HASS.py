@@ -18,12 +18,14 @@ class HASS:
     hassEntityConsumption = None
     hassEntityGeneration = None
     lastFetch = 0
+    master = None
     status = False
     serverIP = None
     serverPort = 8123
     timeout = 2
 
     def __init__(self, master):
+        self.master = master
         self.config = master.config
         try:
             self.configConfig = master.config["config"]
@@ -40,6 +42,11 @@ class HASS:
         self.debugLevel = self.configConfig.get("debugLevel", 0)
         self.hassEntityConsumption = self.configHASS.get("hassEntityConsumption", None)
         self.hassEntityGeneration = self.configHASS.get("hassEntityGeneration", None)
+
+        # Unload if this module is disabled or misconfigured
+        if ((not self.status) or (not self.serverIP)
+           or (int(self.serverPort) < 1)):
+          self.master.releaseModule("lib.TWCManager.EMS","HASS");
 
     def debugLog(self, minlevel, message):
         if self.debugLevel >= minlevel:

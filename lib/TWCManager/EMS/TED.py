@@ -22,6 +22,7 @@ class TED:
     importW = 0
     exportW = 0
     lastFetch = 0
+    master = None
     serverIP = None
     serverPort = 80
     status = False
@@ -29,6 +30,7 @@ class TED:
     voltage = 0
 
     def __init__(self, master):
+        self.master = master
         self.config = master.config
         try:
             self.configConfig = self.config["config"]
@@ -42,6 +44,11 @@ class TED:
         self.status = self.configTED.get("enabled", False)
         self.serverIP = self.configTED.get("serverIP", None)
         self.serverPort = self.configTED.get("serverPort", "80")
+
+        # Unload if this module is disabled or misconfigured
+        if ((not self.status) or (not self.serverIP)
+           or (int(self.serverPort) < 1)):
+          self.master.releaseModule("lib.TWCManager.EMS","TED");
 
     def debugLog(self, minlevel, message):
         if self.debugLevel >= minlevel:

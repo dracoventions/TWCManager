@@ -39,6 +39,12 @@ class HASSStatus:
         self.apiKey = self.configHASS.get("apiKey", None)
         self.debugLevel = self.configConfig.get("debugLevel", 0)
 
+        # Unload if this module is disabled or misconfigured
+        if ((not self.status) or (not self.serverIP)
+           or (int(self.serverPort) < 1) or (not self.apiKey)):
+          self.master.releaseModule("lib.TWCManager.Status","HASSStatus");
+
+
     def setStatus(self, twcid, key_underscore, key_camelcase, value):
 
         # Format TWCID nicely

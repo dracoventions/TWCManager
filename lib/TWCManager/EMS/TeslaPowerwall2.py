@@ -51,6 +51,11 @@ class TeslaPowerwall2:
                 category=self.urllib3.exceptions.InsecureRequestWarning
             )
 
+        # Unload if this module is disabled or misconfigured
+        if ((not self.status) or (not self.serverIP)
+           or (int(self.serverPort) < 1)):
+          self.master.releaseModule("lib.TWCManager.EMS","TeslaPowerwall2");
+
     @property
     def generatedW(self):
         value = self.getPWValues()

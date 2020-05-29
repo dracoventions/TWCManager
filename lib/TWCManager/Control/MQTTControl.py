@@ -40,34 +40,39 @@ class MQTTControl:
         self.username = self.configMQTT.get("username", None)
         self.password = self.configMQTT.get("password", None)
 
-        # Subscribe to the specified topic prefix, and process incoming messages
-        # to determine if they represent control messages
-        self.master.debugLog(10, "MQTTCtrl", "Attempting to Connect")
-        if self.brokerIP:
-            self.client = self.mqtt.Client("MQTTCtrl")
-            if self.username and self.password:
-                self.client.username_pw_set(self.username, self.password)
-            self.client.on_connect = self.mqttConnect
-            self.client.on_message = self.mqttMessage
-            self.client.on_subscribe = self.mqttSubscribe
-            try:
+        # Unload if this module is disabled or misconfigured
+        if ((not self.status) or (not self.brokerIP)):
+          self.master.releaseModule("lib.TWCManager.Control","MQTTControl");
+
+        if self.status:
+          # Subscribe to the specified topic prefix, and process incoming messages
+          # to determine if they represent control messages
+          self.master.debugLog(10, "MQTTCtrl", "Attempting to Connect")
+          if self.brokerIP:
+              self.client = self.mqtt.Client("MQTTCtrl")
+              if self.username and self.password:
+                  self.client.username_pw_set(self.username, self.password)
+              self.client.on_connect = self.mqttConnect
+              self.client.on_message = self.mqttMessage
+              self.client.on_subscribe = self.mqttSubscribe
+              try:
                 self.client.connect_async(
                     self.brokerIP, port=self.brokerPort, keepalive=30
                 )
-            except ConnectionRefusedError as e:
+              except ConnectionRefusedError as e:
                 self.master.debugLog(4, "MQTTCtrl", "Error connecting to MQTT Broker")
                 self.master.debugLog(10, "MQTTCtrl", str(e))
                 return False
-            except OSError as e:
+              except OSError as e:
                 self.master.debugLog(4, "MQTTCtrl", "Error connecting to MQTT Broker")
                 self.master.debugLog(10, "MQTTCtrl", str(e))
                 return False
 
-            self.connectionState = 1
-            self.client.loop_start()
+              self.connectionState = 1
+              self.client.loop_start()
 
-        else:
-            self.master.debugLog(4, "MQTTCtrl", "Module enabled but no brokerIP specified.")
+          else:
+              self.master.debugLog(4, "MQTTCtrl", "Module enabled but no brokerIP specified.")
 
     def mqttConnect(self, client, userdata, flags, rc):
         self.master.debugLog(5, "MQTTCtrl", "MQTT Connected.")
