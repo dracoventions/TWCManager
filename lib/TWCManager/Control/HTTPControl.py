@@ -629,7 +629,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.do_API_POST()
             return
 
-        self.fields = urllib.parse.parse_qs(field_data.decode("utf-8"))
+        self.fields = urllib.parse.parse_qs(self.post_data.decode("utf-8"))
 
         if self.url.path == "/settings/save":
             # User has submitted settings.
