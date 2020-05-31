@@ -777,7 +777,12 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += """
           </td>
           <td>
-            <input type="submit" class="btn btn-outline-danger" name="send_stop_command" value="Stop All Charging" data-toggle="tooltip" data-placement="top" title="WARNING: This function causes Tesla Vehicles to Stop Charging until they are physically re-connected to the TWC." />
+        """
+        page += self.addButton(
+            ["send_stop_command", "Stop All Charging"],
+            "class='btn btn-outline-danger' data-toggle='tooltip' data-placement='top' title='WARNING: This function causes Tesla Vehicles to Stop Charging until they are physically re-connected to the TWC.'",
+        )
+        page += """
           </td></tr>
           <tr><td colspan = '2'>
         """
