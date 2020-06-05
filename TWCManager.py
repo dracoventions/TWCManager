@@ -2251,12 +2251,12 @@ class TWCSlave:
                         # case, the fix is to offer it lower amps.
                         if(debugLevel >= 1):
                             print(time_now() + ': Car stuck when offered spikeAmpsToCancel6ALimit.  Offering 2 less.')
-                        desiredAmpsOffered = spikeAmpsToCancel6ALimit - 2.0
-                    elif(now - self.timeLastAmpsOfferedChanged > 5):
+                        desiredAmpsOffered = desiredAmpsOffered #don't do anything
+                    elif(now - self.timeLastAmpsOfferedChanged > 10): #increase time
                         # self.lastAmpsOffered hasn't gotten the car to draw
-                        # enough amps for over 5 seconds, so try
+                        # enough amps for over 10 seconds, so try
                         # spikeAmpsToCancel6ALimit
-                        desiredAmpsOffered = spikeAmpsToCancel6ALimit
+                        desiredAmpsOffered = desiredAmpsOffered #don't do anything
                     else:
                         # Otherwise, don't change the value of lastAmpsOffered.
                         desiredAmpsOffered = self.lastAmpsOffered
