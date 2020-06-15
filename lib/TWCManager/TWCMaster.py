@@ -85,8 +85,7 @@ class TWCMaster:
         return self.slaveTWCRoundRobin.append(slaveTWC)
 
     def advanceHistorySnap(self):
-        now = datetime.now().astimezone()
-        futureSnap = now + timedelta(minutes=5)
+        futureSnap = datetime.now().astimezone() + timedelta(minutes=5)
         self.nextHistorySnap = futureSnap.replace(
             minute=math.floor(futureSnap.minute / 5) * 5, second=0, microsecond=0
         )
@@ -917,7 +916,7 @@ class TWCMaster:
         now = datetime.now().astimezone()
         avgCurrent = 0
 
-        if datetime.now().astimezone() < snaptime:
+        if now < snaptime:
             return
 
         for slave in self.getSlaveTWCs():
