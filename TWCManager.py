@@ -202,9 +202,18 @@ def background_tasks_thread(master):
                 )
             elif task["cmd"] == "checkCharge":
                 carapi.updateChargeAtHome()
+            elif task["cmd"] == "snapHistoryData":
+                master.snapHistoryData()
 
         except:
-            master.debugLog(1, 'TWCManager', colored('BackgroundError', 'red')+": "+traceback.format_exc()+", occurred when processing background task")
+            master.debugLog(
+                1,
+                "TWCManager",
+                colored("BackgroundError", "red")
+                + ": "
+                + traceback.format_exc()
+                + ", occurred when processing background task",
+            )
             pass
 
         # Delete task['cmd'] from backgroundTasksCmds such that

@@ -1,5 +1,6 @@
 from termcolor import colored
 from ww import f
+from datetime import datetime
 
 
 class TWCSlave:
@@ -26,6 +27,10 @@ class TWCSlave:
     reportedAmpsActual = 0
     reportedState = 0
 
+    # history* vars are used to track power usage over time
+    historyAvgAmps = 0
+    historyNumSamples = 0
+
     # reportedAmpsActual frequently changes by small amounts, like 5.14A may
     # frequently change to 5.23A and back.
     # reportedAmpsActualSignificantChangeMonitor is set to reportedAmpsActual
@@ -50,8 +55,8 @@ class TWCSlave:
     voltsPhaseA = 0
     voltsPhaseB = 0
     voltsPhaseC = 0
-    isCharging  = 0
-    VINData = [ "", "", "" ]
+    isCharging = 0
+    VINData = ["", "", ""]
     currentVIN = ""
     lastVIN = ""
 
@@ -459,6 +464,15 @@ class TWCSlave:
                 self.TWCID, "amps_max", "ampsMax", self.reportedAmpsMax
             )
             module["ref"].setStatus(self.TWCID, "state", "state", self.reportedState)
+
+        # Log current history
+        self.historyAvgAmps = (
+            (self.historyAvgAmps * self.historyNumSamples) + self.reportedAmpsActual
+        ) / (self.historyNumSamples + 1)
+        self.historyNumSamples += 1
+
+        if datetime.now().astimezone() >= self.master.nextHistorySnap:
+            self.master.queue_background_task({"cmd": "snapHistoryData"})
 
         # self.lastAmpsOffered is initialized to -1.
         # If we find it at that value, set it to the current value reported by the
@@ -1022,9 +1036,9 @@ class TWCSlave:
         return self.lastAmpsOffered
 
     def setLifetimekWh(self, kwh):
-      self.lifetimekWh = kwh
+        self.lifetimekWh = kwh
 
     def setVoltage(self, pa, pb, pc):
-      self.voltsPhaseA = pa
-      self.voltsPhaseB = pb
-      self.voltsPhaseC = pc
+        self.voltsPhaseA = pa
+        self.voltsPhaseB = pb
+        self.voltsPhaseC = pc
