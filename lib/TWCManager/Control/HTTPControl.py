@@ -355,9 +355,9 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         elif url.path == "/api/getHistory":
             output = []
             now = datetime.now().replace(second=0, microsecond=0).astimezone()
-            startTime = now - timedelta(days=2)
+            startTime = now - timedelta(days=2) + timedelta(minutes=5)
             endTime = now.replace(minute=math.floor(now.minute / 5) * 5)
-            startTime = startTime.replace(minute=math.ceil(startTime.minute / 5) * 5)
+            startTime = startTime.replace(minute=math.floor(startTime.minute / 5) * 5)
 
             source = (
                 self.server.master.settings["history"]
