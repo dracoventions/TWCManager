@@ -41,7 +41,7 @@ class TeslaPowerwall2:
         self.serverIP = self.configPowerwall.get("serverIP", None)
         self.serverPort = self.configPowerwall.get("serverPort", "443")
         self.password = self.configPowerwall.get("password", None)
-        self.minSOE = self.configPowerwall.get("minBatteryLevel", 90)
+        self.minSOE = self.configPowerwall.get("minBatteryLevel", 0)
         self.cloudID = self.configPowerwall.get("cloudID", None)
         self.cloudCacheTime = self.configConfig.get("cloudUpdateInterval", 1800)
         self.httpSession = self.requests.session()
