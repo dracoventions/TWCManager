@@ -1,11 +1,13 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from termcolor import colored
+from datetime import datetime, timedelta
 import json
 import re
 import threading
 import time
 import urllib.parse
+import math
 from ww import f
 
 
@@ -38,8 +40,8 @@ class HTTPControl:
         self.status = self.configHTTP.get("enabled", False)
 
         # Unload if this module is disabled or misconfigured
-        if ((not self.status) or (int(self.httpPort) < 1)):
-          self.master.releaseModule("lib.TWCManager.Control","HTTPControl");
+        if (not self.status) or (int(self.httpPort) < 1):
+            self.master.releaseModule("lib.TWCManager.Control", "HTTPControl")
 
         if self.status:
             httpd = ThreadingSimpleServer(("", self.httpPort), HTTPControlHandler)
@@ -254,9 +256,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             json_datas = re.sub(r'"password": ".*?",', "", json_data)
             json_data = re.sub(r'"apiKey": ".*?",', "", json_datas)
             self.wfile.write(json_data.encode("utf-8"))
-            return
 
-        if url.path == "/api/getPolicy":
+        elif url.path == "/api/getPolicy":
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
@@ -265,9 +266,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 self.server.master.getModuleByName("Policy").charge_policy
             )
             self.wfile.write(json_data.encode("utf-8"))
-            return
 
-        if url.path == "/api/getSlaveTWCs":
+        elif url.path == "/api/getSlaveTWCs":
             data = {}
             totals = {
                 "lastAmpsOffered": 0,
@@ -311,9 +311,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
             json_data = json.dumps(data)
             self.wfile.write(json_data.encode("utf-8"))
-            return
 
-        if url.path == "/api/getStatus":
+        elif url.path == "/api/getStatus":
             data = {
                 "carsCharging": self.server.master.num_cars_charging_now(),
                 "chargerLoadWatts": "%.2f" % float(self.server.master.getChargerLoad()),
@@ -352,13 +351,51 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
             json_data = json.dumps(data)
             self.wfile.write(json_data.encode("utf-8"))
-            return
 
-        # All other routes missed, return 404
-        self.send_response(404)
-        self.end_headers()
-        self.wfile.write("".encode("utf-8"))
-        return
+        elif url.path == "/api/getHistory":
+            output = []
+            now = datetime.now().replace(second=0, microsecond=0).astimezone()
+            startTime = now - timedelta(days=2) + timedelta(minutes=5)
+            endTime = now.replace(minute=math.floor(now.minute / 5) * 5)
+            startTime = startTime.replace(minute=math.floor(startTime.minute / 5) * 5)
+
+            source = (
+                self.server.master.settings["history"]
+                if "history" in self.server.master.settings
+                else []
+            )
+            data = {k: v for k, v in source if datetime.fromisoformat(k) >= startTime}
+
+            avgCurrent = 0
+            for slave in self.server.master.getSlaveTWCs():
+                avgCurrent += slave.historyAvgAmps
+            data[
+                endTime.isoformat(timespec="seconds")
+            ] = self.server.master.convertAmpsToWatts(avgCurrent)
+
+            output = [
+                {
+                    "timestamp": timestamp,
+                    "charger_power": data[timestamp] if timestamp in data else 0,
+                }
+                for timestamp in [
+                    (startTime + timedelta(minutes=5 * i)).isoformat(timespec="seconds")
+                    for i in range(48 * 12)
+                ]
+            ]
+
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+
+            json_data = json.dumps(output)
+            self.wfile.write(json_data.encode("utf-8"))
+
+        else:
+            # All other routes missed, return 404
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write("".encode("utf-8"))
 
     def do_API_POST(self):
 

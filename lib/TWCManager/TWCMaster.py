@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 
 from lib.TWCManager.TWCSlave import TWCSlave
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import os.path
 import queue
@@ -29,6 +29,7 @@ class TWCMaster:
     masterTWCID = ""
     maxAmpsToDivideAmongSlaves = 0
     modules = {}
+    nextHistorySnap = 0
     overrideMasterHeartbeatData = b""
     protocolVersion = 2
     releasedModules = []
@@ -71,6 +72,7 @@ class TWCMaster:
         self.debugLevel = config["config"]["debugLevel"]
         self.TWCID = TWCID
         self.subtractChargerLoad = config["config"]["subtractChargerLoad"]
+        self.advanceHistorySnap()
 
         # Register ourself as a module, allows lookups via the Module architecture
         self.registerModule({"name": "master", "ref": self, "type": "Master"})
@@ -81,6 +83,12 @@ class TWCMaster:
     def addSlaveTWC(self, slaveTWC):
         # Adds the Slave TWC to the Round Robin list
         return self.slaveTWCRoundRobin.append(slaveTWC)
+
+    def advanceHistorySnap(self):
+        futureSnap = datetime.now().astimezone() + timedelta(minutes=5)
+        self.nextHistorySnap = futureSnap.replace(
+            minute=math.floor(futureSnap.minute / 5) * 5, second=0, microsecond=0
+        )
 
     def checkScheduledCharging(self):
 
@@ -416,7 +424,7 @@ class TWCMaster:
             # No slaves support returning voltage
             return (
                 self.config["config"].get("defaultVoltage", 240),
-                self.config["config"].get("numberOfPhases", 1)
+                self.config["config"].get("numberOfPhases", 1),
             )
 
         total = 0
@@ -646,11 +654,7 @@ class TWCMaster:
         if modules.get(fullname, None):
             del modules[fullname]
 
-        self.debugLog(
-            7,
-            "TWCMaster",
-            f("Released module {colored(module, 'red')}"),
-        )
+        self.debugLog(7, "TWCMaster", f("Released module {colored(module, 'red')}"))
 
     def removeNormalChargeLimit(self, ID):
         if "chargeLimits" in self.settings and str(ID) in self.settings["chargeLimits"]:
@@ -906,6 +910,39 @@ class TWCMaster:
 
     def setSpikeAmps(self, amps):
         self.spikeAmpsToCancel6ALimit = amps
+
+    def snapHistoryData(self):
+        snaptime = self.nextHistorySnap
+        now = datetime.now().astimezone()
+        avgCurrent = 0
+
+        if now < snaptime:
+            return
+
+        for slave in self.getSlaveTWCs():
+            avgCurrent += slave.historyAvgAmps
+            slave.historyNumSamples = 0
+        self.advanceHistorySnap()
+
+        if avgCurrent > 0:
+            periodTimestamp = snaptime - timedelta(minutes=5)
+
+            if not "history" in self.settings:
+                self.settings["history"] = []
+
+            self.settings["history"].append(
+                (
+                    periodTimestamp.isoformat(timespec="seconds"),
+                    self.convertAmpsToWatts(avgCurrent),
+                )
+            )
+
+            self.settings["history"] = [
+                e
+                for e in self.settings["history"]
+                if datetime.fromisoformat(e[0]) >= (now - timedelta(days=2))
+            ]
+            self.saveSettings()
 
     def startCarsCharging(self):
         # This function is the opposite functionality to the stopCarsCharging function
