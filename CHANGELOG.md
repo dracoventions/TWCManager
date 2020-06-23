@@ -12,6 +12,8 @@ This document logs the changes per release of TWCManager.
   * Handling of module import issues such as modules not existing (thanks @AndySchroder)
   * Use actual mains voltage per phase as reported by some TWC firmwares (thanks @MikeBishop)
   * Report background thread exceptions to the console (thanks @neilrees)
+  * Added history recording for Slave TWC amps offered, with API function to query average amp history (thanks @MikeBishop).
+  * Added recording of charge sessions per vehicle VIN, with rudimentary total kWh consumed calculations.
   * Bugfixes
     * Fixed situation where fakeMaster == 2 installations do not recieve Status module lifetime kWh and voltage per phase readings [Backported to 1.1.8]
     * Fixed unnecessary 60 second delay to processing background queue introduced by lifetime kWh and voltage per phase polling [Backported to 1.1.8] (Thanks @MikeBishop)

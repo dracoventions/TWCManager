@@ -11,8 +11,10 @@ class TWCSlave:
     config = None
     debugLevel = 0
     TWCID = None
+    lastVINQuery = 0
     maxAmps = None
     master = None
+    vinQueryAttempt = 0
 
     # Protocol 2 TWCs tend to respond to commands sent using protocol 1, so
     # default to that till we know for sure we're talking to protocol 2.
@@ -471,8 +473,14 @@ class TWCSlave:
         ) / (self.historyNumSamples + 1)
         self.historyNumSamples += 1
 
-        if datetime.now().astimezone() >= self.master.nextHistorySnap:
-            self.master.queue_background_task({"cmd": "snapHistoryData"})
+        try:
+            if datetime.now().astimezone() >= self.master.nextHistorySnap:
+                self.master.queue_background_task({"cmd": "snapHistoryData"})
+        except ValueError as e:
+            self.master.debugLog(
+                10,
+                "TWCSlave  ",
+                str(e))
 
         # self.lastAmpsOffered is initialized to -1.
         # If we find it at that value, set it to the current value reported by the

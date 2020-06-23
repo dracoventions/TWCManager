@@ -176,7 +176,9 @@ def background_tasks_thread(master):
         try:
             task = master.getBackgroundTask()
 
-            if task["cmd"] == "charge":
+            if task["cmd"] == "applyChargeLimit":
+                carapi.applyChargeLimit(limit=task["limit"])
+            elif task["cmd"] == "charge":
                 # car_api_charge does nothing if it's been under 60 secs since it
                 # was last used so we shouldn't have to worry about calling this
                 # too frequently.
@@ -184,26 +186,26 @@ def background_tasks_thread(master):
             elif task["cmd"] == "carApiEmailPassword":
                 carapi.setCarApiLastErrorTime(0)
                 carapi.car_api_available(task["email"], task["password"])
-            elif task["cmd"] == "checkGreenEnergy":
-                check_green_energy()
-            elif task["cmd"] == "getLifetimekWh":
-                master.getSlaveLifetimekWh()
-            elif task["cmd"] == "updateStatus":
-                update_statuses()
-            elif task["cmd"] == "applyChargeLimit":
-                carapi.applyChargeLimit(limit=task["limit"])
             elif task["cmd"] == "checkArrival":
                 carapi.applyChargeLimit(
                     limit=carapi.lastChargeLimitApplied, checkArrival=True
                 )
+            elif task["cmd"] == "checkCharge":
+                carapi.updateChargeAtHome()
             elif task["cmd"] == "checkDeparture":
                 carapi.applyChargeLimit(
                     limit=carapi.lastChargeLimitApplied, checkDeparture=True
                 )
-            elif task["cmd"] == "checkCharge":
-                carapi.updateChargeAtHome()
+            elif task["cmd"] == "checkGreenEnergy":
+                check_green_energy()
+            elif task["cmd"] == "getLifetimekWh":
+                master.getSlaveLifetimekWh()
+            elif task["cmd"] == "getVehicleVIN":
+                master.getVehicleVIN(task["slaveTWC"], task["vinPart"])
             elif task["cmd"] == "snapHistoryData":
                 master.snapHistoryData()
+            elif task["cmd"] == "updateStatus":
+                update_statuses()
 
         except:
             master.debugLog(
@@ -516,12 +518,18 @@ while True:
         if master.getModuleByName("WebIPCControl"):
             master.getModuleByName("WebIPCControl").processIPC()
 
-        # If it has been more than 2 minutes since the last kWh value, queue the command to request it from slaves
+        # If it has been more than 2 minutes since the last kWh value, 
+        # queue the command to request it from slaves
         if config["config"]["fakeMaster"] == 1 and (
             (time.time() - master.lastkWhMessage) > (60 * 2)
         ):
             master.lastkWhMessage = time.time()
             master.queue_background_task({"cmd": "getLifetimekWh"})
+
+        # If it has been more than 1 minute since the last VIN query with no
+        # response, and if we haven't queried more than 5 times already for this
+        # slave TWC, repeat the query
+        master.retryVINQuery()
 
         ########################################################################
         # See if there's an incoming message on the input interface.
@@ -958,8 +966,15 @@ while True:
                     if vinPart < 2:
                         vinPart += 1
                         master.getVehicleVIN(senderID, vinPart)
+                        self.queue_background_task({"cmd": "getVehicleVIN", "slaveTWC": senderID, "vinPart": str(vinPart)})
                     else:
                         slaveTWC.currentVIN = "".join(slaveTWC.VINData)
+                        # Clear VIN retry timer
+                        slaveTWC.lastVINQuery = 0
+                        slaveTWC.vinQueryAttempt = 0
+                        # Record this vehicle being connected
+                        master.recordVehicleVIN(slaveTWC)
+                        # Send VIN data to Status modules
                         master.updateVINStatus()
                         vinPart += 1
                     debugLog(
