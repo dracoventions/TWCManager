@@ -358,6 +358,12 @@
       # battery is then further depleted by the vehicle charging.
           "minBatteryLevel": 90
         },
+      # SolarEdge API
+        "SolarEdge": {
+          "enabled": false,
+          "apiKey": "",
+          "siteID": ""
+        },
       # The energy detective
         "TED": {
           "enabled": false,

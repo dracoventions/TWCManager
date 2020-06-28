@@ -56,6 +56,7 @@ modules_available = [
     "Control.MQTTControl",
     "EMS.Fronius",
     "EMS.HASS",
+    "EMS.SolarEdge",
     "EMS.TeslaPowerwall2",
     "EMS.TED",
     "Status.HASSStatus",

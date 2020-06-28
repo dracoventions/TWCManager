@@ -115,7 +115,7 @@ class Fronius:
     def update(self):
 
         if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
-            # Cache has expired. Fetch values from HomeAssistant sensor.
+            # Cache has expired. Fetch values from Fronius inverter.
 
             inverterData = self.getInverterData()
             if inverterData:
