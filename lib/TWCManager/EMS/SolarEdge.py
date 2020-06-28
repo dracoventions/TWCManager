@@ -2,7 +2,6 @@
 
 class SolarEdge:
 
-    import xml.etree.ElementTree as ET
     import requests
     import time
 
@@ -72,7 +71,7 @@ class SolarEdge:
         return float(self.generatedW)
 
     def getPortalData(self):
-        url = "http://monitoringapi.solaredge.com/site/"+ self.siteID
+        url = "https://monitoringapi.solaredge.com/site/"+ self.siteID
         url += "/overview?api_key="+ self.apiKey
 
         return self.getPortalValue(url)
@@ -94,8 +93,7 @@ class SolarEdge:
             return False
 
         r.raise_for_status()
-        xmldata = self.ET.fromstring(r.content)
-        return xmldata
+        return r.json()
 
     def update(self):
 
@@ -104,18 +102,15 @@ class SolarEdge:
 
             portalData = self.getPortalData()
             if portalData:
-              cpwr = xmldata.find('./currentPower/power') 
-              if cpwr:
                 try:
-                    self.generatedW = int(cpwr.text)
+                    self.generatedW = int(portalData['overview']['currentPower']['power'])
                 except (KeyError, TypeError) as e:
                     self.master.debugLog(
                         4, "SolarEdge", 
                         "Exception during parsing SolarEdge data (currentPower)")
                     self.master.debugLog(10, "SolarEdge", e)
-              else:
-                self.master.debugLog(4, "SolarEdge", "SolarEdge API result does not contain currentPower/power XML node. Keys are:")
-                self.master.debugLog(4, "SolarEdge", portalData.keys())
+            else:
+                self.master.debugLog(4, "SolarEdge", "SolarEdge API result does not contain json content.")
                 self.fetchFailed = True
 
             # Update last fetch time
