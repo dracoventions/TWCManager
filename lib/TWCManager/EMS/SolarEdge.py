@@ -92,8 +92,16 @@ class SolarEdge:
             self.fetchFailed = True
             return False
 
-        r.raise_for_status()
-        return r.json()
+        try:
+            r.raise_for_status()
+        except self.requests.exceptions.HTTPError as e:
+            self.master.debugLog(
+                4, "SolarEdge",
+                "HTTP status " + str(e.response.status_code) + " connecting to SolarEdge Portal to fetch sensor value"
+            )
+            return ""
+        else:
+            return r.json()
 
     def update(self):
 
