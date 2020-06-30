@@ -438,7 +438,7 @@ class TWCMaster:
             if all([slave.voltsPhaseC > 0 for slave in slavesWithVoltage]):
                 total = sum(
                     [
-                        sum(slave.voltsPhaseA, slave.voltsPhaseB, slave.voltsPhaseC)
+                        (slave.voltsPhaseA + slave.voltsPhaseB + slave.voltsPhaseC)
                         for slave in slavesWithVoltage
                     ]
                 )
