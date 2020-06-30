@@ -448,7 +448,10 @@ class TWCMaster:
                     "TWCMaster",
                     "FATAL:  Mix of three-phase and single-phase not currently supported.",
                 )
-                return (240, 1)
+                return (
+                    self.config["config"].get("defaultVoltage", 240),
+                    self.config["config"].get("numberOfPhases", 1),
+                )
         else:
             # Single-phase system
             total = sum([slave.voltsPhaseA for slave in slavesWithVoltage])
