@@ -140,11 +140,11 @@ class TWCMaster:
 
     def convertAmpsToWatts(self, amps):
         (voltage, phases) = self.getVoltageMeasurement()
-        return math.sqrt(phases) * voltage * amps
+        return phases * voltage * amps
 
     def convertWattsToAmps(self, watts):
         (voltage, phases) = self.getVoltageMeasurement()
-        return watts / (math.sqrt(phases) * voltage)
+        return watts / (phases * voltage)
 
     def countSlaveTWC(self):
         return int(len(self.slaveTWCRoundRobin))
