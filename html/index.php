@@ -489,13 +489,13 @@
             </p>
             <p style="margin-top:0.3em; margin-bottom:0; padding-top:0;">
                 <strong>on days</strong>
-                <?php DisplayCheckbox("scheduledAmpsDay[0]", '', '1') ?>Su
-                <?php DisplayCheckbox("scheduledAmpsDay[1]", '', '1') ?>Mo
-                <?php DisplayCheckbox("scheduledAmpsDay[2]", '', '1') ?>Tu
-                <?php DisplayCheckbox("scheduledAmpsDay[3]", '', '1') ?>We
-                <?php DisplayCheckbox("scheduledAmpsDay[4]", '', '1') ?>Th
-                <?php DisplayCheckbox("scheduledAmpsDay[5]", '', '1') ?>Fr
-                <?php DisplayCheckbox("scheduledAmpsDay[6]", '', '1') ?>Sa
+                <?php DisplayCheckbox("scheduledAmpsDay[6]", '', '1') ?>Su
+                <?php DisplayCheckbox("scheduledAmpsDay[0]", '', '1') ?>Mo
+                <?php DisplayCheckbox("scheduledAmpsDay[1]", '', '1') ?>Tu
+                <?php DisplayCheckbox("scheduledAmpsDay[2]", '', '1') ?>We
+                <?php DisplayCheckbox("scheduledAmpsDay[3]", '', '1') ?>Th
+                <?php DisplayCheckbox("scheduledAmpsDay[4]", '', '1') ?>Fr
+                <?php DisplayCheckbox("scheduledAmpsDay[5]", '', '1') ?>Sa
             </p>
         </div>
 
