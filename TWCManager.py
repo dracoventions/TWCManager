@@ -241,9 +241,9 @@ def check_green_energy():
     #
     greenEnergyAmpsOffset = config["config"]["greenEnergyAmpsOffset"]
     if (greenEnergyAmpsOffset >= 0):
-        master.setConsumption("Manual", master.convertAmpsToWatts())
+        master.setConsumption("Manual", master.convertAmpsToWatts(greenEnergyAmpsOffset))
     else:
-        master.setGeneration("Manual", -1 * master.convertAmpsToWatts())
+        master.setGeneration("Manual", -1 * master.convertAmpsToWatts(greenEnergyAmpsOffset))
     # Poll all loaded EMS modules for consumption and generation values
     for module in master.getModulesByType("EMS"):
         master.setConsumption(module["name"], module["ref"].getConsumption())
