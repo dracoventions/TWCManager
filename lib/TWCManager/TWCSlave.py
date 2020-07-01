@@ -1079,6 +1079,7 @@ class TWCSlave:
                     getattr(self, "voltsPhase" + phase, 0),
                     "V",
                 )
+        self.refreshingChargerLoadStatus()
 
     def refreshingChargerLoadStatus(self):
         for module in self.master.getModulesByType("Status"):
@@ -1087,6 +1088,7 @@ class TWCSlave:
                 "charger_load_w",
                 "chargerLoadInW",
                 int(self.getCurrentChargerLoad()),
+                "W",
             )                     
 
     def getCurrentChargerLoad(self):
