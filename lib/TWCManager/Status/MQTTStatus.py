@@ -51,7 +51,7 @@ class MQTTStatus:
         if ((not self.status) or (not self.brokerIP)):
           self.master.releaseModule("lib.TWCManager.Status","MQTTStatus");
 
-    def setStatus(self, twcid, key_underscore, key_camelcase, value):
+    def setStatus(self, twcid, key_underscore, key_camelcase, value, unit):
         if self.status:
 
             # Format TWCID nicely

@@ -304,13 +304,15 @@ def update_statuses():
             bytes("config", "UTF-8"),
             "min_amps_per_twc",
             "minAmpsPerTWC",
-            config["config"]["minAmpsPerTWC"],
+            config["config"]["minAmpsPerTWC"], 
+            "A",
         )
         module["ref"].setStatus(
             bytes("all", "UTF-8"),
             "max_amps_for_slaves",
             "maxAmpsForSlaves",
             master.getMaxAmpsToDivideAmongSlaves(),
+            "A",
         )
 
 
