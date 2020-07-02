@@ -15,10 +15,12 @@ This document logs the changes per release of TWCManager.
   * Added history recording for Slave TWC amps offered, with API function to query average amp history (thanks @MikeBishop).
   * Added recording of charge sessions per vehicle VIN, with rudimentary total kWh consumed calculations.
   * Added support for SolarEdge API EMS Module, thanks to prototype provided by Picar on TMC Forums.
+  * Improved HASS status updates - sets sensor class and unit (thanks @dschuesae)
   * Bugfixes
     * Fixed situation where fakeMaster == 2 installations do not recieve Status module lifetime kWh and voltage per phase readings [Backported to 1.1.8]
     * Fixed unnecessary 60 second delay to processing background queue introduced by lifetime kWh and voltage per phase polling [Backported to 1.1.8] (Thanks @MikeBishop)
     * Fixed a condition in which flex and alternative maximum clash on charging rate (thanks @MikeBishop)
+    * Fixed a number of issues with voltage and amperage calculation (thanks @dschuesae)
 
 ## v1.1.8 - 2020-04-26
 
