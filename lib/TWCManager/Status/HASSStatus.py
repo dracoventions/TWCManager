@@ -45,7 +45,7 @@ class HASSStatus:
           self.master.releaseModule("lib.TWCManager.Status","HASSStatus");
 
 
-    def setStatus(self, twcid, key_underscore, key_camelcase, value):
+    def setStatus(self, twcid, key_underscore, key_camelcase, value, unit):
 
         # Format TWCID nicely
         twident = None
@@ -85,9 +85,18 @@ class HASSStatus:
                         "Sending POST request to HomeAssistant for sensor {sensor} (value {value})."
                     ),
                 )
-                self.requests.post(
-                    url, json={"state": value}, timeout=self.timeout, headers=headers
-                )
+                devclass = ""
+                if  str.upper(unit) in ["W","A","V","KWH"]:
+                    devclass="power"
+
+                if len(unit)>0:
+                    self.requests.post(
+                        url, json={"state": value, "attributes": { "unit_of_measurement": unit, "device_class": devclass, "friendly_name": "TWC " + str(twident) + " " + key_camelcase } }, timeout=self.timeout, headers=headers
+                    )
+                else:
+                    self.requests.post(
+                        url, json={"state": value, "attributes": { "friendly_name": "TWC " + str(twident) + " " + key_camelcase } }, timeout=self.timeout, headers=headers
+                    )
             except self.requests.exceptions.ConnectionError as e:
                 self.master.debugLog(
                     4,

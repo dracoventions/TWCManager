@@ -407,11 +407,12 @@ class TWCMaster:
                     "amps_in_use",
                     "ampsInUse",
                     slaveTWC.reportedAmpsActual,
+                    "A",
                 )
 
         for module in self.getModulesByType("Status"):
             module["ref"].setStatus(
-                bytes("all", "UTF-8"), "total_amps_in_use", "totalAmpsInUse", totalAmps
+                bytes("all", "UTF-8"), "total_amps_in_use", "totalAmpsInUse", totalAmps, "A"
             )
 
         self.debugLog(
@@ -582,7 +583,7 @@ class TWCMaster:
             carsCharging += slaveTWC.isCharging
             for module in self.getModulesByType("Status"):
                 module["ref"].setStatus(
-                    slaveTWC.TWCID, "cars_charging", "carsCharging", slaveTWC.isCharging
+                    slaveTWC.TWCID, "cars_charging", "carsCharging", slaveTWC.isCharging, ""
                 )
         self.debugLog(
             10, "TWCMaster", "Number of cars charging now: " + str(carsCharging)
@@ -601,7 +602,7 @@ class TWCMaster:
         )
         for module in self.getModulesByType("Status"):
             module["ref"].setStatus(
-                slaveTWC.TWCID, "cars_charging", "carsCharging", carsCharging
+                slaveTWC.TWCID, "cars_charging", "carsCharging", carsCharging, ""
             )
         return carsCharging
 
@@ -1050,6 +1051,7 @@ class TWCMaster:
                         "lifetime_kwh",
                         "lifetimekWh",
                         slaveTWC.lifetimekWh,
+                        "kWh",
                     )
 
                     # Publish phase 1, 2 and 3 values via Status modules
@@ -1060,6 +1062,7 @@ class TWCMaster:
                                 "voltage_phase_" + phase.lower(),
                                 "voltagePhase" + phase,
                                 getattr(slaveTWC, "voltsPhase" + phase, 0),
+                                "V",
                             )
 
     def updateVINStatus(self):
@@ -1071,6 +1074,7 @@ class TWCMaster:
                     "current_vehicle_vin",
                     "currentVehicleVIN",
                     slaveTWC.currentVIN,
+                    "",
                 )
             for module in self.getModulesByType("Status"):
                 module["ref"].setStatus(
@@ -1078,4 +1082,5 @@ class TWCMaster:
                     "last_vehicle_vin",
                     "lastVehicleVIN",
                     slaveTWC.lastVIN,
+                    "",
                 )
