@@ -78,8 +78,9 @@ class HASSStatus:
 
     def setStatus(self, twcid, key_underscore, key_camelcase, value, unit):
         self.backgroundTasksLock.acquire()
-        sensor = self.getSensorName(twcid, key_underscore)  
-        self.msgQueue[sensor] = HASSMessage(self.time.time(),sensor,twcid,key_underscore,key_camelcase,value,unit) 
+        sensor = self.getSensorName(twcid, key_underscore)
+        if (sensor not in self.msgQueue) or (self.msgQueue[sensor].value != value):  
+            self.msgQueue[sensor] = HASSMessage(self.time.time(),sensor,twcid,key_underscore,key_camelcase,value,unit) 
         self.backgroundTasksLock.release()
 
     def sendingStatusToHASS(self, msg):
