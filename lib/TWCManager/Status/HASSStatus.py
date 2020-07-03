@@ -105,7 +105,7 @@ class HASSStatus:
 
             if len(msg.unit)>0:
                 self.requests.post(
-                    url, json={"state": msg.value, "attributes": { "unit_of_measurement": unit, "device_class": devclass, "friendly_name": "TWC " + str(self.getTwident(msg.twcid)) + " " + msg.key_camelcase } }, timeout=self.timeout, headers=headers
+                    url, json={"state": msg.value, "attributes": { "unit_of_measurement": msg.unit, "device_class": devclass, "friendly_name": "TWC " + str(self.getTwident(msg.twcid)) + " " + msg.key_camelcase } }, timeout=self.timeout, headers=headers
                 )
             else:
                 self.requests.post(
