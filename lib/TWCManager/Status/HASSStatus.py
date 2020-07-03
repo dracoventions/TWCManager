@@ -3,7 +3,6 @@
 
 from ww import f
 
-
 class HASSStatus:
 
     import time
@@ -69,8 +68,8 @@ class HASSStatus:
             self.time.sleep(self.msgRateSeconds)
             self.backgroundTasksLock.acquire()
             for msg in self.msgQueue:
-                if msg["elapsingTime"] < self.time.time():
-                    self.sendingStatusToHASS(msg["sensor"], msg["twcid"], msg["key_underscore"], msg["key_camelcase"], msg["value"], msg["unit"])
+                if msg.elapsingTime < self.time.time():
+                    self.sendingStatusToHASS(msg)
             self.backgroundTasksLock.release()
 
     def getSensorName(self, twcid, key_underscore):
@@ -79,21 +78,13 @@ class HASSStatus:
     def setStatus(self, twcid, key_underscore, key_camelcase, value, unit):
         self.backgroundTasksLock.acquire()
         sensor = self.getSensorName(twcid, key_underscore)  
-        self.msgQueue[sensor] = {
-                "elapsingTime": self.time.time(), 
-                "sensor": sensor, 
-                "twcid": twcid, 
-                "key_underscore": key_underscore, 
-                "key_camelcase": key_camelcase, 
-                "value": value, 
-                "unit": unit 
-            }
+        self.msgQueue[sensor] = HASSMessage(self.time.time(),sensor,twcid,key_underscore,key_camelcase,value,unit) 
         self.backgroundTasksLock.release()
 
-    def sendingStatusToHASS(self, sensor, twcid, key_underscore, key_camelcase, value, unit):
+    def sendingStatusToHASS(self, msg):
 
         url = "http://" + self.serverIP + ":" + self.serverPort
-        url = url + "/api/states/" + sensor
+        url = url + "/api/states/" + msg.sensor
         headers = {
             "Authorization": "Bearer " + self.apiKey,
             "content-type": "application/json",
@@ -103,24 +94,24 @@ class HASSStatus:
                 8,
                 "HASSStatus",
                 f(
-                    "Sending POST request to HomeAssistant for sensor {sensor} (value {value})."
+                    "Sending POST request to HomeAssistant for sensor {msg.sensor} (value {msg.value})."
                 ),
             )
 
             devclass = ""
-            if  str.upper(unit) in ["W","A","V","KWH"]:
+            if  str.upper(msg.unit) in ["W","A","V","KWH"]:
                 devclass="power"
 
-            if len(unit)>0:
+            if len(msg.unit)>0:
                 self.requests.post(
-                    url, json={"state": value, "attributes": { "unit_of_measurement": unit, "device_class": devclass, "friendly_name": "TWC " + str(self.getTwident(twcid)) + " " + key_camelcase } }, timeout=self.timeout, headers=headers
+                    url, json={"state": msg.value, "attributes": { "unit_of_measurement": unit, "device_class": devclass, "friendly_name": "TWC " + str(self.getTwident(msg.twcid)) + " " + msg.key_camelcase } }, timeout=self.timeout, headers=headers
                 )
             else:
                 self.requests.post(
-                    url, json={"state": value, "attributes": { "friendly_name": "TWC " + str(self.getTwident(twcid)) + " " + key_camelcase } }, timeout=self.timeout, headers=headers
+                    url, json={"state": msg.value, "attributes": { "friendly_name": "TWC " + str(self.getTwident(msg.twcid)) + " " + msg.key_camelcase } }, timeout=self.timeout, headers=headers
                 )
             # Setting elapsing time to now + resendRateInSeconds
-            self.msgQueue[sensor]["elapsingTime"] = self.time.time() + self.resendRateInSeconds               
+            self.msgQueue[msg.sensor].elapsingTime = self.time.time() + self.resendRateInSeconds               
         except self.requests.exceptions.ConnectionError as e:
             self.master.debugLog(
                 4,
@@ -128,7 +119,7 @@ class HASSStatus:
                 "Error connecting to HomeAssistant to publish sensor values",
             )
             self.master.debugLog(10, "HASSStatus", str(e))
-            self.settingRetryRate(sensor)
+            self.settingRetryRate(msg)
             return False
         except self.requests.exceptions.ReadTimeout as e:
             self.master.debugLog(
@@ -137,7 +128,7 @@ class HASSStatus:
                 "Error connecting to HomeAssistant to publish sensor values",
             )
             self.master.debugLog(10, "HASSStatus", str(e))
-            self.settingRetryRate(sensor)
+            self.settingRetryRate(msg)
             return False
         except Exception as e:
             self.master.debugLog(
@@ -146,9 +137,29 @@ class HASSStatus:
                 "Error during publishing HomeAssistant sensor values",
             )
             self.master.debugLog(10, "HASSStatus", str(e))
-            self.settingRetryRate(sensor)
+            self.settingRetryRate(msg)
             return False
 
-    def settingRetryRate(self, sensor):
+    def settingRetryRate(self, msg):
         # Setting elapsing time to now + retryRateInSeconds
-        self.msgQueue[sensor]["elapsingTime"] = self.time.time() + self.retryRateInSeconds     
+        self.msgQueue[msg.sensor].elapsingTime = self.time.time() + self.retryRateInSeconds     
+
+class HASSMessage:
+
+    elapsingTime = 0
+    sensor = "" 
+    twcid = "" 
+    key_underscore = "" 
+    key_camelcase = "" 
+    value = None 
+    unit = "" 
+
+    def __init__(self, elapsingTime, sensor, twcid, key_underscore, key_camelcase, value, unit):
+        self.elapsingTime = elapsingTime
+        self.sensor = sensor
+        self.twcid = twcid
+        self.key_underscore = key_underscore
+        self.key_camelcase = key_camelcase
+        self.value = value
+        self.unit = unit
+
