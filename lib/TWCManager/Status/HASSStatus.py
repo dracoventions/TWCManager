@@ -26,7 +26,7 @@ class HASSStatus:
     serverPort = 8123
     timeout = 2
     backgroundTasksLock = threading.Lock()
-    backgroundTasksThread = threading.Thread(target=background_task_thread, args=())
+    backgroundTasksThread = None
 
     def __init__(self, master):
         self.config = master.config
@@ -53,6 +53,7 @@ class HASSStatus:
            or (int(self.serverPort) < 1) or (not self.apiKey)):
             self.master.releaseModule("lib.TWCManager.Status","HASSStatus")     
         else:          
+            self.backgroundTasksThread = self.threading.Thread(target=self.background_task_thread, args=())
             self.backgroundTasksThread.daemon = True
             self.backgroundTasksThread.start()
 
