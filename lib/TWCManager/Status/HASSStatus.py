@@ -67,7 +67,8 @@ class HASSStatus:
         while True:
             self.time.sleep(self.msgRateSeconds)
             self.backgroundTasksLock.acquire()
-            for msg in self.msgQueue:
+            for msgKey in self.msgQueue:
+                msg = self.msgQueue[msgKey]
                 if msg.elapsingTime < self.time.time():
                     self.sendingStatusToHASS(msg)
             self.backgroundTasksLock.release()
