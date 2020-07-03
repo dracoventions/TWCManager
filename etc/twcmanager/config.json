@@ -383,9 +383,17 @@
       
       # Perform rate limiting first (as there are some very chatty topics).
       # For each message that comes through, we take the sensor name and check
-      # when we last updated it. If it was less than msgRatePerSensor
-      # seconds ago, we dampen it.
-            "msgRatePerSensor": 15,
+      # when we last updated it. If it was less than msgRateSeconds
+      # seconds ago, we send it later.
+            "msgRateSeconds": 15,
+      
+      # Resends the last sensor value at least once every resendLastMsgRateInSeconds, 
+      # so HASS does not forget the value ;-)
+            "resendRateInSeconds": 3600,
+      
+      # In case of errors, after how many seconds it the logic should try to resend
+      # the status
+            "retryRateInSeconds": 60,
 
       # To obtain a HASS API key, via browser, click on your user profile, and
       # add a Long-Lived Access Token. Place it in the following variable:
