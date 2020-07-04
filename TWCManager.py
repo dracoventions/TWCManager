@@ -704,6 +704,14 @@ while True:
                 # sometimes our strings do end with a newline character that is
                 # actually the CRC byte with a value of 0A or 0D.
                 msgMatch = re.search(
+                    b"^\xfd\xb2(..)\x00\x00.+\Z", msg, re.DOTALL
+                )
+                if msgMatch and foundMsgMatch == False:
+                    # Handle acknowledgement of Stop command
+                    foundMsgMatch = True
+                    senderID = msgMatch.group(1)
+
+                msgMatch = re.search(
                     b"^\xfd\xe2(..)(.)(..)\x00\x00\x00\x00\x00\x00.+\Z", msg, re.DOTALL
                 )
                 if msgMatch and foundMsgMatch == False:

@@ -672,6 +672,17 @@ class TWCMaster:
             self.saveSettings()
 
     def recordVehicleVIN(self, slaveTWC):
+        # Record Slave TWC ID as being capable of reporting VINs, if it is not
+        # already.
+        twcid = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
+        if (not self.settings.get("SlaveTWCs", None)):
+            self.settings["SlaveTWCs"] = {}
+        if (not self.settings["SlaveTWCs"].get(twcid, None)):
+            self.settings["SlaveTWCs"][twcid] = {}
+        if (not self.settings["SlaveTWCs"][twcid].get("supportsVINQuery", 0)):
+            self.settings["SlaveTWCs"][twcid]["supportsVINQuery"] = 1
+            self.saveSettings()
+
         # Increment sessions counter for this VIN in persistent settings file
         if (not self.settings.get("Vehicles", None)):
           self.settings["Vehicles"] = {}
@@ -749,7 +760,11 @@ class TWCMaster:
 
         # Step 2 - Write the settings dict to a JSON file
         with open(fileName, "w") as outconfig:
-            json.dump(self.settings, outconfig)
+            try:
+                json.dump(self.settings, outconfig)
+            except TypeError as e:
+                self.debugLog(1, "TWCMaster", "Exception raised while attempting to save settings file:")
+                self.debugLog(1, "TWCMaster", str(e))
 
     def send_master_linkready1(self):
 
