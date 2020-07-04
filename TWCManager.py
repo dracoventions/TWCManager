@@ -59,6 +59,9 @@ modules_available = [
     "EMS.SolarEdge",
     "EMS.TeslaPowerwall2",
     "EMS.TED",
+    "Logging.ConsoleLogging",
+    "Logging.CSVLogging",
+#    "Logging.SQLiteLogging",
     "Status.HASSStatus",
     "Status.MQTTStatus",
 ]
@@ -261,15 +264,14 @@ def update_statuses():
         genwatts = master.getGeneration()
         conwatts = master.getConsumption()
         chgwatts = master.getChargerLoad()
-        genwattsDisplay = f("{genwatts:.0f}W")
-        conwattsDisplay = f("{conwatts:.0f}W")
-        chgwattsDisplay = f("{chgwatts:.0f}W")
-        debugLog(
-            1,
-            f(
-                "Green energy generates {colored(genwattsDisplay, 'magenta')}, Consumption {colored(conwattsDisplay, 'magenta')}, Charger Load {colored(chgwattsDisplay, 'magenta')}"
-            ),
-        )
+
+        for module in master.getModulesByType("Logging"):
+            module["ref"].greenEnergy({
+                "genWatts": genwatts,
+                "conWatts": conwatts,
+                "chgWatts": chgwatts
+            })
+
         nominalOffer = master.convertWattsToAmps(
             genwatts
             - (conwatts - (chgwatts if config["config"]["subtractChargerLoad"] else 0))
@@ -918,18 +920,16 @@ while True:
                     voltsPhaseC = (vPhaseC[0] << 8) + vPhaseC[1]
                     data = msgMatch.group(6)
 
-                    debugLog(
-                        1,
-                        "Slave TWC %02X%02X: Delivered %d kWh, voltage per phase: (%d, %d, %d)."
-                        % (
-                            senderID[0],
-                            senderID[1],
-                            kWh,
-                            voltsPhaseA,
-                            voltsPhaseB,
-                            voltsPhaseC,
-                        ),
-                    )
+                    for module in master.getModulesByType("Logging"):
+                        module["ref"].chargerStatus({
+                            "TWCID": senderID,
+                            "kWh": kWh,
+                            "voltsPerPhase": [
+                                voltsPhaseA,
+                                voltsPhaseB,
+                                voltsPhaseC
+                            ]
+                        })
 
                     # Update the timestamp of the last reciept of this message
                     master.lastkWhMessage = time.time()

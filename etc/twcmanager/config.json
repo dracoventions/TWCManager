@@ -307,7 +307,38 @@
 
       ]
     },
-
+    "logging":{
+        # Logging configuration controls where status messages about the TWC
+        # and charging sessions are logged. By default, we log to console and
+        # not to file. Consider what logging to file may mean if you're using
+        # a pi, it may mean considering alternatives such as a remote database
+        # to reduce write cycles.
+        "Console": {
+            "enabled": true
+        },
+        "CSV": {
+            "enabled": false,
+            # The path under which the various csv files will be stored.
+            # Make sure the user which runs the TWCManager process can write to
+            # this directory.
+            "path": "/etc/twcmanager/csv",
+            # The mute parameter allows turning specific logging on or off.
+            # In the example below, charge sessions are logged, but not the
+            # regular charger status messages. These are valid under any of the
+            # logging modules
+            "mute":{
+                "ChargerStatus": true,
+                "ChargeSessions": false,
+                "GreenEnergy": true
+            }
+        },
+        # SQLite is only in prototype phase at this point. More work required
+        # before this will be a working logging target
+        "SQLite": {
+            "enabled": false,
+            "path": "/etc/twcmanager/twcmanager.sqlite"
+        }
+    },
     "sources":{
         # This section is where we configure the various sources that we retrieve our generation and consumption
         # values for our solar system from.

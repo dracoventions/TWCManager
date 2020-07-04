@@ -562,6 +562,9 @@ class TWCMaster:
                     # Record our VIN query timestamp
                     slaveTWC.lastVINQuery = time.time()
                     slaveTWC.vinQueryAttempt = 1
+
+                    # Record start of current charging session
+                    self.recordVehicleSessionStart(slaveTWC)
             else:
                 if slaveTWC.isCharging == 1:
                     # A vehicle was previously charging and is no longer charging
@@ -671,6 +674,26 @@ class TWCMaster:
             self.settings["Vehicles"][slaveTWC.lastVIN]["totalkWh"] += delta
             self.saveSettings()
 
+        # Update Charge Session details in logging modules
+        for module in self.getModulesByType("Logging"):
+            module["ref"].stopChargeSession({
+                "TWCID": slaveTWC.TWCID,
+                "endkWh": slaveTWC.lifetimekWh,
+                "endTime": int(time.time()),
+                "endFormat": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+
+
+    def recordVehicleSessionStart(self, slaveTWC):
+        # Update Charge Session details in logging modules
+        for module in self.getModulesByType("Logging"):
+            module["ref"].startChargeSession({
+                "TWCID": slaveTWC.TWCID,
+                "startkWh": slaveTWC.lifetimekWh,
+                "startTime": int(time.time()),
+                "startFormat": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+
     def recordVehicleVIN(self, slaveTWC):
         # Record Slave TWC ID as being capable of reporting VINs, if it is not
         # already.
@@ -698,6 +721,13 @@ class TWCMaster:
           if (not self.settings["Vehicles"][slaveTWC.currentVIN].get("totalkWh", None)):
             self.settings["Vehicles"][slaveTWC.currentVIN]["totalkWh"] = 0
         self.saveSettings()
+
+        # Update Charge Session details in logging modules
+        for module in self.getModulesByType("Logging"):
+            module["ref"].updateChargeSession({
+                "TWCID": slaveTWC.TWCID,
+                "vehicleVIN": slaveTWC.currentVIN
+            })
 
     def releaseBackgroundTasksLock(self):
         self.backgroundTasksLock.release()
