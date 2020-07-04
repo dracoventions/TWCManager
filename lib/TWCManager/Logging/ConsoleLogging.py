@@ -33,25 +33,6 @@ class ConsoleLogging:
         if not self.configLogging.get("mute", None):
             self.configLogging["mute"] = {}
 
-    def chargerStatus(self, data):
-        # Check if this status is muted
-        if self.configLogging["mute"].get("ChargerStatus", 0):
-            return None
-
-        self.master.debugLog(
-            1,
-            "TWCManager",
-            "Slave TWC %02X%02X: Delivered %d kWh, voltage per phase: (%d, %d, %d)."
-            % (
-                data["TWCID"][0],
-                data["TWCID"][1],
-                data["kWh"],
-                data["voltsPerPhase"][0],
-                data["voltsPerPhase"][1],
-                data["voltsPerPhase"][2]
-            )
-        )
-
     def greenEnergy(self, data):
         # Check if this status is muted
         if self.configLogging["mute"].get("GreenEnergy", 0):
@@ -67,6 +48,29 @@ class ConsoleLogging:
             f(
                 "Green energy generates {colored(genwattsDisplay, 'magenta')}, Consumption {colored(conwattsDisplay, 'magenta')}, Charger Load {colored(chgwattsDisplay, 'magenta')}"
             ),
+        )
+
+    def slavePower(self, data):
+        # Not yet implemented
+        return None
+
+    def slaveStatus(self, data):
+        # Check if this status is muted
+        if self.configLogging["mute"].get("SlaveStatus", 0):
+            return None
+
+        self.master.debugLog(
+            1,
+            "TWCManager",
+            "Slave TWC %02X%02X: Delivered %d kWh, voltage per phase: (%d, %d, %d)."
+            % (
+                data["TWCID"][0],
+                data["TWCID"][1],
+                data["kWh"],
+                data["voltsPerPhase"][0],
+                data["voltsPerPhase"][1],
+                data["voltsPerPhase"][2]
+            )
         )
 
     def startChargeSession(self, data):
@@ -88,6 +92,10 @@ class ConsoleLogging:
         self.master.debugLog(1, "TWCManager", "Charge Session Stopped for Slave TWC %s" % twcid)
 
     def updateChargeSession(self, data):
+        # Check if this status is muted
+        if self.configLogging["mute"].get("ChargeSessions", 0):
+            return None
+
         # Called when additional information needs to be updated for a 
         # charge session. For console output, we ignore this.
         return None

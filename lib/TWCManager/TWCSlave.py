@@ -137,9 +137,16 @@ class TWCSlave:
                 or abs(ampsUsed - lastAmpsUsed) >= 1.0
                 or self.time.time() - self.timeLastHeartbeatDebugOutput > 600
             ):
-                self.master.debugLog(1, "TWCSlave  ", debugOutput)
+                self.master.debugLog(1, "TWCSlave", debugOutput)
                 self.lastHeartbeatDebugOutput = debugOutput
                 self.timeLastHeartbeatDebugOutput = self.time.time()
+
+                for module in self.master.getModulesByType("Logging"):
+                    module["ref"].slavePower({
+                        "TWCID": self.TWCID,
+                        "status": heartbeatData[0]
+                    })
+
         except IndexError:
             # This happens if we try to access, say, heartbeatData[8] when
             # len(heartbeatData) < 9. This was happening due to a bug I fixed

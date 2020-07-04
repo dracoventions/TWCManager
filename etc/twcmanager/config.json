@@ -327,10 +327,18 @@
             # regular charger status messages. These are valid under any of the
             # logging modules
             "mute":{
-                "ChargerStatus": true,
                 "ChargeSessions": false,
-                "GreenEnergy": true
+                "GreenEnergy": true,
+                "SlavePower": true,
+                "SlaveStatus": true
             }
+        },
+        "MySQL": {
+            "enabled": false,
+            "host": "1.2.3.4",
+            "database": "twcmanager",
+            "username": "twcmanager",
+            "password": "twcmanager"
         },
         # SQLite is only in prototype phase at this point. More work required
         # before this will be a working logging target

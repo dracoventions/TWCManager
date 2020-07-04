@@ -42,6 +42,19 @@ EMS Interfaces read solar generation and/or consumption values from an external 
 | [Tesla Powerwall2](docs/modules/EMS_Powerwall2.md) | Available v1.1.3 | Support for fetching Consumption and Generation from Tesla Powerwall 2 |
 | [The Energy Detective](docs/modules/EMS_TED.md) | Available v1.1.2 | Support for TED (The Energy Detective) |
 
+### Logging Interfaces
+
+Logging interfaces allow recording of statistics and values such as Green Energy data, Slave TWC status and Voltage and Amperage data to various interfaces.
+
+This can be useful if you would like to track charger activity and use it for graphing or statistics purposes.
+
+| Module      | Details  |
+| ----------- | -------- |
+| [Console](docs/modules/Logging_Console.md) | Print output to console |
+| [CSV](docs/modules/Logging_CSV.md)         | Log data to CSV files |
+| [MySQL](docs/modules/Logging_MySQL.md)     | Log data to a MySQL Database |
+| [SQLite](docs/modules/Logging_SQLite.md)   | Log data to a SQLite Database |
+
 ### Status Interfaces
 
 Status interfaces publish TWCManager status information to external systems. Current Status interfaces are:

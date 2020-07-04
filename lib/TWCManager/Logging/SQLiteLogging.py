@@ -1,10 +1,11 @@
-# SQLiteLogging module. Provides output to CSV file for regular stats
+# SQLiteLogging module. Provides output to SQLite Database for regular stats
 
 class SQLiteLogging:
 
     config        = None
     configConfig  = None
     configLogging = None
+    db            = None
     status        = False
 
     def __init__(self, master):
@@ -21,7 +22,7 @@ class SQLiteLogging:
         self.status = self.configLogging.get("enabled", False)
 
         # Unload if this module is disabled or misconfigured
-        if (not self.status or not self.configLogging["path"]):
+        if (not self.status or not self.configLogging.get("path", None)):
           self.master.releaseModule("lib.TWCManager.Logging","SQLiteLogging");
           return None
 
@@ -32,11 +33,6 @@ class SQLiteLogging:
         # Check if the database schema has been applied
         if (not self.checkTable("charge_sessions")):
             self.createSchema()
-
-
-    def chargerStatus(self, data):
-        # Not yet implemented
-        return None
 
     def checkTable(self, tableName):
         # Confirm if a given table exists within the schema
@@ -61,6 +57,14 @@ class SQLiteLogging:
             primary key(startTime, TWCID)
           );
         """
+
+    def slavePower(self, data):
+        # Not Yet Implemented
+        return None
+
+    def slaveStatus(self, data):
+        # Not yet implemented
+        return None
 
     def startChargeSession(self, data):
         # Called when a Charge Session Starts.

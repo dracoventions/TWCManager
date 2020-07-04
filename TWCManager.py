@@ -61,6 +61,7 @@ modules_available = [
     "EMS.TED",
     "Logging.ConsoleLogging",
     "Logging.CSVLogging",
+    "Logging.MySQLLogging",
 #    "Logging.SQLiteLogging",
     "Status.HASSStatus",
     "Status.MQTTStatus",
@@ -921,7 +922,7 @@ while True:
                     data = msgMatch.group(6)
 
                     for module in master.getModulesByType("Logging"):
-                        module["ref"].chargerStatus({
+                        module["ref"].slaveStatus({
                             "TWCID": senderID,
                             "kWh": kWh,
                             "voltsPerPhase": [

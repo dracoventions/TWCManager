@@ -34,31 +34,6 @@ class CSVLogging:
         if not self.configLogging.get("mute", None):
             self.configLogging["mute"] = {}
 
-
-    def chargerStatus(self, data):
-        # Check if this status is muted
-        if self.configLogging["mute"].get("ChargerStatus", 0):
-            return None
-
-        # Otherwise, write to the CSV
-        csv = open(self.configLogging["path"] + "/chargerstatus.csv", "a+")
-        csv.write(
-            self.qt("%02X%02X" % (data["TWCID"][0], data["TWCID"][1])) +
-            self.delimit() +
-            self.qt(int(time.time())) + 
-            self.delimit() +
-            self.qt(datetime.now().strftime("%Y-%m-%d %H:%M:%S")) +
-            self.delimit() +
-            self.qt(data["kWh"]) + 
-            self.delimit() +
-            self.qt(data["voltsPerPhase"][0]) +
-            self.delimit() +
-            self.qt(data["voltsPerPhase"][1]) +
-            self.delimit() +
-            self.qt(data["voltsPerPhase"][2]) +
-            "\n"
-        )
-
     def delimit(self):
         # Return the configured delimiter
         return ","
@@ -83,13 +58,44 @@ class CSVLogging:
             "\n"
         )
 
-
     def qt(self, string):
         # Perform optional quoting of CSV data
         if self.quoteColumns:
             return '"' + str(string) + '"'
         else:
             return str(string)
+
+    def slavePower(self, data):
+        # Check if this status is muted
+        if self.configLogging["mute"].get("SlavePower", 0):
+            return None
+
+        # Not Yet Implemented
+        return None
+
+    def slaveStatus(self, data):
+        # Check if this status is muted
+        if self.configLogging["mute"].get("SlaveStatus", 0):
+            return None
+
+        # Otherwise, write to the CSV
+        csv = open(self.configLogging["path"] + "/slavestatus.csv", "a+")
+        csv.write(
+            self.qt("%02X%02X" % (data["TWCID"][0], data["TWCID"][1])) +
+            self.delimit() +
+            self.qt(int(time.time())) + 
+            self.delimit() +
+            self.qt(datetime.now().strftime("%Y-%m-%d %H:%M:%S")) +
+            self.delimit() +
+            self.qt(data["kWh"]) + 
+            self.delimit() +
+            self.qt(data["voltsPerPhase"][0]) +
+            self.delimit() +
+            self.qt(data["voltsPerPhase"][1]) +
+            self.delimit() +
+            self.qt(data["voltsPerPhase"][2]) +
+            "\n"
+        )
 
     def startChargeSession(self, data):
         # Check if this status is muted
