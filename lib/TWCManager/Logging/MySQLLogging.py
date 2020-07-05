@@ -51,11 +51,14 @@ class MySQLLogging:
         if self.configLogging["mute"].get("GreenEnergy", 0):
             return None
 
-        cursor = self.db.cursor()
+        # Ensure database connection is alive, or reconnect if not
+        self.db.ping(reconnect=True)
+
         query = """
             INSERT INTO green_energy (time, genW, conW, chgW) 
             VALUES (now(), %s, %s, %s)
         """
+
         cur = self.db.cursor()
         rows = 0
         try:
@@ -84,6 +87,9 @@ class MySQLLogging:
         # Check if this status is muted
         if self.configLogging["mute"].get("SlaveStatus", 0):
             return None
+
+        # Ensure database connection is alive, or reconnect if not
+        self.db.ping(reconnect=True)
 
         # Otherwise, add to database
         cursor = self.db.cursor()
@@ -121,6 +127,10 @@ class MySQLLogging:
             INSERT INTO charge_sessions (chargeid, startTime, startkWh, slaveTWC) 
             VALUES (%s,now(),%s,%s)
         """
+
+        # Ensure database connection is alive, or reconnect if not
+        self.db.ping(reconnect=True)
+
         cur = self.db.cursor()
         rows = 0
         try:
@@ -150,6 +160,10 @@ class MySQLLogging:
             UPDATE charge_sessions SET endTime = now(), endkWh = %s 
             WHERE chargeid = %s AND slaveTWC = %s
         """
+
+        # Ensure database connection is alive, or reconnect if not
+        self.db.ping(reconnect=True)
+
         cur = self.db.cursor()
         rows = 0
         try:
@@ -181,6 +195,10 @@ class MySQLLogging:
                 UPDATE charge_sessions SET vehicleVIN = %s 
                 WHERE chargeid = %s AND slaveTWC = %s
             """
+
+            # Ensure database connection is alive, or reconnect if not
+            self.db.ping(reconnect=True)
+
             cur = self.db.cursor()
             rows = 0
             try:
