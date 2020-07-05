@@ -72,9 +72,9 @@ CREATE TABLE charge_sessions (
 
 CREATE TABLE green_energy (
   time datetime,
-  genW DECIMAL(6,3),
-  conW DECIMAL(6,3),
-  chgW DECIMAL(6,3),
+  genW DECIMAL(9,3),
+  conW DECIMAL(9,3),
+  chgW DECIMAL(9,3),
   primary key(time)
 );
 
