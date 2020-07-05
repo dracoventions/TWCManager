@@ -383,11 +383,11 @@
       
       # Perform rate limiting first (as there are some very chatty topics).
       # For each message that comes through, we take the sensor name and check
-      # when we last updated it. If it was less than msgRateSeconds
+      # when we last updated it. If it was less than msgRateInSeconds
       # seconds ago, we send it later.
-            "msgRateSeconds": 15,
+            "msgRateInSeconds": 60,
       
-      # Resends the last sensor value at least once every resendLastMsgRateInSeconds, 
+      # Resends the last sensor value at least once every resendRateInSeconds, 
       # so HASS does not forget the value ;-)
             "resendRateInSeconds": 3600,
       

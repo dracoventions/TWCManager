@@ -16,7 +16,7 @@ class HASSStatus:
     configHASS = None
     debugLevel = 0
     master = None
-    msgRateSeconds = 15
+    msgRateInSeconds = 60
     resendRateInSeconds = 3600 
     retryRateInSeconds = 60
     msgQueue = {}    
@@ -42,7 +42,7 @@ class HASSStatus:
         self.serverIP = self.configHASS.get("serverIP", None)
         self.serverPort = self.configHASS.get("serverPort", 8123)
         self.apiKey = self.configHASS.get("apiKey", None)
-        self.msgRateSeconds = self.configHASS.get("msgRateSeconds", 15)
+        self.msgRateInSeconds = self.configHASS.get("msgRateInSeconds", 60)
         self.resendRateInSeconds = self.configHASS.get("resendRateInSeconds", 3600)
         self.retryRateInSeconds = self.configHASS.get("retryRateInSeconds", 60)
         self.debugLevel = self.configConfig.get("debugLevel", 0)
@@ -65,7 +65,7 @@ class HASSStatus:
 
     def background_task_thread(self):
         while True:
-            self.time.sleep(self.msgRateSeconds)
+            self.time.sleep(self.msgRateInSeconds)
             self.backgroundTasksLock.acquire()
             for msgKey in self.msgQueue:
                 msg = self.msgQueue[msgKey]
