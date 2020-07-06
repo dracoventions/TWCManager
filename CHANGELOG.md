@@ -22,6 +22,8 @@ This document logs the changes per release of TWCManager.
     * Fixed unnecessary 60 second delay to processing background queue introduced by lifetime kWh and voltage per phase polling [Backported to 1.1.8] (Thanks @MikeBishop)
     * Fixed a condition in which flex and alternative maximum clash on charging rate (thanks @MikeBishop)
     * Fixed a number of issues with voltage and amperage calculation (thanks @dschuesae)
+    * Fixed error with scheduling via old web UI and day index (thanks @dschuesae)
+    * Removed Track green energy non-scheduled charging action from old Web UI (as new policy engine is incompatible) and moved it to new Web UI to allow re-introduction.
 
 ## v1.1.8 - 2020-04-26
 

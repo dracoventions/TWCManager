@@ -505,8 +505,7 @@
                 DisplaySelect('nonScheduledAmpsMax',
                               " onchange=\"if(this.value=='-1'){document.getElementById('resumeGreen').style.display='none'}"
                             . "else {document.getElementById('resumeGreen').style.display='block'};\"",
-                              array_merge(array('Track green energy' => '-1',
-                                                'Do not charge' => '0'),
+                              array_merge(array('Do not charge' => '0'),
                                           $aryStandardAmps));
             ?>
         </p>

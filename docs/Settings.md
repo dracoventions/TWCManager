@@ -21,3 +21,19 @@ This option, which defaults to using the Tesla API, allows you to specify how yo
       * With the DIP switch in position 2 (CAN protocol disabled), it will stop Tesla vehicles from charging, but the vehicle will eventually (after a number of interruptions) decide that the charger is broken and will refuse to start charging again.
       * [This thread](https://teslamotorsclub.com/tmc/threads/new-wall-connector-load-sharing-protocol.72830/page-24) provides the observations of those who have tested this command.
       * Whilst this option is offered primarily for the benefit of non-Tesla vehicles, it's not recommended for use with Tesla vehicles.
+
+### Non-Scheduled Power Action
+
+This setting determines what TWCManager should do if there is no scheduled charging rate and outside of the Track Green Energy hours. The available options are:
+
+      * Charge at specified Non-Scheduled Charge Rate
+
+This option will allow vehicles to charge outside of Scheduled and Track Green Energy timings at the specified charge rate. This is the default setting (and the default Charge Rate is 6A).
+
+      * Do not Charge
+
+The Do not Charge action states that outside of scheduled or Track Green Energy hours, the TWCManager should set the available amps to 0 for Non-Scheduled Charging.
+
+      * Track Green Energy
+
+This is an option that currently does not operate (and will only set Non-Scheduled Charging rate to 0). In future, this will allow continuing of Track Green Energy behaviour outside of the hard-coded daylight hours (6am - 8pm).
