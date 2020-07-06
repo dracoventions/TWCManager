@@ -767,7 +767,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         for key in self.fields:
             keya = str(key)
             vala = self.fields[key][0].replace("'", "")
-            self.server.master.settings[keya] = vala
+            try:
+                if int(vala):
+                    self.server.master.settings[keya] = int(vala)
+            except ValueError:
+                self.server.master.settings[keya] = vala
 
         # If Non-Scheduled power action is either Do not Charge or 
         # Track Green Energy, set Non-Scheduled power rate to 0

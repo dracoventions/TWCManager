@@ -50,14 +50,27 @@ class Policy:
             "charge_limit": "config.greenEnergyLimit",
         },
         # If all else fails (ie no other policy match), we will charge at
-        # nonScheduledAmpsMax
+        # nonScheduledAmpsMax, unless overridden with nonScheduledAction,
+        # which may cause us to Track Green Energy instead.
         {
             "name": "Non Scheduled Charging",
-            "match": ["none"],
-            "condition": ["none"],
-            "value": [0],
+            "match": ["settings.nonScheduledAction"],
+            "condition": ["lt"],
+            "value": [3],
             "charge_amps": "settings.nonScheduledAmpsMax",
             "charge_limit": "config.nonScheduledLimit",
+        },
+        # Non-Scheduled Track Green Energy (if configured)
+        # If selected in the Web UI, instead of falling back to non-scheduled
+        # amps, we'll fall back to non-scheduled Track Green Energy
+        {
+            "name": "Track Green Energy",
+            "match": ["settings.nonScheduledAction"],
+            "condition": ["eq"],
+            "value": [3],
+            "background_task": "checkGreenEnergy",
+            "allowed_flex": "config.greenEnergyFlexAmps",
+            "charge_limit": "config.greenEnergyLimit",
         },
     ]
     lastPolicyCheck = 0

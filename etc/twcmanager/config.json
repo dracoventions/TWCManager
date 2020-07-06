@@ -283,13 +283,13 @@
       #   "charge_limit": "config.chargeNowLimit" },
 
       # { "name": "Scheduled Charging",
-        #   "match": [ "checkScheduledCharging()" ],
-        #   "condition": [ "eq" ],
-        #   "value": [ 1 ],
-        #   "charge_amps": "settings.scheduledAmpsMax",
-        #   "charge_limit": "config.scheduledLimit" },
+      #   "match": [ "checkScheduledCharging()" ],
+      #   "condition": [ "eq" ],
+      #   "value": [ 1 ],
+      #   "charge_amps": "settings.scheduledAmpsMax",
+      #   "charge_limit": "config.scheduledLimit" },
   
-        # { "name": "Track Green Energy",
+      # { "name": "Track Green Energy",
       #   "match": [ "tm_hour", "tm_hour", "settings.hourResumeTrackGreenEnergy" ],
       #   "condition": [ "gte", "lt", "lte" ],
       #   "value": [ 6, 20, "tm_hour" ],
@@ -298,12 +298,19 @@
       #   "charge_limit": "config.greenEnergyLimit" },
 
       # { "name": "Non Scheduled Charging",
-      #   "match": [ "none" ],
-      #   "condition": [ "none" ],
-      #   "value": [ 0 ],
+      #   "match": [ "settings.nonScheduledAction" ],
+      #   "condition": [ "lt" ],
+      #   "value": [3],
       #   "charge_amps": "settings.nonScheduledAmpsMax",
-      #   "charge_limit": "config.nonScheduledLimit" }
+      #   "charge_limit": "config.nonScheduledLimit" },
 
+      # { "name": "Track Green Energy",
+      #   "match": ["settings.nonScheduledAction"],
+      #   "condition": ["eq"],
+      #   "value": [3],
+      #   "background_task": "checkGreenEnergy",
+      #   "allowed_flex": "config.greenEnergyFlexAmps",
+      #   "charge_limit": "config.greenEnergyLimit" }
 
       ]
     },
