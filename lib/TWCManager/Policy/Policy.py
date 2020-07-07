@@ -217,6 +217,8 @@ class Policy:
         limit = None
         if self.limitOverride:
             limit = self.master.getModuleByName("TeslaAPI").minBatteryLevelAtHome
+            if limit < 50:
+                limit = 50
         else:
             limit = self.policyValue(policy.get("charge_limit", -1))
         if not (limit >= 50 and limit <= 100):
