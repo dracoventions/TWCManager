@@ -1045,6 +1045,7 @@ class TWCMaster:
         # below
         if self.settings.get("chargeStopMode", "1") == "1":
             self.queue_background_task({"cmd": "charge", "charge": True})
+            self.getModuleByName("Policy").clearOverride()
         if self.settings.get("chargeStopMode", "1") == "2":
             self.settings["respondToSlaves"] = 1
         if self.settings.get("chargeStopMode", "1") == "3":

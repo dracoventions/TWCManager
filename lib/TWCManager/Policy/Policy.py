@@ -333,3 +333,6 @@ class Policy:
     
     def overrideLimit(self):
         self.limitOverride = True
+
+    def clearOverride(self):
+        self.limitOverride = False
