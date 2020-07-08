@@ -53,6 +53,7 @@ class TWCMaster:
     )
     slaveTWCs = {}
     slaveTWCRoundRobin = []
+    stopTimeout = datetime.max
     spikeAmpsToCancel6ALimit = 16
     subtractChargerLoad = False
     teslaLoginAskLater = False
@@ -591,22 +592,10 @@ class TWCMaster:
         self.debugLog(
             10, "TWCMaster", "Number of cars charging now: " + str(carsCharging)
         )
-        return carsCharging
 
-        carsCharging = len(
-            [
-                slaveTWC
-                for slaveTWC in self.getSlaveTWCs()
-                if slaveTWC.reportedAmpsActual >= 1.0
-            ]
-        )
-        self.debugLog(
-            10, "TWCMaster", "Number of cars charging now: " + str(carsCharging)
-        )
-        for module in self.getModulesByType("Status"):
-            module["ref"].setStatus(
-                slaveTWC.TWCID, "cars_charging", "carsCharging", carsCharging, ""
-            )
+        if carsCharging == 0:
+            self.stopTimeout = datetime.max
+
         return carsCharging
 
     def queue_background_task(self, task):
@@ -1056,6 +1045,7 @@ class TWCMaster:
         # below
         if self.settings.get("chargeStopMode", "1") == "1":
             self.queue_background_task({"cmd": "charge", "charge": True})
+            self.getModuleByName("Policy").clearOverride()
         if self.settings.get("chargeStopMode", "1") == "2":
             self.settings["respondToSlaves"] = 1
         if self.settings.get("chargeStopMode", "1") == "3":
@@ -1073,6 +1063,10 @@ class TWCMaster:
         # 3 = Send TWC Stop command to each slave
         if self.settings.get("chargeStopMode", "1") == "1":
             self.queue_background_task({"cmd": "charge", "charge": False})
+            if self.stopTimeout == datetime.max:
+                self.stopTimeout = datetime.now() + timedelta(seconds = 10)
+            elif datetime.now() > self.stopTimeout:
+                self.getModuleByName("Policy").overrideLimit()
         if self.settings.get("chargeStopMode", "1") == "2":
             self.settings["respondToSlaves"] = 0
         if self.settings.get("chargeStopMode", "1") == "3":
