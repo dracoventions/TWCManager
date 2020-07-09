@@ -47,8 +47,9 @@ class TED:
 
         # Unload if this module is disabled or misconfigured
         if ((not self.status) or (not self.serverIP)
-           or (int(self.serverPort) < 1)):
-          self.master.releaseModule("lib.TWCManager.EMS","TED");
+            or (int(self.serverPort) < 1)):
+            self.master.releaseModule("lib.TWCManager.EMS","TED");
+            return None
 
     def debugLog(self, minlevel, message):
         if self.debugLevel >= minlevel:

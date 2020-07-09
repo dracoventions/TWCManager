@@ -42,14 +42,14 @@ class HTTPControl:
         # Unload if this module is disabled or misconfigured
         if (not self.status) or (int(self.httpPort) < 1):
             self.master.releaseModule("lib.TWCManager.Control", "HTTPControl")
+            return None
 
-        if self.status:
-            httpd = ThreadingSimpleServer(("", self.httpPort), HTTPControlHandler)
-            httpd.master = master
-            self.master.debugLog(
-                1, "HTTPCtrl  ", "Serving at port: " + str(self.httpPort)
-            )
-            threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        httpd = ThreadingSimpleServer(("", self.httpPort), HTTPControlHandler)
+        httpd.master = master
+        self.master.debugLog(
+            1, "HTTPCtrl", "Serving at port: " + str(self.httpPort)
+        )
+        threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
 
 class HTTPControlHandler(BaseHTTPRequestHandler):
@@ -350,7 +350,12 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
             json_data = json.dumps(data)
-            self.wfile.write(json_data.encode("utf-8"))
+            try:
+                self.wfile.write(json_data.encode("utf-8"))
+            except BrokenPipeError as e:
+                self.master.debugLog(
+                    10, "HTTPCtrl", "Connection Error: Broken Pipe"
+                )
 
         elif url.path == "/api/getHistory":
             output = []

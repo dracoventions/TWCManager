@@ -42,7 +42,8 @@ class MQTTControl:
 
         # Unload if this module is disabled or misconfigured
         if ((not self.status) or (not self.brokerIP)):
-          self.master.releaseModule("lib.TWCManager.Control","MQTTControl");
+            self.master.releaseModule("lib.TWCManager.Control","MQTTControl");
+            return None
 
         if self.status:
           # Subscribe to the specified topic prefix, and process incoming messages

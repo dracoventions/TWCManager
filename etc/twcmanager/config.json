@@ -362,9 +362,14 @@
         # configured simultaneously, currently we will only add together the values recieved from each. This might be
         # useful if you have one interface that provides generation detail and another that provides consumption
         # detail, but if both systems provided both values, it would be duplicated.
+        "Enphase": {
+            "apiKey": "ABC123",
+            "systemID": "12345",
+            "userID": "4d6a51330a"
+        },
         "Fronius": {
-          "enabled": false,
-          "serverIP": "192.168.1.2"
+            "enabled": false,
+            "serverIP": "192.168.1.2"
         },
         "HASS": {
       # The HASS module allows fetching of consumption and generation statistics from HomeAssistant sensors.
@@ -404,10 +409,12 @@
       # battery is then further depleted by the vehicle charging.
           "minBatteryLevel": 90
         },
-      # SolarEdge API
+      # SolarEdge API, consumed from the internet-based SolarEdge Potal
         "SolarEdge": {
           "enabled": false,
+      # API Key must be specified in order to monitor a SolarEdge site
           "apiKey": "",
+      # Site ID defines which system to monitor
           "siteID": ""
         },
       # The energy detective

@@ -43,8 +43,9 @@ class SolarEdge:
 
         # Unload if this module is disabled or misconfigured
         if ((not self.status) or (not self.siteID) 
-           or (not self.apiKey)):
-          self.master.releaseModule("lib.TWCManager.EMS","SolarEdge");
+            or (not self.apiKey)):
+            self.master.releaseModule("lib.TWCManager.EMS","SolarEdge");
+            return None
 
     def getConsumption(self):
 

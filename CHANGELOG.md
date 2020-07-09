@@ -16,6 +16,7 @@ This document logs the changes per release of TWCManager.
   * Added recording of charge sessions per vehicle VIN, with rudimentary total kWh consumed calculations.
   * Added support for SolarEdge API EMS Module, thanks to prototype provided by Picar on TMC Forums.
   * Improved HASS status updates - sets sensor class and unit (thanks @dschuesae)
+  * Added a fallback Tesla API stop mechanism to reduce the charge limit if the stop command via Tesla API fails to stop the vehicle from charging. This only works when the SOC is 50% or higher due to limitations in the API (thanks @MikeBishop)
   * Added new Logging module support, which takes console messages and modularises them to allow output to other mechanisms such as CSV files or Databases.
   * Bugfixes
     * Fixed situation where fakeMaster == 2 installations do not recieve Status module lifetime kWh and voltage per phase readings [Backported to 1.1.8]

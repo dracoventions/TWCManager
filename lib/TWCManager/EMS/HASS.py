@@ -45,8 +45,9 @@ class HASS:
 
         # Unload if this module is disabled or misconfigured
         if ((not self.status) or (not self.serverIP)
-           or (int(self.serverPort) < 1)):
-          self.master.releaseModule("lib.TWCManager.EMS","HASS");
+            or (int(self.serverPort) < 1)):
+            self.master.releaseModule("lib.TWCManager.EMS","HASS");
+            return None
 
     def debugLog(self, minlevel, message):
         if self.debugLevel >= minlevel:

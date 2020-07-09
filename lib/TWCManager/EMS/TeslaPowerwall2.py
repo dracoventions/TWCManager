@@ -53,8 +53,9 @@ class TeslaPowerwall2:
 
         # Unload if this module is disabled or misconfigured
         if ((not self.status) or (not self.serverIP)
-           or (int(self.serverPort) < 1)):
-          self.master.releaseModule("lib.TWCManager.EMS","TeslaPowerwall2");
+            or (int(self.serverPort) < 1)):
+            self.master.releaseModule("lib.TWCManager.EMS","TeslaPowerwall2");
+            return None
 
     @property
     def generatedW(self):
