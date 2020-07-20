@@ -412,43 +412,38 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             if rate == 0 or durn == 0:
                 self.send_response(400)
                 self.end_headers()
-                return
+                self.wfile.write("".encode("utf-8"))
 
-            self.server.master.setChargeNowAmps(rate)
-            self.server.master.setChargeNowTimeEnd(durn)
-            self.server.master.saveSettings()
-            self.send_response(200)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            return
+            else:
+                self.server.master.setChargeNowAmps(rate)
+                self.server.master.setChargeNowTimeEnd(durn)
+                self.server.master.saveSettings()
+                self.send_response(202)
+                self.end_headers()
+                self.wfile.write("".encode("utf-8"))
 
-        if self.url.path == "/api/cancelChargeNow":
+        elif self.url.path == "/api/cancelChargeNow":
             self.server.master.resetChargeNowAmps()
             self.server.master.saveSettings()
-            self.send_response(200)
-            self.send_header("Content-type", "application/json")
+            self.send_response(202)
             self.end_headers()
-            return
+            self.wfile.write("".encode("utf-8"))
 
-        if self.url.path == "/api/sendStartCommand":
+        elif self.url.path == "/api/sendStartCommand":
             self.server.master.sendStartCommand()
-            self.send_response(200)
-            self.send_header("Content-type", "application/json")
+            self.send_response(204)
             self.end_headers()
-            return
 
-        if self.url.path == "/api/sendStopCommand":
+        elif self.url.path == "/api/sendStopCommand":
             self.server.master.sendStopCommand()
-            self.send_response(200)
-            self.send_header("Content-type", "application/json")
+            self.send_response(204)
             self.end_headers()
-            return
 
+        else:
         # All other routes missed, return 404
         self.send_response(404)
         self.end_headers()
         self.wfile.write("".encode("utf-8"))
-        return
 
     def do_get_debug(self):
         page = "<html><head>"
