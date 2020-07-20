@@ -439,11 +439,23 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.send_response(204)
             self.end_headers()
 
+        elif self.url.path == "/api/checkArrival":
+            self.server.master.queue_background_task({"cmd": "checkArrival"})
+            self.send_response(202)
+            self.end_headers()
+            self.wfile.write("".encode("utf-8"))
+
+        elif self.url.path == "/api/checkDeparture":
+            self.server.master.queue_background_task({"cmd": "checkDeparture"})
+            self.send_response(202)
+            self.end_headers()
+            self.wfile.write("".encode("utf-8"))
+
         else:
-        # All other routes missed, return 404
-        self.send_response(404)
-        self.end_headers()
-        self.wfile.write("".encode("utf-8"))
+            # All other routes missed, return 404
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write("".encode("utf-8"))
 
     def do_get_debug(self):
         page = "<html><head>"
