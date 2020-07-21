@@ -859,6 +859,7 @@ class TeslaAPI:
 
         self.carApiLastChargeLimitApplyTime = now
 
+        needSleep = False
         for vehicle in self.carApiVehicles:
             if vehicle.stopTryingToApplyLimit or not vehicle.ready():
                 continue
@@ -924,6 +925,16 @@ class TeslaAPI:
 
                 if vehicle.stopTryingToApplyLimit:
                     self.master.saveNormalChargeLimit(vehicle.ID, outside, limit)
+
+            if vehicle.atHome and vehicle.stopTryingToApplyLimit:
+                needSleep = True
+
+        if needSleep:
+            # If you start charging too quickly after setting the charge limit,
+            # the vehicle sometimes refuses the start command because it's
+            # "fully charged" under the old limit, but then continues to say
+            # charging was stopped once the new limit is in place.
+            self.time.sleep(5)
 
         if checkArrival:
             self.updateChargeAtHome()
