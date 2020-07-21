@@ -193,8 +193,9 @@ def background_tasks_thread(master):
                 carapi.setCarApiLastErrorTime(0)
                 carapi.car_api_available(task["email"], task["password"])
             elif task["cmd"] == "checkArrival":
+                limit = carapi.lastChargeLimitApplied if carapi.lastChargeLimitApplied != 0 else -1
                 carapi.applyChargeLimit(
-                    limit=carapi.lastChargeLimitApplied, checkArrival=True
+                    limit=limit, checkArrival=True
                 )
             elif task["cmd"] == "checkCharge":
                 carapi.updateChargeAtHome()

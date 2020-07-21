@@ -782,6 +782,14 @@ class TeslaAPI:
 
     def applyChargeLimit(self, limit, checkArrival=False, checkDeparture=False):
 
+        if limit != -1 and (limit < 50 or limit > 100):
+            self.master.debugLog(
+                8,
+                "TeslaAPI",
+                "applyChargeLimit skipped"
+            )
+            return "error"
+            
         if self.car_api_available() == False:
             self.master.debugLog(
                 8,
