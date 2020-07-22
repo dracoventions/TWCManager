@@ -28,6 +28,7 @@ class TWCSlave:
     reportedAmpsMax = 0
     reportedAmpsActual = 0
     reportedState = 0
+    reportedAmpsLast=-1
 
     # history* vars are used to track power usage over time
     historyAvgAmps = 0
@@ -467,6 +468,19 @@ class TWCSlave:
         self.reportedAmpsMax = ((heartbeatData[1] << 8) + heartbeatData[2]) / 100
         self.reportedAmpsActual = ((heartbeatData[3] << 8) + heartbeatData[4]) / 100
         self.reportedState = heartbeatData[0]
+
+        if (self.reportedAmpsActual != self.reportedAmpsLast):
+            self.reportedAmpsLast = self.reportedAmpsActual
+            for module in self.master.getModulesByType("Status"):
+                module["ref"].setStatus(
+                    self.TWCID,
+                    "amps_in_use",
+                    "ampsInUse",
+                    self.reportedAmpsActual,
+                    "A",
+                )
+            self.refreshingChargerLoadStatus()
+            self.master.refreshingTotalAmpsInUseStatus()
 
         for module in self.master.getModulesByType("Status"):
             module["ref"].setStatus(
@@ -1052,8 +1066,41 @@ class TWCSlave:
 
     def setLifetimekWh(self, kwh):
         self.lifetimekWh = kwh
+        # Publish Lifetime kWh Value via Status modules
+        for module in self.master.getModulesByType("Status"):
+            module["ref"].setStatus(
+                self.TWCID,
+                "lifetime_kwh",
+                "lifetimekWh",
+                self.lifetimekWh,
+                "kWh",
+            )
 
     def setVoltage(self, pa, pb, pc):
         self.voltsPhaseA = pa
         self.voltsPhaseB = pb
         self.voltsPhaseC = pc
+        # Publish phase 1, 2 and 3 values via Status modules
+        for phase in ("A", "B", "C"):
+            for module in self.master.getModulesByType("Status"):
+                module["ref"].setStatus(
+                    self.TWCID,
+                    "voltage_phase_" + phase.lower(),
+                    "voltagePhase" + phase,
+                    getattr(self, "voltsPhase" + phase, 0),
+                    "V",
+                )
+        self.refreshingChargerLoadStatus()
+
+    def refreshingChargerLoadStatus(self):
+        for module in self.master.getModulesByType("Status"):
+            module["ref"].setStatus(
+                self.TWCID,
+                "charger_load_w",
+                "chargerLoadInW",
+                int(self.getCurrentChargerLoad()),
+                "W",
+            )                     
+
+    def getCurrentChargerLoad(self):
+        return self.master.convertAmpsToWatts(self.reportedAmpsActual)

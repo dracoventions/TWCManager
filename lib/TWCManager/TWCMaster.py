@@ -402,19 +402,6 @@ class TWCMaster:
         totalAmps = 0
         for slaveTWC in self.getSlaveTWCs():
             totalAmps += slaveTWC.reportedAmpsActual
-            for module in self.getModulesByType("Status"):
-                module["ref"].setStatus(
-                    slaveTWC.TWCID,
-                    "amps_in_use",
-                    "ampsInUse",
-                    slaveTWC.reportedAmpsActual,
-                    "A",
-                )
-
-        for module in self.getModulesByType("Status"):
-            module["ref"].setStatus(
-                bytes("all", "UTF-8"), "total_amps_in_use", "totalAmpsInUse", totalAmps, "A"
-            )
 
         self.debugLog(
             10, "TWCMaster", "Total amps all slaves are using: " + str(totalAmps)
@@ -1083,27 +1070,6 @@ class TWCMaster:
                 slaveTWC.setLifetimekWh(kWh)
                 slaveTWC.setVoltage(vPA, vPB, vPC)
 
-                # Publish Lifetime kWh Value via Status modules
-                for module in self.getModulesByType("Status"):
-                    module["ref"].setStatus(
-                        slaveTWC.TWCID,
-                        "lifetime_kwh",
-                        "lifetimekWh",
-                        slaveTWC.lifetimekWh,
-                        "kWh",
-                    )
-
-                    # Publish phase 1, 2 and 3 values via Status modules
-                    for phase in ("A", "B", "C"):
-                        for module in self.getModulesByType("Status"):
-                            module["ref"].setStatus(
-                                slaveTWC.TWCID,
-                                "voltage_phase_" + phase.lower(),
-                                "voltagePhase" + phase,
-                                getattr(slaveTWC, "voltsPhase" + phase, 0),
-                                "V",
-                            )
-
     def updateVINStatus(self):
         # update current and last VIN IDs for each Slave to all Status modules
         for slaveTWC in self.getSlaveTWCs():
@@ -1123,3 +1089,9 @@ class TWCMaster:
                     slaveTWC.lastVIN,
                     "",
                 )
+
+    def refreshingTotalAmpsInUseStatus(self):
+        for module in self.getModulesByType("Status"):
+            module["ref"].setStatus(
+                bytes("all", "UTF-8"), "total_amps_in_use", "totalAmpsInUse", self.getTotalAmpsInUse(), "A"
+            )
