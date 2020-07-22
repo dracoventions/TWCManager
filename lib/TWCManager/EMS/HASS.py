@@ -44,9 +44,8 @@ class HASS:
         self.hassEntityGeneration = self.configHASS.get("hassEntityGeneration", None)
 
         # Unload if this module is disabled or misconfigured
-        if ((not self.status) or (not self.serverIP)
-            or (int(self.serverPort) < 1)):
-            self.master.releaseModule("lib.TWCManager.EMS","HASS");
+        if (not self.status) or (not self.serverIP) or (int(self.serverPort) < 1):
+            self.master.releaseModule("lib.TWCManager.EMS", "HASS")
             return None
 
     def debugLog(self, minlevel, message):

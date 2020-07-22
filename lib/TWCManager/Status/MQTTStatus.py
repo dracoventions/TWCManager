@@ -48,8 +48,8 @@ class MQTTStatus:
         self.password = self.configMQTT.get("password", None)
 
         # Unload if this module is disabled or misconfigured
-        if ((not self.status) or (not self.brokerIP)):
-          self.master.releaseModule("lib.TWCManager.Status","MQTTStatus");
+        if (not self.status) or (not self.brokerIP):
+            self.master.releaseModule("lib.TWCManager.Status", "MQTTStatus")
 
     def setStatus(self, twcid, key_underscore, key_camelcase, value, unit):
         if self.status:
@@ -88,7 +88,9 @@ class MQTTStatus:
 
             # Now, we attempt to establish a connection to the MQTT broker
             if self.connectionState == 0:
-                self.master.debugLog(10, "MQTTStatus", "MQTT Status: Attempting to Connect")
+                self.master.debugLog(
+                    10, "MQTTStatus", "MQTT Status: Attempting to Connect"
+                )
                 try:
                     client = self.mqtt.Client()
                     if self.username and self.password:
@@ -101,13 +103,17 @@ class MQTTStatus:
                     client.loop_start()
                 except ConnectionRefusedError as e:
                     self.master.debugLog(
-                        4, "MQTTStatus", "Error connecting to MQTT Broker to publish topic values"
+                        4,
+                        "MQTTStatus",
+                        "Error connecting to MQTT Broker to publish topic values",
                     )
                     self.master.debugLog(10, "MQTTStatus", str(e))
                     return False
                 except OSError as e:
                     self.master.debugLog(
-                        4, "MQTTStatus", "Error connecting to MQTT Broker to publish topic values"
+                        4,
+                        "MQTTStatus",
+                        "Error connecting to MQTT Broker to publish topic values",
                     )
                     self.master.debugLog(10, "MQTTStatus", str(e))
                     return False
@@ -117,7 +123,9 @@ class MQTTStatus:
         # connects to the MQTT server. It will then publish all queued messages
         # to the server, and then disconnect.
 
-        self.master.debugLog(10, "MQTTStatus", "Connected to MQTT Broker with RC: " + str(rc))
+        self.master.debugLog(
+            10, "MQTTStatus", "Connected to MQTT Broker with RC: " + str(rc)
+        )
         self.master.debugLog(11, "MQTTStatus", "Copy Message Buffer")
         self.msgQueueBuffer = self.msgQueue.copy()
         self.master.debugLog(11, "MQTTStatus", "Clear Message Buffer")
@@ -136,7 +144,9 @@ class MQTTStatus:
             try:
                 pub = client.publish(msg["topic"], payload=msg["payload"], qos=0)
             except e:
-                self.master.debugLog(4, "MQTTStatus", "Error publishing MQTT Topic Status")
+                self.master.debugLog(
+                    4, "MQTTStatus", "Error publishing MQTT Topic Status"
+                )
                 self.master.debugLog(10, "MQTTStatus", str(e))
 
         client.loop_stop()

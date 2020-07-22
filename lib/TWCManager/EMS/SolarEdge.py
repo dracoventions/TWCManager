@@ -1,5 +1,6 @@
 # SolarEdge Monitoring Portal Integration
 
+
 class SolarEdge:
 
     import requests
@@ -42,15 +43,18 @@ class SolarEdge:
         self.siteID = self.configSolarEdge.get("siteID", None)
 
         # Unload if this module is disabled or misconfigured
-        if ((not self.status) or (not self.siteID) 
-            or (not self.apiKey)):
-            self.master.releaseModule("lib.TWCManager.EMS","SolarEdge");
+        if (not self.status) or (not self.siteID) or (not self.apiKey):
+            self.master.releaseModule("lib.TWCManager.EMS", "SolarEdge")
             return None
 
     def getConsumption(self):
 
         if not self.status:
-            self.master.debugLog(10, "SolarEdge", "SolarEdge EMS Module Disabled. Skipping getConsumption")
+            self.master.debugLog(
+                10,
+                "SolarEdge",
+                "SolarEdge EMS Module Disabled. Skipping getConsumption",
+            )
             return 0
 
         # Perform updates if necessary
@@ -62,7 +66,9 @@ class SolarEdge:
     def getGeneration(self):
 
         if not self.status:
-            self.master.debugLog(10, "SolarEdge", "SolarEdge EMS Module Disabled. Skipping getGeneration")
+            self.master.debugLog(
+                10, "SolarEdge", "SolarEdge EMS Module Disabled. Skipping getGeneration"
+            )
             return 0
 
         # Perform updates if necessary
@@ -72,8 +78,8 @@ class SolarEdge:
         return float(self.generatedW)
 
     def getPortalData(self):
-        url = "https://monitoringapi.solaredge.com/site/"+ self.siteID
-        url += "/overview?api_key="+ self.apiKey
+        url = "https://monitoringapi.solaredge.com/site/" + self.siteID
+        url += "/overview?api_key=" + self.apiKey
 
         return self.getPortalValue(url)
 
@@ -86,8 +92,9 @@ class SolarEdge:
             r = self.requests.get(url, timeout=self.timeout)
         except self.requests.exceptions.ConnectionError as e:
             self.master.debugLog(
-                4, "SolarEdge", 
-                "Error connecting to SolarEdge Portal to fetch sensor value"
+                4,
+                "SolarEdge",
+                "Error connecting to SolarEdge Portal to fetch sensor value",
             )
             self.master.debugLog(10, "SolarEdge", str(e))
             self.fetchFailed = True
@@ -97,8 +104,11 @@ class SolarEdge:
             r.raise_for_status()
         except self.requests.exceptions.HTTPError as e:
             self.master.debugLog(
-                4, "SolarEdge",
-                "HTTP status " + str(e.response.status_code) + " connecting to SolarEdge Portal to fetch sensor value"
+                4,
+                "SolarEdge",
+                "HTTP status "
+                + str(e.response.status_code)
+                + " connecting to SolarEdge Portal to fetch sensor value",
             )
             return ""
         else:
@@ -112,14 +122,22 @@ class SolarEdge:
             portalData = self.getPortalData()
             if portalData:
                 try:
-                    self.generatedW = int(portalData['overview']['currentPower']['power'])
+                    self.generatedW = int(
+                        portalData["overview"]["currentPower"]["power"]
+                    )
                 except (KeyError, TypeError) as e:
                     self.master.debugLog(
-                        4, "SolarEdge", 
-                        "Exception during parsing SolarEdge data (currentPower)")
+                        4,
+                        "SolarEdge",
+                        "Exception during parsing SolarEdge data (currentPower)",
+                    )
                     self.master.debugLog(10, "SolarEdge", e)
             else:
-                self.master.debugLog(4, "SolarEdge", "SolarEdge API result does not contain json content.")
+                self.master.debugLog(
+                    4,
+                    "SolarEdge",
+                    "SolarEdge API result does not contain json content.",
+                )
                 self.fetchFailed = True
 
             # Update last fetch time

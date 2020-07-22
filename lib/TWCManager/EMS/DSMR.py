@@ -1,5 +1,6 @@
 # Dutch SmartMeter Serial Integration (DSMR)
 
+
 class DSMR:
 
     import time
@@ -21,9 +22,8 @@ class DSMR:
         self.serialPort = config.get("serialPort", "/dev/ttyUSB2")
 
         # Unload if this module is disabled or misconfigured
-        if ((not self.status) or (not self.serialPort)
-            or (int(self.baudRate) < 1)):
-            self.master.releaseModule("lib.TWCManager.EMS","Fronius");
+        if (not self.status) or (not self.serialPort) or (int(self.baudRate) < 1):
+            self.master.releaseModule("lib.TWCManager.EMS", "Fronius")
             return None
 
     def main(self):

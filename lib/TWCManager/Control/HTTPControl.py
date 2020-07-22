@@ -46,9 +46,7 @@ class HTTPControl:
 
         httpd = ThreadingSimpleServer(("", self.httpPort), HTTPControlHandler)
         httpd.master = master
-        self.master.debugLog(
-            1, "HTTPCtrl", "Serving at port: " + str(self.httpPort)
-        )
+        self.master.debugLog(1, "HTTPCtrl", "Serving at port: " + str(self.httpPort))
         threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
 
@@ -353,9 +351,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             try:
                 self.wfile.write(json_data.encode("utf-8"))
             except BrokenPipeError as e:
-                self.master.debugLog(
-                    10, "HTTPCtrl", "Connection Error: Broken Pipe"
-                )
+                self.master.debugLog(10, "HTTPCtrl", "Connection Error: Broken Pipe")
 
         elif url.path == "/api/getHistory":
             output = []
@@ -526,7 +522,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             <td><b>Resume tracking green energy at:</b></td>
             <td><select name = 'resumeGreenEnergy'>
         """
-        for hr in range(0,24):
+        for hr in range(0, 24):
             page += "<option value = ''>" + str(hr) + "</option>"
         page += """
             </select></td>
@@ -575,7 +571,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
           <td>
         """
         page += self.optionList(
-            [ 
+            [
                 [1, "Charge at specified Non-Scheduled Charge Rate"],
                 [2, "Do not Charge"],
                 [3, "Track Green Energy"],
@@ -595,7 +591,13 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         amps = []
         for amp in range(5, (maxamps + 1)):
             amps.append([amp, str(amp) + "A"])
-        page += self.optionList(amps, {"name": "nonScheduledAmpsMax", "value": self.server.master.settings.get("nonScheduledAmpsMax", "6")})
+        page += self.optionList(
+            amps,
+            {
+                "name": "nonScheduledAmpsMax",
+                "value": self.server.master.settings.get("nonScheduledAmpsMax", "6"),
+            },
+        )
         page += """
           </td>
         </tr>
@@ -763,7 +765,10 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
     def optionList(self, list, opts={}):
         page = "<div class='form-group'>"
-        page += "<select class='form-control' id='%s' name='%s'>" % (opts.get("name", ""), opts.get("name", ""))
+        page += "<select class='form-control' id='%s' name='%s'>" % (
+            opts.get("name", ""),
+            opts.get("name", ""),
+        )
         for option in list:
             sel = ""
             if str(opts.get("value", "-1")) == str(option[0]):
@@ -785,10 +790,10 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             except ValueError:
                 self.server.master.settings[keya] = vala
 
-        # If Non-Scheduled power action is either Do not Charge or 
+        # If Non-Scheduled power action is either Do not Charge or
         # Track Green Energy, set Non-Scheduled power rate to 0
         if int(self.server.master.settings.get("nonScheduledAction", 1)) > 1:
-            self.server.master.settings['nonScheduledAmpsMax'] = 0
+            self.server.master.settings["nonScheduledAmpsMax"] = 0
         self.server.master.saveSettings()
 
         # Redirect to the index page

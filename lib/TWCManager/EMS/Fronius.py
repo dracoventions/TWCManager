@@ -41,9 +41,8 @@ class Fronius:
         self.serverPort = self.configFronius.get("serverPort", "80")
 
         # Unload if this module is disabled or misconfigured
-        if ((not self.status) or (not self.serverIP) 
-            or (int(self.serverPort) < 1)):
-            self.master.releaseModule("lib.TWCManager.EMS","Fronius");
+        if (not self.status) or (not self.serverIP) or (int(self.serverPort) < 1):
+            self.master.releaseModule("lib.TWCManager.EMS", "Fronius")
             return None
 
     def debugLog(self, minlevel, message):

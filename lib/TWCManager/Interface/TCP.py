@@ -21,8 +21,8 @@ class TCP:
             pass
 
         # Unload if this module is disabled or misconfigured
-        if (not self.enabled):
-            self.master.releaseModule("lib.TWCManager.Interface","TCP");
+        if not self.enabled:
+            self.master.releaseModule("lib.TWCManager.Interface", "TCP")
             return None
 
         # Create TCP socket
@@ -31,7 +31,6 @@ class TCP:
         # If we are configured to listen, open the listening socket
         self.sock.bind(("localhost", self.port))
         self.sock.listen(1)
-
 
     def close(self):
         # Close the TCP socket interface

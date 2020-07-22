@@ -3,12 +3,12 @@
 
 from ww import f
 
+
 class HASSStatus:
 
     import time
-    import threading    
+    import threading
     import requests
-
 
     apiKey = None
     config = None
@@ -17,9 +17,9 @@ class HASSStatus:
     debugLevel = 0
     master = None
     msgRateInSeconds = 60
-    resendRateInSeconds = 3600 
+    resendRateInSeconds = 3600
     retryRateInSeconds = 60
-    msgQueue = {}    
+    msgQueue = {}
     status = False
     serverIP = None
     serverPort = 8123
@@ -48,11 +48,17 @@ class HASSStatus:
         self.debugLevel = self.configConfig.get("debugLevel", 0)
 
         # Unload if this module is disabled or misconfigured
-        if ((not self.status) or (not self.serverIP)
-           or (int(self.serverPort) < 1) or (not self.apiKey)):
-            self.master.releaseModule("lib.TWCManager.Status","HASSStatus")     
-        else:          
-            self.backgroundTasksThread = self.threading.Thread(target=self.background_task_thread, args=())
+        if (
+            (not self.status)
+            or (not self.serverIP)
+            or (int(self.serverPort) < 1)
+            or (not self.apiKey)
+        ):
+            self.master.releaseModule("lib.TWCManager.Status", "HASSStatus")
+        else:
+            self.backgroundTasksThread = self.threading.Thread(
+                target=self.background_task_thread, args=()
+            )
             self.backgroundTasksThread.daemon = True
             self.backgroundTasksThread.start()
 
@@ -79,8 +85,16 @@ class HASSStatus:
     def setStatus(self, twcid, key_underscore, key_camelcase, value, unit):
         self.backgroundTasksLock.acquire()
         sensor = self.getSensorName(twcid, key_underscore)
-        if (sensor not in self.msgQueue) or (self.msgQueue[sensor].value != value):  
-            self.msgQueue[sensor] = HASSMessage(self.time.time(),sensor,twcid,key_underscore,key_camelcase,value,unit) 
+        if (sensor not in self.msgQueue) or (self.msgQueue[sensor].value != value):
+            self.msgQueue[sensor] = HASSMessage(
+                self.time.time(),
+                sensor,
+                twcid,
+                key_underscore,
+                key_camelcase,
+                value,
+                unit,
+            )
         self.backgroundTasksLock.release()
 
     def sendingStatusToHASS(self, msg):
@@ -101,19 +115,45 @@ class HASSStatus:
             )
 
             devclass = ""
-            if  str.upper(msg.unit) in ["W","A","V","KWH"]:
-                devclass="power"
+            if str.upper(msg.unit) in ["W", "A", "V", "KWH"]:
+                devclass = "power"
 
-            if len(msg.unit)>0:
+            if len(msg.unit) > 0:
                 self.requests.post(
-                    url, json={"state": msg.value, "attributes": { "unit_of_measurement": msg.unit, "device_class": devclass, "friendly_name": "TWC " + str(self.getTwident(msg.twcid)) + " " + msg.key_camelcase } }, timeout=self.timeout, headers=headers
+                    url,
+                    json={
+                        "state": msg.value,
+                        "attributes": {
+                            "unit_of_measurement": msg.unit,
+                            "device_class": devclass,
+                            "friendly_name": "TWC "
+                            + str(self.getTwident(msg.twcid))
+                            + " "
+                            + msg.key_camelcase,
+                        },
+                    },
+                    timeout=self.timeout,
+                    headers=headers,
                 )
             else:
                 self.requests.post(
-                    url, json={"state": msg.value, "attributes": { "friendly_name": "TWC " + str(self.getTwident(msg.twcid)) + " " + msg.key_camelcase } }, timeout=self.timeout, headers=headers
+                    url,
+                    json={
+                        "state": msg.value,
+                        "attributes": {
+                            "friendly_name": "TWC "
+                            + str(self.getTwident(msg.twcid))
+                            + " "
+                            + msg.key_camelcase
+                        },
+                    },
+                    timeout=self.timeout,
+                    headers=headers,
                 )
             # Setting elapsing time to now + resendRateInSeconds
-            self.msgQueue[msg.sensor].elapsingTime = self.time.time() + self.resendRateInSeconds               
+            self.msgQueue[msg.sensor].elapsingTime = (
+                self.time.time() + self.resendRateInSeconds
+            )
         except self.requests.exceptions.ConnectionError as e:
             self.master.debugLog(
                 4,
@@ -134,9 +174,7 @@ class HASSStatus:
             return False
         except Exception as e:
             self.master.debugLog(
-                4,
-                "HASSStatus",
-                "Error during publishing HomeAssistant sensor values",
+                4, "HASSStatus", "Error during publishing HomeAssistant sensor values"
             )
             self.master.debugLog(10, "HASSStatus", str(e))
             self.settingRetryRate(msg)
@@ -144,19 +182,24 @@ class HASSStatus:
 
     def settingRetryRate(self, msg):
         # Setting elapsing time to now + retryRateInSeconds
-        self.msgQueue[msg.sensor].elapsingTime = self.time.time() + self.retryRateInSeconds     
+        self.msgQueue[msg.sensor].elapsingTime = (
+            self.time.time() + self.retryRateInSeconds
+        )
+
 
 class HASSMessage:
 
     elapsingTime = 0
-    sensor = "" 
-    twcid = "" 
-    key_underscore = "" 
-    key_camelcase = "" 
-    value = None 
-    unit = "" 
+    sensor = ""
+    twcid = ""
+    key_underscore = ""
+    key_camelcase = ""
+    value = None
+    unit = ""
 
-    def __init__(self, elapsingTime, sensor, twcid, key_underscore, key_camelcase, value, unit):
+    def __init__(
+        self, elapsingTime, sensor, twcid, key_underscore, key_camelcase, value, unit
+    ):
         self.elapsingTime = elapsingTime
         self.sensor = sensor
         self.twcid = twcid
@@ -164,4 +207,3 @@ class HASSMessage:
         self.key_camelcase = key_camelcase
         self.value = value
         self.unit = unit
-

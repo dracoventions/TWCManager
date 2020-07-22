@@ -28,7 +28,7 @@ class TWCSlave:
     reportedAmpsMax = 0
     reportedAmpsActual = 0
     reportedState = 0
-    reportedAmpsLast=-1
+    reportedAmpsLast = -1
 
     # history* vars are used to track power usage over time
     historyAvgAmps = 0
@@ -143,10 +143,9 @@ class TWCSlave:
                 self.timeLastHeartbeatDebugOutput = self.time.time()
 
                 for module in self.master.getModulesByType("Logging"):
-                    module["ref"].slavePower({
-                        "TWCID": self.TWCID,
-                        "status": heartbeatData[0]
-                    })
+                    module["ref"].slavePower(
+                        {"TWCID": self.TWCID, "status": heartbeatData[0]}
+                    )
 
         except IndexError:
             # This happens if we try to access, say, heartbeatData[8] when
@@ -469,15 +468,11 @@ class TWCSlave:
         self.reportedAmpsActual = ((heartbeatData[3] << 8) + heartbeatData[4]) / 100
         self.reportedState = heartbeatData[0]
 
-        if (self.reportedAmpsActual != self.reportedAmpsLast):
+        if self.reportedAmpsActual != self.reportedAmpsLast:
             self.reportedAmpsLast = self.reportedAmpsActual
             for module in self.master.getModulesByType("Status"):
                 module["ref"].setStatus(
-                    self.TWCID,
-                    "amps_in_use",
-                    "ampsInUse",
-                    self.reportedAmpsActual,
-                    "A",
+                    self.TWCID, "amps_in_use", "ampsInUse", self.reportedAmpsActual, "A"
                 )
             self.refreshingChargerLoadStatus()
             self.master.refreshingTotalAmpsInUseStatus()
@@ -486,7 +481,9 @@ class TWCSlave:
             module["ref"].setStatus(
                 self.TWCID, "amps_max", "ampsMax", self.reportedAmpsMax, "A"
             )
-            module["ref"].setStatus(self.TWCID, "state", "state", self.reportedState, "")
+            module["ref"].setStatus(
+                self.TWCID, "state", "state", self.reportedState, ""
+            )
 
         # Log current history
         self.historyAvgAmps = (
@@ -498,10 +495,7 @@ class TWCSlave:
             if datetime.now().astimezone() >= self.master.nextHistorySnap:
                 self.master.queue_background_task({"cmd": "snapHistoryData"})
         except ValueError as e:
-            self.master.debugLog(
-                10,
-                "TWCSlave  ",
-                str(e))
+            self.master.debugLog(10, "TWCSlave  ", str(e))
 
         # self.lastAmpsOffered is initialized to -1.
         # If we find it at that value, set it to the current value reported by the
@@ -1069,11 +1063,7 @@ class TWCSlave:
         # Publish Lifetime kWh Value via Status modules
         for module in self.master.getModulesByType("Status"):
             module["ref"].setStatus(
-                self.TWCID,
-                "lifetime_kwh",
-                "lifetimekWh",
-                self.lifetimekWh,
-                "kWh",
+                self.TWCID, "lifetime_kwh", "lifetimekWh", self.lifetimekWh, "kWh"
             )
 
     def setVoltage(self, pa, pb, pc):
@@ -1100,7 +1090,7 @@ class TWCSlave:
                 "chargerLoadInW",
                 int(self.getCurrentChargerLoad()),
                 "W",
-            )                     
+            )
 
     def getCurrentChargerLoad(self):
         return self.master.convertAmpsToWatts(self.reportedAmpsActual)

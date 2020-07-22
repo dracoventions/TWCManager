@@ -167,9 +167,7 @@ class Policy:
                 # Now, finish processing
                 return
             else:
-                self.master.debugLog(
-                    8, "Policy", "Policy conditions were not matched."
-                )
+                self.master.debugLog(8, "Policy", "Policy conditions were not matched.")
                 continue
 
         # No policy has matched; keep the current policy
@@ -277,8 +275,11 @@ class Policy:
         return value
 
     def policyIsGreen(self):
-        if (self.getPolicyByName(self.active_policy)):
-          return self.getPolicyByName(self.active_policy).get("background_task", "") == "checkGreenEnergy"
+        if self.getPolicyByName(self.active_policy):
+            return (
+                self.getPolicyByName(self.active_policy).get("background_task", "")
+                == "checkGreenEnergy"
+            )
         return 0
 
     def doesConditionMatch(self, match, condition, value, exitOn):
@@ -332,7 +333,7 @@ class Policy:
             if self.doesConditionMatch(match, condition, value, exitOn) == exitOn:
                 return exitOn
         return not exitOn
-    
+
     def overrideLimit(self):
         self.limitOverride = True
 

@@ -17,8 +17,8 @@ class Dummy:
             pass
 
         # Unload if this module is disabled or misconfigured
-        if (not self.enabled):
-            self.master.releaseModule("lib.TWCManager.Interface","Dummy");
+        if not self.enabled:
+            self.master.releaseModule("lib.TWCManager.Interface", "Dummy")
             return None
 
         # Configure the module

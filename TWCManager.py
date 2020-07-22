@@ -63,7 +63,7 @@ modules_available = [
     "Logging.ConsoleLogging",
     "Logging.CSVLogging",
     "Logging.MySQLLogging",
-#    "Logging.SQLiteLogging",
+    #    "Logging.SQLiteLogging",
     "Status.HASSStatus",
     "Status.MQTTStatus",
 ]
@@ -193,10 +193,12 @@ def background_tasks_thread(master):
                 carapi.setCarApiLastErrorTime(0)
                 carapi.car_api_available(task["email"], task["password"])
             elif task["cmd"] == "checkArrival":
-                limit = carapi.lastChargeLimitApplied if carapi.lastChargeLimitApplied != 0 else -1
-                carapi.applyChargeLimit(
-                    limit=limit, checkArrival=True
+                limit = (
+                    carapi.lastChargeLimitApplied
+                    if carapi.lastChargeLimitApplied != 0
+                    else -1
                 )
+                carapi.applyChargeLimit(limit=limit, checkArrival=True)
             elif task["cmd"] == "checkCharge":
                 carapi.updateChargeAtHome()
             elif task["cmd"] == "checkDeparture":
@@ -246,10 +248,14 @@ def check_green_energy():
     # in the config section at the top of this file.
     #
     greenEnergyAmpsOffset = config["config"]["greenEnergyAmpsOffset"]
-    if (greenEnergyAmpsOffset >= 0):
-        master.setConsumption("Manual", master.convertAmpsToWatts(greenEnergyAmpsOffset))
+    if greenEnergyAmpsOffset >= 0:
+        master.setConsumption(
+            "Manual", master.convertAmpsToWatts(greenEnergyAmpsOffset)
+        )
     else:
-        master.setGeneration("Manual", -1 * master.convertAmpsToWatts(greenEnergyAmpsOffset))
+        master.setGeneration(
+            "Manual", -1 * master.convertAmpsToWatts(greenEnergyAmpsOffset)
+        )
     # Poll all loaded EMS modules for consumption and generation values
     for module in master.getModulesByType("EMS"):
         master.setConsumption(module["name"], module["ref"].getConsumption())
@@ -269,11 +275,9 @@ def update_statuses():
         chgwatts = master.getChargerLoad()
 
         for module in master.getModulesByType("Logging"):
-            module["ref"].greenEnergy({
-                "genWatts": genwatts,
-                "conWatts": conwatts,
-                "chgWatts": chgwatts
-            })
+            module["ref"].greenEnergy(
+                {"genWatts": genwatts, "conWatts": conwatts, "chgWatts": chgwatts}
+            )
 
         nominalOffer = master.convertWattsToAmps(
             genwatts
@@ -311,7 +315,7 @@ def update_statuses():
             bytes("config", "UTF-8"),
             "min_amps_per_twc",
             "minAmpsPerTWC",
-            config["config"]["minAmpsPerTWC"], 
+            config["config"]["minAmpsPerTWC"],
             "A",
         )
         module["ref"].setStatus(
@@ -528,7 +532,7 @@ while True:
         if master.getModuleByName("WebIPCControl"):
             master.getModuleByName("WebIPCControl").processIPC()
 
-        # If it has been more than 2 minutes since the last kWh value, 
+        # If it has been more than 2 minutes since the last kWh value,
         # queue the command to request it from slaves
         if config["config"]["fakeMaster"] == 1 and (
             (time.time() - master.lastkWhMessage) > (60 * 2)
@@ -708,17 +712,13 @@ while True:
                 # end of the string (even without the re.MULTILINE option), and
                 # sometimes our strings do end with a newline character that is
                 # actually the CRC byte with a value of 0A or 0D.
-                msgMatch = re.search(
-                    b"^\xfd\xb1(..)\x00\x00.+\Z", msg, re.DOTALL
-                )
+                msgMatch = re.search(b"^\xfd\xb1(..)\x00\x00.+\Z", msg, re.DOTALL)
                 if msgMatch and foundMsgMatch == False:
                     # Handle acknowledgement of Start command
                     foundMsgMatch = True
                     senderID = msgMatch.group(1)
 
-                msgMatch = re.search(
-                    b"^\xfd\xb2(..)\x00\x00.+\Z", msg, re.DOTALL
-                )
+                msgMatch = re.search(b"^\xfd\xb2(..)\x00\x00.+\Z", msg, re.DOTALL)
                 if msgMatch and foundMsgMatch == False:
                     # Handle acknowledgement of Stop command
                     foundMsgMatch = True
@@ -932,15 +932,17 @@ while True:
                     data = msgMatch.group(6)
 
                     for module in master.getModulesByType("Logging"):
-                        module["ref"].slaveStatus({
-                            "TWCID": senderID,
-                            "kWh": kWh,
-                            "voltsPerPhase": [
-                                voltsPhaseA,
-                                voltsPhaseB,
-                                voltsPhaseC
-                            ]
-                        })
+                        module["ref"].slaveStatus(
+                            {
+                                "TWCID": senderID,
+                                "kWh": kWh,
+                                "voltsPerPhase": [
+                                    voltsPhaseA,
+                                    voltsPhaseB,
+                                    voltsPhaseC,
+                                ],
+                            }
+                        )
 
                     # Update the timestamp of the last reciept of this message
                     master.lastkWhMessage = time.time()
@@ -990,7 +992,13 @@ while True:
                     if vinPart < 2:
                         vinPart += 1
                         master.getVehicleVIN(senderID, vinPart)
-                        master.queue_background_task({"cmd": "getVehicleVIN", "slaveTWC": senderID, "vinPart": str(vinPart)})
+                        master.queue_background_task(
+                            {
+                                "cmd": "getVehicleVIN",
+                                "slaveTWC": senderID,
+                                "vinPart": str(vinPart),
+                            }
+                        )
                     else:
                         slaveTWC.currentVIN = "".join(slaveTWC.VINData)
                         # Clear VIN retry timer

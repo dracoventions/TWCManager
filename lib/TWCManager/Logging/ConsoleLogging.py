@@ -4,12 +4,13 @@ from sys import modules
 from termcolor import colored
 from ww import f
 
+
 class ConsoleLogging:
 
-    config        = None
-    configConfig  = None
+    config = None
+    configConfig = None
     configLogging = None
-    status        = True
+    status = True
 
     def __init__(self, master):
         self.master = master
@@ -26,8 +27,8 @@ class ConsoleLogging:
 
         # Unload if this module is disabled or misconfigured
         if not self.status:
-          self.master.releaseModule("lib.TWCManager.Logging","ConsoleLogging");
-          return None
+            self.master.releaseModule("lib.TWCManager.Logging", "ConsoleLogging")
+            return None
 
         # Initialize the mute config tree if it is not already
         if not self.configLogging.get("mute", None):
@@ -69,8 +70,8 @@ class ConsoleLogging:
                 data["kWh"],
                 data["voltsPerPhase"][0],
                 data["voltsPerPhase"][1],
-                data["voltsPerPhase"][2]
-            )
+                data["voltsPerPhase"][2],
+            ),
         )
 
     def startChargeSession(self, data):
@@ -80,7 +81,9 @@ class ConsoleLogging:
 
         # Called when a Charge Session Starts.
         twcid = "%02X%02X" % (data["TWCID"][0], data["TWCID"][0])
-        self.master.debugLog(1, "TWCManager", "Charge Session Started for Slave TWC %s" % twcid)
+        self.master.debugLog(
+            1, "TWCManager", "Charge Session Started for Slave TWC %s" % twcid
+        )
 
     def stopChargeSession(self, data):
         # Check if this status is muted
@@ -89,13 +92,15 @@ class ConsoleLogging:
 
         # Called when a Charge Session Ends.
         twcid = "%02X%02X" % (data["TWCID"][0], data["TWCID"][0])
-        self.master.debugLog(1, "TWCManager", "Charge Session Stopped for Slave TWC %s" % twcid)
+        self.master.debugLog(
+            1, "TWCManager", "Charge Session Stopped for Slave TWC %s" % twcid
+        )
 
     def updateChargeSession(self, data):
         # Check if this status is muted
         if self.configLogging["mute"].get("ChargeSessions", 0):
             return None
 
-        # Called when additional information needs to be updated for a 
+        # Called when additional information needs to be updated for a
         # charge session. For console output, we ignore this.
         return None
