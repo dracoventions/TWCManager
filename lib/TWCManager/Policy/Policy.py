@@ -212,13 +212,12 @@ class Policy:
             self.master.queue_background_task({"cmd": bgt})
 
         # If a charge limit is defined for this policy, apply it
-        limit = None
+        limit = limit = self.policyValue(policy.get("charge_limit", -1))
         if self.limitOverride:
-            limit = self.master.getModuleByName("TeslaAPI").minBatteryLevelAtHome - 1
-            if limit < 50:
-                limit = 50
-        else:
-            limit = self.policyValue(policy.get("charge_limit", -1))
+            currentCharge = self.master.getModuleByName("TeslaAPI").minBatteryLevelAtHome - 1
+            if currentCharge < 50:
+                currentCharge = 50
+            limit = currentCharge if limit == -1 else min(limit, currentCharge)
         if not (limit >= 50 and limit <= 100):
             limit = -1
         self.master.queue_background_task({"cmd": "applyChargeLimit", "limit": limit})
