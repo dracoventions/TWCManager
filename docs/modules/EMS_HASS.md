@@ -29,13 +29,13 @@ The following table shows the available configuration parameters for the HASS EM
 ### JSON Configuration Example
 
 ```
-"Fronius": {
+"HASS": {
   "apiKey": "ABC123",
   "enabled": true,
   "hassEntityConsumption": "sensor.consumption",
   "hassEntityGeneration": "sensor.generation",
   "serverIP": "192.168.1.2",
-  "serverPort": 80
+  "serverPort": 8123
 }
 ```
 
