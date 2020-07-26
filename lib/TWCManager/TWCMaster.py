@@ -374,7 +374,7 @@ class TWCMaster:
         solarW = float(generationW - generationOffset)
 
         # Offer the smaller of the two, but not less than zero.
-        return max(min(newOffer, self.convertWattsToAmps(solarW)), 0)
+        return round(max(min(newOffer, self.convertWattsToAmps(solarW)), 0),2)
 
     def getNormalChargeLimit(self, ID):
         if "chargeLimits" in self.settings and str(ID) in self.settings["chargeLimits"]:
