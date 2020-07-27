@@ -508,6 +508,7 @@ class TWCSlave:
             self.reportedAmpsActualSignificantChangeMonitor < 3
             and self.reportedAmpsActual > 3
         ):
+            self.master.getModuleByName("Policy").fireWebhook("start")
             self.master.queue_background_task({"cmd": "checkArrival"})
 
         # If power drops off, check whether a car leaves in the next little while
@@ -515,6 +516,7 @@ class TWCSlave:
             self.reportedAmpsActualSignificantChangeMonitor > 2
             and self.reportedAmpsActual < 2
         ):
+            self.master.getModuleByName("Policy").fireWebhook("stop")
             self.departureCheckTimes = [now + 5 * 60, now + 20 * 60, now + 45 * 60]
         if len(self.departureCheckTimes) > 0 and now >= self.departureCheckTimes[0]:
             self.master.queue_background_task({"cmd": "checkDeparture"})

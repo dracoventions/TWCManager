@@ -42,6 +42,7 @@ from datetime import datetime
 import threading
 from ww import f
 from lib.TWCManager.TWCMaster import TWCMaster
+import requests
 
 # Define available modules for the instantiator
 # All listed modules will be loaded at boot time
@@ -215,6 +216,9 @@ def background_tasks_thread(master):
                 master.snapHistoryData()
             elif task["cmd"] == "updateStatus":
                 update_statuses()
+            elif task["cmd"] == "webhook":
+                body = master.getStatus()
+                requests.post(task["url"], json=body)
 
         except:
             master.debugLog(
