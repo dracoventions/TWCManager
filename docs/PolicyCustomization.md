@@ -106,6 +106,50 @@ Flex for the Track Green Energy policy can be set using the
 `greenEnergyFlexAmps` value; custom policies can include an `allowed_flex`
 attribute.
 
+## Webhooks
+
+If you want to trigger external actions based on TWCManager state changes
+(home automation, IFTTT, etc.), you can define a set of webhooks on each
+policy.  The URL you supply will receive a POST with the TWCManager status
+on the event you select.
+
+For each policy, the events are:
+
+- "enter" when the policy becomes selected
+- "start" when a vehicle begins charging with this policy selected
+- "stop" when a vehicle stops charging with this policy selected
+- "exit" when the policy is no longer selected
+
+For example, suppose Scheduled Charging is configured to charge for one hour
+beginning at midnight.  Two vehicles are connected, and one reaches its charge
+limit during this time.  The events fired would be:
+
+- "enter" for Scheduled Charging at midnight
+- "start" for Scheduled Charging when a vehicle begins charging shortly after
+  midnight; occurs twice
+- "stop" for Scheduled Charging when the first vehicle reaches its charge limit
+- "exit" for Scheduled Charging at 1 AM
+- "enter" for Non Scheduled Charging at 1 AM
+- "stop" for Non Scheduled Charging shortly after 1 AM when the second
+  vehicle stops due to the policy change
+
+Note that stops which occur due to the policy change will be attributed to the
+new policy.
+
+Webhooks can be set for built-in policies using the `webhooks` node under
+`policy.extend` in the `config.json` file.  For example:
+
+    "webhooks": {
+      "Scheduled Charging": {
+        "start": "http://IP/apps/api/737/trigger?access_token=TOKEN",
+        "exit": "http://IP/apps/api/866/trigger?access_token=TOKEN",
+        "stop": "http://IP/apps/api/866/trigger?access_token=TOKEN",
+      }
+    }
+
+For custom policies, they can be set using the `webhooks` property of the
+policy.
+
 # Defining Custom Policies
 
 If you wish to add additional policies, they can be specified in the
@@ -140,6 +184,7 @@ The values in a policy definition are:
 - `allowed_flex`:  If the available current is reduced below the minimum for
   charging, continue to supply the minimum.  Only useful for policies where the
   charge amps vary.
+- `webhooks`:  An object containing desired webhooks for the policy.  See above.
 
 ### Policy Values
 
