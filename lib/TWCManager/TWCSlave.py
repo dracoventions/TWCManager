@@ -1093,4 +1093,4 @@ class TWCSlave:
             )
 
     def getCurrentChargerLoad(self):
-        return self.master.convertAmpsToWatts(self.reportedAmpsActual)
+        return self.master.convertAmpsToWatts(self.reportedAmpsActual) * self.master.getRealPowerFactor(self.reportedAmpsActual)
