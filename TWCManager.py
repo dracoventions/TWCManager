@@ -58,6 +58,7 @@ modules_available = [
     "EMS.Fronius",
     "EMS.HASS",
     "EMS.SolarEdge",
+    "EMS.SolarLog",
     "EMS.TeslaPowerwall2",
     "EMS.TED",
     "Logging.ConsoleLogging",

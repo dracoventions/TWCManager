@@ -417,6 +417,11 @@
       # Site ID defines which system to monitor
           "siteID": ""
         },
+      # SolarLog Inverters
+        "SolarLog": {
+          "enabled": false,
+          "serverIP": "192.168.1.2"
+        },        
       # The energy detective
         "TED": {
           "enabled": false,
