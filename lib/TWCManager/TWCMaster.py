@@ -1061,12 +1061,13 @@ class TWCMaster:
     def startCarsCharging(self):
         # This function is the opposite functionality to the stopCarsCharging function
         # below
-        if self.settings.get("chargeStopMode", "1") == "1":
+        stopMode = int(self.settings.get("chargeStopMode", 1))
+        if stopMode == 1:
             self.queue_background_task({"cmd": "charge", "charge": True})
             self.getModuleByName("Policy").clearOverride()
-        if self.settings.get("chargeStopMode", "1") == "2":
+        elif stopMode == 2:
             self.settings["respondToSlaves"] = 1
-        if self.settings.get("chargeStopMode", "1") == "3":
+        elif stopMode == 3:
             self.queue_background_task({"cmd": "charge", "charge": True})
 
     def stopCarsCharging(self):
@@ -1079,15 +1080,16 @@ class TWCMaster:
         # 1 = Stop the car(s) charging via the Tesla API
         # 2 = Stop the car(s) charging by refusing to respond to slave TWCs
         # 3 = Send TWC Stop command to each slave
-        if self.settings.get("chargeStopMode", "1") == "1":
+        stopMode = int(self.settings.get("chargeStopMode", 1))
+        if stopMode == 1:
             self.queue_background_task({"cmd": "charge", "charge": False})
             if self.stopTimeout == datetime.max:
                 self.stopTimeout = datetime.now() + timedelta(seconds=10)
             elif datetime.now() > self.stopTimeout:
                 self.getModuleByName("Policy").overrideLimit()
-        if self.settings.get("chargeStopMode", "1") == "2":
+        if stopMode == 2:
             self.settings["respondToSlaves"] = 0
-        if self.settings.get("chargeStopMode", "1") == "3":
+        if stopMode == 3:
             self.sendStopCommand()
 
     def time_now(self):

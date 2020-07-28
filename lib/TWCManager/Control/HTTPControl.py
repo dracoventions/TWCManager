@@ -560,7 +560,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             ],
             {
                 "name": "chargeStopMode",
-                "value": self.server.master.settings.get("chargeStopMode", "1"),
+                "value": self.server.master.settings.get("chargeStopMode", 1),
             },
         )
         page += """
@@ -578,7 +578,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             ],
             {
                 "name": "nonScheduledAction",
-                "value": self.server.master.settings.get("nonScheduledAction", "1"),
+                "value": self.server.master.settings.get("nonScheduledAction", 1),
             },
         )
         page += """
