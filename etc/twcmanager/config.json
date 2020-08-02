@@ -425,7 +425,8 @@
       # SolarLog Inverters
         "SolarLog": {
           "enabled": false,
-          "serverIP": "192.168.1.2"
+          "serverIP": "192.168.1.2",
+          "excludeConsumptionInverters": "2" #Index of a reading device - to exclude consumption from. Needed if e.g. a boiler only heats with solar overhead - and you want to override this one.
         },        
       # The energy detective
         "TED": {
