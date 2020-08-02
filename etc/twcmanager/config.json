@@ -271,6 +271,19 @@
             #  "condition":[],
             #  "value":[]
             #},
+        },
+
+        # This permits defining webhooks for the built-in policies
+        "webhooks": {
+          #"Scheduled Charging": {
+          #  "enter": "http://ift.tt/your_url_here",
+          #  "start": "http://ift.tt/your_url_here",
+          #  "stop": "http://ift.tt/your_url_here",
+          #  "exit": "http://ift.tt/your_url_here"
+          #}
+          #"Track Green Energy": etc.
+          #"Charge Now": etc.
+          #"Non Scheduled Charging": etc.
         }
       },
       # NOTE: Override and Extend are mutually exclusive options. Once you override, you
@@ -309,14 +322,6 @@
       #   "value": [3],
       #   "charge_amps": "settings.nonScheduledAmpsMax",
       #   "charge_limit": "config.nonScheduledLimit" },
-
-      # { "name": "Track Green Energy",
-      #   "match": ["settings.nonScheduledAction"],
-      #   "condition": ["eq"],
-      #   "value": [3],
-      #   "background_task": "checkGreenEnergy",
-      #   "allowed_flex": "config.greenEnergyFlexAmps",
-      #   "charge_limit": "config.greenEnergyLimit" }
 
       ]
     },

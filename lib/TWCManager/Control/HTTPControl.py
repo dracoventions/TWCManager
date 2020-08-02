@@ -311,38 +311,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.wfile.write(json_data.encode("utf-8"))
 
         elif url.path == "/api/getStatus":
-            data = {
-                "carsCharging": self.server.master.num_cars_charging_now(),
-                "chargerLoadWatts": "%.2f" % float(self.server.master.getChargerLoad()),
-                "currentPolicy": str(
-                    self.server.master.getModuleByName("Policy").active_policy
-                ),
-                "maxAmpsToDivideAmongSlaves": "%.2f"
-                % float(self.server.master.getMaxAmpsToDivideAmongSlaves()),
-            }
-            consumption = float(self.server.master.getConsumption())
-            if consumption:
-                data["consumptionAmps"] = (
-                    "%.2f" % self.server.master.convertWattsToAmps(consumption),
-                )
-                data["consumptionWatts"] = "%.2f" % consumption
-            else:
-                data["consumptionAmps"] = "%.2f" % 0
-                data["consumptionWatts"] = "%.2f" % 0
-            generation = float(self.server.master.getGeneration())
-            if generation:
-                data["generationAmps"] = (
-                    "%.2f" % self.server.master.convertWattsToAmps(generation),
-                )
-                data["generationWatts"] = "%.2f" % generation
-            else:
-                data["generationAmps"] = "%.2f" % 0
-                data["generationWatts"] = "%.2f" % 0
-            if self.server.master.getModuleByName("Policy").policyIsGreen():
-                data["isGreenPolicy"] = "Yes"
-            else:
-                data["isGreenPolicy"] = "No"
-
+            data = self.server.master.getStatus()
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
@@ -560,7 +529,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             ],
             {
                 "name": "chargeStopMode",
-                "value": self.server.master.settings.get("chargeStopMode", "1"),
+                "value": self.server.master.settings.get("chargeStopMode", 1),
             },
         )
         page += """
@@ -578,7 +547,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             ],
             {
                 "name": "nonScheduledAction",
-                "value": self.server.master.settings.get("nonScheduledAction", "1"),
+                "value": self.server.master.settings.get("nonScheduledAction", 1),
             },
         )
         page += """
