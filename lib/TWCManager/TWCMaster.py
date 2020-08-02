@@ -264,6 +264,35 @@ class TWCMaster:
     def getSlaveSign(self):
         return self.slaveSign
 
+    def getStatus(self):
+        data = {
+            "carsCharging": self.num_cars_charging_now(),
+            "chargerLoadWatts": "%.2f" % float(self.getChargerLoad()),
+            "currentPolicy": str(self.getModuleByName("Policy").active_policy),
+            "maxAmpsToDivideAmongSlaves": "%.2f"
+            % float(self.getMaxAmpsToDivideAmongSlaves()),
+        }
+        consumption = float(self.getConsumption())
+        if consumption:
+            data["consumptionAmps"] = ("%.2f" % self.convertWattsToAmps(consumption),)
+            data["consumptionWatts"] = "%.2f" % consumption
+        else:
+            data["consumptionAmps"] = "%.2f" % 0
+            data["consumptionWatts"] = "%.2f" % 0
+        generation = float(self.getGeneration())
+        if generation:
+            data["generationAmps"] = ("%.2f" % self.convertWattsToAmps(generation),)
+            data["generationWatts"] = "%.2f" % generation
+        else:
+            data["generationAmps"] = "%.2f" % 0
+            data["generationWatts"] = "%.2f" % 0
+        if self.getModuleByName("Policy").policyIsGreen():
+            data["isGreenPolicy"] = "Yes"
+        else:
+            data["isGreenPolicy"] = "No"
+
+        return data
+
     def getSpikeAmps(self):
         return self.spikeAmpsToCancel6ALimit
 
@@ -374,7 +403,7 @@ class TWCMaster:
         solarW = float(generationW - generationOffset)
 
         # Offer the smaller of the two, but not less than zero.
-        return round(max(min(newOffer, self.convertWattsToAmps(solarW)), 0),2)
+        return round(max(min(newOffer, self.convertWattsToAmps(solarW)), 0), 2)
 
     def getNormalChargeLimit(self, ID):
         if "chargeLimits" in self.settings and str(ID) in self.settings["chargeLimits"]:
@@ -1061,12 +1090,13 @@ class TWCMaster:
     def startCarsCharging(self):
         # This function is the opposite functionality to the stopCarsCharging function
         # below
-        if self.settings.get("chargeStopMode", "1") == "1":
+        stopMode = int(self.settings.get("chargeStopMode", 1))
+        if stopMode == 1:
             self.queue_background_task({"cmd": "charge", "charge": True})
             self.getModuleByName("Policy").clearOverride()
-        if self.settings.get("chargeStopMode", "1") == "2":
+        elif stopMode == 2:
             self.settings["respondToSlaves"] = 1
-        if self.settings.get("chargeStopMode", "1") == "3":
+        elif stopMode == 3:
             self.queue_background_task({"cmd": "charge", "charge": True})
 
     def stopCarsCharging(self):
@@ -1079,15 +1109,16 @@ class TWCMaster:
         # 1 = Stop the car(s) charging via the Tesla API
         # 2 = Stop the car(s) charging by refusing to respond to slave TWCs
         # 3 = Send TWC Stop command to each slave
-        if self.settings.get("chargeStopMode", "1") == "1":
+        stopMode = int(self.settings.get("chargeStopMode", 1))
+        if stopMode == 1:
             self.queue_background_task({"cmd": "charge", "charge": False})
             if self.stopTimeout == datetime.max:
                 self.stopTimeout = datetime.now() + timedelta(seconds=10)
             elif datetime.now() > self.stopTimeout:
                 self.getModuleByName("Policy").overrideLimit()
-        if self.settings.get("chargeStopMode", "1") == "2":
+        if stopMode == 2:
             self.settings["respondToSlaves"] = 0
-        if self.settings.get("chargeStopMode", "1") == "3":
+        if stopMode == 3:
             self.sendStopCommand()
 
     def time_now(self):

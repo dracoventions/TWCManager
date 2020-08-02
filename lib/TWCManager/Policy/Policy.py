@@ -96,13 +96,14 @@ class Policy:
                 for (name, restrictions) in config_extend.get(
                     "restrictions", {}
                 ).items():
-                    restricted = next(
-                        policy
-                        for policy in self.charge_policy
-                        if policy["name"] == name
-                    )
+                    restricted = self.getPolicyByName(name)
                     for key in ("match", "condition", "value"):
                         restricted[key] += restrictions.get(key, [])
+
+                # Get webhooks
+                for (name, hooks) in config_extend.get("webhooks", {}).items():
+                    hooked = self.getPolicyByName(name)
+                    hooked["webhooks"] = hooks
 
                 # Green Energy Latching
                 if "greenEnergyLatch" in self.config["config"]:
@@ -175,6 +176,8 @@ class Policy:
 
     def enforcePolicy(self, policy, updateLatch=False):
         if self.active_policy != str(policy["name"]):
+            self.fireWebhook("exit")
+
             self.master.debugLog(
                 1,
                 "Policy",
@@ -182,6 +185,7 @@ class Policy:
             )
             self.active_policy = str(policy["name"])
             self.limitOverride = False
+            self.fireWebhook("enter")
 
         if updateLatch and "latch_period" in policy:
             policy["__latchTime"] = time.time() + policy["latch_period"] * 60
@@ -214,13 +218,22 @@ class Policy:
         # If a charge limit is defined for this policy, apply it
         limit = limit = self.policyValue(policy.get("charge_limit", -1))
         if self.limitOverride:
-            currentCharge = self.master.getModuleByName("TeslaAPI").minBatteryLevelAtHome - 1
+            currentCharge = (
+                self.master.getModuleByName("TeslaAPI").minBatteryLevelAtHome - 1
+            )
             if currentCharge < 50:
                 currentCharge = 50
             limit = currentCharge if limit == -1 else min(limit, currentCharge)
         if not (limit >= 50 and limit <= 100):
             limit = -1
         self.master.queue_background_task({"cmd": "applyChargeLimit", "limit": limit})
+
+    def fireWebhook(self, hook):
+        policy = self.getPolicyByName(self.active_policy)
+        if policy:
+            url = policy.get("webhooks", {}).get(hook, None)
+            if url:
+                self.master.queue_background_task({"cmd": "webhook", "url": url})
 
     def getPolicyByName(self, name):
         for policy in self.charge_policy:
