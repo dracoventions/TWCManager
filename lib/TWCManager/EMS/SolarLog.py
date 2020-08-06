@@ -168,7 +168,6 @@ class SolarLog:
         # Update function - determine if an update is required
 
         if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
-            self.debugLog(10, "SolarLog start fetching")
             # Cache has expired. Fetch values from HomeAssistant sensor.
             self.getConsumptionAndGenerationValues()
             
@@ -182,5 +181,4 @@ class SolarLog:
             return True
         else:
             # Cache time has not elapsed since last fetch, serve from cache.
-            self.debugLog(10, "SolarLog using cache")
             return False
