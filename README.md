@@ -40,7 +40,7 @@ EMS Interfaces read solar generation and/or consumption values from an external 
 | [Fronius Inverter](docs/modules/EMS_Fronius.md) | Available v1.1.0 | Supports Fronius Inverter API |
 | [HomeAssistant](docs/modules/EMS_HASS.md) | Available v1.0.1 | Supports HomeAssistant sensors |
 | [SolarEdge](docs/modules/EMS_SolarEdge.md) | Available v1.2.0 | Support for SolarEdge API |
-| SolarLog | In Development | Supports SolarLog API |
+| [SolarLog](docs/modules/EMS_SolarLog.md) | Available v1.2.0 | Supports SolarLog Base API |
 | [Tesla Powerwall2](docs/modules/EMS_Powerwall2.md) | Available v1.1.3 | Support for Tesla Powerwall 2 |
 | [The Energy Detective](docs/modules/EMS_TED.md) | Available v1.1.2 | Support for TED (The Energy Detective) |
 
