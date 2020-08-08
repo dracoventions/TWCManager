@@ -567,7 +567,7 @@ class TWCSlave:
 
             # Allocate this slave a fraction of maxAmpsToDivideAmongSlaves divided
             # by the number of cars actually charging.
-            fairShareAmps = int(
+            fairShareAmps = (
                 self.master.getMaxAmpsToDivideAmongSlaves() / numCarsCharging
             )
             if desiredAmpsOffered > fairShareAmps:
