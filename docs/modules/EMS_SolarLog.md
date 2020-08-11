@@ -12,7 +12,7 @@ The following table shows the available configuration parameters for the SolarLo
 | ------------- | --------- |
 | enabled       | *required* Boolean value, ```true``` or ```false```. Determines whether we will poll the SolarLog API |
 | serverIP      | *required* The IP Address of the Solar-Log Base device. |
-| excludeConsumptionInverters        | *optional* Index of a reading device - to exclude consumption from. Needed if e.g. a boiler only heats with solar overhead - and you want to override this one. |
+| excludeConsumptionInverters        | *optional* Indices of reading devices - to exclude consumption from. Needed if e.g. a boiler only heats with solar overhead - and you want to override this one. |
 
 Please note, if any of the required parameters for the SolarLog EMS module are not specified in the module configuration, the module will unload at start time.
 
@@ -22,7 +22,7 @@ Please note, if any of the required parameters for the SolarLog EMS module are n
 "SolarLog": {
   "enabled": false,
   "serverIP": "192.168.1.2",
-  "excludeConsumptionInverters": "2"
+  "excludeConsumptionInverters": [2, 3]
 }, 
 ```
 
