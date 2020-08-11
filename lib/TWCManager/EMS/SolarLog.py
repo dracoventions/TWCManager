@@ -29,10 +29,7 @@ class SolarLog:
             self.configConfig = master.config["config"]
         except KeyError:
             self.configConfig = {}
-        try:
-            self.configSolarLog = master.config["sources"]["SolarLog"]
-        except KeyError:
-            self.configSolarLog = {}
+        self.configSolarLog = master.config["sources"].get("SolarLog", {})
         self.status = self.configSolarLog.get("enabled", False)
         self.serverIP = self.configSolarLog.get("serverIP", None)
         self.excludeConsumptionInverters = self.configSolarLog.get("excludeConsumptionInverters", "").split(",")
