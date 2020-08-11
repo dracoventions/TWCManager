@@ -35,7 +35,7 @@ class SolarLog:
             self.configSolarLog = {}
         self.status = self.configSolarLog.get("enabled", False)
         self.serverIP = self.configSolarLog.get("serverIP", None)
-        self.excludeConsumptionInverters = self.configSolarLog.get("excludeConsumptionInverters", "").split(",")
+        self.excludeConsumptionInverters = self.configSolarLog.get("excludeConsumptionInverters", [])
         self.debugLevel = self.configConfig.get("debugLevel", 0)
 
         # Unload if this module is disabled or misconfigured
