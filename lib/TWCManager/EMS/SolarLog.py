@@ -25,14 +25,8 @@ class SolarLog:
     def __init__(self, master):
         self.master = master
         self.config = master.config
-        try:
-            self.configConfig = master.config["config"]
-        except KeyError:
-            self.configConfig = {}
-        try:
-            self.configSolarLog = master.config["sources"]["SolarLog"]
-        except KeyError:
-            self.configSolarLog = {}
+        self.configConfig = master.config.get("config", {})
+        self.configSolarLog = master.config["sources"].get("SolarLog", {})
         self.status = self.configSolarLog.get("enabled", False)
         self.serverIP = self.configSolarLog.get("serverIP", None)
         self.excludeConsumptionInverters = self.configSolarLog.get("excludeConsumptionInverters", [])
@@ -168,7 +162,7 @@ class SolarLog:
         # Update function - determine if an update is required
 
         if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
-            # Cache has expired. Fetch values from HomeAssistant sensor.
+            # Cache has expired. Fetch values from SolarLog.
             self.getConsumptionAndGenerationValues()
             
             if self.fetchFailed is not True:
