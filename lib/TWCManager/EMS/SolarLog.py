@@ -25,10 +25,7 @@ class SolarLog:
     def __init__(self, master):
         self.master = master
         self.config = master.config
-        try:
-            self.configConfig = master.config["config"]
-        except KeyError:
-            self.configConfig = {}
+        self.configConfig = master.config.get("config", {})
         self.configSolarLog = master.config["sources"].get("SolarLog", {})
         self.status = self.configSolarLog.get("enabled", False)
         self.serverIP = self.configSolarLog.get("serverIP", None)
