@@ -4,6 +4,8 @@
 
 The SolarEdge EMS Module allows energy generation to be fetched from the SolarEdge API (```monitoringapi.solaredge.com```), which is a hosted management portal for SolarEdge inverters.
 
+Important: there is no consumption value to be fetched - it is always 0, because no data available as far as we know yet.
+
 ## Configuration
 
 The following table shows the available configuration parameters for the SolarEdge EMS Module:
