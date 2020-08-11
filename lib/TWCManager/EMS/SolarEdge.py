@@ -60,8 +60,8 @@ class SolarEdge:
         # Perform updates if necessary
         self.update()
 
-        # Return current generation value
-        return float(self.generatedW)
+        # Return current consumed value - is always 0, because no data available as far as we know yet
+        return float(self.consumedW)
 
     def getGeneration(self):
 
