@@ -773,7 +773,7 @@ class TWCSlave:
                 # no cars are charging, and desiredAmpsOffered < minAmpsToOffer
                 # so we need to set desiredAmpsOffered to 0
                 self.master.debugLog(
-                    1,
+                    10,
                     "TWCSlave  ",
                     "no cars charging, setting desiredAmpsOffered to 0"
                 )
