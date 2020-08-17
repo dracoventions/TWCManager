@@ -134,12 +134,12 @@ class MQTTStatus:
         for msg in self.msgQueueBuffer:
             self.master.debugLog(
                 8,
-                "MQTTStatus"
+                "MQTTStatus",
                 "Publishing MQTT Topic "
                 + str(msg["topic"])
                 + " (value is "
                 + str(msg["payload"])
-                + ")",
+                + ")"
             )
             try:
                 pub = client.publish(msg["topic"], payload=msg["payload"], qos=0)
