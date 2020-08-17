@@ -62,6 +62,7 @@ modules_available = [
     "EMS.SolarLog",
     "EMS.TeslaPowerwall2",
     "EMS.TED",
+    "EMS.OpenHab",
     "Logging.ConsoleLogging",
     "Logging.CSVLogging",
     "Logging.MySQLLogging",
