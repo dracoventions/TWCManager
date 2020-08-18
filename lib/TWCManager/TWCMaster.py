@@ -119,6 +119,10 @@ class TWCMaster:
                 # 7am, we apply scheduledAmpsMax from Monday at 8am to Monday at
                 # 11:59pm, and on Tuesday at 12am to Tuesday at 6:59am.
                 hourNow = ltNow.tm_hour + (ltNow.tm_min / 60)
+                yesterday = ltNow.tm_wday - 1
+                if yesterday < 0:
+                    yesterday += 7
+
                 if (
                     hourNow >= self.settings.get("scheduledAmpsStartHour", -1)
                     and (self.getScheduledAmpsDaysBitmap() & (1 << ltNow.tm_wday))
