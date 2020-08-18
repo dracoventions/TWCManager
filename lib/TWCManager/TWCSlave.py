@@ -769,6 +769,15 @@ class TWCSlave:
                         desiredAmpsOffered = 0
                     else:
                         desiredAmpsOffered = minAmpsToOffer
+            else:
+                # no cars are charging, and desiredAmpsOffered < minAmpsToOffer
+                # so we need to set desiredAmpsOffered to 0
+                self.master.debugLog(
+                    10,
+                    "TWCSlave  ",
+                    "no cars charging, setting desiredAmpsOffered to 0"
+                )
+                desiredAmpsOffered = 0
         else:
             # We can tell the TWC how much power to use in 0.01A increments, but
             # the car will only alter its power in larger increments (somewhere
