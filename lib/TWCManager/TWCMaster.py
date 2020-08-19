@@ -1176,6 +1176,6 @@ class TWCMaster:
         minAmps = self.config["config"]["minAmpsPerTWC"]
         maxAmps = self.config["config"]["wiringMaxAmpsAllTWCs"]
         if (minAmps == maxAmps):
-            return 1
+            return realPowerFactorMaxAmps
         else:
             return ((amps-minAmps)/(maxAmps-minAmps)*(realPowerFactorMaxAmps-realPowerFactorMinAmps))+realPowerFactorMinAmps
