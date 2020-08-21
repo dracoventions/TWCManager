@@ -9,6 +9,7 @@ class TWCSlave:
     import time
 
     config = None
+    configConfig = None
     debugLevel = 0
     TWCID = None
     lastVINQuery = 0
@@ -49,6 +50,7 @@ class TWCSlave:
     timeReportedAmpsActualChangedSignificantly = time.time()
 
     lastAmpsOffered = -1
+    useFlexAmpsToStartCharge = False
     timeLastAmpsOfferedChanged = time.time()
     lastHeartbeatDebugOutput = ""
     timeLastHeartbeatDebugOutput = 0
@@ -65,10 +67,16 @@ class TWCSlave:
 
     def __init__(self, TWCID, maxAmps, config, master):
         self.config = config
+        try:
+            self.configConfig = config["config"]
+        except KeyError:
+            self.configConfig = {}
         self.master = master
         self.TWCID = TWCID
         self.maxAmps = maxAmps
-        self.wiringMaxAmps = config["config"]["wiringMaxAmpsPerTWC"]
+
+        self.wiringMaxAmps = self.configConfig.get("wiringMaxAmpsPerTWC",6)
+        self.useFlexAmpsToStartCharge = self.configConfig.get("useFlexAmpsToStartCharge", False)
 
     def print_status(self, heartbeatData):
 
@@ -555,7 +563,7 @@ class TWCSlave:
         # Determine how many cars are charging and how many amps they're using
         numCarsCharging = self.master.num_cars_charging_now()
         desiredAmpsOffered = self.master.getMaxAmpsToDivideAmongSlaves()
-        flex = 0
+        flex = self.master.getAllowedFlex()
 
         if numCarsCharging > 0:
             desiredAmpsOffered -= sum(
@@ -584,7 +592,9 @@ class TWCSlave:
                 + str(desiredAmpsOffered)
                 + " with "
                 + str(numCarsCharging)
-                + " cars charging.",
+                + " cars charging and flex Amps of "
+                + str(flex)
+                + ".",
             )
 
         minAmpsToOffer = self.config["config"]["minAmpsPerTWC"]
@@ -594,7 +604,7 @@ class TWCSlave:
         if (
             desiredAmpsOffered < minAmpsToOffer
             and desiredAmpsOffered + flex >= minAmpsToOffer
-            and self.reportedAmpsActual >= 1.0
+            and (self.useFlexAmpsToStartCharge or self.reportedAmpsActual >= 1.0)
         ):
             desiredAmpsOffered = minAmpsToOffer
 
@@ -602,10 +612,11 @@ class TWCSlave:
             self.master.debugLog(
                 10,
                 "TWCSlave  ",
-                "desiredAmpsOffered ("
+                "desiredAmpsOffered: "
                 + str(desiredAmpsOffered)
-                + ") < minAmpsToOffer:"
-                + str(minAmpsToOffer),
+                + " < minAmpsToOffer:"
+                + str(minAmpsToOffer)
+                + " (flexAmps: " + str(flex) + ")",
             )
             if numCarsCharging > 0:
                 if (
