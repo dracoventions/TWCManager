@@ -611,7 +611,7 @@ class TWCSlave:
                 "TWCSlave  ",
                 "desiredAmpsOffered: "
                 + str(desiredAmpsOffered)
-                + " < minAmpsToOffer:"
+                + " < minAmpsToOffer: "
                 + str(minAmpsToOffer)
                 + " (flexAmps: " + str(flex) + ")",
             )
