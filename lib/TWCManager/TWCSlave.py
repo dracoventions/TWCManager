@@ -71,7 +71,6 @@ class TWCSlave:
         self.master = master
         self.TWCID = TWCID
         self.maxAmps = maxAmps
-
         self.wiringMaxAmps = self.configConfig.get("wiringMaxAmpsPerTWC",6)
         self.useFlexAmpsToStartCharge = self.configConfig.get("useFlexAmpsToStartCharge", False)
 
