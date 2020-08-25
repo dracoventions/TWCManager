@@ -67,10 +67,7 @@ class TWCSlave:
 
     def __init__(self, TWCID, maxAmps, config, master):
         self.config = config
-        try:
-            self.configConfig = config["config"]
-        except KeyError:
-            self.configConfig = {}
+        self.configConfig.get("config", {})
         self.master = master
         self.TWCID = TWCID
         self.maxAmps = maxAmps
