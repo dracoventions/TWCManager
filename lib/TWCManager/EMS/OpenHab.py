@@ -7,7 +7,7 @@ class OpenHab:
     import time
 
     apiKey = None
-    cacheTime = 10
+    cacheTime = 10 # in seconds
     config = None
     configConfig = None
     configOpenHab = None
@@ -49,7 +49,7 @@ class OpenHab:
 
     def debugLog(self, minlevel, message):
         if self.debugLevel >= minlevel:
-            print("debugLog: (" + str(minlevel) + ") " + message)
+            print("OpenHab: (" + str(minlevel) + ") " + message)
 
     def getConsumption(self):
 
