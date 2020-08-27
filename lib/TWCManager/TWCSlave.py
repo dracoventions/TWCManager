@@ -67,7 +67,7 @@ class TWCSlave:
 
     def __init__(self, TWCID, maxAmps, config, master):
         self.config = config
-        self.configConfig.get("config", {})
+        self.configConfig = self.config.get("config", {})
         self.master = master
         self.TWCID = TWCID
         self.maxAmps = maxAmps
