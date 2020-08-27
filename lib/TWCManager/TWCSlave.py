@@ -772,10 +772,7 @@ class TWCSlave:
                         + str(self.reportedAmpsActual)
                         + " < 4",
                     )
-                    if self.master.getMaxAmpsToDivideAmongSlaves() < 1:
-                        desiredAmpsOffered = 0
-                    else:
-                        desiredAmpsOffered = minAmpsToOffer
+                    desiredAmpsOffered = minAmpsToOffer
             else:
                 # no cars are charging, and desiredAmpsOffered < minAmpsToOffer
                 # so we need to set desiredAmpsOffered to 0
