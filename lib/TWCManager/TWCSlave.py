@@ -67,10 +67,7 @@ class TWCSlave:
 
     def __init__(self, TWCID, maxAmps, config, master):
         self.config = config
-        try:
-            self.configConfig = config["config"]
-        except KeyError:
-            self.configConfig = {}
+        self.configConfig = self.config.get("config", {})
         self.master = master
         self.TWCID = TWCID
         self.maxAmps = maxAmps
@@ -614,7 +611,7 @@ class TWCSlave:
                 "TWCSlave  ",
                 "desiredAmpsOffered: "
                 + str(desiredAmpsOffered)
-                + " < minAmpsToOffer:"
+                + " < minAmpsToOffer: "
                 + str(minAmpsToOffer)
                 + " (flexAmps: " + str(flex) + ")",
             )
