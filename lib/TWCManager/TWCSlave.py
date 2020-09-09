@@ -853,7 +853,7 @@ class TWCSlave:
                     # a higher one less than spikeAmpsToCancel6ALimit.
                     (
                         desiredAmpsOffered < self.master.getSpikeAmps()
-                        and desiredAmpsOffered > self.lastAmpsOffered
+                        and desiredAmpsOffered > self.reportedAmpsMax
                     )
                     or (
                         # ...or if we've been offering the car more amps than it's
