@@ -32,7 +32,7 @@ class OpenHab:
         except KeyError:
             self.configConfig = {}
         try:
-            self.configOpenHab = master.config["sources"]["OpenHab"]
+            self.configOpenHab = master.config["sources"]["openHAB"]
         except KeyError:
             self.configOpenHab = {}
         self.status = self.configOpenHab.get("enabled", False)
