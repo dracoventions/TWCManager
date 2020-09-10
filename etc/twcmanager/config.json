@@ -433,6 +433,15 @@
           "enabled": false,
           "serverIP": "192.168.1.1",
           "serverPort": "80"
+        },
+      # The openHAB module allows fetching of consumption and generation data from openHAB items.
+      # If you do not track one of these values (generation or consumption) via openHAB, leave the parameter blank, and it will not be retrieved.
+        "openHAB": {
+          "enabled": false,
+          "consumptionItem": "Consumption item name",
+          "generationItem": "Generation item name",
+          "serverIP": "192.168.1.2",
+          "serverPort": "8080"
         }
     },
 
