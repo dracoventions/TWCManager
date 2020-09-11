@@ -102,7 +102,17 @@ class OpenHab:
         # Strip units like '12.3 W'
         if " " in response:
             return response.split(" ")[0]
-        return response
+
+        try:
+            responseAsFloat = float(response)
+            return responseAsFloat
+        except ValueError:
+            self.master.debugLog(
+                4, "OpenHab", "Fetched value from OpenHab item is not a number"
+            )
+            self.master.debugLog(10, "OpenHab", "Server response: " + str(response))
+            self.fetchFailed = True
+            return False
 
     def setCacheTime(self, cacheTime):
         self.cacheTime = cacheTime
@@ -120,7 +130,7 @@ class OpenHab:
                 apivalue = self.getAPIValue(self.consumptionItem)
                 if self.fetchFailed is not True:
                     self.master.debugLog(10, "OpenHab", "OpenHab getConsumption returns " + str(apivalue))
-                    self.consumedW = float(apivalue)
+                    self.consumedW = apivalue
                 else:
                     self.master.debugLog(
                         10, "OpenHab", "OpenHab getConsumption fetch failed, using cached values"
@@ -132,7 +142,7 @@ class OpenHab:
                 apivalue = self.getAPIValue(self.generationItem)
                 if self.fetchFailed is not True:
                     self.master.debugLog(10, "OpenHab", "OpenHab getGeneration returns " + str(apivalue))
-                    self.generatedW = float(apivalue)
+                    self.generatedW = apivalue
                 else:
                     self.master.debugLog(
                         10, "OpenHab", "OpenHab getGeneration fetch failed, using cached values"
