@@ -47,14 +47,10 @@ class OpenHab:
             self.master.releaseModule("lib.TWCManager.EMS", "OpenHab")
             return None
 
-    def debugLog(self, minlevel, message):
-        if self.debugLevel >= minlevel:
-            print("OpenHab: (" + str(minlevel) + ") " + message)
-
     def getConsumption(self):
 
         if not self.status:
-            self.debugLog(10, "OpenHab EMS Module Disabled. Skipping getConsumption")
+            self.master.debugLog(10, "OpenHab", "OpenHab EMS Module Disabled. Skipping getConsumption")
             return 0
 
         # Perform updates if necessary
@@ -66,7 +62,7 @@ class OpenHab:
     def getGeneration(self):
 
         if not self.status:
-            self.debugLog(10, "OpenHab EMS Module Disabled. Skipping getGeneration")
+            self.master.debugLog(10, "OpenHab", "OpenHab EMS Module Disabled. Skipping getGeneration")
             return 0
 
         # Perform updates if necessary
@@ -83,20 +79,20 @@ class OpenHab:
         self.fetchFailed = False
 
         try:
-            self.debugLog(10, "Fetching OpenHab EMS sensor value " + str(item))
+            self.master.debugLog(10, "OpenHab", "Fetching OpenHab EMS item value " + str(item))
             httpResponse = self.requests.get(url, timeout=self.timeout)
         except self.requests.exceptions.ConnectionError as e:
-            self.debugLog(
-                4, "Error connecting to OpenHab to publish sensor values"
+            self.master.debugLog(
+                4, "OpenHab", "Error connecting to OpenHab to fetch item values"
             )
-            self.debugLog(10, str(e))
+            self.master.debugLog(10, "OpenHab", str(e))
             self.fetchFailed = True
             return False
         except self.requests.exceptions.ReadTimeout as e:
-            self.debugLog(
-                4, "Read Timeout occurred fetching OpenHab sensor value"
+            self.master.debugLog(
+                4, "OpenHab", "Read Timeout occurred fetching OpenHab item value"
             )
-            self.debugLog(10, str(e))
+            self.master.debugLog(10, "OpenHab", str(e))
             self.fetchFailed = True
             return False
 
@@ -118,31 +114,31 @@ class OpenHab:
         # Update function - determine if an update is required
 
         if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
-            # Cache has expired. Fetch values from OpenHab sensor.
+            # Cache has expired. Fetch values from OpenHab item.
 
             if self.consumptionItem:
                 apivalue = self.getAPIValue(self.consumptionItem)
                 if self.fetchFailed is not True:
-                    self.debugLog(10, "OpenHab getConsumption returns " + str(apivalue))
+                    self.master.debugLog(10, "OpenHab", "OpenHab getConsumption returns " + str(apivalue))
                     self.consumedW = float(apivalue)
                 else:
-                    self.debugLog(
-                        10, "OpenHab getConsumption fetch failed, using cached values"
+                    self.master.debugLog(
+                        10, "OpenHab", "OpenHab getConsumption fetch failed, using cached values"
                     )
             else:
-                self.debugLog(10, "OpenHab Consumption Entity Not Supplied. Not Querying")
+                self.master.debugLog(10, "OpenHab", "OpenHab Consumption Entity Not Supplied. Not Querying")
 
             if self.generationItem:
                 apivalue = self.getAPIValue(self.generationItem)
                 if self.fetchFailed is not True:
-                    self.debugLog(10, "OpenHab getGeneration returns " + str(apivalue))
+                    self.master.debugLog(10, "OpenHab", "OpenHab getGeneration returns " + str(apivalue))
                     self.generatedW = float(apivalue)
                 else:
-                    self.debugLog(
-                        10, "OpenHab getGeneration fetch failed, using cached values"
+                    self.master.debugLog(
+                        10, "OpenHab", "OpenHab getGeneration fetch failed, using cached values"
                     )
             else:
-                self.debugLog(10, "OpenHab Generation Entity Not Supplied. Not Querying")
+                self.master.debugLog(10, "OpenHab", "OpenHab Generation Entity Not Supplied. Not Querying")
 
             # Update last fetch time
             if self.fetchFailed is not True:
