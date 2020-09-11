@@ -4,18 +4,6 @@
 
 The openHAB EMS module allows fetching of solar Generation and Consumption values from openHAB items via the openHAB REST API.
 
-### Note
-
-In case that the TWC's power draw is included in the value of your **consumptionItem**, please ensure the following configuration setting is enabled in your ```config.json``` file:
-
-```
-{
-    "config": {
-        "subtractChargerLoad": true
-    }
-}
-```
-
 ### Status
 
 | Detail          | Value                          |
@@ -49,9 +37,21 @@ The following table shows the available configuration parameters for the openHAB
 }
 ```
 
+### Note
+
+In case that the TWC's power draw is included in the value of your **consumptionItem**, please ensure the following configuration setting is enabled in your ```config.json``` file:
+
+```
+{
+    "config": {
+        "subtractChargerLoad": true
+    }
+}
+```
+
 ### Item Names
 
-For openHAB, the two settings "consumptionItem" and "generationItem" must be customized to point to the specific item names you use within openHAB. There is no default or common value for this, so it will require customization to work correctly.
+The two settings "consumptionItem" and "generationItem" must be customized to point to the specific item names you use within openHAB. There is no default or common value for this, so it will require customization to work correctly.
 
 If you do not track one of these values (generation or consumption) via openHAB, leave the parameter blank, and it will not be retrieved.
 
