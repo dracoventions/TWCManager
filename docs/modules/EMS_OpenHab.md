@@ -19,7 +19,7 @@ The following table shows the available configuration parameters for the openHAB
 
 | Parameter   | Value         |
 | ----------- | ------------- |
-| enabled     | *required* Boolean value, ```true``` or ```false```. Determines whether we will poll openHAB items. |
+| enabled     | *required* Boolean value, `true` or `false`. Determines whether we will poll openHAB items. |
 | consumptionItem | *optional* Name of openHAB item displaying consumption. |
 | generationItem  | *optional* Name of openHAB item displaying generation. |
 | serverIP    | *required* The IP address of the openHAB instance. We will poll the REST HTTP API. |
