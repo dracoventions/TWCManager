@@ -60,7 +60,7 @@ class SolarEdge:
         # Perform updates if necessary
         self.update()
 
-        # Return current consumed value - is always 0, because no data available as far as we know yet
+        # Return current consumed value
         return float(self.consumedW)
 
     def getGeneration(self):
@@ -77,9 +77,9 @@ class SolarEdge:
         # Return generation value
         return float(self.generatedW)
 
-    def getPortalData(self):
+    def getPortalData(self, request):
         url = "https://monitoringapi.solaredge.com/site/" + self.siteID
-        url += "/overview?api_key=" + self.apiKey
+        url += "/"+request+"?api_key=" + self.apiKey
 
         return self.getPortalValue(url)
 
@@ -119,7 +119,8 @@ class SolarEdge:
         if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from Portal.
 
-            portalData = self.getPortalData()
+            # Query for Generation Data
+            portalData = self.getPortalData("overview")
             if portalData:
                 try:
                     self.generatedW = int(
@@ -139,6 +140,22 @@ class SolarEdge:
                     "SolarEdge API result does not contain json content.",
                 )
                 self.fetchFailed = True
+
+            # Query for consumption data
+            # Because consumption data is optional, we won't raise an error if it doesn't parse
+            portalData = self.getPortalData("currentPowerFlow")
+            if portalData:
+                try:
+                    self.consumedW = int(
+                        portalData["siteCurrentPowerFlow"]["LOAD"]["currentPower"]
+                    )
+                except (KeyError, TypeError) as e:
+                    self.master.debugLog(
+                        4,
+                        "SolarEdge",
+                        "Exception during parsing SolarEdge consumption data",
+                    )
+                    self.master.debugLog(10, "SolarEdge", e)
 
             # Update last fetch time
             if self.fetchFailed is not True:
