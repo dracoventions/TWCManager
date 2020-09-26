@@ -146,9 +146,18 @@ class SolarEdge:
             portalData = self.getPortalData("currentPowerFlow")
             if portalData:
                 try:
-                    self.consumedW = int(
-                        portalData["siteCurrentPowerFlow"]["LOAD"]["currentPower"]
-                    )
+                    # The unit used is specified by the API
+                    if portalData["siteCurrentPowerFlow"]["unit"] == "W":
+                        self.consumedW = int(
+                            portalData["siteCurrentPowerFlow"]["LOAD"]["currentPower"]
+                        )
+                    else:
+                        self.master.debugLog(
+                            1,
+                            "SolarEdge",
+                            "Unknown SolarEdge Consumption Value unit: "+ str(portalData["siteCurrentPowerFlow"]["unit"]),
+                        )
+
                 except (KeyError, TypeError) as e:
                     self.master.debugLog(
                         4,
