@@ -274,7 +274,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 "reportedAmpsActual": 0,
             }
             for slaveTWC in self.server.master.getSlaveTWCs():
-                TWCID = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
+                TWCID = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])                
                 data[TWCID] = {
                     "currentVIN": slaveTWC.currentVIN,
                     "lastAmpsOffered": "%.2f" % float(slaveTWC.lastAmpsOffered),
@@ -290,6 +290,17 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                     "voltsPhaseC": str(slaveTWC.voltsPhaseC),
                     "TWCID": "%s" % TWCID,
                 }
+                # Adding some vehicle data
+                vehicle = slaveTWC.getLastVehicle()
+                if (vehicle != None):
+                    data[TWCID]["lastBatterySOC"] = slaveTWC.getLastVehicle().batteryLevel
+                    data[TWCID]["lastChargeLimit"] = slaveTWC.getLastVehicle().chargeLimit
+                    data[TWCID]["lastAtHome"] = slaveTWC.getLastVehicle().atHome
+                else:
+                    data[TWCID]["lastBatterySOC"] = 0
+                    data[TWCID]["lastChargeLimit"] = 0
+                    data[TWCID]["lastAtHome"] = 0 
+
                 totals["lastAmpsOffered"] += slaveTWC.lastAmpsOffered
                 totals["lifetimekWh"] += slaveTWC.lifetimekWh
                 totals["maxAmps"] += slaveTWC.maxAmps

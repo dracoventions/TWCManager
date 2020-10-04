@@ -1073,6 +1073,7 @@ class CarApiVehicle:
     debuglevel = 0
     ID = None
     name = ""
+    VIN = ""
 
     firstWakeAttemptTime = 0
     lastAPIAccessTime = 0
@@ -1096,6 +1097,7 @@ class CarApiVehicle:
         self.config = config
         self.debugLevel = config["config"]["debugLevel"]
         self.ID = json["id"]
+        self.VIN = json["vin"]
         self.name = json["display_name"]
 
     def ready(self):
