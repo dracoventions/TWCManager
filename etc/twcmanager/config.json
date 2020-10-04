@@ -83,6 +83,12 @@
         "defaultVoltage": 240,
         "numberOfPhases": 1,
 
+        # As I observed different reactive power changing with the the amps used,
+        # I introduce a real power variable for minAmps and maxAmps
+        # For my installation there was 0.90 at 6 amps and 0.93 at 20 amps        
+        "realPowerFactorMinAmps": 0.9,
+        "realPowerFactorMaxAmps": 0.93,
+
         # When determining how much green energy is available for charging, we count
         # greenEnergyAmpsOffset as consumption. This is most often given a value
         # equal to the average amount of power consumed by everything other than car

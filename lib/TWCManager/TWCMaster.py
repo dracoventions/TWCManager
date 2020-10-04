@@ -333,7 +333,8 @@ class TWCMaster:
     def getChargerLoad(self):
         # Calculate in watts the load that the charger is generating so
         # that we can exclude it from the consumption if necessary
-        return self.convertAmpsToWatts(self.getTotalAmpsInUse())
+        amps = self.getTotalAmpsInUse()
+        return self.convertAmpsToWatts(amps) * self.getRealPowerFactor(amps)
 
     def getConsumption(self):
         consumptionVal = 0
@@ -405,9 +406,12 @@ class TWCMaster:
         # Fetches and uses consumptionW separately
         generationOffset = self.getGenerationOffset()
         solarW = float(generationW - generationOffset)
+        solarAmps = self.convertWattsToAmps(solarW)
 
         # Offer the smaller of the two, but not less than zero.
-        return round(max(min(newOffer, self.convertWattsToAmps(solarW)), 0), 2)
+        amps = max(min(newOffer,solarAmps), 0)
+        amps = amps / self.getRealPowerFactor(amps)
+        return round(amps,2)
 
     def getNormalChargeLimit(self, ID):
         if "chargeLimits" in self.settings and str(ID) in self.settings["chargeLimits"]:
@@ -1165,3 +1169,13 @@ class TWCMaster:
                 self.getTotalAmpsInUse(),
                 "A",
             )
+
+    def getRealPowerFactor(self, amps):
+        realPowerFactorMinAmps = self.config["config"].get("realPowerFactorMinAmps", 1)
+        realPowerFactorMaxAmps = self.config["config"].get("realPowerFactorMaxAmps", 1)
+        minAmps = self.config["config"]["minAmpsPerTWC"]
+        maxAmps = self.config["config"]["wiringMaxAmpsAllTWCs"]
+        if (minAmps == maxAmps):
+            return realPowerFactorMaxAmps
+        else:
+            return ((amps-minAmps)/(maxAmps-minAmps)*(realPowerFactorMaxAmps-realPowerFactorMinAmps))+realPowerFactorMinAmps
