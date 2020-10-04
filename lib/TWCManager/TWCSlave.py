@@ -1110,3 +1110,17 @@ class TWCSlave:
 
     def getCurrentChargerLoad(self):
         return self.master.convertAmpsToWatts(self.reportedAmpsActual) * self.master.getRealPowerFactor(self.reportedAmpsActual)
+
+    def getLastVehicle(self):       
+        currentVehicle = None
+        lastVehicle = None
+        for vehicle in self.master.getModuleByName("TeslaAPI").getCarApiVehicles():
+            if (self.currentVIN == vehicle.VIN): 
+                currentVehicle = vehicle
+            if (self.lastVIN == vehicle.VIN):
+                lastVehicle = vehicle
+        if (currentVehicle != None):
+            return currentVehicle
+        if (lastVehicle != None):
+            return lastVehicle
+        return None    
