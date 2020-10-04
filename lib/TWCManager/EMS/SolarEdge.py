@@ -14,7 +14,9 @@ class SolarEdge:
     configConfig = None
     configSolarEdge = None
     consumedW = 0
+    debugFile = "/tmp/twcmanager_solaredge_debug.txt"
     debugLevel = 0
+    debugMode = 0
     fetchFailed = False
     generatedW = 0
     importW = 0
@@ -37,10 +39,12 @@ class SolarEdge:
             self.configSolarEdge = master.config["sources"]["SolarEdge"]
         except KeyError:
             self.configSolarEdge = {}
-        self.apiKey = self.configSolarEdge.get("apiKey", None)
+        self.apiKey     = self.configSolarEdge.get("apiKey", None)
+        self.debugFile  = self.configConfig.get("debugFile",  self.debugFile)
         self.debugLevel = self.configConfig.get("debugLevel", 0)
-        self.status = self.configSolarEdge.get("enabled", False)
-        self.siteID = self.configSolarEdge.get("siteID", None)
+        self.debugMode  = self.configSolarEdge.get("debugMode", self.debugMode)
+        self.status     = self.configSolarEdge.get("enabled", self.status)
+        self.siteID     = self.configSolarEdge.get("siteID", None)
 
         # Unload if this module is disabled or misconfigured
         if (not self.status) or (not self.siteID) or (not self.apiKey):
@@ -60,7 +64,7 @@ class SolarEdge:
         # Perform updates if necessary
         self.update()
 
-        # Return current consumed value - is always 0, because no data available as far as we know yet
+        # Return current consumed value
         return float(self.consumedW)
 
     def getGeneration(self):
@@ -77,16 +81,18 @@ class SolarEdge:
         # Return generation value
         return float(self.generatedW)
 
-    def getPortalData(self):
-        url = "https://monitoringapi.solaredge.com/site/" + self.siteID
-        url += "/overview?api_key=" + self.apiKey
+    def getPortalData(self, request):
 
-        return self.getPortalValue(url)
-
-    def getPortalValue(self, url):
-
-        # Fetch the specified URL from the SolarEdge Portal and return the data
+        # Fetch the specified data from the SolarEdge Portal and return the data
         self.fetchFailed = False
+
+        url = "https://monitoringapi.solaredge.com/site/" + self.siteID
+        url += "/"+request+"?api_key=" + self.apiKey
+
+        if self.debugMode:
+            with open(self.debugFile, 'a') as file:
+                file.write("getPortalData requests: "+str(request) + "via URL: "+ str(url) + "\n")
+            file.close()
 
         try:
             r = self.requests.get(url, timeout=self.timeout)
@@ -110,8 +116,19 @@ class SolarEdge:
                 + str(e.response.status_code)
                 + " connecting to SolarEdge Portal to fetch sensor value",
             )
+
+            if self.debugMode:
+                with open(self.debugFile, 'a') as file:
+                    file.write("getPortalData returns HTTPError exception, string will be returned as null. Exception details follow:\n")
+                    file.write("HTTP Error Code: " + str(e.response.status_code) + "\n")
+                    file.write("Full exception: " + str(e) + "\n")
             return ""
         else:
+            if self.debugMode:
+                with open(self.debugFile, 'a') as file:
+                    file.write("getPortalData returns " + str(r.content) + "\n")
+                file.close()
+
             return r.json()
 
     def update(self):
@@ -119,7 +136,8 @@ class SolarEdge:
         if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from Portal.
 
-            portalData = self.getPortalData()
+            # Query for Generation Data
+            portalData = self.getPortalData("overview")
             if portalData:
                 try:
                     self.generatedW = int(
@@ -140,9 +158,39 @@ class SolarEdge:
                 )
                 self.fetchFailed = True
 
+            # Query for consumption data
+            # Because consumption data is optional, we won't raise an error if it doesn't parse
+            portalData = self.getPortalData("currentPowerFlow")
+            if portalData:
+                try:
+                    # The unit used is specified by the API
+                    if portalData["siteCurrentPowerFlow"]["unit"] == "W":
+                        self.consumedW = int(
+                            portalData["siteCurrentPowerFlow"]["LOAD"]["currentPower"]
+                        )
+                    else:
+                        self.master.debugLog(
+                            1,
+                            "SolarEdge",
+                            "Unknown SolarEdge Consumption Value unit: %s " % str(portalData["siteCurrentPowerFlow"]["unit"]),
+                        )
+
+                except (KeyError, TypeError) as e:
+                    self.master.debugLog(
+                        4,
+                        "SolarEdge",
+                        "Exception during parsing SolarEdge consumption data",
+                    )
+                    self.master.debugLog(10, "SolarEdge", e)
+
             # Update last fetch time
             if self.fetchFailed is not True:
                 self.lastFetch = int(self.time.time())
+            else:
+                if self.debugMode:
+                    with open(self.debugFile, 'a+') as file:
+                        file.write("fetchFailed is True\n")
+                    file.close()
 
             return True
         else:
