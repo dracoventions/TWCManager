@@ -296,10 +296,12 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                     data[TWCID]["lastBatterySOC"] = slaveTWC.getLastVehicle().batteryLevel
                     data[TWCID]["lastChargeLimit"] = slaveTWC.getLastVehicle().chargeLimit
                     data[TWCID]["lastAtHome"] = slaveTWC.getLastVehicle().atHome
+                    data[TWCID]["lastTimeToFullCharge"] = slaveTWC.getLastVehicle().timeToFullCharge
                 else:
                     data[TWCID]["lastBatterySOC"] = 0
                     data[TWCID]["lastChargeLimit"] = 0
                     data[TWCID]["lastAtHome"] = 0 
+                    data[TWCID]["lastTimeToFullCharge"] = 0
 
                 totals["lastAmpsOffered"] += slaveTWC.lastAmpsOffered
                 totals["lifetimekWh"] += slaveTWC.lifetimekWh
@@ -423,6 +425,39 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
         elif self.url.path == "/api/checkDeparture":
             self.server.master.queue_background_task({"cmd": "checkDeparture"})
+            self.send_response(202)
+            self.end_headers()
+            self.wfile.write("".encode("utf-8"))
+
+        elif self.url.path =="/api/setScheduledChargingSettings":
+            data = json.loads(self.post_data.decode("UTF-8"))
+            enabled = bool(data.get("enabled", False))
+            startingMinute = int(data.get("startingMinute", -1))
+            endingMinute = int(data.get("endingMinute", -1))
+            monday = bool(data.get("monday", False))
+            tuesday = bool(data.get("tuesday", False))
+            wednesday = bool(data.get("wednesday", False))
+            thursday = bool(data.get("thursday", False))
+            friday = bool(data.get("friday", False))
+            saturday = bool(data.get("saturday", False))
+            sunday = bool(data.get("sunday", False))
+            amps = int(data.get("amps", -1))
+            flexStart = int(data.get("flexStartBatteryMaxCapacity", False))
+            weekDaysBitmap = (1 if monday else 0) + (2 if tuesday else 0) + (4 if wednesday else 0) + (8 if thursday else 0) + (16 if friday else 0) + (32 if saturday else 0) + (64 if sunday else 0)
+
+            if not(enabled) or startingMinute<0 or endingMinute<0 or amps<=0 or weekDaysBitmap==0:
+                self.server.master.setScheduledAmpsMax(0)
+                self.server.master.setScheduledAmpsStartHour(-1)
+                self.server.master.setScheduledAmpsEndHour(-1)
+                self.server.master.setScheduledAmpsDaysBitmap(0)
+                self.server.master.setScheduledAmpsFlexStartBatteryMaxCapacity(False)
+            else:
+                self.server.master.setScheduledAmpsMax(amps)
+                self.server.master.setScheduledAmpsStartHour(startingMinute / 60)
+                self.server.master.setScheduledAmpsEndHour(endingMinute / 60)
+                self.server.master.setScheduledAmpsDaysBitmap(weekDaysBitmap)
+                self.server.master.setScheduledAmpsFlexStartBatteryMaxCapacity(flexStart)
+            self.server.master.saveSettings()
             self.send_response(202)
             self.end_headers()
             self.wfile.write("".encode("utf-8"))
@@ -939,9 +974,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "<td>" + str(self.server.master.getScheduledAmpsMax()) + "</td></tr>"
 
         page += "<tr><th>Scheduled Charging Start Hour</th>"
-        page += (
-            "<td>" + str(self.server.master.getScheduledAmpsStartHour()) + "</td></tr>"
-        )
+        page += "<td>" + str(self.server.master.getScheduledAmpsStartHour()) + " (Flex: " + str(self.server.master.getScheduledAmpsTimeFlex()[0]) + ")</td></tr>"
 
         page += "<tr><th>Scheduled Charging End Hour</th>"
         page += "<td>" + str(self.server.master.getScheduledAmpsEndHour()) + "</td>"

@@ -100,16 +100,21 @@ class TWCMaster:
         # of nonScheduledAmpsMax
         blnUseScheduledAmps = 0
         ltNow = time.localtime()
+        hourNow = ltNow.tm_hour + (ltNow.tm_min / 60)        
+        timeSettings = self.getScheduledAmpsTimeFlex()
+        startHour = timeSettings[0]
+        endHour = timeSettings[1]
+        daysBitmap = timeSettings[2]
 
         if (
             self.getScheduledAmpsMax() > 0
-            and self.settings.get("scheduledAmpsStartHour", -1) > -1
-            and self.getScheduledAmpsEndHour() > -1
-            and self.getScheduledAmpsDaysBitmap() > 0
+            and startHour > -1
+            and endHour > -1
+            and daysBitmap > 0
         ):
             if (
-                self.settings.get("scheduledAmpsStartHour", -1)
-                > self.getScheduledAmpsEndHour()
+                startHour
+                > endHour
             ):
                 # We have a time like 8am to 7am which we must interpret as the
                 # 23-hour period after 8am or before 7am. Since this case always
@@ -117,18 +122,16 @@ class TWCMaster:
                 # is set for the day the period starts on. For example, if
                 # scheduledAmpsDaysBitmap says only schedule on Monday, 8am to
                 # 7am, we apply scheduledAmpsMax from Monday at 8am to Monday at
-                # 11:59pm, and on Tuesday at 12am to Tuesday at 6:59am.
-                hourNow = ltNow.tm_hour + (ltNow.tm_min / 60)
+                # 11:59pm, and on Tuesday at 12am to Tuesday at 6:59am.            
                 yesterday = ltNow.tm_wday - 1
                 if yesterday < 0:
                     yesterday += 7
-
                 if (
-                    hourNow >= self.settings.get("scheduledAmpsStartHour", -1)
-                    and (self.getScheduledAmpsDaysBitmap() & (1 << ltNow.tm_wday))
+                    hourNow >= startHour
+                    and (daysBitmap & (1 << ltNow.tm_wday))
                 ) or (
-                    hourNow < self.getScheduledAmpsEndHour()
-                    and (self.getScheduledAmpsDaysBitmap() & (1 << yesterday))
+                    hourNow < endHour
+                    and (daysBitmap & (1 << yesterday))
                 ):
                     blnUseScheduledAmps = 1
             else:
@@ -136,9 +139,9 @@ class TWCMaster:
                 # 1-hour period between 7am and 8am.
                 hourNow = ltNow.tm_hour + (ltNow.tm_min / 60)
                 if (
-                    hourNow >= self.settings.get("scheduledAmpsStartHour", -1)
-                    and hourNow < self.getScheduledAmpsEndHour()
-                    and (self.getScheduledAmpsDaysBitmap() & (1 << ltNow.tm_wday))
+                    hourNow >= startHour
+                    and hourNow < endHour
+                    and (daysBitmap & (1 << ltNow.tm_wday))
                 ):
                     blnUseScheduledAmps = 1
         return blnUseScheduledAmps
@@ -244,10 +247,38 @@ class TWCMaster:
             return 0
 
     def getScheduledAmpsStartHour(self):
-        return self.settings.get("scheduledAmpsStartHour", -1)
+        return int(self.settings.get("scheduledAmpsStartHour", -1))
+
+    def getScheduledAmpsTimeFlex(self): 
+        startHour = self.getScheduledAmpsStartHour()
+        days = self.getScheduledAmpsDaysBitmap()
+        if startHour >= 0 and self.getScheduledAmpsFlexStartBatteryMaxCapacity()>0 and self.countSlaveTWC()==1:
+            # Try to charge at the end of the scheduled time
+            slave = next(iter(self.slaveTWCs.values()))
+            vehicle = slave.getLastVehicle()
+            if (vehicle != None):
+                amps = self.getScheduledAmpsMax()
+                watts = self.convertAmpsToWatts(amps) * self.getRealPowerFactor(amps)
+                #calculating startHour
+                startHour = round(self.getScheduledAmpsEndHour() - (self.getScheduledAmpsFlexStartBatteryMaxCapacity() / (watts / 1000) * (vehicle.chargeLimit - vehicle.batteryLevel)/100),2)
+                # adding a quarter of an hour
+                startHour -= 0.25
+                # adding half an hour if battery should be charged over 98%
+                if vehicle.chargeLimit>=98:
+                    startHour -= 0.5
+                if startHour < 0: 
+                    startHour = startHour+24 
+                # if startHour is smaller than the intial startHour, then it should begin beginn charging a day later 
+                # (if starting usually at 9pm and it calculates to start at 4am - it's already the next day)
+                if startHour < self.getScheduledAmpsDaysBitmap():
+                    days = self.rotl(days,7)
+        return (startHour, self.getScheduledAmpsEndHour(), days)
 
     def getScheduledAmpsEndHour(self):
         return self.settings.get("scheduledAmpsEndHour", -1)
+
+    def getScheduledAmpsFlexStartBatteryMaxCapacity(self):
+        return int(self.settings.get("scheduledAmpsFlexStartBatteryMaxCapacity", -1))
 
     def getSlaveLifetimekWh(self):
 
@@ -269,6 +300,7 @@ class TWCMaster:
         return self.slaveSign
 
     def getStatus(self):
+
         data = {
             "carsCharging": self.num_cars_charging_now(),
             "chargerLoadWatts": "%.2f" % float(self.getChargerLoad()),
@@ -294,6 +326,37 @@ class TWCMaster:
             data["isGreenPolicy"] = "Yes"
         else:
             data["isGreenPolicy"] = "No"
+
+        scheduledChargingStartHour = self.getScheduledAmpsStartHour()
+        scheduledChargingEndHour = self.getScheduledAmpsEndHour()
+        scheduledChargingDays = self.getScheduledAmpsDaysBitmap()
+        scheduledFlexTime = self.getScheduledAmpsTimeFlex()
+
+        data["ScheduledCharging"] = {
+            "enabled": scheduledChargingStartHour>=0 and scheduledChargingEndHour>=0 and scheduledChargingDays>0 and self.getScheduledAmpsMax()>0,
+            "startingMinute": scheduledChargingStartHour*60 if scheduledChargingStartHour>=0 else -1,
+            "endingMinute": scheduledChargingEndHour*60 if scheduledChargingEndHour>=0 else -1,
+            "monday": (scheduledChargingDays & 1) == 1,
+            "tuesday": (scheduledChargingDays & 2) == 2,
+            "wednesday": (scheduledChargingDays & 4) == 4,
+            "thursday": (scheduledChargingDays & 8) == 8,
+            "friday": (scheduledChargingDays & 16) == 16,
+            "saturday": (scheduledChargingDays & 32) == 32,
+            "sunday": (scheduledChargingDays & 64) == 64,
+            "flex": {
+                "startingMinute": scheduledFlexTime[0]*60 if scheduledFlexTime[0]>=0 else -1,
+                "endingMinute": scheduledFlexTime[1]*60 if scheduledFlexTime[1]>=0 else -1,
+                "monday": (scheduledFlexTime[2] & 1) == 1,
+                "tuesday": (scheduledFlexTime[2] & 2) == 2,
+                "wednesday": (scheduledFlexTime[2] & 4) == 4,
+                "thursday": (scheduledFlexTime[2] & 8) == 8,
+                "friday": (scheduledFlexTime[2] & 16) == 16,
+                "saturday": (scheduledFlexTime[2] & 32) == 32,
+                "sunday": (scheduledFlexTime[2] & 64) == 64,                
+            },
+            "amps": self.getScheduledAmpsMax(),
+            "flexStartBatteryMaxCapacity": self.getScheduledAmpsFlexStartBatteryMaxCapacity(),
+        }
 
         return data
 
@@ -1059,6 +1122,9 @@ class TWCMaster:
     def setScheduledAmpsEndHour(self, hour):
         self.settings["scheduledAmpsEndHour"] = hour
 
+    def setScheduledAmpsFlexStartBatteryMaxCapacity(self, flexStartBatteryMaxCapacity):
+        self.settings["scheduledAmpsFlexStartBatteryMaxCapacity"] = flexStartBatteryMaxCapacity
+
     def setSpikeAmps(self, amps):
         self.spikeAmpsToCancel6ALimit = amps
 
@@ -1179,3 +1245,12 @@ class TWCMaster:
             return realPowerFactorMaxAmps
         else:
             return ((amps-minAmps)/(maxAmps-minAmps)*(realPowerFactorMaxAmps-realPowerFactorMinAmps))+realPowerFactorMinAmps
+
+    def rotl(self, num, bits):
+        bit = num & (1 << (bits-1))
+        num <<= 1
+        if(bit):
+            num |= 1
+        num &= (2**bits-1)
+
+        return num              
