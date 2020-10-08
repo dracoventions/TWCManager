@@ -15,7 +15,7 @@ class SolarLog:
     debugLevel = 0
     fetchFailed = False
     generatedW = 0
-    lastFetch = 0    
+    lastFetch = 0
     master = None
     status = False
     serverIP = None
@@ -29,7 +29,9 @@ class SolarLog:
         self.configSolarLog = master.config["sources"].get("SolarLog", {})
         self.status = self.configSolarLog.get("enabled", False)
         self.serverIP = self.configSolarLog.get("serverIP", None)
-        self.excludeConsumptionInverters = self.configSolarLog.get("excludeConsumptionInverters", [])
+        self.excludeConsumptionInverters = self.configSolarLog.get(
+            "excludeConsumptionInverters", []
+        )
         self.debugLevel = self.configConfig.get("debugLevel", 0)
 
         # Unload if this module is disabled or misconfigured
@@ -66,13 +68,11 @@ class SolarLog:
         return self.generatedW
 
     def getConsumptionAndGenerationValues(self):
-        url = (
-            "http://" + self.serverIP + "/getjp"
-        )
+        url = "http://" + self.serverIP + "/getjp"
         headers = {
             "content-type": "application/json",
         }
-        payload = "{\"801\":{\"170\":null}}"
+        payload = '{"801":{"170":null}}'
 
         # Update fetchFailed boolean to False before fetch attempt
         # This will change to true if the fetch failed, ensuring we don't then use the value to update our cache
@@ -80,18 +80,16 @@ class SolarLog:
 
         try:
             self.debugLog(10, "Fetching SolarLog EMS sensor values")
-            httpResponse = self.requests.post(url, data=payload, headers=headers, timeout=self.timeout)
-        except self.requests.exceptions.ConnectionError as e:
-            self.debugLog(
-                4, "Error connecting to SolarLog to fetching sensor values"
+            httpResponse = self.requests.post(
+                url, data=payload, headers=headers, timeout=self.timeout
             )
+        except self.requests.exceptions.ConnectionError as e:
+            self.debugLog(4, "Error connecting to SolarLog to fetching sensor values")
             self.debugLog(10, str(e))
             self.fetchFailed = True
             return False
         except self.requests.exceptions.ReadTimeout as e:
-            self.debugLog(
-                4, "Read Timeout occurred fetching SolarLog sensor values"
-            )
+            self.debugLog(4, "Read Timeout occurred fetching SolarLog sensor values")
             self.debugLog(10, str(e))
             self.fetchFailed = True
             return False
@@ -107,17 +105,15 @@ class SolarLog:
             self.generatedW = float(jsonResponse["801"]["170"]["101"])
 
     def getInverterValues(self):
-        if (len(self.excludeConsumptionInverters)==0):
+        if len(self.excludeConsumptionInverters) == 0:
             self.excludeConsumedW = 0
             return False
 
-        url = (
-            "http://" + self.serverIP + "/getjp"
-        )
+        url = "http://" + self.serverIP + "/getjp"
         headers = {
             "content-type": "application/json",
         }
-        payload = "{\"782\":null}"
+        payload = '{"782":null}'
 
         # Update fetchFailed boolean to False before fetch attempt
         # This will change to true if the fetch failed, ensuring we don't then use the value to update our cache
@@ -125,18 +121,16 @@ class SolarLog:
 
         try:
             self.debugLog(10, "Fetching SolarLog EMS inverter values")
-            httpResponse = self.requests.post(url, data=payload, headers=headers, timeout=self.timeout)
-        except self.requests.exceptions.ConnectionError as e:
-            self.debugLog(
-                4, "Error connecting to SolarLog to fetching inverter values"
+            httpResponse = self.requests.post(
+                url, data=payload, headers=headers, timeout=self.timeout
             )
+        except self.requests.exceptions.ConnectionError as e:
+            self.debugLog(4, "Error connecting to SolarLog to fetching inverter values")
             self.debugLog(10, str(e))
             self.fetchFailed = True
             return False
         except self.requests.exceptions.ReadTimeout as e:
-            self.debugLog(
-                4, "Read Timeout occurred fetching SolarLog inverter values"
-            )
+            self.debugLog(4, "Read Timeout occurred fetching SolarLog inverter values")
             self.debugLog(10, str(e))
             self.fetchFailed = True
             return False
@@ -150,7 +144,7 @@ class SolarLog:
             tmpValue = 0
             for inverterIndex in self.excludeConsumptionInverters:
                 tmpValue = tmpValue + float(jsonResponse["782"][str(inverterIndex)])
-            self.excludeConsumedW = tmpValue            
+            self.excludeConsumedW = tmpValue
 
     def setCacheTime(self, cacheTime):
         self.cacheTime = cacheTime
@@ -164,7 +158,7 @@ class SolarLog:
         if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from SolarLog.
             self.getConsumptionAndGenerationValues()
-            
+
             if self.fetchFailed is not True:
                 self.getInverterValues()
 

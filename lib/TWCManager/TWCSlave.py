@@ -72,8 +72,10 @@ class TWCSlave:
         self.TWCID = TWCID
         self.maxAmps = maxAmps
 
-        self.wiringMaxAmps = self.configConfig.get("wiringMaxAmpsPerTWC",6)
-        self.useFlexAmpsToStartCharge = self.configConfig.get("useFlexAmpsToStartCharge", False)
+        self.wiringMaxAmps = self.configConfig.get("wiringMaxAmpsPerTWC", 6)
+        self.useFlexAmpsToStartCharge = self.configConfig.get(
+            "useFlexAmpsToStartCharge", False
+        )
 
     def print_status(self, heartbeatData):
 
@@ -613,7 +615,9 @@ class TWCSlave:
                 + str(desiredAmpsOffered)
                 + " < minAmpsToOffer: "
                 + str(minAmpsToOffer)
-                + " (flexAmps: " + str(flex) + ")",
+                + " (flexAmps: "
+                + str(flex)
+                + ")",
             )
             if numCarsCharging > 0:
                 if (
@@ -780,7 +784,7 @@ class TWCSlave:
                 self.master.debugLog(
                     10,
                     "TWCSlave  ",
-                    "no cars charging, setting desiredAmpsOffered to 0"
+                    "no cars charging, setting desiredAmpsOffered to 0",
                 )
                 desiredAmpsOffered = 0
         else:
@@ -1109,18 +1113,20 @@ class TWCSlave:
             )
 
     def getCurrentChargerLoad(self):
-        return self.master.convertAmpsToWatts(self.reportedAmpsActual) * self.master.getRealPowerFactor(self.reportedAmpsActual)
+        return self.master.convertAmpsToWatts(
+            self.reportedAmpsActual
+        ) * self.master.getRealPowerFactor(self.reportedAmpsActual)
 
-    def getLastVehicle(self):       
+    def getLastVehicle(self):
         currentVehicle = None
         lastVehicle = None
         for vehicle in self.master.getModuleByName("TeslaAPI").getCarApiVehicles():
-            if (self.currentVIN == vehicle.VIN): 
+            if self.currentVIN == vehicle.VIN:
                 currentVehicle = vehicle
-            if (self.lastVIN == vehicle.VIN):
+            if self.lastVIN == vehicle.VIN:
                 lastVehicle = vehicle
-        if (currentVehicle != None):
+        if currentVehicle != None:
             return currentVehicle
-        if (lastVehicle != None):
+        if lastVehicle != None:
             return lastVehicle
-        return None    
+        return None

@@ -7,7 +7,7 @@ class OpenHab:
     import time
 
     apiKey = None
-    cacheTime = 10 # in seconds
+    cacheTime = 10  # in seconds
     config = None
     configConfig = None
     configOpenHab = None
@@ -50,7 +50,9 @@ class OpenHab:
     def getConsumption(self):
 
         if not self.status:
-            self.master.debugLog(10, "OpenHab", "OpenHab EMS Module Disabled. Skipping getConsumption")
+            self.master.debugLog(
+                10, "OpenHab", "OpenHab EMS Module Disabled. Skipping getConsumption"
+            )
             return 0
 
         # Perform updates if necessary
@@ -62,7 +64,9 @@ class OpenHab:
     def getGeneration(self):
 
         if not self.status:
-            self.master.debugLog(10, "OpenHab", "OpenHab EMS Module Disabled. Skipping getGeneration")
+            self.master.debugLog(
+                10, "OpenHab", "OpenHab EMS Module Disabled. Skipping getGeneration"
+            )
             return 0
 
         # Perform updates if necessary
@@ -72,14 +76,24 @@ class OpenHab:
         return self.generatedW
 
     def getAPIValue(self, item):
-        url = ("http://" + self.serverIP + ":" + str(self.serverPort) + "/rest/items/" + item + "/state")
+        url = (
+            "http://"
+            + self.serverIP
+            + ":"
+            + str(self.serverPort)
+            + "/rest/items/"
+            + item
+            + "/state"
+        )
 
         # Update fetchFailed boolean to False before fetch attempt
         # This will change to true if the fetch failed, ensuring we don't then use the value to update our cache
         self.fetchFailed = False
 
         try:
-            self.master.debugLog(10, "OpenHab", "Fetching OpenHab EMS item value " + str(item))
+            self.master.debugLog(
+                10, "OpenHab", "Fetching OpenHab EMS item value " + str(item)
+            )
             httpResponse = self.requests.get(url, timeout=self.timeout)
         except self.requests.exceptions.ConnectionError as e:
             self.master.debugLog(
@@ -129,26 +143,42 @@ class OpenHab:
             if self.consumptionItem:
                 apivalue = self.getAPIValue(self.consumptionItem)
                 if self.fetchFailed is not True:
-                    self.master.debugLog(10, "OpenHab", "OpenHab getConsumption returns " + str(apivalue))
+                    self.master.debugLog(
+                        10, "OpenHab", "OpenHab getConsumption returns " + str(apivalue)
+                    )
                     self.consumedW = apivalue
                 else:
                     self.master.debugLog(
-                        10, "OpenHab", "OpenHab getConsumption fetch failed, using cached values"
+                        10,
+                        "OpenHab",
+                        "OpenHab getConsumption fetch failed, using cached values",
                     )
             else:
-                self.master.debugLog(10, "OpenHab", "OpenHab Consumption Entity Not Supplied. Not Querying")
+                self.master.debugLog(
+                    10,
+                    "OpenHab",
+                    "OpenHab Consumption Entity Not Supplied. Not Querying",
+                )
 
             if self.generationItem:
                 apivalue = self.getAPIValue(self.generationItem)
                 if self.fetchFailed is not True:
-                    self.master.debugLog(10, "OpenHab", "OpenHab getGeneration returns " + str(apivalue))
+                    self.master.debugLog(
+                        10, "OpenHab", "OpenHab getGeneration returns " + str(apivalue)
+                    )
                     self.generatedW = apivalue
                 else:
                     self.master.debugLog(
-                        10, "OpenHab", "OpenHab getGeneration fetch failed, using cached values"
+                        10,
+                        "OpenHab",
+                        "OpenHab getGeneration fetch failed, using cached values",
                     )
             else:
-                self.master.debugLog(10, "OpenHab", "OpenHab Generation Entity Not Supplied. Not Querying")
+                self.master.debugLog(
+                    10,
+                    "OpenHab",
+                    "OpenHab Generation Entity Not Supplied. Not Querying",
+                )
 
             # Update last fetch time
             if self.fetchFailed is not True:
