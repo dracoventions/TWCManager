@@ -1088,7 +1088,6 @@ class CarApiVehicle:
 
     batteryLevel = 10000
     chargeLimit = -1
-    batterySize = 0
     optionCodes = {}
     lat = 10000
     lon = 10000
@@ -1103,27 +1102,6 @@ class CarApiVehicle:
         self.VIN = json["vin"]
         self.name = json["display_name"]
         self.optionCodes = json.get("option_codes", "").split(",")
-        self.batterySize = self.get_Battery_Size()
-
-    def get_Battery_Size(self):
-        battery_codes = {
-            "BR03": 60,
-            "BR05": 75,
-            "BT37": 75,
-            "BT40": 40,
-            "BT60": 60,
-            "BT70": 70,
-            "BT85": 85,
-            "BTX4": 90,
-            "BTX5": 75,
-            "BTX6": 100,
-            "BTX7": 75,
-            "BTX8": 85,
-        }
-        for option_code in self.optionCodes:
-            if option_code in battery_codes:
-                return battery_codes[option_code]
-        return 0
 
     def ready(self):
         if self.carapi.getCarApiRetryRemaining(self.lastErrorTime):

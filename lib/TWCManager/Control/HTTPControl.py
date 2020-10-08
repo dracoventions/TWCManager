@@ -299,8 +299,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                         "chargeLimit": vehicle.chargeLimit,
                         "atHome": vehicle.atHome,
                         "timeToFullCharge": vehicle.timeToFullCharge,
-                        "batterySize": vehicle.batterySize,
-                        "optionCodes": vehicle.optionCodes,
                     }
                 else:
                     data[TWCID]["lastVehicle"] = {}

@@ -256,18 +256,23 @@ class TWCMaster:
             if vehicle != None:
                 amps = self.getScheduledAmpsMax()
                 watts = self.convertAmpsToWatts(amps) * self.getRealPowerFactor(amps)
-                # calculating startHour
-                startHour = round(
-                    self.getScheduledAmpsEndHour()
-                    - (
-                        vehicle.batterySize
-                        * 0.9
-                        / (watts / 1000)
-                        * (vehicle.chargeLimit - vehicle.batteryLevel)
-                        / 100
-                    ),
-                    2,
-                )
+                # taking the time the car api returns
+                if amps < self.getTotalAmpsInUse() + 1 and vehicle.timeToFullCharge > 0:
+                    startHour = (
+                        self.getScheduledAmpsEndHour() - vehicle.timeToFullCharge
+                    )
+                else:
+                    # calculating startHour with a max Battery size - so it starts charging and then it has the time
+                    startHour = round(
+                        self.getScheduledAmpsEndHour()
+                        - (
+                            100
+                            / (watts / 1000)
+                            * (vehicle.chargeLimit - vehicle.batteryLevel)
+                            / 100
+                        ),
+                        2,
+                    )
                 # adding a quarter of an hour
                 startHour -= 0.25
                 # adding half an hour if battery should be charged over 98%
