@@ -293,16 +293,16 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 # Adding some vehicle data
                 vehicle = slaveTWC.getLastVehicle()
                 if vehicle != None:
-                    data[TWCID]["lastBatterySOC"] = vehicle.batteryLevel
-                    data[TWCID]["lastChargeLimit"] = vehicle.chargeLimit
-                    data[TWCID]["lastAtHome"] = vehicle.atHome
-                    data[TWCID]["lastTimeToFullCharge"] = vehicle.timeToFullCharge
-                    data[TWCID]["lastBatterySize"] = vehicle.batterySize
+                    data[TWCID]["lastVehicle"] = {
+                        "VIN": vehicle.VIN,
+                        "batterySOC": vehicle.batteryLevel,
+                        "chargeLimit": vehicle.chargeLimit,
+                        "atHome": vehicle.atHome,
+                        "timeToFullCharge": vehicle.timeToFullCharge,
+                        "batterySize": vehicle.batterySize,
+                    }
                 else:
-                    data[TWCID]["lastBatterySOC"] = 0
-                    data[TWCID]["lastChargeLimit"] = 0
-                    data[TWCID]["lastAtHome"] = 0
-                    data[TWCID]["lastTimeToFullCharge"] = 0
+                    data[TWCID]["lastVehicle"] = {}
 
                 totals["lastAmpsOffered"] += slaveTWC.lastAmpsOffered
                 totals["lifetimekWh"] += slaveTWC.lifetimekWh
