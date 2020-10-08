@@ -247,7 +247,7 @@ class TWCMaster:
         days = self.getScheduledAmpsDaysBitmap()
         if (
             startHour >= 0
-            and self.getScheduledAmpsFlexStartBatteryMaxCapacity() > 0
+            and self.getScheduledAmpsFlexStart()
             and self.countSlaveTWC() == 1
         ):
             # Try to charge at the end of the scheduled time
@@ -260,7 +260,8 @@ class TWCMaster:
                 startHour = round(
                     self.getScheduledAmpsEndHour()
                     - (
-                        self.getScheduledAmpsFlexStartBatteryMaxCapacity()
+                        vehicle.batterySize
+                        * 0.9
                         / (watts / 1000)
                         * (vehicle.chargeLimit - vehicle.batteryLevel)
                         / 100
@@ -283,8 +284,8 @@ class TWCMaster:
     def getScheduledAmpsEndHour(self):
         return self.settings.get("scheduledAmpsEndHour", -1)
 
-    def getScheduledAmpsFlexStartBatteryMaxCapacity(self):
-        return int(self.settings.get("scheduledAmpsFlexStartBatteryMaxCapacity", -1))
+    def getScheduledAmpsFlexStart(self):
+        return int(self.settings.get("scheduledAmpsFlexStart", False))
 
     def getSlaveLifetimekWh(self):
 
@@ -372,7 +373,7 @@ class TWCMaster:
                 "sunday": (scheduledFlexTime[2] & 64) == 64,
             },
             "amps": self.getScheduledAmpsMax(),
-            "flexStartBatteryMaxCapacity": self.getScheduledAmpsFlexStartBatteryMaxCapacity(),
+            "flexStartEnabled": self.getScheduledAmpsFlexStart(),
         }
 
         return data
@@ -1139,10 +1140,8 @@ class TWCMaster:
     def setScheduledAmpsEndHour(self, hour):
         self.settings["scheduledAmpsEndHour"] = hour
 
-    def setScheduledAmpsFlexStartBatteryMaxCapacity(self, flexStartBatteryMaxCapacity):
-        self.settings[
-            "scheduledAmpsFlexStartBatteryMaxCapacity"
-        ] = flexStartBatteryMaxCapacity
+    def setScheduledAmpsFlexStart(self, enabled):
+        self.settings["scheduledAmpsFlexStart"] = enabled
 
     def setSpikeAmps(self, amps):
         self.spikeAmpsToCancel6ALimit = amps

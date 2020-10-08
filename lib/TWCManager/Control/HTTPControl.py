@@ -293,16 +293,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 # Adding some vehicle data
                 vehicle = slaveTWC.getLastVehicle()
                 if vehicle != None:
-                    data[TWCID][
-                        "lastBatterySOC"
-                    ] = slaveTWC.getLastVehicle().batteryLevel
-                    data[TWCID][
-                        "lastChargeLimit"
-                    ] = slaveTWC.getLastVehicle().chargeLimit
-                    data[TWCID]["lastAtHome"] = slaveTWC.getLastVehicle().atHome
-                    data[TWCID][
-                        "lastTimeToFullCharge"
-                    ] = slaveTWC.getLastVehicle().timeToFullCharge
+                    data[TWCID]["lastBatterySOC"] = vehicle.batteryLevel
+                    data[TWCID]["lastChargeLimit"] = vehicle.chargeLimit
+                    data[TWCID]["lastAtHome"] = vehicle.atHome
+                    data[TWCID]["lastTimeToFullCharge"] = vehicle.timeToFullCharge
+                    data[TWCID]["lastBatterySize"] = vehicle.batterySize
                 else:
                     data[TWCID]["lastBatterySOC"] = 0
                     data[TWCID]["lastChargeLimit"] = 0
@@ -448,7 +443,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             saturday = bool(data.get("saturday", False))
             sunday = bool(data.get("sunday", False))
             amps = int(data.get("amps", -1))
-            flexStart = int(data.get("flexStartBatteryMaxCapacity", False))
+            flexStart = int(data.get("flexStartEnabled", False))
             weekDaysBitmap = (
                 (1 if monday else 0)
                 + (2 if tuesday else 0)
@@ -470,15 +465,12 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 self.server.master.setScheduledAmpsStartHour(-1)
                 self.server.master.setScheduledAmpsEndHour(-1)
                 self.server.master.setScheduledAmpsDaysBitmap(0)
-                self.server.master.setScheduledAmpsFlexStartBatteryMaxCapacity(False)
             else:
                 self.server.master.setScheduledAmpsMax(amps)
                 self.server.master.setScheduledAmpsStartHour(startingMinute / 60)
                 self.server.master.setScheduledAmpsEndHour(endingMinute / 60)
                 self.server.master.setScheduledAmpsDaysBitmap(weekDaysBitmap)
-                self.server.master.setScheduledAmpsFlexStartBatteryMaxCapacity(
-                    flexStart
-                )
+            self.server.master.setScheduledAmpsFlexStart(flexStart)
             self.server.master.saveSettings()
             self.send_response(202)
             self.end_headers()
