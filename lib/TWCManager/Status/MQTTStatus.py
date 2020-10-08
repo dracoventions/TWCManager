@@ -139,7 +139,7 @@ class MQTTStatus:
                 + str(msg["topic"])
                 + " (value is "
                 + str(msg["payload"])
-                + ")"
+                + ")",
             )
             try:
                 pub = client.publish(msg["topic"], payload=msg["payload"], qos=0)
