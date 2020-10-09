@@ -90,7 +90,7 @@ class HASS:
             httpResponse = self.requests.get(url, headers=headers, timeout=self.timeout)
         except self.requests.exceptions.ConnectionError as e:
             self.master.debugLog(
-                4, "HASSEMS", "Error connecting to HomeAssistant to publish sensor values"
+                4, "HASSEMS", "Error connecting to HomeAssistant to fetch sensor values"
             )
             self.master.debugLog(10, "HASSEMS", str(e))
             self.fetchFailed = True
