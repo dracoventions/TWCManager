@@ -290,6 +290,21 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                     "voltsPhaseC": str(slaveTWC.voltsPhaseC),
                     "TWCID": "%s" % TWCID,
                 }
+                # Adding some vehicle data
+                vehicle = slaveTWC.getLastVehicle()
+                if vehicle != None:
+                    data[TWCID][
+                        "lastBatterySOC"
+                    ] = slaveTWC.getLastVehicle().batteryLevel
+                    data[TWCID][
+                        "lastChargeLimit"
+                    ] = slaveTWC.getLastVehicle().chargeLimit
+                    data[TWCID]["lastAtHome"] = slaveTWC.getLastVehicle().atHome
+                else:
+                    data[TWCID]["lastBatterySOC"] = 0
+                    data[TWCID]["lastChargeLimit"] = 0
+                    data[TWCID]["lastAtHome"] = 0
+
                 totals["lastAmpsOffered"] += slaveTWC.lastAmpsOffered
                 totals["lifetimekWh"] += slaveTWC.lifetimekWh
                 totals["maxAmps"] += slaveTWC.maxAmps

@@ -42,12 +42,12 @@ class SolarEdge:
             self.configSolarEdge = master.config["sources"]["SolarEdge"]
         except KeyError:
             self.configSolarEdge = {}
-        self.apiKey     = self.configSolarEdge.get("apiKey", None)
-        self.debugFile  = self.configConfig.get("debugFile",  self.debugFile)
+        self.apiKey = self.configSolarEdge.get("apiKey", None)
+        self.debugFile = self.configConfig.get("debugFile", self.debugFile)
         self.debugLevel = self.configConfig.get("debugLevel", 0)
-        self.debugMode  = self.configSolarEdge.get("debugMode", self.debugMode)
-        self.status     = self.configSolarEdge.get("enabled", self.status)
-        self.siteID     = self.configSolarEdge.get("siteID", None)
+        self.debugMode = self.configSolarEdge.get("debugMode", self.debugMode)
+        self.status = self.configSolarEdge.get("enabled", self.status)
+        self.siteID = self.configSolarEdge.get("siteID", None)
 
         # Unload if this module is disabled or misconfigured
         if (not self.status) or (not self.siteID) or (not self.apiKey):
@@ -90,11 +90,17 @@ class SolarEdge:
         self.fetchFailed = False
 
         url = "https://monitoringapi.solaredge.com/site/" + self.siteID
-        url += "/"+request+"?api_key=" + self.apiKey
+        url += "/" + request + "?api_key=" + self.apiKey
 
         if self.debugMode:
-            with open(self.debugFile, 'a') as file:
-                file.write("getPortalData requests: "+str(request) + "via URL: "+ str(url) + "\n")
+            with open(self.debugFile, "a") as file:
+                file.write(
+                    "getPortalData requests: "
+                    + str(request)
+                    + "via URL: "
+                    + str(url)
+                    + "\n"
+                )
             file.close()
 
         try:
@@ -121,14 +127,16 @@ class SolarEdge:
             )
 
             if self.debugMode:
-                with open(self.debugFile, 'a') as file:
-                    file.write("getPortalData returns HTTPError exception, string will be returned as null. Exception details follow:\n")
+                with open(self.debugFile, "a") as file:
+                    file.write(
+                        "getPortalData returns HTTPError exception, string will be returned as null. Exception details follow:\n"
+                    )
                     file.write("HTTP Error Code: " + str(e.response.status_code) + "\n")
                     file.write("Full exception: " + str(e) + "\n")
             return ""
         else:
             if self.debugMode:
-                with open(self.debugFile, 'a') as file:
+                with open(self.debugFile, "a") as file:
                     file.write("getPortalData returns " + str(r.content) + "\n")
                 file.close()
 
@@ -200,7 +208,8 @@ class SolarEdge:
                         self.master.debugLog(
                             1,
                             "SolarEdge",
-                            "Unknown SolarEdge Consumption Value unit: %s " % str(portalData["siteCurrentPowerFlow"]["unit"]),
+                            "Unknown SolarEdge Consumption Value unit: %s "
+                            % str(portalData["siteCurrentPowerFlow"]["unit"]),
                         )
 
                 except (KeyError, TypeError) as e:
@@ -238,7 +247,7 @@ class SolarEdge:
                 self.lastFetch = int(self.time.time())
             else:
                 if self.debugMode:
-                    with open(self.debugFile, 'a+') as file:
+                    with open(self.debugFile, "a+") as file:
                         file.write("fetchFailed is True\n")
                     file.close()
 
