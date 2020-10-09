@@ -59,21 +59,21 @@ You can check that this command has been successful by running ```python --versi
 
 During this step, the source code and all related files will be cloned from the GitHub repository and installed into the appropriate location on your system.
 
-We have two versions of the codebase that you may want to check out. The stable version is **v1.1.8**, which will only change for stability or urgent fixes. To check out **v1.1.8**, follow these steps:
-
-```
-git clone https://github.com/ngardiner/TWCManager
-cd TWCManager
-git checkout v1.1.8
-sudo make install
-```
-
-Alternatively, the **v1.2.0** branch is the development branch, where all of the new ideas and features are tested prior to becoming the stable branch. This version has more features, but we can't guarantee stability.
+We have two versions of the codebase that you may want to check out. The stable version is **v1.2.0**, which will only change for stability or urgent fixes. To check out **v1.2.1**, follow these steps:
 
 ```
 git clone https://github.com/ngardiner/TWCManager
 cd TWCManager
 git checkout v1.2.0
+sudo make install
+```
+
+Alternatively, the **v1.2.1** branch is the development branch, where all of the new ideas and features are tested prior to becoming the stable branch. This version has more features, but we can't guarantee stability.
+
+```
+git clone https://github.com/ngardiner/TWCManager
+cd TWCManager
+git checkout v1.2.1
 make install
 ```
 

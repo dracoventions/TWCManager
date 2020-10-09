@@ -4,7 +4,7 @@ from setuptools import setup, find_namespace_packages
 
 setup(
     name="TWCManager",
-    version="1.2.0",
+    version="1.2.1",
     package_dir={"": "lib"},
     packages=find_namespace_packages(where="lib"),
     # Dependencies

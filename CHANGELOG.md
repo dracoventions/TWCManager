@@ -2,7 +2,9 @@
 
 This document logs the changes per release of TWCManager.
 
-## v1.2.0 - Current development branch
+## v1.2.1 - Current development branch
+
+## v1.2.0 - 2020-10-09
 
   * Added systemd service definition (thanks @nean-and-i)
   * Polling of Vehicle VIN on detection of charging vehicle (for those firmwares which support it) and access to Vehicle VIN via Status modules and Web Interface
