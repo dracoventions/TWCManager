@@ -48,6 +48,9 @@ This document logs the changes per release of TWCManager.
   * Completed the modularization of the RS485 interface code to allow alternative interfaces, and introduced two new interface modules (Dummy and TCP)
   * Ensure that status output formula balances for improved readability (thanks @MikeBishop)
   * Formatting improvements for the built-in webserver
+  * Add policy webhook support (thanks @MikeBishop)
+  * Added support for the SolarLog EMS Module (thanks @dschuesae)
+  * Added support for OpenHab EMS Module (thanks @Frajul)
   * Support for tracking lifetime kWh and voltage per phase of slave TWCs, this includes:
     * Publishing of new Status (HASS and MQTT) values for lifetime kWh and voltage per phase
     * Polling of this value for TWCs with newer firmwares that provide it
