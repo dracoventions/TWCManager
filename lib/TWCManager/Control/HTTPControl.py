@@ -277,31 +277,26 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 TWCID = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
                 data[TWCID] = {
                     "currentVIN": slaveTWC.currentVIN,
-                    "lastAmpsOffered": "%.2f" % float(slaveTWC.lastAmpsOffered),
-                    "lastHeartbeat": "%.2f" % float(time.time() - slaveTWC.timeLastRx),
+                    "lastAmpsOffered": round(slaveTWC.lastAmpsOffered, 2),
+                    "lastHeartbeat": round(time.time() - slaveTWC.timeLastRx, 2),
                     "lastVIN": slaveTWC.lastVIN,
-                    "lifetimekWh": str(slaveTWC.lifetimekWh),
+                    "lifetimekWh": slaveTWC.lifetimekWh,
                     "maxAmps": float(slaveTWC.maxAmps),
-                    "reportedAmpsActual": "%.2f" % float(slaveTWC.reportedAmpsActual),
-                    "state": str(slaveTWC.reportedState),
-                    "version": str(slaveTWC.protocolVersion),
-                    "voltsPhaseA": str(slaveTWC.voltsPhaseA),
-                    "voltsPhaseB": str(slaveTWC.voltsPhaseB),
-                    "voltsPhaseC": str(slaveTWC.voltsPhaseC),
+                    "reportedAmpsActual": float(slaveTWC.reportedAmpsActual),
+                    "state": slaveTWC.reportedState,
+                    "version": slaveTWC.protocolVersion,
+                    "voltsPhaseA": slaveTWC.voltsPhaseA,
+                    "voltsPhaseB": slaveTWC.voltsPhaseB,
+                    "voltsPhaseC": slaveTWC.voltsPhaseC,
                     "TWCID": "%s" % TWCID,
                 }
                 # Adding some vehicle data
                 vehicle = slaveTWC.getLastVehicle()
                 if vehicle != None:
-                    data[TWCID]["lastVehicle"] = {
-                        "VIN": vehicle.VIN,
-                        "batterySOC": vehicle.batteryLevel,
-                        "chargeLimit": vehicle.chargeLimit,
-                        "atHome": vehicle.atHome,
-                        "timeToFullCharge": vehicle.timeToFullCharge,
-                    }
-                else:
-                    data[TWCID]["lastVehicle"] = {}
+                    data[TWCID]["lastBatterySOC"] = vehicle.batteryLevel
+                    data[TWCID]["lastChargeLimit"] = vehicle.chargeLimit
+                    data[TWCID]["lastAtHome"] = vehicle.atHome
+                    data[TWCID]["lastTimeToFullCharge"] = vehicle.timeToFullCharge
 
                 totals["lastAmpsOffered"] += slaveTWC.lastAmpsOffered
                 totals["lifetimekWh"] += slaveTWC.lifetimekWh
@@ -309,10 +304,10 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 totals["reportedAmpsActual"] += slaveTWC.reportedAmpsActual
 
             data["total"] = {
-                "lastAmpsOffered": "%.2f" % float(totals["lastAmpsOffered"]),
+                "lastAmpsOffered": round(totals["lastAmpsOffered"], 2),
                 "lifetimekWh": totals["lifetimekWh"],
                 "maxAmps": totals["maxAmps"],
-                "reportedAmpsActual": "%.2f" % float(totals["reportedAmpsActual"]),
+                "reportedAmpsActual": round(totals["reportedAmpsActual"], 2),
                 "TWCID": "total",
             }
 
