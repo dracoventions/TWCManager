@@ -55,7 +55,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     fields = {}
     path = ""
     post_data = ""
-    version = "v1.2.0"
+    version = "v1.2.1"
 
     def do_bootstrap(self):
         page = """

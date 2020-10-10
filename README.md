@@ -1,7 +1,7 @@
 # TWCManager
 
-[![Stable Release](https://img.shields.io/badge/Stable_Release-1.1.8-blue)](https://github.com/ngardiner/TWCManager/releases/tag/1.1.8)
-[![Development Release](https://img.shields.io/badge/Devel_Release-1.2.0-green.svg)](https://github.com/ngardiner/TWCManager/tree/v1.2.0)
+[![Stable Release](https://img.shields.io/badge/Stable_Release-1.2.0-blue)](https://github.com/ngardiner/TWCManager/releases/tag/1.2.0)
+[![Development Release](https://img.shields.io/badge/Devel_Release-1.2.1-green.svg)](https://github.com/ngardiner/TWCManager/tree/v1.2.1)
 ![GitHub commits](https://img.shields.io/github/commit-activity/m/ngardiner/TWCManager)
 ![Contributors](https://img.shields.io/github/contributors/ngardiner/TWCManager)
 
@@ -36,7 +36,7 @@ EMS Interfaces read solar generation and/or consumption values from an external 
 | Platform         | Status        | Details                 |
 | ---------------- | ------------- | ----------------------- |
 | Dutch SmartMeter | In Development | Supports DSMR Serial Protocol |
-| [Enphase](docs/modules/EMS_Enphase.md) | Available v1.2.0 | Supports Enphase Enlighten API |
+| [Enphase](docs/modules/EMS_Enphase.md) | Available v1.2.1 | Supports Enphase Enlighten API |
 | [Fronius Inverter](docs/modules/EMS_Fronius.md) | Available v1.1.0 | Supports Fronius Inverter API |
 | [HomeAssistant](docs/modules/EMS_HASS.md) | Available v1.0.1 | Supports HomeAssistant sensors |
 | [SolarEdge](docs/modules/EMS_SolarEdge.md) | Available v1.2.0 | Support for SolarEdge API |
