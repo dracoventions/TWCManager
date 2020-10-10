@@ -225,6 +225,9 @@ class TWCMaster:
     def getScheduledAmpsDaysBitmap(self):
         return self.settings.get("scheduledAmpsDaysBitmap", 0x7F)
 
+    def getScheduledAmpsBatterySize(self):
+        return self.settings.get("scheduledAmpsBatterySize", 100)
+
     def getNonScheduledAmpsMax(self):
         nschedamps = int(self.settings.get("nonScheduledAmpsMax", 0))
         if nschedamps > 0:
@@ -256,15 +259,13 @@ class TWCMaster:
             if vehicle != None:
                 amps = self.getScheduledAmpsMax()
                 watts = self.convertAmpsToWatts(amps) * self.getRealPowerFactor(amps)
+                realUsableBatterySize = self.getScheduledAmpsDaysBitmap() * 0.92
+                hoursForFullCharge = realUsableBatterySize / (watts / 1000)
+                realChargeFactor = (vehicle.chargeLimit - vehicle.batteryLevel) / 100
                 # calculating startHour with a max Battery size - so it starts charging and then it has the time
                 startHour = round(
                     self.getScheduledAmpsEndHour()
-                    - (
-                        100
-                        / (watts / 1000)
-                        * (vehicle.chargeLimit - vehicle.batteryLevel)
-                        / 100
-                    ),
+                    - (hoursForFullCharge * realChargeFactor),
                     2,
                 )
                 # adding a quarter of an hour
@@ -343,6 +344,7 @@ class TWCMaster:
             and scheduledChargingEndHour >= 0
             and scheduledChargingDays > 0
             and self.getScheduledAmpsMax() > 0,
+            "amps": self.getScheduledAmpsMax(),
             "startingMinute": scheduledChargingStartHour * 60
             if scheduledChargingStartHour >= 0
             else -1,
@@ -356,25 +358,22 @@ class TWCMaster:
             "friday": (scheduledChargingDays & 16) == 16,
             "saturday": (scheduledChargingDays & 32) == 32,
             "sunday": (scheduledChargingDays & 64) == 64,
-            "flex": {
-                "startingMinute": scheduledFlexTime[0] * 60
-                if scheduledFlexTime[0] >= 0
-                else -1,
-                "endingMinute": scheduledFlexTime[1] * 60
-                if scheduledFlexTime[1] >= 0
-                else -1,
-                "monday": (scheduledFlexTime[2] & 1) == 1,
-                "tuesday": (scheduledFlexTime[2] & 2) == 2,
-                "wednesday": (scheduledFlexTime[2] & 4) == 4,
-                "thursday": (scheduledFlexTime[2] & 8) == 8,
-                "friday": (scheduledFlexTime[2] & 16) == 16,
-                "saturday": (scheduledFlexTime[2] & 32) == 32,
-                "sunday": (scheduledFlexTime[2] & 64) == 64,
-            },
-            "amps": self.getScheduledAmpsMax(),
             "flexStartEnabled": self.getScheduledAmpsFlexStart(),
+            "flexStartingMinute": scheduledFlexTime[0] * 60
+            if scheduledFlexTime[0] >= 0
+            else -1,
+            "flexEndingMinute": scheduledFlexTime[1] * 60
+            if scheduledFlexTime[1] >= 0
+            else -1,
+            "flexMonday": (scheduledFlexTime[2] & 1) == 1,
+            "flexTuesday": (scheduledFlexTime[2] & 2) == 2,
+            "flexWednesday": (scheduledFlexTime[2] & 4) == 4,
+            "flexThursday": (scheduledFlexTime[2] & 8) == 8,
+            "flexFriday": (scheduledFlexTime[2] & 16) == 16,
+            "flexSaturday": (scheduledFlexTime[2] & 32) == 32,
+            "flexSunday": (scheduledFlexTime[2] & 64) == 64,
+            "flexBatterySize": self.getScheduledAmpsBatterySize(),
         }
-
         return data
 
     def getSpikeAmps(self):
@@ -1129,6 +1128,10 @@ class TWCMaster:
 
     def setScheduledAmpsDaysBitmap(self, bitmap):
         self.settings["scheduledAmpsDaysBitmap"] = bitmap
+
+    def setScheduledAmpsBatterySize(self, batterySize):
+        if batterySize > 40:
+            self.settings["scheduledAmpsBatterySize"] = batterySize
 
     def setScheduledAmpsMax(self, amps):
         self.settings["scheduledAmpsMax"] = amps

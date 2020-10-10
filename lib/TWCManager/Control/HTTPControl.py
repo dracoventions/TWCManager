@@ -437,6 +437,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             saturday = bool(data.get("saturday", False))
             sunday = bool(data.get("sunday", False))
             amps = int(data.get("amps", -1))
+            batterySize = int(data.get("flexBatterySize", 100))
             flexStart = int(data.get("flexStartEnabled", False))
             weekDaysBitmap = (
                 (1 if monday else 0)
@@ -464,6 +465,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 self.server.master.setScheduledAmpsStartHour(startingMinute / 60)
                 self.server.master.setScheduledAmpsEndHour(endingMinute / 60)
                 self.server.master.setScheduledAmpsDaysBitmap(weekDaysBitmap)
+            self.server.master.setScheduledAmpsBatterySize(batterySize)
             self.server.master.setScheduledAmpsFlexStart(flexStart)
             self.server.master.saveSettings()
             self.send_response(202)
