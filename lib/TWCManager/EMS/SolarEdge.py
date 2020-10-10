@@ -8,8 +8,8 @@ class SolarEdge:
 
     apiKey = None
     # cacheTime is a bit higher than local EMS modules
-    # because we're polling an external API
-    cacheTime = 60
+    # because we're polling an external API, and the API has a limit of 300 requests per day
+    cacheTime = 90
     config = None
     configConfig = None
     configSolarEdge = None
@@ -23,6 +23,9 @@ class SolarEdge:
     exportW = 0
     lastFetch = 0
     master = None
+    pollConsumption = 0
+    pollCount = 0
+    pollMode = 0
     siteID = None
     status = False
     timeout = 10
@@ -144,31 +147,37 @@ class SolarEdge:
         if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from Portal.
 
-            # Query for Generation Data
-            portalData = self.getPortalData("overview")
-            if portalData:
-                try:
-                    self.generatedW = int(
-                        portalData["overview"]["currentPower"]["power"]
-                    )
-                except (KeyError, TypeError) as e:
+            # Query for Generation Data, if pollMode is set to 1
+            # This is the higher resolution API endpoint, but it is for generation only
+            # If the API detects no consumption data, it will step down to this.
+            if self.pollMode == 1:
+                portalData = self.getPortalData("overview")
+                if portalData:
+                    try:
+                        self.generatedW = int(
+                            portalData["overview"]["currentPower"]["power"]
+                        )
+                    except (KeyError, TypeError) as e:
+                        self.master.debugLog(
+                            4,
+                            "SolarEdge",
+                            "Exception during parsing SolarEdge data (currentPower)",
+                        )
+                        self.master.debugLog(10, "SolarEdge", e)
+                else:
                     self.master.debugLog(
                         4,
                         "SolarEdge",
-                        "Exception during parsing SolarEdge data (currentPower)",
+                        "SolarEdge API result does not contain json content.",
                     )
-                    self.master.debugLog(10, "SolarEdge", e)
-            else:
-                self.master.debugLog(
-                    4,
-                    "SolarEdge",
-                    "SolarEdge API result does not contain json content.",
-                )
-                self.fetchFailed = True
+                    self.fetchFailed = True
 
             # Query for consumption data
+            # This query only executes if we're in pollMode 0 or 2. If we are in 1, we skip
             # Because consumption data is optional, we won't raise an error if it doesn't parse
-            portalData = self.getPortalData("currentPowerFlow")
+            portalData = None
+            if (self.pollMode == 0 or self.pollMode == 2):
+                portalData = self.getPortalData("currentPowerFlow")
             if portalData:
                 try:
                     # The unit used is specified by the API
@@ -176,6 +185,25 @@ class SolarEdge:
                         self.consumedW = int(
                             portalData["siteCurrentPowerFlow"]["LOAD"]["currentPower"]
                         )
+                        # Whether the Generation value is taken from this query or from the
+                        # overview query depends on if we have determined whether consumption
+                        # values are being reported or not
+                        if (self.pollMode == 0 or self.pollMode == 2):
+                            self.generatedW = int(
+                                portalData["siteCurrentPowerFlow"]["PV"]["currentPower"]
+                        )
+                    elif portalData["siteCurrentPowerFlow"]["unit"] == "kW":
+                        self.consumedW = int(float(
+                            portalData["siteCurrentPowerFlow"]["LOAD"]["currentPower"]
+                        ) * 1000)
+                        # Whether the Generation value is taken from this query or from the
+                        # overview query depends on if we have determined whether consumption
+                        # values are being reported or not
+                        if (self.pollMode == 0 or self.pollMode == 2):
+                            self.generatedW = int(float(
+                                portalData["siteCurrentPowerFlow"]["PV"]["currentPower"]
+                        ) * 1000)
+
                     else:
                         self.master.debugLog(
                             1,
@@ -191,6 +219,28 @@ class SolarEdge:
                         "Exception during parsing SolarEdge consumption data",
                     )
                     self.master.debugLog(10, "SolarEdge", e)
+
+            # Check if we are still in the initial poll period, and if so, record any consumption
+            # reported to the pollconsumption counter. The reason for this is that if that value
+            # rises at all, we lock in to consumption mode and do not query the overview API anymore
+            if (self.pollMode == 0 and self.pollCount <= 3):
+                self.pollCount += 1
+                self.pollConsumption += self.consumedW
+            elif (self.pollMode == 0):
+                if self.pollConsumption:
+                    self.master.debugLog(
+                        1,
+                        "SolarEdge",
+                        "Detected consumption status capability. Switching to pollMode = 2",
+                    )
+                    self.pollMode = 2
+                else:
+                    self.master.debugLog(
+                        1,
+                        "SolarEdge",
+                        "Detected no consumption status capability. Switching to pollMode = 1",
+                    )
+                    self.pollMode = 1
 
             # Update last fetch time
             if self.fetchFailed is not True:
