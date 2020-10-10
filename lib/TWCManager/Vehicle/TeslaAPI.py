@@ -1088,7 +1088,6 @@ class CarApiVehicle:
 
     batteryLevel = 10000
     chargeLimit = -1
-    optionCodes = {}
     lat = 10000
     lon = 10000
     atHome = False
@@ -1101,7 +1100,6 @@ class CarApiVehicle:
         self.ID = json["id"]
         self.VIN = json["vin"]
         self.name = json["display_name"]
-        self.optionCodes = json.get("option_codes", "").split(",")
 
     def ready(self):
         if self.carapi.getCarApiRetryRemaining(self.lastErrorTime):
