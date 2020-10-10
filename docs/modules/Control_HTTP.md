@@ -74,3 +74,4 @@ The following API endpoints exist:
 | getStatus | GET    | Provides the current status (Charge Rate, Policy) |
 | sendStartCommand | POST | Sends the Start command to all Slave TWCs    |
 | <a href="/docs/modules/control_HTTP_API/sendStopCommand.md">sendStopCommand</a>  | POST | Sends the Stop command to all Slave TWCs     |
+| <a href="/docs/modules/control_HTTP_API/setScheduledChargingSettings.md">setScheduledChargingSettings</a>  | POST | Saves Scheduled Charging settings --> can be retrieved with getStatus |
