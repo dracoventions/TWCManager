@@ -386,27 +386,11 @@
                 }
 
                 if($twcModelMaxAmps < 40) {
-                    // The last TWC in the list reported supporting under 40
-                    // total amps. Assume this is a 32A EU TWC and offer
-                    // appropriate values. You can add or remove values, just
-                    // make sure they are whole numbers between 5 and
-                    // $twcModelMaxAmps.
-                    // Nietschy pointed out that his car was limited to 16A by
-                    // onboard chargers, but setting the TWC to 16A leads to
-                    // 15.7A actual usage.  When set to 17A, the car is able to
-                    // draw a little more power, so we offer 17A instead of 16A
-                    // below.
                     $use24HourTime = true;
-                    $aryStandardAmps = array(
-                                            '6A' => '6',
-                                            '8A' => '8',
-                                            '10A' => '10',
-                                            '13A' => '13',
-                                            '17A' => '17',
-                                            '21A' => '21',
-                                            '25A' => '25',
-                                            '32A' => '32',
-                                        );
+                    $aryStandardAmps = array();
+                    for ($i = 6; $i <= 32; $i++) {
+                        $aryStandardAmps[strval($i).'A'] = strval($i);
+                    }
                 }
                 else {
                     // Offer values appropriate for an 80A North American TWC
