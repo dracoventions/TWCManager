@@ -19,8 +19,9 @@ class SolarLog:
     master = None
     status = False
     serverIP = None
-    excludeConsumptionInverters = {}
+    excludeConsumptionInverters = []
     timeout = 2
+    smartEnergyInvertersActive = []  
 
     def __init__(self, master):
         self.master = master
@@ -72,7 +73,7 @@ class SolarLog:
         headers = {
             "content-type": "application/json",
         }
-        payload = '{"801":{"170":null}}'
+        payload = '{"801":{"170":null, "175":null}}'
 
         # Update fetchFailed boolean to False before fetch attempt
         # This will change to true if the fetch failed, ensuring we don't then use the value to update our cache
@@ -103,6 +104,16 @@ class SolarLog:
         if jsonResponse:
             self.consumedW = float(jsonResponse["801"]["170"]["110"])
             self.generatedW = float(jsonResponse["801"]["170"]["101"])
+            # If a the Smart Meter is not active - it should not decline the energy used 
+            # (because then there is something else using the energy)
+            self.smartEnergyInvertersActive = self.excludeConsumptionInverters.copy()
+            smartEnergyInvertersActiveIndex = 0
+            while smartEnergyInvertersActiveIndex < len(self.excludeConsumptionInverters):
+                inverterIndex = self.excludeConsumptionInverters[smartEnergyInvertersActiveIndex]
+                # a value of 0 means that it is off
+                if inverterIndex>0 and int(jsonResponse["801"]["175"][str(smartEnergyInvertersActiveIndex)]["101"])==0:
+                    self.smartEnergyInvertersActive.remove(inverterIndex)
+                smartEnergyInvertersActiveIndex += 1
 
     def getInverterValues(self):
         if len(self.excludeConsumptionInverters) == 0:
@@ -142,7 +153,7 @@ class SolarLog:
         )
         if jsonResponse:
             tmpValue = 0
-            for inverterIndex in self.excludeConsumptionInverters:
+            for inverterIndex in self.smartEnergyInvertersActive:
                 tmpValue = tmpValue + float(jsonResponse["782"][str(inverterIndex)])
             self.excludeConsumedW = tmpValue
 
