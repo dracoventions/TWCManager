@@ -2,7 +2,7 @@
 
 from lib.TWCManager.TWCSlave import TWCSlave
 from datetime import datetime, timedelta
-import json
+import json7w
 import os.path
 import queue
 from sys import modules
@@ -259,8 +259,7 @@ class TWCMaster:
             if vehicle != None:
                 amps = self.getScheduledAmpsMax()
                 watts = self.convertAmpsToWatts(amps) * self.getRealPowerFactor(amps)
-                realUsableBatterySize = self.getScheduledAmpsDaysBitmap() * 0.92
-                hoursForFullCharge = realUsableBatterySize / (watts / 1000)
+                hoursForFullCharge = self.getScheduledAmpsBatterySize() / (watts / 1000)
                 realChargeFactor = (vehicle.chargeLimit - vehicle.batteryLevel) / 100
                 # calculating startHour with a max Battery size - so it starts charging and then it has the time
                 startHour = round(
@@ -268,8 +267,9 @@ class TWCMaster:
                     - (hoursForFullCharge * realChargeFactor),
                     2,
                 )
-                # adding a quarter of an hour
-                startHour -= 0.25
+                # adding a quarter of an hour for small charges
+                if realChargeFactor<0.1:
+                    startHour -= 0.25
                 # adding half an hour if battery should be charged over 98%
                 if vehicle.chargeLimit >= 98:
                     startHour -= 0.5
