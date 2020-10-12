@@ -2,7 +2,7 @@
 
 from lib.TWCManager.TWCSlave import TWCSlave
 from datetime import datetime, timedelta
-import json7w
+import json
 import os.path
 import queue
 from sys import modules
