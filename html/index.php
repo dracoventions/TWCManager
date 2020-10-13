@@ -285,6 +285,16 @@
         }
     }
 ?>
+<h1>Note</h1>
+
+Thanks for using TWCManager, we hope you are finding this project useful.
+
+<p>This web interface is scheduled for eventual deprecation. We retain it for the components that have not yet been migrated to the new web interface, and for backwards compatibility with other TWCManager forks.
+
+<p>We strongly recommend using the <a href="https://github.com/ngardiner/TWCManager/blob/v1.2.1/docs/modules/Control_HTTP.md">New Web Interface</a>. Feature partiy in the new web interface is a high priority goal of v1.2.1.
+
+<hr />
+
 <form action="index.php" name="refresh" method="get">
     <table border="0" padding="0" margin="0"><tr>
         <td valign="top">
@@ -496,7 +506,7 @@
         <p id="resumeGreen" style="margin-top:0.3em">
             <strong>Resume 'Track green energy' at:</strong>
             <?php
-            DisplaySelect('resumeTrackGreenEnergyTime', '', array_merge(array('Never' => '-1:00'),
+            DisplaySelect('resumeTrackGreenEnergyTime', '', array_merge(array('Never' => '23:59'),
                                                                              $aryHours));
             ?>
         </p>
