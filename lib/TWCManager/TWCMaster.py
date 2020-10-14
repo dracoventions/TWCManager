@@ -267,9 +267,8 @@ class TWCMaster:
                     - (hoursForFullCharge * realChargeFactor),
                     2,
                 )
-                # adding a quarter of an hour for small charges
-                if realChargeFactor<0.1:
-                    startHour -= 0.25
+                # Always starting a quarter of a hour earlier
+                startHour -= 0.25
                 # adding half an hour if battery should be charged over 98%
                 if vehicle.chargeLimit >= 98:
                     startHour -= 0.5
