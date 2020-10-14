@@ -4,6 +4,10 @@ This document logs the changes per release of TWCManager.
 
 ## v1.2.1 - Current development branch
 
+  * Updated legacy Web UI to allow all EU/US amp selections (thanks @dschuesae)
+  * Bugfixes
+      * Fix a bug with the legacy web interface which causes the Resume Track Green Energy setting of None to fail. Also added a deprecation notice to the web interface to ensure people don't inadvertently use it over the modular interface.
+
 ## v1.2.0 - 2020-10-09
 
   * Added systemd service definition (thanks @nean-and-i)
