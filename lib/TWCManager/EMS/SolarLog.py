@@ -112,7 +112,10 @@ class SolarLog:
                 inverterIndex = self.excludeConsumptionInverters[smartEnergyInvertersActiveIndex]
                 # a value of 0 means that it is off
                 if inverterIndex>0 and int(jsonResponse["801"]["175"][str(smartEnergyInvertersActiveIndex)]["101"])==0:
-                    self.smartEnergyInvertersActive.remove(inverterIndex)
+                    self.debugLog(8, "SmartMeter " + str(inverterIndex) + " is inactive")
+                    self.smartEnergyInvertersActive.remove(inverterIndex)                    
+                else: 
+                    self.debugLog(8, "SmartMeter " + str(inverterIndex) + " is active")
                 smartEnergyInvertersActiveIndex += 1
 
     def getInverterValues(self):
