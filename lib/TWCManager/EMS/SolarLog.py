@@ -41,8 +41,7 @@ class SolarLog:
             return None
 
     def debugLog(self, minlevel, message):
-        if self.debugLevel >= minlevel:
-            print("debugLog: (" + str(minlevel) + ") " + message)
+        self.master.debugLog(minlevel,"SolarLog", message)
 
     def getConsumption(self):
 
@@ -108,6 +107,7 @@ class SolarLog:
             # (because then there is something else using the energy)
             self.smartEnergyInvertersActive = self.excludeConsumptionInverters.copy()
             smartEnergyInvertersActiveIndex = 0
+            self.debugLog(8, "SmartMeters found " + str(len(self.excludeConsumptionInverters)))
             while smartEnergyInvertersActiveIndex < len(self.excludeConsumptionInverters):
                 inverterIndex = self.excludeConsumptionInverters[smartEnergyInvertersActiveIndex]
                 # a value of 0 means that it is off
