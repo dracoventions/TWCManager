@@ -100,7 +100,7 @@ class HASSStatus:
         self.backgroundTasksLock.release()
 
     def sendingStatusToHASS(self, msg):
-        http = "http://" if not (self.useHttps) else "https://"
+        http = "http://" if not(self.useHttps) else "https://"
         url = http + self.serverIP + ":" + self.serverPort
         url = url + "/api/states/" + msg.sensor
         headers = {

@@ -79,7 +79,7 @@ class HASS:
         return self.generatedW
 
     def getAPIValue(self, entity):
-        http = "http://" if not (self.useHttps) else "https://"
+        http = "http://" if not(self.useHttps) else "https://"
         url = http + self.serverIP + ":" + self.serverPort + "/api/states/" + entity
         headers = {
             "Authorization": "Bearer " + self.apiKey,
