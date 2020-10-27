@@ -22,6 +22,7 @@ class HASS:
     status = False
     serverIP = None
     serverPort = 8123
+    useHttps = False
     timeout = 2
 
     def __init__(self, master):
@@ -38,6 +39,7 @@ class HASS:
         self.status = self.configHASS.get("enabled", False)
         self.serverIP = self.configHASS.get("serverIP", None)
         self.serverPort = self.configHASS.get("serverPort", 8123)
+        self.useHttps = self.configHASS.get("useHttps", False)
         self.apiKey = self.configHASS.get("apiKey", None)
         self.debugLevel = self.configConfig.get("debugLevel", 0)
         self.hassEntityConsumption = self.configHASS.get("hassEntityConsumption", None)
@@ -51,7 +53,9 @@ class HASS:
     def getConsumption(self):
 
         if not self.status:
-            self.master.debugLog(10, "HASSEMS", "Module Disabled. Skipping getConsumption")
+            self.master.debugLog(
+                10, "HASSEMS", "Module Disabled. Skipping getConsumption"
+            )
             return 0
 
         # Perform updates if necessary
@@ -63,7 +67,9 @@ class HASS:
     def getGeneration(self):
 
         if not self.status:
-            self.master.debugLog(10, "HASSEMS", "Module Disabled. Skipping getGeneration")
+            self.master.debugLog(
+                10, "HASSEMS", "Module Disabled. Skipping getGeneration"
+            )
             return 0
 
         # Perform updates if necessary
@@ -73,9 +79,8 @@ class HASS:
         return self.generatedW
 
     def getAPIValue(self, entity):
-        url = (
-            "http://" + self.serverIP + ":" + self.serverPort + "/api/states/" + entity
-        )
+        http = "http://" if not(self.useHttps) else "https://"
+        url = http + self.serverIP + ":" + self.serverPort + "/api/states/" + entity
         headers = {
             "Authorization": "Bearer " + self.apiKey,
             "content-type": "application/json",
@@ -86,7 +91,9 @@ class HASS:
         self.fetchFailed = False
 
         try:
-            self.master.debugLog(10, "HASSEMS", "Fetching HomeAssistant EMS sensor value " + str(entity))
+            self.master.debugLog(
+                10, "HASSEMS", "Fetching HomeAssistant EMS sensor value " + str(entity)
+            )
             httpResponse = self.requests.get(url, headers=headers, timeout=self.timeout)
         except self.requests.exceptions.ConnectionError as e:
             self.master.debugLog(
@@ -97,7 +104,9 @@ class HASS:
             return False
         except self.requests.exceptions.ReadTimeout as e:
             self.master.debugLog(
-                4, "HASSEMS", "Read Timeout occurred fetching HomeAssistant sensor value"
+                4,
+                "HASSEMS",
+                "Read Timeout occurred fetching HomeAssistant sensor value",
             )
             self.master.debugLog(10, "HASSEMS", str(e))
             self.fetchFailed = True
@@ -129,26 +138,36 @@ class HASS:
             if self.hassEntityConsumption:
                 apivalue = self.getAPIValue(self.hassEntityConsumption)
                 if self.fetchFailed is not True:
-                    self.master.debugLog(10, "HASSEMS", "getConsumption returns " + str(apivalue))
+                    self.master.debugLog(
+                        10, "HASSEMS", "getConsumption returns " + str(apivalue)
+                    )
                     self.consumedW = float(apivalue)
                 else:
                     self.master.debugLog(
-                        10, "HASSEMS", "getConsumption fetch failed, using cached values"
+                        10,
+                        "HASSEMS",
+                        "getConsumption fetch failed, using cached values",
                     )
             else:
-                self.master.debugLog(10, "HASSEMS", "Consumption Entity Not Supplied. Not Querying")
+                self.master.debugLog(
+                    10, "HASSEMS", "Consumption Entity Not Supplied. Not Querying"
+                )
 
             if self.hassEntityGeneration:
                 apivalue = self.getAPIValue(self.hassEntityGeneration)
                 if self.fetchFailed is not True:
-                    self.master.debugLog(10, "HASSEMS", "getGeneration returns " + str(apivalue))
+                    self.master.debugLog(
+                        10, "HASSEMS", "getGeneration returns " + str(apivalue)
+                    )
                     self.generatedW = float(apivalue)
                 else:
                     self.master.debugLog(
                         10, "HASSEMS", "getGeneration fetch failed, using cached values"
                     )
             else:
-                self.master.debugLog(10, "HASSEMS", "Generation Entity Not Supplied. Not Querying")
+                self.master.debugLog(
+                    10, "HASSEMS", "Generation Entity Not Supplied. Not Querying"
+                )
 
             # Update last fetch time
             if self.fetchFailed is not True:

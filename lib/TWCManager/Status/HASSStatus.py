@@ -23,6 +23,7 @@ class HASSStatus:
     status = False
     serverIP = None
     serverPort = 8123
+    useHttps = False
     timeout = 2
     backgroundTasksLock = threading.Lock()
     backgroundTasksThread = None
@@ -41,6 +42,7 @@ class HASSStatus:
         self.status = self.configHASS.get("enabled", False)
         self.serverIP = self.configHASS.get("serverIP", None)
         self.serverPort = self.configHASS.get("serverPort", 8123)
+        self.useHttps = self.configHASS.get("useHttps", False)
         self.apiKey = self.configHASS.get("apiKey", None)
         self.msgRateInSeconds = self.configHASS.get("msgRateInSeconds", 60)
         self.resendRateInSeconds = self.configHASS.get("resendRateInSeconds", 3600)
@@ -98,8 +100,8 @@ class HASSStatus:
         self.backgroundTasksLock.release()
 
     def sendingStatusToHASS(self, msg):
-
-        url = "http://" + self.serverIP + ":" + self.serverPort
+        http = "http://" if not(self.useHttps) else "https://"
+        url = http + self.serverIP + ":" + self.serverPort
         url = url + "/api/states/" + msg.sensor
         headers = {
             "Authorization": "Bearer " + self.apiKey,
