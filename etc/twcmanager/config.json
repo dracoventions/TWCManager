@@ -161,6 +161,10 @@
         # Choose whether to display milliseconds after time on each line of debug info.
         "displayMilliseconds": false,
 
+        # Webhooks can be triggered using either GET or POST methods.
+        # By default, they receive a POST of the current status; uncomment for GET.
+        #"webhookMethod": "GET",
+
         # Normally we fake being a TWC Master using fakeMaster = 1.
         # Two other settings are available, but are only useful for debugging and
         # experimenting:
