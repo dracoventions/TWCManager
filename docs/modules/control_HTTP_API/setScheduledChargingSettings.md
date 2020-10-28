@@ -12,7 +12,9 @@ The setScheduledChargingSettings API command should be accompanied by a JSON-for
 | ---------------      | ------------------------------ |
 | **startingMinute**   | Minutes from midnight scheduled charging time should start |
 | **endingMinute**     | Minutes from midnight scheduled charging time should end |
+| **flexStartEnabled** | If you want to let your car starts charging at the end of Scheduled Charging Time, you can set this to true. This works only for exactly one TWCManager connected. Please be sure, that the amps provided are the power which your car can obtain. For better results set you battery size with flexBatterySize. |
 | **flexBatterySize**  | Battery size of your car - default to 100 (biggest battery size - so your car should really finished before your ending time)        |
+| **amps**             | Charging Power you want to divide among the slaves. |
 
 
 ```
