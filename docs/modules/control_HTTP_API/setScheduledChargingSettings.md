@@ -8,6 +8,13 @@ You can save the scheduled settings via a POST request
 
 The setScheduledChargingSettings API command should be accompanied by a JSON-formatted request payload, providing the data to set:
 
+| Attribute            | Description |
+| ---------------      | ------------------------------ |
+| **startingMinute**   | Minutes from midnight scheduled charging time should start |
+| **endingMinute**     | Minutes from midnight scheduled charging time should end |
+| **flexBatterySize**  | Battery size of your car - default to 100 (biggest battery size - so your car should really finished before your ending time)        |
+
+
 ```
 { 
 	"enabled": true, 
