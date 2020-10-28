@@ -984,13 +984,12 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "<td>" + str(self.server.master.getScheduledAmpsMax()) + "</td></tr>"
 
         page += "<tr><th>Scheduled Charging Start Hour</th>"
-        page += (
-            "<td>"
-            + str(self.server.master.getScheduledAmpsStartHour())
-            + " (Flex: "
-            + str(self.server.master.getScheduledAmpsTimeFlex()[0])
-            + ")</td></tr>"
-        )
+        page += "<td>" + str(self.server.master.getScheduledAmpsStartHour())
+        if self.server.master.getScheduledAmpsTimeFlex()[0] != self.server.master.getScheduledAmpsStartHour():
+            page += " (Flex: "
+            page += str(self.server.master.getScheduledAmpsTimeFlex()[0])
+            page += ")"
+        page += "</td></tr>"
 
         page += "<tr><th>Scheduled Charging End Hour</th>"
         page += "<td>" + str(self.server.master.getScheduledAmpsEndHour()) + "</td>"
