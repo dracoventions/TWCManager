@@ -437,7 +437,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             saturday = bool(data.get("saturday", False))
             sunday = bool(data.get("sunday", False))
             amps = int(data.get("amps", -1))
-            batterySize = int(data.get("flexBatterySize", 100))
+            batterySize = int(data.get("flexBatterySize", 100)) #using 100 as default, because with this every available car at moment should be finished with charging at the ending time
             flexStart = int(data.get("flexStartEnabled", False))
             weekDaysBitmap = (
                 (1 if monday else 0)
