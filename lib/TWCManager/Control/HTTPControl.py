@@ -277,33 +277,26 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 TWCID = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
                 data[TWCID] = {
                     "currentVIN": slaveTWC.currentVIN,
-                    "lastAmpsOffered": "%.2f" % float(slaveTWC.lastAmpsOffered),
-                    "lastHeartbeat": "%.2f" % float(time.time() - slaveTWC.timeLastRx),
+                    "lastAmpsOffered": round(slaveTWC.lastAmpsOffered, 2),
+                    "lastHeartbeat": round(time.time() - slaveTWC.timeLastRx, 2),
                     "lastVIN": slaveTWC.lastVIN,
-                    "lifetimekWh": str(slaveTWC.lifetimekWh),
+                    "lifetimekWh": slaveTWC.lifetimekWh,
                     "maxAmps": float(slaveTWC.maxAmps),
-                    "reportedAmpsActual": "%.2f" % float(slaveTWC.reportedAmpsActual),
-                    "state": str(slaveTWC.reportedState),
-                    "version": str(slaveTWC.protocolVersion),
-                    "voltsPhaseA": str(slaveTWC.voltsPhaseA),
-                    "voltsPhaseB": str(slaveTWC.voltsPhaseB),
-                    "voltsPhaseC": str(slaveTWC.voltsPhaseC),
+                    "reportedAmpsActual": float(slaveTWC.reportedAmpsActual),
+                    "state": slaveTWC.reportedState,
+                    "version": slaveTWC.protocolVersion,
+                    "voltsPhaseA": slaveTWC.voltsPhaseA,
+                    "voltsPhaseB": slaveTWC.voltsPhaseB,
+                    "voltsPhaseC": slaveTWC.voltsPhaseC,
                     "TWCID": "%s" % TWCID,
                 }
                 # Adding some vehicle data
                 vehicle = slaveTWC.getLastVehicle()
                 if vehicle != None:
-                    data[TWCID][
-                        "lastBatterySOC"
-                    ] = slaveTWC.getLastVehicle().batteryLevel
-                    data[TWCID][
-                        "lastChargeLimit"
-                    ] = slaveTWC.getLastVehicle().chargeLimit
-                    data[TWCID]["lastAtHome"] = slaveTWC.getLastVehicle().atHome
-                else:
-                    data[TWCID]["lastBatterySOC"] = 0
-                    data[TWCID]["lastChargeLimit"] = 0
-                    data[TWCID]["lastAtHome"] = 0
+                    data[TWCID]["lastBatterySOC"] = vehicle.batteryLevel
+                    data[TWCID]["lastChargeLimit"] = vehicle.chargeLimit
+                    data[TWCID]["lastAtHome"] = vehicle.atHome
+                    data[TWCID]["lastTimeToFullCharge"] = vehicle.timeToFullCharge
 
                 totals["lastAmpsOffered"] += slaveTWC.lastAmpsOffered
                 totals["lifetimekWh"] += slaveTWC.lifetimekWh
@@ -311,10 +304,10 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 totals["reportedAmpsActual"] += slaveTWC.reportedAmpsActual
 
             data["total"] = {
-                "lastAmpsOffered": "%.2f" % float(totals["lastAmpsOffered"]),
+                "lastAmpsOffered": round(totals["lastAmpsOffered"], 2),
                 "lifetimekWh": totals["lifetimekWh"],
                 "maxAmps": totals["maxAmps"],
-                "reportedAmpsActual": "%.2f" % float(totals["reportedAmpsActual"]),
+                "reportedAmpsActual": round(totals["reportedAmpsActual"], 2),
                 "TWCID": "total",
             }
 
@@ -427,6 +420,54 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
         elif self.url.path == "/api/checkDeparture":
             self.server.master.queue_background_task({"cmd": "checkDeparture"})
+            self.send_response(202)
+            self.end_headers()
+            self.wfile.write("".encode("utf-8"))
+
+        elif self.url.path == "/api/setScheduledChargingSettings":
+            data = json.loads(self.post_data.decode("UTF-8"))
+            enabled = bool(data.get("enabled", False))
+            startingMinute = int(data.get("startingMinute", -1))
+            endingMinute = int(data.get("endingMinute", -1))
+            monday = bool(data.get("monday", False))
+            tuesday = bool(data.get("tuesday", False))
+            wednesday = bool(data.get("wednesday", False))
+            thursday = bool(data.get("thursday", False))
+            friday = bool(data.get("friday", False))
+            saturday = bool(data.get("saturday", False))
+            sunday = bool(data.get("sunday", False))
+            amps = int(data.get("amps", -1))
+            batterySize = int(data.get("flexBatterySize", 100)) #using 100 as default, because with this every available car at moment should be finished with charging at the ending time
+            flexStart = int(data.get("flexStartEnabled", False))
+            weekDaysBitmap = (
+                (1 if monday else 0)
+                + (2 if tuesday else 0)
+                + (4 if wednesday else 0)
+                + (8 if thursday else 0)
+                + (16 if friday else 0)
+                + (32 if saturday else 0)
+                + (64 if sunday else 0)
+            )
+
+            if (
+                not (enabled)
+                or startingMinute < 0
+                or endingMinute < 0
+                or amps <= 0
+                or weekDaysBitmap == 0
+            ):
+                self.server.master.setScheduledAmpsMax(0)
+                self.server.master.setScheduledAmpsStartHour(-1)
+                self.server.master.setScheduledAmpsEndHour(-1)
+                self.server.master.setScheduledAmpsDaysBitmap(0)
+            else:
+                self.server.master.setScheduledAmpsMax(amps)
+                self.server.master.setScheduledAmpsStartHour(startingMinute / 60)
+                self.server.master.setScheduledAmpsEndHour(endingMinute / 60)
+                self.server.master.setScheduledAmpsDaysBitmap(weekDaysBitmap)
+            self.server.master.setScheduledAmpsBatterySize(batterySize)
+            self.server.master.setScheduledAmpsFlexStart(flexStart)
+            self.server.master.saveSettings()
             self.send_response(202)
             self.end_headers()
             self.wfile.write("".encode("utf-8"))
@@ -943,9 +984,12 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "<td>" + str(self.server.master.getScheduledAmpsMax()) + "</td></tr>"
 
         page += "<tr><th>Scheduled Charging Start Hour</th>"
-        page += (
-            "<td>" + str(self.server.master.getScheduledAmpsStartHour()) + "</td></tr>"
-        )
+        page += "<td>" + str(self.server.master.getScheduledAmpsStartHour())
+        if self.server.master.getScheduledAmpsTimeFlex()[0] != self.server.master.getScheduledAmpsStartHour():
+            page += " (Flex: "
+            page += str(self.server.master.getScheduledAmpsTimeFlex()[0])
+            page += ")"
+        page += "</td></tr>"
 
         page += "<tr><th>Scheduled Charging End Hour</th>"
         page += "<td>" + str(self.server.master.getScheduledAmpsEndHour()) + "</td>"

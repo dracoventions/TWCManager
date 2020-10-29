@@ -1091,6 +1091,7 @@ class CarApiVehicle:
     lat = 10000
     lon = 10000
     atHome = False
+    timeToFullCharge = 0.0
 
     def __init__(self, json, carapi, config):
         self.carapi = carapi
@@ -1259,6 +1260,7 @@ class CarApiVehicle:
             self.lastChargeStatusTime = self.time.time()
             self.chargeLimit = response["charge_limit_soc"]
             self.batteryLevel = response["battery_level"]
+            self.timeToFullCharge = response["time_to_full_charge"]
 
         return result
 
