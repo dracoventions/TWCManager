@@ -51,8 +51,7 @@ class TED:
             return None
 
     def debugLog(self, minlevel, message):
-        if self.debugLevel >= minlevel:
-            print("TED: (" + str(minlevel) + ") " + message)
+        self.master.debugLog(minlevel, "TED", message)
 
     def getConsumption(self):
 

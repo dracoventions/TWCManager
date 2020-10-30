@@ -21,7 +21,7 @@ class SolarLog:
     serverIP = None
     excludeConsumptionInverters = []
     timeout = 2
-    smartEnergyInvertersActive = []  
+    smartEnergyInvertersActive = []
 
     def __init__(self, master):
         self.master = master
@@ -41,7 +41,7 @@ class SolarLog:
             return None
 
     def debugLog(self, minlevel, message):
-        self.master.debugLog(minlevel,"SolarLog", message)
+        self.master.debugLog(minlevel, "SolarLog", message)
 
     def getConsumption(self):
 
@@ -103,18 +103,34 @@ class SolarLog:
         if jsonResponse:
             self.consumedW = float(jsonResponse["801"]["170"]["110"])
             self.generatedW = float(jsonResponse["801"]["170"]["101"])
-            # If a the Smart Meter is not active - it should not decline the energy used 
+            # If a the Smart Meter is not active - it should not decline the energy used
             # (because then there is something else using the energy)
             self.smartEnergyInvertersActive = self.excludeConsumptionInverters.copy()
             smartEnergyInvertersActiveIndex = 0
-            self.debugLog(8, "SmartMeters found " + str(len(self.excludeConsumptionInverters)))
-            while smartEnergyInvertersActiveIndex < len(self.excludeConsumptionInverters):
-                inverterIndex = self.excludeConsumptionInverters[smartEnergyInvertersActiveIndex]
+            self.debugLog(
+                8, "SmartMeters found " + str(len(self.excludeConsumptionInverters))
+            )
+            while smartEnergyInvertersActiveIndex < len(
+                self.excludeConsumptionInverters
+            ):
+                inverterIndex = self.excludeConsumptionInverters[
+                    smartEnergyInvertersActiveIndex
+                ]
                 # a value of 0 means that it is off
-                if inverterIndex>0 and int(jsonResponse["801"]["175"][str(smartEnergyInvertersActiveIndex)]["101"])==0:
-                    self.debugLog(8, "SmartMeter " + str(inverterIndex) + " is inactive")
-                    self.smartEnergyInvertersActive.remove(inverterIndex)                    
-                else: 
+                if (
+                    inverterIndex > 0
+                    and int(
+                        jsonResponse["801"]["175"][
+                            str(smartEnergyInvertersActiveIndex)
+                        ]["101"]
+                    )
+                    == 0
+                ):
+                    self.debugLog(
+                        8, "SmartMeter " + str(inverterIndex) + " is inactive"
+                    )
+                    self.smartEnergyInvertersActive.remove(inverterIndex)
+                else:
                     self.debugLog(8, "SmartMeter " + str(inverterIndex) + " is active")
                 smartEnergyInvertersActiveIndex += 1
 

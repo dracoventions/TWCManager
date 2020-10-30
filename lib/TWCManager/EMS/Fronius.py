@@ -46,8 +46,7 @@ class Fronius:
             return None
 
     def debugLog(self, minlevel, message):
-        if self.debugLevel >= minlevel:
-            print("Fronius: (" + str(minlevel) + ") " + message)
+        self.master.debugLog(minlevel, "Fronius", message)
 
     def getConsumption(self):
 

@@ -1,5 +1,6 @@
 # Enphase Monitoring Portal Integration
 
+
 class Enphase:
 
     import requests
@@ -44,15 +45,21 @@ class Enphase:
         self.userID = self.configEnphase.get("userID", None)
 
         # Unload if this module is disabled or misconfigured
-        if ((not self.status) or (not self.systemID) 
-            or (not self.apiKey) or (not self.userID)):
-            self.master.releaseModule("lib.TWCManager.EMS","Enphase");
+        if (
+            (not self.status)
+            or (not self.systemID)
+            or (not self.apiKey)
+            or (not self.userID)
+        ):
+            self.master.releaseModule("lib.TWCManager.EMS", "Enphase")
             return None
 
     def getConsumption(self):
 
         if not self.status:
-            self.master.debugLog(10, "Enphase", "Enphase EMS Module Disabled. Skipping getConsumption")
+            self.master.debugLog(
+                10, "Enphase", "Enphase EMS Module Disabled. Skipping getConsumption"
+            )
             return None
 
         # Perform updates if necessary
@@ -64,7 +71,9 @@ class Enphase:
     def getGeneration(self):
 
         if not self.status:
-            self.master.debugLog(10, "Enphase", "Enphase EMS Module Disabled. Skipping getGeneration")
+            self.master.debugLog(
+                10, "Enphase", "Enphase EMS Module Disabled. Skipping getGeneration"
+            )
             return 0
 
         # Perform updates if necessary
@@ -74,8 +83,8 @@ class Enphase:
         return float(self.generatedW)
 
     def getPortalData(self):
-        url = "https://api.enphaseenergy.com/api/v2/systems/"+ self.systemID
-        url += "/summary?key="+ self.apiKey + "&user_id=" + self.userID
+        url = "https://api.enphaseenergy.com/api/v2/systems/" + self.systemID
+        url += "/summary?key=" + self.apiKey + "&user_id=" + self.userID
 
         return self.getPortalValue(url)
 
@@ -88,8 +97,7 @@ class Enphase:
             r = self.requests.get(url, timeout=self.timeout)
         except self.requests.exceptions.ConnectionError as e:
             self.master.debugLog(
-                4, "Enphase", 
-                "Error connecting to Enphase Portal to fetch sensor value"
+                4, "Enphase", "Error connecting to Enphase Portal to fetch sensor value"
             )
             self.master.debugLog(10, "Enphase", str(e))
             self.fetchFailed = True
@@ -99,8 +107,11 @@ class Enphase:
             r.raise_for_status()
         except self.requests.exceptions.HTTPError as e:
             self.master.debugLog(
-                4, "Enphase",
-                "HTTP status " + str(e.response.status_code) + " connecting to Enphase Portal to fetch sensor value"
+                4,
+                "Enphase",
+                "HTTP status "
+                + str(e.response.status_code)
+                + " connecting to Enphase Portal to fetch sensor value",
             )
             return ""
         else:
@@ -114,14 +125,18 @@ class Enphase:
             portalData = self.getPortalData()
             if portalData:
                 try:
-                    self.generatedW = int(portalData['current_power'])
+                    self.generatedW = int(portalData["current_power"])
                 except (KeyError, TypeError) as e:
                     self.master.debugLog(
-                        4, "Enphase", 
-                        "Exception during parsing Enphase data (current_power)")
+                        4,
+                        "Enphase",
+                        "Exception during parsing Enphase data (current_power)",
+                    )
                     self.master.debugLog(10, "Enphase", e)
             else:
-                self.master.debugLog(4, "Enphase", "Enphase API result does not contain json content.")
+                self.master.debugLog(
+                    4, "Enphase", "Enphase API result does not contain json content."
+                )
                 self.fetchFailed = True
 
             # Update last fetch time

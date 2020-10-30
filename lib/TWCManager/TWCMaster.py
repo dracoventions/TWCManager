@@ -11,7 +11,9 @@ import threading
 import time
 from ww import f
 import math
-
+import logging
+from logging.handlers import TimedRotatingFileHandler
+import random
 
 class TWCMaster:
 
@@ -58,6 +60,7 @@ class TWCMaster:
     subtractChargerLoad = False
     teslaLoginAskLater = False
     TWCID = None
+    logger = None
 
     # TWCs send a seemingly-random byte after their 2-byte TWC id in a number of
     # messages. I call this byte their "Sign" for lack of a better term. The byte
@@ -74,6 +77,14 @@ class TWCMaster:
         self.TWCID = TWCID
         self.subtractChargerLoad = config["config"]["subtractChargerLoad"]
         self.advanceHistorySnap()
+
+        self.logger = logging.getLogger("TWCManager")
+        self.logger.setLevel(logging.INFO)
+        handler = TimedRotatingFileHandler(
+            "/etc/twcmanager/twcmanager.log", when="H", interval=1, backupCount=24
+        )
+        handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
+        self.logger.addHandler(handler)
 
         # Register ourself as a module, allows lookups via the Module architecture
         self.registerModule({"name": "master", "ref": self, "type": "Master"})
@@ -155,6 +166,8 @@ class TWCMaster:
         if len(function) < 10:
             for a in range(len(function), 10):
                 function += " "
+
+        self.logger.info(function + " %02d " % minlevel + message)
 
         if self.debugLevel >= minlevel:
             print(
@@ -344,10 +357,10 @@ class TWCMaster:
             and scheduledChargingDays > 0
             and self.getScheduledAmpsMax() > 0,
             "amps": self.getScheduledAmpsMax(),
-            "startingMinute": scheduledChargingStartHour * 60
+            "startingMinute": int(scheduledChargingStartHour * 60)
             if scheduledChargingStartHour >= 0
             else -1,
-            "endingMinute": scheduledChargingEndHour * 60
+            "endingMinute": int(scheduledChargingEndHour * 60)
             if scheduledChargingEndHour >= 0
             else -1,
             "monday": (scheduledChargingDays & 1) == 1,
@@ -358,10 +371,10 @@ class TWCMaster:
             "saturday": (scheduledChargingDays & 32) == 32,
             "sunday": (scheduledChargingDays & 64) == 64,
             "flexStartEnabled": self.getScheduledAmpsFlexStart(),
-            "flexStartingMinute": scheduledFlexTime[0] * 60
+            "flexStartingMinute": int(scheduledFlexTime[0] * 60)
             if scheduledFlexTime[0] >= 0
             else -1,
-            "flexEndingMinute": scheduledFlexTime[1] * 60
+            "flexEndingMinute": int(scheduledFlexTime[1] * 60)
             if scheduledFlexTime[1] >= 0
             else -1,
             "flexMonday": (scheduledFlexTime[2] & 1) == 1,
@@ -614,7 +627,7 @@ class TWCMaster:
         carapi.setCarApiRefreshToken(self.settings.get("carApiRefreshToken", ""))
         carapi.setCarApiTokenExpireTime(self.settings.get("carApiTokenExpireTime", ""))
 
-    def master_id_conflict():
+    def master_id_conflict(self):
         # We're playing fake slave, and we got a message from a master with our TWCID.
         # By convention, as a slave we must change our TWCID because a master will not.
         self.TWCID[0] = random.randint(0, 0xFF)
@@ -623,10 +636,12 @@ class TWCMaster:
         # Real slaves change their sign during a conflict, so we do too.
         self.slaveSign[0] = random.randint(0, 0xFF)
 
-        print(
-            time_now() + ": Master's TWCID matches our fake slave's TWCID.  "
+        self.debugLog(
+            1,
+            "TWCMaster",
+            "Master's TWCID matches our fake slave's TWCID.  "
             "Picked new random TWCID %02X%02X with sign %02X"
-            % (self.TWCID[0], self.TWCID[1], self.slaveSign[0])
+            % (self.TWCID[0], self.TWCID[1], self.slaveSign[0]),
         )
 
     def newSlave(self, newSlaveID, maxAmps):
@@ -643,9 +658,11 @@ class TWCMaster:
         self.addSlaveTWC(slaveTWC)
 
         if self.countSlaveTWC() > 3:
-            print(
+            self.debugLog(
+                1,
+                "TWCMaster"
                 "WARNING: More than 3 slave TWCs seen on network.  "
-                "Dropping oldest: " + self.hex_str(self.getSlaveTWCID(0)) + "."
+                "Dropping oldest: " + self.hex_str(self.getSlaveTWCID(0)) + ".",
             )
             self.deleteSlaveTWC(self.getSlaveTWCID(0))
 

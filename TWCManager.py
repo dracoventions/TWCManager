@@ -32,7 +32,6 @@ import importlib
 import json
 import os.path
 import math
-import random
 import re
 import sys
 from termcolor import colored
@@ -91,7 +90,7 @@ else:
 if jsonconfig:
     config = commentjson.load(jsonconfig)
 else:
-    print("Unable to find a configuration file.")
+    debugLog(1, "Unable to find a configuration file.")
     sys.exit()
 
 # All TWCs ship with a random two-byte TWCID. We default to using 0x7777 as our
@@ -115,13 +114,17 @@ fakeTWCID = bytearray(b"\x77\x77")
 
 
 def debugLog(minlevel, message):
-    if config["config"]["debugLevel"] >= minlevel:
-        print(
-            colored(master.time_now() + " ", "yellow")
-            + colored("TWCManager", "green")
-            + colored(f(" {minlevel} "), "cyan")
-            + f("{message}")
-        )
+    if master == None:
+        # I don't think any call will come through this
+        if config["config"]["debugLevel"] >= minlevel:
+            print(
+                colored(master.time_now() + " ", "yellow")
+                + colored("TWCManager", "green")
+                + colored(f(" {minlevel} "), "cyan")
+                + f("{message}")
+            )
+    else:
+        master.debugLog(minlevel, "TWCManager", message)
 
 
 def hex_str(s: str):
@@ -1411,14 +1414,14 @@ while True:
                     debugLog(1, "***UNKNOWN MESSAGE from master: " + hex_str(msg))
 
     except KeyboardInterrupt:
-        print("Exiting after background tasks complete...")
+        debugLog(1, "Exiting after background tasks complete...")
         break
 
     except Exception as e:
         # Print info about unhandled exceptions, then continue.  Search for
-        # 'Traceback' to find these in the log.
-        traceback.print_exc()
-
+        # 'Traceback' to find these in the log.        
+        traceback.print_exc()        
+        debugLog(1, "Unhandled Exception:" + traceback.format_exc())
         # Sleep 5 seconds so the user might see the error.
         time.sleep(5)
 
