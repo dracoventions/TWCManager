@@ -64,6 +64,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
         <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css' integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'>
+        <link rel="icon" type="image/img" href="https://github.com/ngardiner/TWCManager/raw/v1.2.1/html/favicon.png">
         """
         return page
 
@@ -218,10 +219,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     <nav class='navbar fixed-top navbar-dark bg-dark' role='navigation'>
       <a class='navbar-brand' href='/'>TWCManager</a>
         """
-        page += (
-            "<link rel='icon' type='image/png' href='https://raw.githubusercontent.com/ngardiner/TWCManager/master/tree/%s/html/favicon.png'>"
-            % self.version
-        )
         page += self.navbar_item("/", "Home")
         page += self.navbar_item("/policy", "Policy")
         page += self.navbar_item("/schedule", "Schedule")
