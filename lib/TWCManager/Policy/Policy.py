@@ -295,39 +295,39 @@ class Policy:
         return 0
 
     def doesConditionMatch(self, match, condition, value, exitOn):
+        matchValue = self.policyValue(match)
+        value = self.policyValue(value)
+
         self.master.debugLog(
             8,
             "Policy",
             f(
-                "Evaluating Policy match ({colored(match, 'red')}), condition ({colored(condition, 'red')}), value ({colored(value, 'red')})"
+                "Evaluating Policy match ({colored(match, 'red')} [{matchValue}]), condition ({colored(condition, 'red')}), value ({colored(value, 'red')})"
             ),
-        )
+        )        
 
-        match = self.policyValue(match)
-        value = self.policyValue(value)
-
-        if all([isinstance(a, list) for a in (match, condition, value)]):
-            return self.checkConditions(match, condition, value, not exitOn)
+        if all([isinstance(a, list) for a in (matchValue, condition, value)]):
+            return self.checkConditions(matchValue, condition, value, not exitOn)
 
         # Perform comparison
         if condition == "gt":
             # Match must be greater than value
-            return True if match > value else False
+            return True if matchValue > value else False
         elif condition == "gte":
             # Match must be greater than or equal to value
-            return True if match >= value else False
+            return True if matchValue >= value else False
         elif condition == "lt":
             # Match must be less than value
-            return True if match < value else False
+            return True if matchValue < value else False
         elif condition == "lte":
             # Match must be less than or equal to value
-            return True if match <= value else False
+            return True if matchValue <= value else False
         elif condition == "eq":
             # Match must be equal to value
-            return True if match == value else False
+            return True if matchValue == value else False
         elif condition == "ne":
             # Match must not be equal to value
-            return True if match != value else False
+            return True if matchValue != value else False
         elif condition == "false":
             # Condition: false is a method to ensure a policy entry
             # is never matched, possibly for testing purposes
