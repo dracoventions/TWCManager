@@ -24,10 +24,12 @@ class TWCMaster:
     config = None
     consumptionValues = {}
     debugLevel = 0
+    debugOutputToFile = False
     generationValues = {}
     lastkWhMessage = time.time()
     lastkWhPoll = 0
     lastTWCResponseMsg = None
+    logger = None
     masterTWCID = ""
     maxAmpsToDivideAmongSlaves = 0
     modules = {}
@@ -59,8 +61,7 @@ class TWCMaster:
     spikeAmpsToCancel6ALimit = 16
     subtractChargerLoad = False
     teslaLoginAskLater = False
-    TWCID = None
-    logger = None
+    TWCID = None    
 
     # TWCs send a seemingly-random byte after their 2-byte TWC id in a number of
     # messages. I call this byte their "Sign" for lack of a better term. The byte
@@ -73,18 +74,20 @@ class TWCMaster:
 
     def __init__(self, TWCID, config):
         self.config = config
-        self.debugLevel = config["config"]["debugLevel"]
+        self.debugLevel = config["config"].get("debugLevel", 1)
+        self.debugOutputToFile = config["config"].get("debugOutputToFile", False)
         self.TWCID = TWCID
         self.subtractChargerLoad = config["config"]["subtractChargerLoad"]
         self.advanceHistorySnap()
 
-        self.logger = logging.getLogger("TWCManager")
-        self.logger.setLevel(logging.INFO)
-        handler = TimedRotatingFileHandler(
-            "/etc/twcmanager/twcmanager.log", when="H", interval=1, backupCount=24
-        )
-        handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
-        self.logger.addHandler(handler)
+        if self.debugOutputToFile == True:
+            self.logger = logging.getLogger("TWCManager")
+            self.logger.setLevel(logging.INFO)
+            handler = TimedRotatingFileHandler(
+                "/etc/twcmanager/twcmanager.log", when="H", interval=1, backupCount=24
+            )
+            handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
+            self.logger.addHandler(handler)
 
         # Register ourself as a module, allows lookups via the Module architecture
         self.registerModule({"name": "master", "ref": self, "type": "Master"})
@@ -166,8 +169,8 @@ class TWCMaster:
         if len(function) < 10:
             for a in range(len(function), 10):
                 function += " "
-
-        self.logger.info(function + " %02d " % minlevel + message)
+        if self.debugOutputToFile == True:
+            self.logger.info(function + " %02d " % minlevel + message)
 
         if self.debugLevel >= minlevel:
             print(

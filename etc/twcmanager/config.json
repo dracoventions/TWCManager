@@ -165,6 +165,11 @@
         # 11 is more than all info.  ;)
         "debugLevel": 1,
 
+        # If set to true, writes a rotating log file to /etc/twcmanager
+        # one file every hour, oldest will be saved for 24 hours.
+        # dubgLevel won't have any effect on logging to file.
+        "debugOutputToFile": true,
+
         # Choose whether to display milliseconds after time on each line of debug info.
         "displayMilliseconds": false,
 
