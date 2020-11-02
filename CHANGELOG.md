@@ -4,7 +4,10 @@ This document logs the changes per release of TWCManager.
 
 ## v1.2.1 - Current development branch
 
+  * Adjust charger load calculation based on real power measurements (thanks @dschuesae)
+  * Introduce Scheduled Flex Charging feature (thanks @dschuesae)
   * Updated legacy Web UI to allow all EU/US amp selections (thanks @dschuesae)
+  * Fix Web UI favicon (thanks @hopfi2k)
   * Bugfixes
       * Fix a bug with the legacy web interface which causes the Resume Track Green Energy setting of None to fail. Also added a deprecation notice to the web interface to ensure people don't inadvertently use it over the modular interface.
 
