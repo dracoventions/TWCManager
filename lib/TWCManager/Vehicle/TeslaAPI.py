@@ -351,6 +351,12 @@ class TeslaAPI:
                                 # reaching this point later.
                                 vehicle.delayNextWakeAttempt = 15 * 60
                         elif state == "offline":
+                            # In any case it can make sense to wait 10 seconds here.
+                            # I had the issue, that the next command was sent too
+                            # fast and only a reboot of the Raspberry resultet in
+                            # possible reconnect to the API (even the Tesla App
+                            # couldn't connect anymore).
+                            self.time.sleep(10)
                             if now - vehicle.firstWakeAttemptTime <= 31 * 60:
                                 # A car in offline state is presumably not connected
                                 # wirelessly so our wake_up command will not reach
