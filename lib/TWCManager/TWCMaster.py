@@ -164,7 +164,7 @@ class TWCMaster:
     def countSlaveTWC(self):
         return int(len(self.slaveTWCRoundRobin))
 
-    def debugLog(self, minlevel, function, message):
+    def debugLog(self, minlevel, function, message, fields = []):
         # Trim/pad the module name as needed
         if len(function) < 10:
             for a in range(len(function), 10):
@@ -172,12 +172,17 @@ class TWCMaster:
         if self.debugOutputToFile == True:
             self.logger.info(function + " %02d " % minlevel + message)
 
-        if self.debugLevel >= minlevel:
-            print(
-                colored(self.time_now() + " ", "yellow")
-                + colored(f("{function}"), "green")
-                + colored(f(" {minlevel} "), "cyan")
-                + f("{message}")
+        # Pass the debugLog message to all enabled Logging modules
+        for module in self.getModulesByType("Logging"):
+            module["ref"].debugLog(
+                {
+                    "debugLevel": self.debugLevel,
+                    "fields": fields,
+                    "function": function,
+                    "logTime": self.time_now(),
+                    "minLevel": minlevel,
+                    "message": message,
+                }
             )
 
     def deleteBackgroundTask(self, task):

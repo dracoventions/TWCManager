@@ -62,6 +62,7 @@ modules_available = [
     "EMS.TeslaPowerwall2",
     "EMS.TED",
     "EMS.OpenHab",
+    "EMS.Kostal",
     "Logging.ConsoleLogging",
     "Logging.CSVLogging",
     "Logging.MySQLLogging",

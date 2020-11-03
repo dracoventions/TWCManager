@@ -60,6 +60,12 @@ class SQLiteLogging:
           );
         """
 
+    def debugLog(self, logdata):
+        # debugLog is something of a catch-all if we don't have a specific
+        # logging function for the given data. It allows a log entry to be
+        # passed to us for storage.
+        return
+
     def slavePower(self, data):
         # Not Yet Implemented
         return None

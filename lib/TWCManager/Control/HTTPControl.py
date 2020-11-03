@@ -67,6 +67,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
         <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css' integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'>
         """
+        page += (
+                "<link rel='icon' type='image/png' href='https://raw.githubusercontent.com/ngardiner/TWCManager"
+                "/master/tree/%s/html/favicon.png'> "
+                % self.version
+        )
         return page
 
     def do_css(self):
@@ -220,10 +225,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     <nav class='navbar fixed-top navbar-dark bg-dark' role='navigation'>
       <a class='navbar-brand' href='/'>TWCManager</a>
         """
-        page += (
-            "<link rel='icon' type='image/png' href='https://raw.githubusercontent.com/ngardiner/TWCManager/master/tree/%s/html/favicon.png'>"
-            % self.version
-        )
         page += self.navbar_item("/", "Home")
         page += self.navbar_item("/policy", "Policy")
         page += self.navbar_item("/schedule", "Schedule")

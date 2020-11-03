@@ -47,6 +47,12 @@ class MySQLLogging:
             self.master.debugLog(1, "MySQLLog", "Error connecting to MySQL database")
             self.master.debugLog(1, "MySQLLog", str(e))
 
+    def debugLog(self, logdata):
+        # debugLog is something of a catch-all if we don't have a specific
+        # logging function for the given data. It allows a log entry to be
+        # passed to us for storage.
+        return
+
     def greenEnergy(self, data):
         # Check if this status is muted
         if self.configLogging["mute"].get("GreenEnergy", 0):
