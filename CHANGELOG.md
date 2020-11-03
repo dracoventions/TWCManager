@@ -4,6 +4,7 @@ This document logs the changes per release of TWCManager.
 
 ## v1.2.1 - Current development branch
 
+  * Added support for Kostal inverters (Pico/Plenticore) (thanks @hopfi2k)
   * Adjust charger load calculation based on real power measurements (thanks @dschuesae)
   * Introduce Scheduled Flex Charging feature (thanks @dschuesae)
   * Updated legacy Web UI to allow all EU/US amp selections (thanks @dschuesae)

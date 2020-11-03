@@ -36,11 +36,12 @@ EMS Interfaces read solar generation and/or consumption values from an external 
 | Platform         | Status        | Details                 |
 | ---------------- | ------------- | ----------------------- |
 | Dutch SmartMeter | In Development | Supports DSMR Serial Protocol |
-| [Enphase](docs/modules/EMS_Enphase.md) | Available v1.2.1 | Supports Enphase Enlighten API |
+| [Enphase](docs/modules/EMS_Enphase.md)     | Available v1.2.1 | Supports Enphase Enlighten API |
 | [Fronius Inverter](docs/modules/EMS_Fronius.md) | Available v1.1.0 | Supports Fronius Inverter API |
-| [HomeAssistant](docs/modules/EMS_HASS.md) | Available v1.0.1 | Supports HomeAssistant sensors |
+| [HomeAssistant](docs/modules/EMS_HASS.md)  | Available v1.0.1 | Supports HomeAssistant sensors |
+| [Kostal (Pico/Plenticore)](docs/modules/EMS_Kostal.md) | Available v1.2.1 | Support for Kostal Inverters via ModBus |
 | [SolarEdge](docs/modules/EMS_SolarEdge.md) | Available v1.2.0 | Support for SolarEdge API |
-| [SolarLog](docs/modules/EMS_SolarLog.md) | Available v1.2.0 | Supports SolarLog Base API |
+| [SolarLog](docs/modules/EMS_SolarLog.md)   | Available v1.2.0 | Supports SolarLog Base API |
 | [Tesla Powerwall2](docs/modules/EMS_Powerwall2.md) | Available v1.1.3 | Support for Tesla Powerwall 2 |
 | [The Energy Detective](docs/modules/EMS_TED.md) | Available v1.1.2 | Support for TED (The Energy Detective) |
 | [openHAB](docs/modules/EMS_OpenHab.md) | Available v1.2.0 | Supports openHAB items |
