@@ -120,7 +120,7 @@ class Kostal:
         self.master.debugLog(
             10,
             'Kostal',
-            'Total Solar Power available: ' + f'{self.totalDCPower:5.2f} W'
+            'Total Solar Power available: ' + f('{self.totalDCPower:5.2f} W')
         )
 
     # update the house consumption from the grid
@@ -130,7 +130,7 @@ class Kostal:
         self.master.debugLog(
             10,
             'Kostal',
-            'Home consumption from Grid: ' + f'{self.home_fromGrid:5.2f} W'
+            'Home consumption from Grid: ' + f('{self.home_fromGrid:5.2f} W')
         )
 
     # update the house consumption from solar
@@ -140,7 +140,7 @@ class Kostal:
         self.master.debugLog(
             10,
             'Kostal',
-            'Home consumption from Solar: ' + f'{self.home_fromSolar:5.2f} W'
+            'Home consumption from Solar: ' + f('{self.home_fromSolar:5.2f} W')
         )
 
     # determine the inverter model (type) and the IP it's connected to
@@ -172,7 +172,7 @@ class Kostal:
             self.master.debugLog(
                 10,
                 'Kostal',
-                'Total consumption from Grid: ' + f'{self.home_fromGrid + self.home_fromSolar} W'
+                'Total consumption from Grid: ' + f('{self.home_fromGrid + self.home_fromSolar} W')
             )
             return float(self.home_fromGrid + self.home_fromSolar)
 
