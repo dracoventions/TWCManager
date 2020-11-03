@@ -1,3 +1,5 @@
+import mimetypes
+import pathlib
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from termcolor import colored
@@ -644,6 +646,23 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         url = urllib.parse.urlparse(self.path)
 
+        # serve local static content files (from './lib/TWCManager/Control/static/' dir)
+        if url.path.startswith("/static/"):
+            content_type = mimetypes.guess_type(url.path)[0]
+
+            # only server know content type
+            if content_type is not None:
+                filename = pathlib.Path(__file__).resolve().parent.as_posix() + url.path
+                self.send_response(200)
+                self.send_header('Content-type', content_type)
+                self.end_headers()
+
+                # send static content (e.g. images) to browser
+                with open(filename, 'rb') as staticFile:
+                    self.wfile.write(staticFile.read())
+                    return
+
+        # server API requests
         if url.path.startswith("/api/"):
             self.do_API_GET()
             return
