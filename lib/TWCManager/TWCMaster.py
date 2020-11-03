@@ -11,9 +11,8 @@ import threading
 import time
 from ww import f
 import math
-import logging
-from logging.handlers import TimedRotatingFileHandler
 import random
+
 
 class TWCMaster:
 
@@ -29,7 +28,6 @@ class TWCMaster:
     lastkWhMessage = time.time()
     lastkWhPoll = 0
     lastTWCResponseMsg = None
-    logger = None
     masterTWCID = ""
     maxAmpsToDivideAmongSlaves = 0
     modules = {}
@@ -61,7 +59,7 @@ class TWCMaster:
     spikeAmpsToCancel6ALimit = 16
     subtractChargerLoad = False
     teslaLoginAskLater = False
-    TWCID = None    
+    TWCID = None
 
     # TWCs send a seemingly-random byte after their 2-byte TWC id in a number of
     # messages. I call this byte their "Sign" for lack of a better term. The byte
@@ -79,15 +77,6 @@ class TWCMaster:
         self.TWCID = TWCID
         self.subtractChargerLoad = config["config"]["subtractChargerLoad"]
         self.advanceHistorySnap()
-
-        if self.debugOutputToFile == True:
-            self.logger = logging.getLogger("TWCManager")
-            self.logger.setLevel(logging.INFO)
-            handler = TimedRotatingFileHandler(
-                "/etc/twcmanager/twcmanager.log", when="H", interval=1, backupCount=24
-            )
-            handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
-            self.logger.addHandler(handler)
 
         # Register ourself as a module, allows lookups via the Module architecture
         self.registerModule({"name": "master", "ref": self, "type": "Master"})
@@ -164,26 +153,34 @@ class TWCMaster:
     def countSlaveTWC(self):
         return int(len(self.slaveTWCRoundRobin))
 
-    def debugLog(self, minlevel, function, message, fields = []):
+    def debugLog(self, minlevel, function, message, fields=[]):
         # Trim/pad the module name as needed
         if len(function) < 10:
             for a in range(len(function), 10):
                 function += " "
-        if self.debugOutputToFile == True:
-            self.logger.info(function + " %02d " % minlevel + message)
-
+        data = {
+            "debugLevel": self.debugLevel,
+            "fields": fields,
+            "function": function,
+            "logTime": self.time_now(),
+            "minLevel": minlevel,
+            "message": message,
+        }
+        atLeastOne = False
         # Pass the debugLog message to all enabled Logging modules
         for module in self.getModulesByType("Logging"):
-            module["ref"].debugLog(
-                {
-                    "debugLevel": self.debugLevel,
-                    "fields": fields,
-                    "function": function,
-                    "logTime": self.time_now(),
-                    "minLevel": minlevel,
-                    "message": message,
-                }
-            )
+            atLeastOne = True
+            module["ref"].debugLog(data)
+
+        # First calls won't be printed, because there is no logger registered
+        if not (atLeastOne):
+            if data["debugLevel"] >= data["minLevel"]:
+                print(
+                    colored(data["logTime"] + " ", "yellow")
+                    + colored(f("{data['function']}"), "green")
+                    + colored(f(" {data['minLevel']} "), "cyan")
+                    + f("{data['message']}")
+                )
 
     def deleteBackgroundTask(self, task):
         del self.backgroundTasksCmds[task["cmd"]]

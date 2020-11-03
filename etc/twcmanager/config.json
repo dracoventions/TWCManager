@@ -165,11 +165,6 @@
         # 11 is more than all info.  ;)
         "debugLevel": 1,
 
-        # If set to true, writes a rotating log file to /etc/twcmanager
-        # one file every hour, oldest will be saved for 24 hours.
-        # dubgLevel won't have any effect on logging to file.
-        "debugOutputToFile": true,
-
         # Choose whether to display milliseconds after time on each line of debug info.
         "displayMilliseconds": false,
 
@@ -344,6 +339,26 @@
         "Console": {
             "enabled": true
         },
+        "FileLogger": {
+          "enabled": false,
+          # The path under which the various log files will be stored.
+          # Make sure the user which runs the TWCManager process can write to
+          # this directory.
+          "path": "/etc/twcmanager/log",
+          # The mute parameter allows turning specific logging on or off.
+          # In the example below, charge sessions are logged, but not the
+          # regular charger status messages. These are valid under any of the
+          # logging modules
+          # For the debug output, you can mute Log Levels greater than the 
+          # value specified here.
+          "mute":{
+              "ChargeSessions": false,
+              "GreenEnergy": false,
+              "SlavePower": false,
+              "SlaveStatus": false,
+              "DebugLogLevelGreaterThan": 1
+          }                 
+        },
         "CSV": {
             "enabled": false,
             # The path under which the various csv files will be stored.
@@ -358,7 +373,7 @@
                 "ChargeSessions": false,
                 "GreenEnergy": true,
                 "SlavePower": true,
-                "SlaveStatus": true
+                "SlaveStatus": true,
             }
         },
         "MySQL": {

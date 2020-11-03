@@ -304,7 +304,7 @@ class Policy:
             f(
                 "Evaluating Policy match ({colored(match, 'red')} [{matchValue}]), condition ({colored(condition, 'red')}), value ({colored(value, 'red')})"
             ),
-        )        
+        )
 
         if all([isinstance(a, list) for a in (matchValue, condition, value)]):
             return self.checkConditions(matchValue, condition, value, not exitOn)

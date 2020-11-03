@@ -1,16 +1,21 @@
 # ConsoleLogging module. Provides output to console for logging.
 
 from sys import modules
-from termcolor import colored
+import logging
+from logging.handlers import TimedRotatingFileHandler
 from ww import f
+import re
 
 
-class ConsoleLogging:
+class FileLogging:
 
     config = None
     configConfig = None
     configLogging = None
     status = True
+    logger = None
+    mute = {}
+    muteDebugLogLevelGreaterThan = 1
 
     def __init__(self, master):
         self.master = master
@@ -20,49 +25,66 @@ class ConsoleLogging:
         except KeyError:
             self.configConfig = {}
         try:
-            self.configLogging = master.config["logging"]["Console"]
+            self.configLogging = master.config["logging"]["FileLogger"]
         except KeyError:
             self.configLogging = {}
-        self.status = self.configLogging.get("enabled", True)
+        self.status = self.configLogging.get("enabled", False)
 
         # Unload if this module is disabled or misconfigured
         if not self.status:
-            self.master.releaseModule("lib.TWCManager.Logging", "ConsoleLogging")
+            self.master.releaseModule("lib.TWCManager.Logging", "FileLogging")
             return None
 
         # Initialize the mute config tree if it is not already
-        if not self.configLogging.get("mute", None):
-            self.configLogging["mute"] = {}
+        self.mute = self.configLogging.get("mute", {})
+        self.muteDebugLogLevelGreaterThan = self.mute.get("DebugLogLevelGreaterThan", 1)
+
+        # Initialize Logger
+        self.logger = logging.getLogger("TWCManager")
+        self.logger.setLevel(logging.INFO)
+        handler = TimedRotatingFileHandler(
+            self.configLogging.get("path", "/etc/twcmanager/log") + "/logfile",
+            when="H",
+            interval=1,
+            backupCount=24,
+        )
+        handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
+        self.logger.addHandler(handler)
 
     def debugLog(self, logdata):
         # debugLog is something of a catch-all if we don't have a specific
         # logging function for the given data. It allows a log entry to be
         # passed to us for storage.
-
-        if logdata["debugLevel"] >= logdata["minLevel"]:
-            print(
-                colored(logdata["logTime"] + " ", "yellow")
-                + colored(f("{logdata['function']}"), "green")
-                + colored(f(" {logdata['minLevel']} "), "cyan")
-                + f("{logdata['message']}")
+        if self.muteDebugLogLevelGreaterThan >= logdata["minLevel"]:
+            self.logger.info(
+                logdata["function"]
+                + " %02d " % logdata["minLevel"]
+                + self.escape_ansi(logdata["message"])
             )
-
         return
+
+    def escape_ansi(self, line):
+        ansi_escape = re.compile(r"(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]")
+        return ansi_escape.sub("", line)
+
+    def writeLog(self, functionName, message):
+        self.debugLog(
+            {
+                "function": functionName,
+                "minLevel": 0,
+                "message": message,
+            }
+        )
 
     def greenEnergy(self, data):
         # Check if this status is muted
-        if self.configLogging["mute"].get("GreenEnergy", 0):
+        if self.mute.get("GreenEnergy", 0):
             return None
 
-        genwattsDisplay = f("{data.get('genWatts', 0):.0f}W")
-        conwattsDisplay = f("{data.get('conWatts', 0):.0f}W")
-        chgwattsDisplay = f("{data.get('chgWatts', 0):.0f}W")
-
-        self.master.debugLog(
-            1,
+        self.writeLog(
             "TWCManager",
             f(
-                "Green energy generates {colored(genwattsDisplay, 'magenta')}, Consumption {colored(conwattsDisplay, 'magenta')}, Charger Load {colored(chgwattsDisplay, 'magenta')}"
+                "Green energy generates {data.get('genWatts', 0):.0f}W, Consumption {data.get('conWatts', 0):.0f}W, Charger Load {data.get('chgWatts', 0):.0f}W"
             ),
         )
 
@@ -72,11 +94,10 @@ class ConsoleLogging:
 
     def slaveStatus(self, data):
         # Check if this status is muted
-        if self.configLogging["mute"].get("SlaveStatus", 0):
+        if self.mute.get("SlaveStatus", 0):
             return None
 
-        self.master.debugLog(
-            1,
+        self.writeLog(
             "TWCManager",
             "Slave TWC %02X%02X: Delivered %d kWh, voltage per phase: (%d, %d, %d)."
             % (
@@ -91,29 +112,25 @@ class ConsoleLogging:
 
     def startChargeSession(self, data):
         # Check if this status is muted
-        if self.configLogging["mute"].get("ChargeSessions", 0):
+        if self.mute.get("ChargeSessions", 0):
             return None
 
         # Called when a Charge Session Starts.
         twcid = "%02X%02X" % (data["TWCID"][0], data["TWCID"][0])
-        self.master.debugLog(
-            1, "TWCManager", "Charge Session Started for Slave TWC %s" % twcid
-        )
+        self.writeLog("TWCManager", "Charge Session Started for Slave TWC %s" % twcid)
 
     def stopChargeSession(self, data):
         # Check if this status is muted
-        if self.configLogging["mute"].get("ChargeSessions", 0):
+        if self.mute.get("ChargeSessions", 0):
             return None
 
         # Called when a Charge Session Ends.
         twcid = "%02X%02X" % (data["TWCID"][0], data["TWCID"][0])
-        self.master.debugLog(
-            1, "TWCManager", "Charge Session Stopped for Slave TWC %s" % twcid
-        )
+        self.writeLog("TWCManager", "Charge Session Stopped for Slave TWC %s" % twcid)
 
     def updateChargeSession(self, data):
         # Check if this status is muted
-        if self.configLogging["mute"].get("ChargeSessions", 0):
+        if self.mute.get("ChargeSessions", 0):
             return None
 
         # Called when additional information needs to be updated for a

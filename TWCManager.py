@@ -45,7 +45,13 @@ import requests
 
 # Define available modules for the instantiator
 # All listed modules will be loaded at boot time
+# Logging modules should be the first one to load
 modules_available = [
+    "Logging.ConsoleLogging",
+    "Logging.FileLogging",
+    "Logging.CSVLogging",
+    "Logging.MySQLLogging",
+    #    "Logging.SQLiteLogging",
     "Interface.Dummy",
     "Interface.RS485",
     "Interface.TCP",
@@ -63,10 +69,6 @@ modules_available = [
     "EMS.TED",
     "EMS.OpenHab",
     "EMS.Kostal",
-    "Logging.ConsoleLogging",
-    "Logging.CSVLogging",
-    "Logging.MySQLLogging",
-    #    "Logging.SQLiteLogging",
     "Status.HASSStatus",
     "Status.MQTTStatus",
 ]
@@ -116,7 +118,7 @@ fakeTWCID = bytearray(b"\x77\x77")
 
 def debugLog(minlevel, message):
     if master == None:
-        # I don't think any call will come through this
+        # It arrives only here if nothing is set
         if config["config"]["debugLevel"] >= minlevel:
             print(
                 colored(master.time_now() + " ", "yellow")
@@ -1420,8 +1422,8 @@ while True:
 
     except Exception as e:
         # Print info about unhandled exceptions, then continue.  Search for
-        # 'Traceback' to find these in the log.        
-        traceback.print_exc()        
+        # 'Traceback' to find these in the log.
+        traceback.print_exc()
         debugLog(1, "Unhandled Exception:" + traceback.format_exc())
         # Sleep 5 seconds so the user might see the error.
         time.sleep(5)
