@@ -35,6 +35,12 @@ class CSVLogging:
         if not self.configLogging.get("mute", None):
             self.configLogging["mute"] = {}
 
+    def debugLog(self, logdata):
+        # debugLog is something of a catch-all if we don't have a specific
+        # logging function for the given data. It allows a log entry to be
+        # passed to us for storage.
+        return
+
     def delimit(self):
         # Return the configured delimiter
         return ","

@@ -34,6 +34,21 @@ class ConsoleLogging:
         if not self.configLogging.get("mute", None):
             self.configLogging["mute"] = {}
 
+    def debugLog(self, logdata):
+        # debugLog is something of a catch-all if we don't have a specific
+        # logging function for the given data. It allows a log entry to be
+        # passed to us for storage.
+
+        if logdata['debugLevel'] >= logdata['minLevel']:
+            print(
+                colored(logdata['logTime'] + " ", "yellow")
+                + colored(f("{logdata['function']}"), "green")
+                + colored(f(" {logdata['minLevel']} "), "cyan")
+                + f("{logdata['message']}")
+            )
+
+        return
+
     def greenEnergy(self, data):
         # Check if this status is muted
         if self.configLogging["mute"].get("GreenEnergy", 0):
