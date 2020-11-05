@@ -44,11 +44,8 @@ class HTTPControl:
 
         httpd = ThreadingSimpleServer(("", self.httpPort), HTTPControlHandler)
         httpd.master = master
-        self.debugLog(1, "Serving at port: " + str(self.httpPort))
+        self.master.debugLog(1, "HTTPCtrl", "Serving at port: " + str(self.httpPort))
         threading.Thread(target=httpd.serve_forever, daemon=True).start()
-
-    def debugLog(self, minlevel, message):
-        self.master.debugLog(minlevel, "HTTPCtrl", message)
 
 
 class HTTPControlHandler(BaseHTTPRequestHandler):
@@ -1082,12 +1079,9 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "</tr></table></td></tr></table>"
         return page
 
-    def debugLog(self, minlevel, message):
-        self.server.master.debugLog(minlevel, "HTTPCtrl", message)
-
     def debugLogAPI(self, message):
-        self.debugLog(
-            10,
+        self.server.master.debugLog(10, 
+            "HTTPCtrl", 
             message
             + " (Url: "
             + str(self.url.path)

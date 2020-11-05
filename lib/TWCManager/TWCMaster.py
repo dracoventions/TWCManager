@@ -156,7 +156,7 @@ class TWCMaster:
     def debugLog(self, minlevel, function, message, fields=[]):
         # Trim/pad the module name as needed
         if len(function) < 10:
-            for a in range(len(function), 10):
+            for _ in range(len(function), 10):
                 function += " "
         data = {
             "debugLevel": self.debugLevel,

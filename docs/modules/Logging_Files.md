@@ -17,7 +17,7 @@ The following options exist for this Logging module:
 | Option  | Example  | Description |
 | ------- | -------- | ----------- |
 | enabled | *false*  | Boolean value determining if the logging module should be activated. The default is *false*. |
-| path    | */etc/twcmanager/loh* | *required* A path to create the log files under. Make sure you make this path writable to the user that TWCManager runs as. |
+| path    | */etc/twcmanager/log* | *required* A path to create the log files under. Make sure you make this path writable to the user that TWCManager runs as. |
 
 ### Muting Logging Topics
 
