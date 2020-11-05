@@ -56,6 +56,7 @@ This can be useful if you would like to track charger activity and use it for gr
 | ----------- | -------- |
 | [Console](docs/modules/Logging_Console.md) | Print output to console |
 | [CSV](docs/modules/Logging_CSV.md)         | Log data to CSV files |
+| [Files](docs/modules/Logging_Files.md)   | Log data to a log files |
 | [MySQL](docs/modules/Logging_MySQL.md)     | Log data to a MySQL Database |
 | [SQLite](docs/modules/Logging_SQLite.md)   | Log data to a SQLite Database |
 
