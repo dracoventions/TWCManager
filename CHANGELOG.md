@@ -5,8 +5,11 @@ This document logs the changes per release of TWCManager.
 ## v1.2.1 - Current development branch
 
   * Added support for Kostal inverters (Pico/Plenticore) (thanks @hopfi2k)
+  * Added support for serving static files via the inbuilt HTTPControl web server (thanks @hopfi2k)
   * Adjust charger load calculation based on real power measurements (thanks @dschuesae)
   * Introduce Scheduled Flex Charging feature (thanks @dschuesae)
+  * Introduce new FileLogging module to allow logging to text file (thanks @dschuesae)
+  * Moved debug logging to Logging modules to allow logging to file, database or other targets
   * Updated legacy Web UI to allow all EU/US amp selections (thanks @dschuesae)
   * Fix Web UI favicon (thanks @hopfi2k)
   * Bugfixes
