@@ -93,7 +93,6 @@ class TeslaAPI:
             or self.getCarApiTokenExpireTime() - now < 30 * 24 * 60 * 60
         ):
             req = None
-            apiResponse = b""
             client_id = (
                 "81527cff06843c8634fdc09e8ac0abefb46ac849f38fe1e431c2ef2106796384"
             )
@@ -180,7 +179,9 @@ class TeslaAPI:
                 }
                 try:
                     req = self.requests.get(url, headers=headers)
-                    self.master.debugLog(8, "TeslaAPI", "Car API cmd " + str(req))
+                    self.master.debugLog(
+                        8, "TeslaAPI", "Car API cmd vehicles " + str(req)
+                    )
                     apiResponseDict = self.json.loads(req.text)
                 except:
                     self.master.debugLog(
@@ -280,7 +281,9 @@ class TeslaAPI:
                     }
                     try:
                         req = self.requests.post(url, headers=headers)
-                        self.master.debugLog(8, "TeslaAPI", "Car API cmd" + str(req))
+                        self.master.debugLog(
+                            8, "TeslaAPI", "Car API cmd wake_up" + str(req)
+                        )
                         apiResponseDict = self.json.loads(req.text)
                     except:
                         pass
@@ -636,10 +639,14 @@ class TeslaAPI:
             }
 
             # Retry up to 3 times on certain errors.
-            for retryCount in range(0, 3):
+            for _ in range(0, 3):
                 try:
                     req = self.requests.post(url, headers=headers)
-                    self.master.debugLog(8, "TeslaAPI", "Car API cmd" + str(req))
+                    self.master.debugLog(
+                        8,
+                        "TeslaAPI",
+                        "Car API cmd charge_" + startOrStop + " " + str(req),
+                    )
                     apiResponseDict = self.json.loads(req.text)
                 except:
                     pass
@@ -776,7 +783,9 @@ class TeslaAPI:
             self.config["config"]["debugLevel"] >= 1
             and self.getLastStartOrStopChargeTime() == now
         ):
-            print(time_now() + ": Car API " + startOrStop + " charge result: " + result)
+            self.master.debugLog(
+                1, "TeslaAPI", "Car API " + startOrStop + " charge result: " + result
+            )
 
         return result
 
@@ -1154,10 +1163,12 @@ class CarApiVehicle:
         }
 
         # Retry up to 3 times on certain errors.
-        for retryCount in range(0, 3):
+        for _ in range(0, 3):
             try:
                 req = self.requests.get(url, headers=headers)
-                self.carapi.master.debugLog(8, "TeslaVehic", "Car API cmd" + str(req))
+                self.carapi.master.debugLog(
+                    8, "TeslaVehic", "Car API cmd " + url + " " + str(req)
+                )
                 apiResponseDict = self.json.loads(req.text)
                 # This error can happen here as well:
                 #   {'response': {'reason': 'could_not_wake_buses', 'result': False}}
@@ -1290,10 +1301,12 @@ class CarApiVehicle:
         }
         body = {"percent": limit}
 
-        for retryCount in range(0, 3):
+        for _ in range(0, 3):
             try:
                 req = self.requests.post(url, headers=headers, json=body)
-                self.carapi.master.debugLog(8, "TeslaVehic", "Car API cmd" + str(req))
+                self.carapi.master.debugLog(
+                    8, "TeslaVehic", "Car API cmd set_charge_limit " + str(req)
+                )
 
                 apiResponseDict = self.json.loads(req.text)
             except:

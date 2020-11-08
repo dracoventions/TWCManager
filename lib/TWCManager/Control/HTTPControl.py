@@ -21,7 +21,6 @@ class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
 class HTTPControl:
     configConfig = {}
     configHTTP = {}
-    debugLevel = 1
     httpPort = 8080
     master = None
     status = False
@@ -37,7 +36,6 @@ class HTTPControl:
             self.configHTTP = master.config["control"]["HTTP"]
         except KeyError:
             self.configHTTP = {}
-        self.debugLevel = self.configConfig.get("debugLevel", 1)
         self.httpPort = self.configHTTP.get("listenPort", 8080)
         self.status = self.configHTTP.get("enabled", False)
 
@@ -55,6 +53,7 @@ class HTTPControl:
 class HTTPControlHandler(BaseHTTPRequestHandler):
     fields = {}
     path = ""
+    url = None
     post_data = ""
     version = "v1.2.1"
 
@@ -97,7 +96,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       <tbody>"""
         for i in (x for y in (range(6, 24), range(0, 6)) for x in y):
             page += "<tr><th scope='row'>%02d</th>" % (i)
-            for day in range(0, 6):
+            for _ in range(0, 6):
                 page += "<td>&nbsp;</td>"
             page += "</tr>"
         page += "</tbody>"
@@ -245,8 +244,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         return page
 
     def do_API_GET(self):
-        url = urllib.parse.urlparse(self.path)
-        if url.path == "/api/getConfig":
+        self.debugLogAPI("Starting API GET")
+        if self.url.path == "/api/getConfig":
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
@@ -257,7 +256,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             json_data = re.sub(r'"apiKey": ".*?",', "", json_datas)
             self.wfile.write(json_data.encode("utf-8"))
 
-        elif url.path == "/api/getPolicy":
+        elif self.url.path == "/api/getPolicy":
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
@@ -267,7 +266,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             )
             self.wfile.write(json_data.encode("utf-8"))
 
-        elif url.path == "/api/getSlaveTWCs":
+        elif self.url.path == "/api/getSlaveTWCs":
             data = {}
             totals = {
                 "lastAmpsOffered": 0,
@@ -320,7 +319,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             json_data = json.dumps(data)
             self.wfile.write(json_data.encode("utf-8"))
 
-        elif url.path == "/api/getStatus":
+        elif self.url.path == "/api/getStatus":
             data = self.server.master.getStatus()
             self.send_response(200)
             self.send_header("Content-type", "application/json")
@@ -329,10 +328,10 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             json_data = json.dumps(data)
             try:
                 self.wfile.write(json_data.encode("utf-8"))
-            except BrokenPipeError as e:
-                self.master.debugLog(10, "HTTPCtrl", "Connection Error: Broken Pipe")
+            except BrokenPipeError:
+                self.debugLogAPI("Connection Error: Broken Pipe")
 
-        elif url.path == "/api/getHistory":
+        elif self.url.path == "/api/getHistory":
             output = []
             now = datetime.now().replace(second=0, microsecond=0).astimezone()
             startTime = now - timedelta(days=2) + timedelta(minutes=5)
@@ -377,7 +376,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write("".encode("utf-8"))
 
+        self.debugLogAPI("Ending API GET")
+
     def do_API_POST(self):
+
+        self.debugLogAPI("Starting API POST")
 
         if self.url.path == "/api/chargeNow":
             data = json.loads(self.post_data.decode("UTF-8"))
@@ -439,8 +442,9 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             saturday = bool(data.get("saturday", False))
             sunday = bool(data.get("sunday", False))
             amps = int(data.get("amps", -1))
-            batterySize = int(data.get("flexBatterySize",
-                                       100))  # using 100 as default, because with this every available car at moment should be finished with charging at the ending time
+            batterySize = int(
+                data.get("flexBatterySize", 100)
+            )  # using 100 as default, because with this every available car at moment should be finished with charging at the ending time
             flexStart = int(data.get("flexStartEnabled", False))
             weekDaysBitmap = (
                     (1 if monday else 0)
@@ -480,6 +484,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
             self.wfile.write("".encode("utf-8"))
+
+        self.debugLogAPI("Ending API POST")
 
     def do_get_debug(self):
         page = "<html><head>"
@@ -644,10 +650,10 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         return page
 
     def do_GET(self):
-        url = urllib.parse.urlparse(self.path)
+        self.url = urllib.parse.urlparse(self.path)
 
         # serve local static content files (from './lib/TWCManager/Control/static/' dir)
-        if url.path.startswith('/static/'):
+        if self.url.path.startswith('/static/'):
             content_type = mimetypes.guess_type(url.path)[0]
 
             # only server know content type
@@ -670,14 +676,14 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                     return
 
         # server API requests
-        if url.path.startswith("/api/"):
+        if self.url.path.startswith("/api/"):
             self.do_API_GET()
             return
 
         if (
-                url.path == "/"
-                or url.path == "/apiacct/True"
-                or url.path == "/apiacct/False"
+            self.url.path == "/"
+            or self.url.path == "/apiacct/True"
+            or self.url.path == "/apiacct/False"
         ):
             self.send_response(200)
             self.send_header("Content-type", "text/html")
@@ -695,12 +701,12 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             page += "<table border='0' padding='0' margin='0' width='100%'>"
             page += "<tr width='100%'><td valign='top' width='70%'>"
 
-            if url.path == "/apiacct/False":
+            if self.url.path == "/apiacct/False":
                 page += "<font color='red'><b>Failed to log in to Tesla Account. Please check username and password and try again.</b></font>"
 
             if (
-                    not self.server.master.teslaLoginAskLater
-                    and url.path != "/apiacct/True"
+                not self.server.master.teslaLoginAskLater
+                and self.url.path != "/apiacct/True"
             ):
                 # Check if we have already stored the Tesla credentials
                 # If we can access the Tesla API okay, don't prompt
@@ -709,7 +715,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 ).car_api_available():
                     page += self.request_teslalogin()
 
-            if url.path == "/apiacct/True":
+            if self.url.path == "/apiacct/True":
                 page += "<b>Thank you, successfully fetched Tesla API token."
 
             page += self.show_status()
@@ -724,7 +730,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.wfile.write(page.encode("utf-8"))
             return
 
-        if url.path == "/debug":
+        if self.url.path == "/debug":
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
@@ -732,7 +738,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.wfile.write(page.encode("utf-8"))
             return
 
-        if url.path == "/policy":
+        if self.url.path == "/policy":
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
@@ -740,7 +746,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.wfile.write(page.encode("utf-8"))
             return
 
-        if url.path == "/schedule":
+        if self.url.path == "/schedule":
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
@@ -748,7 +754,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.wfile.write(page.encode("utf-8"))
             return
 
-        if url.path == "/settings":
+        if self.url.path == "/settings":
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
@@ -756,7 +762,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.wfile.write(page.encode("utf-8"))
             return
 
-        if url.path == "/tesla-login":
+        if self.url.path == "/tesla-login":
             # For security, these details should be submitted via a POST request
             # Send a 405 Method Not Allowed in response.
             self.send_response(405)
@@ -862,7 +868,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             later = False
             try:
                 later = len(self.fields["later"])
-            except KeyError as e:
+            except KeyError:
                 later = False
 
             if later:
@@ -1012,7 +1018,10 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
         page += "<tr><th>Scheduled Charging Start Hour</th>"
         page += "<td>" + str(self.server.master.getScheduledAmpsStartHour())
-        if self.server.master.getScheduledAmpsTimeFlex()[0] != self.server.master.getScheduledAmpsStartHour():
+        if (
+            self.server.master.getScheduledAmpsTimeFlex()[0]
+            != self.server.master.getScheduledAmpsStartHour()
+        ):
             page += " (Flex: "
             page += str(self.server.master.getScheduledAmpsTimeFlex()[0])
             page += ")"
@@ -1094,3 +1103,14 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "<td><div id='total_lifetimekWh'></div></td>"
         page += "</tr></table></td></tr></table>"
         return page
+
+    def debugLogAPI(self, message):
+        self.server.master.debugLog(10, 
+            "HTTPCtrl", 
+            message
+            + " (Url: "
+            + str(self.url.path)
+            + " / IP: "
+            + str(self.client_address[0])
+            + ")",
+        )

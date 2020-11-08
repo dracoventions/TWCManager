@@ -176,7 +176,7 @@ class SolarEdge:
             # This query only executes if we're in pollMode 0 or 2. If we are in 1, we skip
             # Because consumption data is optional, we won't raise an error if it doesn't parse
             portalData = None
-            if (self.pollMode == 0 or self.pollMode == 2):
+            if self.pollMode == 0 or self.pollMode == 2:
                 portalData = self.getPortalData("currentPowerFlow")
             if portalData:
                 try:
@@ -188,21 +188,31 @@ class SolarEdge:
                         # Whether the Generation value is taken from this query or from the
                         # overview query depends on if we have determined whether consumption
                         # values are being reported or not
-                        if (self.pollMode == 0 or self.pollMode == 2):
+                        if self.pollMode == 0 or self.pollMode == 2:
                             self.generatedW = int(
                                 portalData["siteCurrentPowerFlow"]["PV"]["currentPower"]
-                        )
+                            )
                     elif portalData["siteCurrentPowerFlow"]["unit"] == "kW":
-                        self.consumedW = int(float(
-                            portalData["siteCurrentPowerFlow"]["LOAD"]["currentPower"]
-                        ) * 1000)
+                        self.consumedW = int(
+                            float(
+                                portalData["siteCurrentPowerFlow"]["LOAD"][
+                                    "currentPower"
+                                ]
+                            )
+                            * 1000
+                        )
                         # Whether the Generation value is taken from this query or from the
                         # overview query depends on if we have determined whether consumption
                         # values are being reported or not
-                        if (self.pollMode == 0 or self.pollMode == 2):
-                            self.generatedW = int(float(
-                                portalData["siteCurrentPowerFlow"]["PV"]["currentPower"]
-                        ) * 1000)
+                        if self.pollMode == 0 or self.pollMode == 2:
+                            self.generatedW = int(
+                                float(
+                                    portalData["siteCurrentPowerFlow"]["PV"][
+                                        "currentPower"
+                                    ]
+                                )
+                                * 1000
+                            )
 
                     else:
                         self.master.debugLog(
@@ -223,10 +233,10 @@ class SolarEdge:
             # Check if we are still in the initial poll period, and if so, record any consumption
             # reported to the pollconsumption counter. The reason for this is that if that value
             # rises at all, we lock in to consumption mode and do not query the overview API anymore
-            if (self.pollMode == 0 and self.pollCount <= 3):
+            if self.pollMode == 0 and self.pollCount <= 3:
                 self.pollCount += 1
                 self.pollConsumption += self.consumedW
-            elif (self.pollMode == 0):
+            elif self.pollMode == 0:
                 if self.pollConsumption:
                     self.master.debugLog(
                         1,

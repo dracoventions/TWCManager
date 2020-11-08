@@ -11,6 +11,7 @@ import threading
 import time
 from ww import f
 import math
+import random
 
 
 class TWCMaster:
@@ -22,6 +23,7 @@ class TWCMaster:
     config = None
     consumptionValues = {}
     debugLevel = 0
+    debugOutputToFile = False
     generationValues = {}
     lastkWhMessage = time.time()
     lastkWhPoll = 0
@@ -70,7 +72,8 @@ class TWCMaster:
 
     def __init__(self, TWCID, config):
         self.config = config
-        self.debugLevel = config["config"]["debugLevel"]
+        self.debugLevel = config["config"].get("debugLevel", 1)
+        self.debugOutputToFile = config["config"].get("debugOutputToFile", False)
         self.TWCID = TWCID
         self.subtractChargerLoad = config["config"]["subtractChargerLoad"]
         self.advanceHistorySnap()
@@ -150,24 +153,34 @@ class TWCMaster:
     def countSlaveTWC(self):
         return int(len(self.slaveTWCRoundRobin))
 
-    def debugLog(self, minlevel, function, message, fields = []):
+    def debugLog(self, minlevel, function, message, fields=[]):
         # Trim/pad the module name as needed
         if len(function) < 10:
-            for a in range(len(function), 10):
+            for _ in range(len(function), 10):
                 function += " "
-
+        data = {
+            "debugLevel": self.debugLevel,
+            "fields": fields,
+            "function": function,
+            "logTime": self.time_now(),
+            "minLevel": minlevel,
+            "message": message,
+        }
+        atLeastOne = False
         # Pass the debugLog message to all enabled Logging modules
         for module in self.getModulesByType("Logging"):
-            module["ref"].debugLog(
-                {
-                    "debugLevel": self.debugLevel,
-                    "fields": fields,
-                    "function": function,
-                    "logTime": self.time_now(),
-                    "minLevel": minlevel,
-                    "message": message,
-                }
-            )
+            atLeastOne = True
+            module["ref"].debugLog(data)
+
+        # First calls won't be printed, because there is no logger registered
+        if not (atLeastOne):
+            if data["debugLevel"] >= data["minLevel"]:
+                print(
+                    colored(data["logTime"] + " ", "yellow")
+                    + colored(f("{data['function']}"), "green")
+                    + colored(f(" {data['minLevel']} "), "cyan")
+                    + f("{data['message']}")
+                )
 
     def deleteBackgroundTask(self, task):
         del self.backgroundTasksCmds[task["cmd"]]
@@ -349,10 +362,10 @@ class TWCMaster:
             and scheduledChargingDays > 0
             and self.getScheduledAmpsMax() > 0,
             "amps": self.getScheduledAmpsMax(),
-            "startingMinute": scheduledChargingStartHour * 60
+            "startingMinute": int(scheduledChargingStartHour * 60)
             if scheduledChargingStartHour >= 0
             else -1,
-            "endingMinute": scheduledChargingEndHour * 60
+            "endingMinute": int(scheduledChargingEndHour * 60)
             if scheduledChargingEndHour >= 0
             else -1,
             "monday": (scheduledChargingDays & 1) == 1,
@@ -363,10 +376,10 @@ class TWCMaster:
             "saturday": (scheduledChargingDays & 32) == 32,
             "sunday": (scheduledChargingDays & 64) == 64,
             "flexStartEnabled": self.getScheduledAmpsFlexStart(),
-            "flexStartingMinute": scheduledFlexTime[0] * 60
+            "flexStartingMinute": int(scheduledFlexTime[0] * 60)
             if scheduledFlexTime[0] >= 0
             else -1,
-            "flexEndingMinute": scheduledFlexTime[1] * 60
+            "flexEndingMinute": int(scheduledFlexTime[1] * 60)
             if scheduledFlexTime[1] >= 0
             else -1,
             "flexMonday": (scheduledFlexTime[2] & 1) == 1,
@@ -619,7 +632,7 @@ class TWCMaster:
         carapi.setCarApiRefreshToken(self.settings.get("carApiRefreshToken", ""))
         carapi.setCarApiTokenExpireTime(self.settings.get("carApiTokenExpireTime", ""))
 
-    def master_id_conflict():
+    def master_id_conflict(self):
         # We're playing fake slave, and we got a message from a master with our TWCID.
         # By convention, as a slave we must change our TWCID because a master will not.
         self.TWCID[0] = random.randint(0, 0xFF)
@@ -628,10 +641,12 @@ class TWCMaster:
         # Real slaves change their sign during a conflict, so we do too.
         self.slaveSign[0] = random.randint(0, 0xFF)
 
-        print(
-            time_now() + ": Master's TWCID matches our fake slave's TWCID.  "
+        self.debugLog(
+            1,
+            "TWCMaster",
+            "Master's TWCID matches our fake slave's TWCID.  "
             "Picked new random TWCID %02X%02X with sign %02X"
-            % (self.TWCID[0], self.TWCID[1], self.slaveSign[0])
+            % (self.TWCID[0], self.TWCID[1], self.slaveSign[0]),
         )
 
     def newSlave(self, newSlaveID, maxAmps):
@@ -648,9 +663,11 @@ class TWCMaster:
         self.addSlaveTWC(slaveTWC)
 
         if self.countSlaveTWC() > 3:
-            print(
+            self.debugLog(
+                1,
+                "TWCMaster"
                 "WARNING: More than 3 slave TWCs seen on network.  "
-                "Dropping oldest: " + self.hex_str(self.getSlaveTWCID(0)) + "."
+                "Dropping oldest: " + self.hex_str(self.getSlaveTWCID(0)) + ".",
             )
             self.deleteSlaveTWC(self.getSlaveTWCID(0))
 

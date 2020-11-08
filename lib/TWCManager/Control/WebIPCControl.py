@@ -239,16 +239,20 @@ class WebIPCControl:
                             else 13,
                         )
                         if (twcMsg[0:2] == b"\xFC\x19") or (twcMsg[0:2] == b"\xFC\x1A"):
-                            print(
+                            self.master.debugLog(
+                                1,
+                                "WebIPCCtrl",
                                 "\n*** ERROR: Web interface requested sending command:\n"
                                 + self.master.hex_str(twcMsg)
-                                + "\nwhich could permanently disable the TWC.  Aborting.\n"
+                                + "\nwhich could permanently disable the TWC.  Aborting.\n",
                             )
                         elif twcMsg[0:2] == b"\xFB\xE8":
-                            print(
+                            self.master.debugLog(
+                                1,
+                                "WebIPCCtrl",
                                 "\n*** ERROR: Web interface requested sending command:\n"
                                 + self.master.hex_str(twcMsg)
-                                + "\nwhich could crash the TWC.  Aborting.\n"
+                                + "\nwhich could crash the TWC.  Aborting.\n",
                             )
                         else:
                             self.master.lastTWCResponseMsg = bytearray()
