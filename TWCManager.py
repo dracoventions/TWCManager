@@ -225,8 +225,11 @@ def background_tasks_thread(master):
             elif task["cmd"] == "updateStatus":
                 update_statuses()
             elif task["cmd"] == "webhook":
-                body = master.getStatus()
-                requests.post(task["url"], json=body)
+                if(config["config"].get("webhookMethod", "POST") == "GET"):
+                    requests.get(task["url"])
+                else:
+                    body = master.getStatus()
+                    requests.post(task["url"], json=body)
 
         except:
             master.debugLog(
