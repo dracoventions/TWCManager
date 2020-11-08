@@ -478,7 +478,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page = "<html><head>"
         page += "<title>TWCManager</title>"
         page += self.do_bootstrap()
-        page += self.do_css()
         page += self.do_jsrefresh()
         page += "</head>"
         page += "<body>"
@@ -494,7 +493,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page = "<html><head>"
         page += "<title>TWCManager</title>"
         page += self.do_bootstrap()
-        page += self.do_css()
         page += self.do_jsrefresh()
         page += "</head>"
         page += "<body>"
@@ -532,7 +530,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page = "<html><head>"
         page += "<title>TWCManager</title>"
         page += self.do_bootstrap()
-        page += self.do_css()
         page += self.do_jsrefresh()
         page += "</head>"
         page += "<body>"
@@ -558,7 +555,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page = "<html><head>"
         page += "<title>TWCManager</title>"
         page += self.do_bootstrap()
-        page += self.do_css()
         page += self.do_jsrefresh()
         page += "</head>"
         page += "<body>"
@@ -680,7 +676,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             page = "<html><head>"
             page += "<title>TWCManager</title>"
             page += self.do_bootstrap()
-            page += self.do_css()
             page += self.do_jsrefresh()
             page += "</head>"
             page += "<body>"
