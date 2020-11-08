@@ -1,3 +1,6 @@
+import mimetypes
+import os
+import pathlib
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from termcolor import colored
@@ -16,7 +19,6 @@ class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
 
 
 class HTTPControl:
-
     configConfig = {}
     configHTTP = {}
     debugLevel = 1
@@ -51,7 +53,6 @@ class HTTPControl:
 
 
 class HTTPControlHandler(BaseHTTPRequestHandler):
-
     fields = {}
     path = ""
     post_data = ""
@@ -438,24 +439,25 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             saturday = bool(data.get("saturday", False))
             sunday = bool(data.get("sunday", False))
             amps = int(data.get("amps", -1))
-            batterySize = int(data.get("flexBatterySize", 100)) #using 100 as default, because with this every available car at moment should be finished with charging at the ending time
+            batterySize = int(data.get("flexBatterySize",
+                                       100))  # using 100 as default, because with this every available car at moment should be finished with charging at the ending time
             flexStart = int(data.get("flexStartEnabled", False))
             weekDaysBitmap = (
-                (1 if monday else 0)
-                + (2 if tuesday else 0)
-                + (4 if wednesday else 0)
-                + (8 if thursday else 0)
-                + (16 if friday else 0)
-                + (32 if saturday else 0)
-                + (64 if sunday else 0)
+                    (1 if monday else 0)
+                    + (2 if tuesday else 0)
+                    + (4 if wednesday else 0)
+                    + (8 if thursday else 0)
+                    + (16 if friday else 0)
+                    + (32 if saturday else 0)
+                    + (64 if sunday else 0)
             )
 
             if (
-                not (enabled)
-                or startingMinute < 0
-                or endingMinute < 0
-                or amps <= 0
-                or weekDaysBitmap == 0
+                    not (enabled)
+                    or startingMinute < 0
+                    or endingMinute < 0
+                    or amps <= 0
+                    or weekDaysBitmap == 0
             ):
                 self.server.master.setScheduledAmpsMax(0)
                 self.server.master.setScheduledAmpsStartHour(-1)
@@ -635,8 +637,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     </form>
         """
         page += (
-            "<p>Click <a href='https://github.com/ngardiner/TWCManager/tree/%s/docs/Settings.md' target='_new'>here</a> for detailed information on settings on this page</p>"
-            % self.version
+                "<p>Click <a href='https://github.com/ngardiner/TWCManager/tree/%s/docs/Settings.md' target='_new'>here</a> for detailed information on settings on this page</p>"
+                % self.version
         )
         page += "</body></html>"
         return page
@@ -644,14 +646,38 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         url = urllib.parse.urlparse(self.path)
 
+        # serve local static content files (from './lib/TWCManager/Control/static/' dir)
+        if url.path.startswith('/static/'):
+            content_type = mimetypes.guess_type(url.path)[0]
+
+            # only server know content type
+            if content_type is not None:
+                filename = pathlib.Path(__file__).resolve().parent.as_posix() + url.path
+
+                # check if static file exists and is readable
+                if os.path.isfile(filename) and os.access(filename, os.R_OK):
+                    self.send_response(200)
+                    self.send_header('Content-type', content_type)
+                    self.end_headers()
+
+                    # send static content (e.g. images) to browser
+                    with open(filename, 'rb') as staticFile:
+                        self.wfile.write(staticFile.read())
+                        return
+                else:
+                    # static file doesn't exit or isn't readable
+                    self.send_response(404)
+                    return
+
+        # server API requests
         if url.path.startswith("/api/"):
             self.do_API_GET()
             return
 
         if (
-            url.path == "/"
-            or url.path == "/apiacct/True"
-            or url.path == "/apiacct/False"
+                url.path == "/"
+                or url.path == "/apiacct/True"
+                or url.path == "/apiacct/False"
         ):
             self.send_response(200)
             self.send_header("Content-type", "text/html")
@@ -673,13 +699,13 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 page += "<font color='red'><b>Failed to log in to Tesla Account. Please check username and password and try again.</b></font>"
 
             if (
-                not self.server.master.teslaLoginAskLater
-                and url.path != "/apiacct/True"
+                    not self.server.master.teslaLoginAskLater
+                    and url.path != "/apiacct/True"
             ):
                 # Check if we have already stored the Tesla credentials
                 # If we can access the Tesla API okay, don't prompt
                 if not self.server.master.getModuleByName(
-                    "TeslaAPI"
+                        "TeslaAPI"
                 ).car_api_available():
                     page += self.request_teslalogin()
 
@@ -1042,13 +1068,13 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             page += "<td><div id='%s_reportedAmpsActual'></div></td>" % twcid
             page += "<td><div id='%s_lifetimekWh'></div></td>" % twcid
             page += (
-                "<td><span id='%s_voltsPhaseA'></span> / <span id='%s_voltsPhaseB'></span> / <span id='%s_voltsPhaseC'></span></td>"
-                % (twcid, twcid, twcid)
+                    "<td><span id='%s_voltsPhaseA'></span> / <span id='%s_voltsPhaseB'></span> / <span id='%s_voltsPhaseC'></span></td>"
+                    % (twcid, twcid, twcid)
             )
             page += "<td><span id='%s_lastHeartbeat'></span> sec</td>" % twcid
             page += (
-                "<td>C: <span id='%s_currentVIN'></span><br />L: <span id='%s_lastVIN'></span></td>"
-                % (twcid, twcid)
+                    "<td>C: <span id='%s_currentVIN'></span><br />L: <span id='%s_lastVIN'></span></td>"
+                    % (twcid, twcid)
             )
             page += """
             <td>
