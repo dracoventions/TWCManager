@@ -205,7 +205,7 @@ class TWCMaster:
                 self.backgroundTasksDelayed
                 and self.backgroundTasksDelayed[0][0] <= datetime.now()
             ):
-                self.queue_background_task(self.backgroundTasksDelayed.pop(0))
+                self.queue_background_task(self.backgroundTasksDelayed.pop(0)[1])
 
             # Get the next task
             try:
