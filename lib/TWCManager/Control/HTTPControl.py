@@ -395,14 +395,14 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             else:
                 self.server.master.setChargeNowAmps(rate)
                 self.server.master.setChargeNowTimeEnd(durn)
-                self.server.master.saveSettings()
+                self.server.master.queue_background_task({"cmd": "saveSettings"})
                 self.send_response(202)
                 self.end_headers()
                 self.wfile.write("".encode("utf-8"))
 
         elif self.url.path == "/api/cancelChargeNow":
             self.server.master.resetChargeNowAmps()
-            self.server.master.saveSettings()
+            self.server.master.queue_background_task({"cmd": "saveSettings"})
             self.send_response(202)
             self.end_headers()
             self.wfile.write("".encode("utf-8"))
@@ -474,7 +474,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 self.server.master.setScheduledAmpsDaysBitmap(weekDaysBitmap)
             self.server.master.setScheduledAmpsBatterySize(batterySize)
             self.server.master.setScheduledAmpsFlexStart(flexStart)
-            self.server.master.saveSettings()
+            self.server.master.queue_background_task({"cmd": "saveSettings"})
             self.send_response(202)
             self.end_headers()
             self.wfile.write("".encode("utf-8"))
@@ -852,7 +852,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         # Track Green Energy, set Non-Scheduled power rate to 0
         if int(self.server.master.settings.get("nonScheduledAction", 1)) > 1:
             self.server.master.settings["nonScheduledAmpsMax"] = 0
-        self.server.master.saveSettings()
+        self.server.master.queue_background_task({"cmd": "saveSettings"})
 
         # Redirect to the index page
         self.send_response(302)

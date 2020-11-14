@@ -200,7 +200,7 @@ class WebIPCControl:
 
                         # Save nonScheduledAmpsMax to SD card so the setting
                         # isn't lost on power failure or script restart.
-                        self.master.saveSettings()
+                        self.master.queue_background_task({"cmd": "saveSettings"})
                 elif webMsg[0:17] == b"setScheduledAmps=":
                     m = re.search(
                         b"([-0-9]+)\nstartTime=([-0-9]+):([0-9]+)\nendTime=([-0-9]+):([0-9]+)\ndays=([0-9]+)",
@@ -216,7 +216,7 @@ class WebIPCControl:
                             int(m.group(4)) + (int(m.group(5)) / 60)
                         )
                         self.master.setScheduledAmpsDaysBitmap(int(m.group(6)))
-                        self.master.saveSettings()
+                        self.master.queue_background_task({"cmd": "saveSettings"})
                 elif webMsg[0:30] == b"setResumeTrackGreenEnergyTime=":
                     m = re.search(
                         b"([-0-9]+):([0-9]+)", webMsg[30 : len(webMsg)], re.MULTILINE
@@ -225,7 +225,7 @@ class WebIPCControl:
                         self.master.setHourResumeTrackGreenEnergy(
                             int(m.group(1)) + (int(m.group(2)) / 60)
                         )
-                        self.master.saveSettings()
+                        self.master.queue_background_task({"cmd": "saveSettings"})
                 elif webMsg[0:11] == b"sendTWCMsg=":
                     m = re.search(
                         b"([0-9a-fA-F]+)", webMsg[11 : len(webMsg)], re.MULTILINE
@@ -296,7 +296,7 @@ class WebIPCControl:
                         self.master.config["config"]["wiringMaxAmpsAllTWCs"]
                     )
                     self.master.setChargeNowTimeEnd(60 * 60 * 24)
-                    self.master.saveSettings()
+                    self.master.queue_background_task({"cmd": "saveSettings"})
                 elif webMsg == b"chargeNowCancel":
                     self.master.resetChargeNowAmps()
                 elif webMsg == b"dumpState":

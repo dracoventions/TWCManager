@@ -230,6 +230,8 @@ def background_tasks_thread(master):
                 else:
                     body = master.getStatus()
                     requests.post(task["url"], json=body)
+            elif task["cmd"] == "saveSettings":
+                master.saveSettings()
 
         except:
             master.debugLog(
@@ -1165,7 +1167,7 @@ while True:
                             % (master.getkWhDelivered()),
                         )
                         # Save settings to file
-                        master.saveSettings()
+                        master.queue_background_task({"cmd": "saveSettings"})
 
                     if heartbeatData[0] == 0x07:
                         # Lower amps in use (not amps allowed) by 2 for 10
@@ -1431,6 +1433,8 @@ while True:
         # Sleep 5 seconds so the user might see the error.
         time.sleep(5)
 
+# Make sure any volatile data is written to disk before exiting
+master.queue_background_task({"cmd": "saveSettings"})
 
 # Wait for background tasks thread to finish all tasks.
 # Note that there is no such thing as backgroundTasksThread.stop(). Because we
