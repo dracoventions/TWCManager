@@ -55,7 +55,6 @@ class TWCSlave:
     lastHeartbeatDebugOutput = ""
     timeLastHeartbeatDebugOutput = 0
     wiringMaxAmps = 0
-    departureCheckTimes = list()
     lifetimekWh = 0
     voltsPhaseA = 0
     voltsPhaseB = 0
@@ -524,10 +523,9 @@ class TWCSlave:
             and self.reportedAmpsActual < 2
         ):
             self.master.getModuleByName("Policy").fireWebhook("stop")
-            self.departureCheckTimes = [now + 5 * 60, now + 20 * 60, now + 45 * 60]
-        if len(self.departureCheckTimes) > 0 and now >= self.departureCheckTimes[0]:
-            self.master.queue_background_task({"cmd": "checkDeparture"})
-            self.departureCheckTimes.pop(0)
+            self.master.queue_background_task({"cmd": "checkDeparture"}, 5 * 60)
+            self.master.queue_background_task({"cmd": "checkDeparture"}, 20 * 60)
+            self.master.queue_background_task({"cmd": "checkDeparture"}, 45 * 60)
 
         # Keep track of the amps the slave is actually using and the last time it
         # changed by more than 0.8A.
