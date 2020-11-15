@@ -798,7 +798,7 @@ class TWCMaster:
                 )
                 self.settings["Vehicles"][slaveTWC.lastVIN]["startkWh"] = 0
                 self.settings["Vehicles"][slaveTWC.lastVIN]["totalkWh"] += delta
-                self.saveSettings()
+                self.queue_background_task({"cmd": "saveSettings"})
 
         # Update Charge Session details in logging modules
         for module in self.getModulesByType("Logging"):
@@ -833,7 +833,7 @@ class TWCMaster:
             self.settings["SlaveTWCs"][twcid] = {}
         if not self.settings["SlaveTWCs"][twcid].get("supportsVINQuery", 0):
             self.settings["SlaveTWCs"][twcid]["supportsVINQuery"] = 1
-            self.saveSettings()
+            self.queue_background_task({"cmd": "saveSettings"})
 
         # Increment sessions counter for this VIN in persistent settings file
         if not self.settings.get("Vehicles", None):
@@ -851,7 +851,7 @@ class TWCMaster:
             ] = slaveTWC.lifetimekWh
             if not self.settings["Vehicles"][slaveTWC.currentVIN].get("totalkWh", None):
                 self.settings["Vehicles"][slaveTWC.currentVIN]["totalkWh"] = 0
-        self.saveSettings()
+        self.queue_background_task({"cmd": "saveSettings"})
 
         # Update Charge Session details in logging modules
         for module in self.getModulesByType("Logging"):
@@ -879,13 +879,14 @@ class TWCMaster:
     def removeNormalChargeLimit(self, ID):
         if "chargeLimits" in self.settings and str(ID) in self.settings["chargeLimits"]:
             del self.settings["chargeLimits"][str(ID)]
-            self.saveSettings()
+            self.queue_background_task({"cmd": "saveSettings"})
 
     def resetChargeNowAmps(self):
         # Sets chargeNowAmps back to zero, so we follow the green energy
         # tracking again
         self.settings["chargeNowAmps"] = 0
         self.settings["chargeNowTimeEnd"] = 0
+        self.queue_background_task({"cmd": "saveSettings"})
 
     def retryVINQuery(self):
         # For each Slave TWC, check if it's been more than 60 seconds since the last
@@ -915,7 +916,8 @@ class TWCMaster:
             self.settings["chargeLimits"] = dict()
 
         self.settings["chargeLimits"][str(ID)] = (outsideLimit, lastApplied)
-        self.saveSettings()
+        self.queue_background_task({"cmd": "saveSettings"})
+
 
     def saveSettings(self):
         # Saves the volatile application settings (such as charger timings,
@@ -1200,7 +1202,7 @@ class TWCMaster:
                 for e in self.settings["history"]
                 if datetime.fromisoformat(e[0]) >= (now - timedelta(days=2))
             ]
-            self.saveSettings()
+            self.queue_background_task({"cmd": "saveSettings"})
 
     def startCarsCharging(self):
         # This function is the opposite functionality to the stopCarsCharging function
