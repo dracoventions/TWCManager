@@ -1070,10 +1070,10 @@ class TeslaAPI:
     @property
     def minBatteryLevelAtHome(self):
         if self.time.time() - self.lastChargeCheck > self.chargeUpdateInterval:
-            self.updateChargeAtHome()
+            self.master.queue_background_task({"cmd":"checkCharge"})
         return min(
             [car.batteryLevel for car in self.carApiVehicles if car.atHome],
-            default=10000,
+            default=10000
         )
 
 
