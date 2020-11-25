@@ -1223,7 +1223,7 @@ class TWCMaster:
             self.settings["history"].append(
                 (
                     periodTimestamp.isoformat(timespec="seconds"),
-                    self.convertAmpsToWatts(avgCurrent),
+                    self.convertAmpsToWatts(avgCurrent) * self.getRealPowerFactor(avgCurrent),
                 )
             )
 
