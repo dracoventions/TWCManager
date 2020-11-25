@@ -12,6 +12,7 @@ import time
 from ww import f
 import math
 import random
+import bisect
 
 
 class TWCMaster:
@@ -20,6 +21,7 @@ class TWCMaster:
     backgroundTasksQueue = queue.Queue()
     backgroundTasksCmds = {}
     backgroundTasksLock = threading.Lock()
+    backgroundTasksDelayed = []
     config = None
     consumptionValues = {}
     debugLevel = 0
@@ -195,7 +197,23 @@ class TWCMaster:
         return self.allowedFlex
 
     def getBackgroundTask(self):
-        return self.backgroundTasksQueue.get()
+        result = None
+
+        while result is None:
+            # Insert any delayed tasks
+            while (
+                self.backgroundTasksDelayed
+                and self.backgroundTasksDelayed[0][0] <= datetime.now()
+            ):
+                self.queue_background_task(self.backgroundTasksDelayed.pop(0)[1])
+
+            # Get the next task
+            try:
+                result = self.backgroundTasksQueue.get(timeout=30)
+            except queue.Empty:
+                continue
+
+        return result
 
     def getBackgroundTasksLock(self):
         self.backgroundTasksLock.acquire()
@@ -732,7 +750,14 @@ class TWCMaster:
 
         return carsCharging
 
-    def queue_background_task(self, task):
+    def queue_background_task(self, task, delay=0):
+
+        if delay > 0:
+            bisect.insort(
+                self.backgroundTasksDelayed,
+                (datetime.now() + timedelta(seconds=delay), task),
+            )
+            return
 
         if task["cmd"] in self.backgroundTasksCmds:
             # Some tasks, like cmd='charge', will be called once per second until
