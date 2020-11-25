@@ -497,12 +497,7 @@ class TWCSlave:
             (self.historyAvgAmps * self.historyNumSamples) + self.reportedAmpsActual
         ) / (self.historyNumSamples + 1)
         self.historyNumSamples += 1
-
-        try:
-            if datetime.now().astimezone() >= self.master.nextHistorySnap:
-                self.master.queue_background_task({"cmd": "snapHistoryData"})
-        except ValueError as e:
-            self.master.debugLog(10, "TWCSlave  ", str(e))
+        self.master.queue_background_task({"cmd": "snapHistoryData"})
 
         # self.lastAmpsOffered is initialized to -1.
         # If we find it at that value, set it to the current value reported by the

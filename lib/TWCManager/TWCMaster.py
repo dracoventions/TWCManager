@@ -1173,10 +1173,15 @@ class TWCMaster:
 
     def snapHistoryData(self):
         snaptime = self.nextHistorySnap
-        now = datetime.now().astimezone()
         avgCurrent = 0
 
-        if now < snaptime:
+        now = None
+        try:
+            now = datetime.now().astimezone()
+            if now < snaptime:
+                return
+        except ValueError as e:
+            self.master.debugLog(10, "TWCSlave  ", str(e))
             return
 
         for slave in self.getSlaveTWCs():
