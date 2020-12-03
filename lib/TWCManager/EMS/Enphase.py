@@ -98,7 +98,7 @@ class Enphase:
             url = "https://api.enphaseenergy.com/api/v2/systems/" + self.systemID
             url += "/summary?key=" + self.apiKey + "&user_id=" + self.userID
         elif (self.serverIP and self.serverPort):
-            url = "https://" + self.serverIP + ":" + self.serverPort 
+            url = "http://" + self.serverIP + ":" + str(self.serverPort)
             url += "/production.json?details=1&classic-1"
 
         return self.getPortalValue(url)
