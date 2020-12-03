@@ -40,6 +40,8 @@ class Enphase:
             self.configEnphase = {}
         self.apiKey = self.configEnphase.get("apiKey", None)
         self.debugLevel = self.configConfig.get("debugLevel", 0)
+        self.serverIP = self.configEnphase.get("serverIP", None)
+        self.serverPort = self.configEnphase.get("serverPort", 80)
         self.status = self.configEnphase.get("enabled", False)
         self.systemID = self.configEnphase.get("systemID", None)
         self.userID = self.configEnphase.get("userID", None)
@@ -47,12 +49,18 @@ class Enphase:
         # Unload if this module is disabled or misconfigured
         if (
             (not self.status)
-            or (not self.systemID)
+            or (((not self.systemID)
             or (not self.apiKey)
-            or (not self.userID)
+            or (not self.userID))
+            and ((not self.serverIP)
+            or (not self.serverPort)))
         ):
             self.master.releaseModule("lib.TWCManager.EMS", "Enphase")
             return None
+
+        # Drop the cacheTime to 10 seconds if we use the local API
+        if (self.serverIP and self.serverPort):
+            self.cacheTime = 10
 
     def getConsumption(self):
 
@@ -83,8 +91,15 @@ class Enphase:
         return float(self.generatedW)
 
     def getPortalData(self):
-        url = "https://api.enphaseenergy.com/api/v2/systems/" + self.systemID
-        url += "/summary?key=" + self.apiKey + "&user_id=" + self.userID
+        # Determine if this is a Cloud API or Local API query
+        url = ""
+
+        if (self.apiKey and self.userID and self.systemID):
+            url = "https://api.enphaseenergy.com/api/v2/systems/" + self.systemID
+            url += "/summary?key=" + self.apiKey + "&user_id=" + self.userID
+        elif (self.serverIP and self.serverPort):
+            url = "https://" + self.serverIP + ":" + self.serverPort 
+            url += "/production.json?details=1&classic-1"
 
         return self.getPortalValue(url)
 
@@ -125,7 +140,13 @@ class Enphase:
             portalData = self.getPortalData()
             if portalData:
                 try:
-                    self.generatedW = int(portalData["current_power"])
+                    # Determine if this is Local or Cloud API
+                    if (self.apiKey and self.userID and self.systemID):
+                        self.generatedW = int(portalData["current_power"])
+                    elif (self.serverIP and self.serverPort):
+                        self.generatedW = int(portalData["production"][1]["wNow"])
+                        self.consumedW = int(portalData["consumption"][0]["wNow"])
+                        self.voltage = int(portalData["consumption"][0]["rmsVoltage"])
                 except (KeyError, TypeError) as e:
                     self.master.debugLog(
                         4,

@@ -403,9 +403,20 @@
         # useful if you have one interface that provides generation detail and another that provides consumption
         # detail, but if both systems provided both values, it would be duplicated.
         "Enphase": {
+            "enabled": false,
+
+            # Note that Enphase is an either/or, either Cloud or Local
+            # Enabling both of these sections will not give you the intended
+            # outcome.
+            #
+            # Cloud API:
             "apiKey": "ABC123",
             "systemID": "12345",
             "userID": "4d6a51330a"
+            # Local API:
+            #"serverIP": "192.168.1.2",
+            #"serverPort": 80
+
         },
         "Fronius": {
             "enabled": false,
