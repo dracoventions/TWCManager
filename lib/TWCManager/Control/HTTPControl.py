@@ -656,11 +656,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
         # serve local static content files (from './lib/TWCManager/Control/static/' dir)
         if self.url.path.startswith('/static/'):
-            content_type = mimetypes.guess_type(url.path)[0]
+            content_type = mimetypes.guess_type(self.url.path)[0]
 
             # only server know content type
             if content_type is not None:
-                filename = pathlib.Path(__file__).resolve().parent.as_posix() + url.path
+                filename = pathlib.Path(__file__).resolve().parent.as_posix() + self.url.path
 
                 # check if static file exists and is readable
                 if os.path.isfile(filename) and os.access(filename, os.R_OK):
