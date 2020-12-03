@@ -59,25 +59,19 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
     def do_bootstrap(self):
         page = """
-        <meta name='viewport' content='width=device-width, initial-scale=1'>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha384-tsQFqpEReu7ZLhBV2VZlAu7zcOV+rXbYlF2cqB8txI/8aZajjp4Bqd+V6D5IgvKT" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
         <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css' integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'>
+        <link rel='stylesheet' href='/static/css/styles.css'>
         """
         page += (
                 "<link rel='icon' type='image/png' href='https://raw.githubusercontent.com/ngardiner/TWCManager"
                 "/master/tree/%s/html/favicon.png'> "
                 % self.version
         )
-        return page
-
-    def do_css(self):
-
-        page = """
-          <style>
-          </style>
-        """
         return page
 
     def do_chargeSchedule(self):
@@ -106,7 +100,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
     def do_jsrefresh(self):
         page = """
-      <script language = 'JavaScript'>
+      <script>
 
       // AJAJ refresh for getStatus API call
       $(document).ready(function() {  
@@ -218,10 +212,14 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
     def do_navbar(self):
         page = """
-    <p>&nbsp;</p>
-    <p>&nbsp;</p>
-    <nav class='navbar fixed-top navbar-dark bg-dark' role='navigation'>
-      <a class='navbar-brand' href='/'>TWCManager</a>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <a class="navbar-brand" href="/">TWCManager</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavTWC" aria-controls="navbarNavTWC" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNavTWC">
+                <ul class="navbar-nav mr-auto">
         """
         page += self.navbar_item("/", "Home")
         page += self.navbar_item("/policy", "Policy")
@@ -229,7 +227,10 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += self.navbar_item("/settings", "Settings")
         page += self.navbar_item("/debug", "Debug")
         page += self.navbar_item("https://github.com/ngardiner/TWCManager", "GitHub")
-        page += "<span class='navbar-text'>%s</span></nav>" % self.version
+        page += "</ul>"
+        page += "<span class='navbar-text'>%s</span>" % self.version
+        page += "</div></nav>"
+        page += "<div class='container-fluid'>"
         return page
 
     def navbar_item(self, url, name):
@@ -237,10 +238,9 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         urlp = urllib.parse.urlparse(self.path)
         if urlp.path == url:
             active = "active"
-        page = "<ul class='navbar-nav mr-auto'>"
-        page += "<li class='nav-item %s'>" % active
+        page = "<li class='nav-item %s'>" % active
         page += "<a class='nav-link' href='%s'>%s</a>" % (url, name)
-        page += "</li></ul>"
+        page += "</li>"
         return page
 
     def do_API_GET(self):
@@ -488,26 +488,27 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         self.debugLogAPI("Ending API POST")
 
     def do_get_debug(self):
-        page = "<html><head>"
+        page = "<!DOCTYPE html>"
+        page += "<html lang='en'><head>"
         page += "<title>TWCManager</title>"
         page += self.do_bootstrap()
-        page += self.do_css()
         page += self.do_jsrefresh()
         page += "</head>"
         page += "<body>"
         page += self.do_navbar()
         page += """
           Debug Interface - Coming soon
+            </div>
         </body>
         </html>
         """
         return page
 
     def do_get_policy(self):
-        page = "<html><head>"
+        page = "<!DOCTYPE html>"
+        page += "<html lang='en'><head>"
         page += "<title>TWCManager</title>"
         page += self.do_bootstrap()
-        page += self.do_css()
         page += self.do_jsrefresh()
         page += "</head>"
         page += "<body>"
@@ -537,15 +538,16 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
         page += """
       </table>
+      </div>
     </body>
         """
         return page
 
     def do_get_schedule(self):
-        page = "<html><head>"
+        page = "<!DOCTYPE html>"
+        page += "<html lang='en'><head>"
         page += "<title>TWCManager</title>"
         page += self.do_bootstrap()
-        page += self.do_css()
         page += self.do_jsrefresh()
         page += "</head>"
         page += "<body>"
@@ -563,23 +565,23 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
           </tr>
         """
         page += """
+        </table>
+        </div>
     </body>
         """
         return page
 
     def do_get_settings(self):
-        page = "<html><head>"
+        page = "<!DOCTYPE html>"
+        page += "<html lang='en'><head>"
         page += "<title>TWCManager</title>"
         page += self.do_bootstrap()
-        page += self.do_css()
         page += self.do_jsrefresh()
         page += "</head>"
         page += "<body>"
         page += self.do_navbar()
         page += """
-    <html>
-    <head><title>Settings</title></head>
-    <body>
+
     <form method=POST action='/settings/save'>
       <table>
         <tr>
@@ -643,10 +645,10 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     </form>
         """
         page += (
-                "<p>Click <a href='https://github.com/ngardiner/TWCManager/tree/%s/docs/Settings.md' target='_new'>here</a> for detailed information on settings on this page</p>"
+                "<p>Click <a href='https://github.com/ngardiner/TWCManager/tree/%s/docs/Settings.md' target='_blank'>here</a> for detailed information on settings on this page</p>"
                 % self.version
         )
-        page += "</body></html>"
+        page += "</div></body></html>"
         return page
 
     def do_GET(self):
@@ -690,10 +692,10 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
             # Send the html message
-            page = "<html><head>"
+            page = "<!DOCTYPE html>"
+            page += "<html lang='en'><head>"
             page += "<title>TWCManager</title>"
             page += self.do_bootstrap()
-            page += self.do_css()
             page += self.do_jsrefresh()
             page += "</head>"
             page += "<body>"
@@ -723,8 +725,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             page += self.do_chargeSchedule()
             page += "</td></tr>"
             page += "</table>"
-            page += "</body>"
-            page += "</table>"
+            page += "</div>"
             page += "</html>"
 
             self.wfile.write(page.encode("utf-8"))
@@ -832,8 +833,8 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             if str(opts.get("value", "-1")) == str(option[0]):
                 sel = "selected"
             page += "<option value='%s' %s>%s</option>" % (option[0], sel, option[1])
-        page += "</div>"
         page += "</select>"
+        page += "</div>"
         return page
 
     def process_save_settings(self):
@@ -1095,7 +1096,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
               </div>
             </td>
             """
-            page += "</tr>\n"
+            page += "</tr>"
         page += "<tr><td><b>Total</b><td>&nbsp;</td><td>&nbsp;</td>"
         page += "<td><div id='total_maxAmps'></div></td>"
         page += "<td><div id='total_lastAmpsOffered'></div></td>"
