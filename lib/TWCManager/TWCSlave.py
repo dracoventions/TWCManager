@@ -426,12 +426,97 @@ class TWCSlave:
             # TODO: Start and stop charging using protocol 2 commands to TWC
             # instead of car api if I ever figure out how.
             if self.lastAmpsOffered == 0 and self.reportedAmpsActual > 4.0:
-                # Car is trying to charge, so stop it via car API.
-                # car_api_charge() will prevent telling the car to start or stop
-                # more than once per minute. Once the car gets the message to
-                # stop, reportedAmpsActualSignificantChangeMonitor should drop
-                # to near zero within a few seconds.
-                self.master.stopCarsCharging()
+                now = self.time.time()
+
+                if (
+                    now - self.timeLastAmpsOfferedChanged < 60
+                    or now - self.timeReportedAmpsActualChangedSignificantly < 60
+                    or self.reportedAmpsActual < 4.0
+                ):
+                    # We want to tell the car to stop charging. However, it's
+                    # been less than a minute since we told it to charge or
+                    # since the last significant change in the car's actual
+                    # power draw or the car has not yet started to draw at least
+                    # 5 amps (telling it 5A makes it actually draw around
+                    # 4.18-4.27A so we check for self.reportedAmpsActual < 4.0).
+                    #
+                    # Once we tell the car to charge, we want to keep it going
+                    # for at least a minute before turning it off again. Concern
+                    # is that yanking the power at just the wrong time during
+                    # the start-charge negotiation could put the car into an
+                    # error state where it won't charge again without being
+                    # re-plugged. This concern is hypothetical and most likely
+                    # could not happen to a real car, but I'd rather not take
+                    # any chances with getting someone's car into a non-charging
+                    # state so they're stranded when they need to get somewhere.
+                    # Note that non-Tesla cars using third-party adapters to
+                    # plug in are at a higher risk of encountering this sort of
+                    # hypothetical problem.
+                    #
+                    # The other reason for this tactic is that in the minute we
+                    # wait, desiredAmpsOffered might rise above 5A in which case
+                    # we won't have to turn off the charger power at all.
+                    # Avoiding too many on/off cycles preserves the life of the
+                    # TWC's main power relay and may also prevent errors in the
+                    # car that might be caused by turning its charging on and
+                    # off too rapidly.
+                    #
+                    # Seeing self.reportedAmpsActual < 4.0 means the car hasn't
+                    # ramped up to whatever level we told it to charge at last
+                    # time. It may be asleep and take up to 15 minutes to wake
+                    # up, see there's power, and start charging.
+                    #
+                    # Unfortunately, self.reportedAmpsActual < 4.0 can also mean
+                    # the car is at its target charge level and may not accept
+                    # power for days until the battery drops below a certain
+                    # level. I can't think of a reliable way to detect this
+                    # case. When the car stops itself from charging, we'll see
+                    # self.reportedAmpsActual drop to near 0.0A and
+                    # heartbeatData[0] becomes 03, but we can see the same 03
+                    # state when we tell the TWC to stop charging. We could
+                    # record the time the car stopped taking power and assume it
+                    # won't want more for some period of time, but we can't
+                    # reliably detect if someone unplugged the car, drove it,
+                    # and re-plugged it so it now needs power, or if someone
+                    # plugged in a different car that needs power. Even if I see
+                    # the car hasn't taken the power we've offered for the last
+                    # hour, it's conceivable the car will reach a battery state
+                    # where it decides it wants power the moment we decide it's
+                    # safe to stop offering it. Thus, I think it's safest to
+                    # always wait until the car has taken 5A for a minute before
+                    # cutting power even if that means the car will charge for a
+                    # minute when you first plug it in after a trip even at a
+                    # time when no power should be available.
+                    #
+                    # One advantage of the above situation is that whenever you
+                    # plug the car in, unless no power has been available since
+                    # you unplugged, the charge port will turn green and start
+                    # charging for a minute. This lets the owner quickly see
+                    # that TWCManager is working properly each time they return
+                    # home and plug in.
+                    self.master.debugLog(
+                        10,
+                        "TWCSlave  ",
+                        "Don't stop charging TWC: "
+                        + self.master.hex_str(self.TWCID)
+                        + " yet because: "
+                        + "time - self.timeLastAmpsOfferedChanged "
+                        + str(int(now - self.timeLastAmpsOfferedChanged))
+                        + " < 60 or time - self.timeReportedAmpsActualChangedSignificantly "
+                        + str(
+                            int(now - self.timeReportedAmpsActualChangedSignificantly)
+                        )
+                        + " < 60 or self.reportedAmpsActual "
+                        + str(self.reportedAmpsActual)
+                        + " < 4",
+                    )
+                else:
+                    # Car is trying to charge, so stop it via car API.
+                    # car_api_charge() will prevent telling the car to start or stop
+                    # more than once per minute. Once the car gets the message to
+                    # stop, reportedAmpsActualSignificantChangeMonitor should drop
+                    # to near zero within a few seconds.
+                    self.master.stopCarsCharging()
             elif (
                 self.lastAmpsOffered >= self.config["config"]["minAmpsPerTWC"]
                 and self.reportedAmpsActual < 2.0
@@ -691,86 +776,6 @@ class TWCSlave:
                     )
                     desiredAmpsOffered = 0
 
-                if self.lastAmpsOffered > 0 and (
-                    now - self.timeLastAmpsOfferedChanged < 60
-                    or now - self.timeReportedAmpsActualChangedSignificantly < 60
-                    or self.reportedAmpsActual < 4.0
-                ):
-                    # We were previously telling the car to charge but now we want
-                    # to tell it to stop. However, it's been less than a minute
-                    # since we told it to charge or since the last significant
-                    # change in the car's actual power draw or the car has not yet
-                    # started to draw at least 5 amps (telling it 5A makes it
-                    # actually draw around 4.18-4.27A so we check for
-                    # self.reportedAmpsActual < 4.0).
-                    #
-                    # Once we tell the car to charge, we want to keep it going for
-                    # at least a minute before turning it off again. concern is that
-                    # yanking the power at just the wrong time during the
-                    # start-charge negotiation could put the car into an error state
-                    # where it won't charge again without being re-plugged. This
-                    # concern is hypothetical and most likely could not happen to a
-                    # real car, but I'd rather not take any chances with getting
-                    # someone's car into a non-charging state so they're stranded
-                    # when they need to get somewhere. Note that non-Tesla cars
-                    # using third-party adapters to plug in are at a higher risk of
-                    # encountering this sort of hypothetical problem.
-                    #
-                    # The other reason for this tactic is that in the minute we
-                    # wait, desiredAmpsOffered might rise above 5A in which case we
-                    # won't have to turn off the charger power at all. Avoiding too
-                    # many on/off cycles preserves the life of the TWC's main power
-                    # relay and may also prevent errors in the car that might be
-                    # caused by turning its charging on and off too rapidly.
-                    #
-                    # Seeing self.reportedAmpsActual < 4.0 means the car hasn't
-                    # ramped up to whatever level we told it to charge at last time.
-                    # It may be asleep and take up to 15 minutes to wake up, see
-                    # there's power, and start charging.
-                    #
-                    # Unfortunately, self.reportedAmpsActual < 4.0 can also mean the
-                    # car is at its target charge level and may not accept power for
-                    # days until the battery drops below a certain level. I can't
-                    # think of a reliable way to detect this case. When the car
-                    # stops itself from charging, we'll see self.reportedAmpsActual
-                    # drop to near 0.0A and heartbeatData[0] becomes 03, but we can
-                    # see the same 03 state when we tell the TWC to stop charging.
-                    # We could record the time the car stopped taking power and
-                    # assume it won't want more for some period of time, but we
-                    # can't reliably detect if someone unplugged the car, drove it,
-                    # and re-plugged it so it now needs power, or if someone plugged
-                    # in a different car that needs power. Even if I see the car
-                    # hasn't taken the power we've offered for the
-                    # last hour, it's conceivable the car will reach a battery state
-                    # where it decides it wants power the moment we decide it's safe
-                    # to stop offering it. Thus, I think it's safest to always wait
-                    # until the car has taken 5A for a minute before cutting power
-                    # even if that means the car will charge for a minute when you
-                    # first plug it in after a trip even at a time when no power
-                    # should be available.
-                    #
-                    # One advantage of the above situation is that whenever you plug
-                    # the car in, unless no power has been available since you
-                    # unplugged, the charge port will turn green and start charging
-                    # for a minute. This lets the owner quickly see that TWCManager
-                    # is working properly each time they return home and plug in.
-                    self.master.debugLog(
-                        10,
-                        "TWCSlave  ",
-                        "Don't stop charging TWC: "
-                        + self.master.hex_str(self.TWCID)
-                        + " yet because: "
-                        + "time - self.timeLastAmpsOfferedChanged "
-                        + str(int(now - self.timeLastAmpsOfferedChanged))
-                        + " < 60 or time - self.timeReportedAmpsActualChangedSignificantly "
-                        + str(
-                            int(now - self.timeReportedAmpsActualChangedSignificantly)
-                        )
-                        + " < 60 or self.reportedAmpsActual "
-                        + str(self.reportedAmpsActual)
-                        + " < 4",
-                    )
-                    desiredAmpsOffered = minAmpsToOffer
             else:
                 # no cars are charging, and desiredAmpsOffered < minAmpsToOffer
                 # so we need to set desiredAmpsOffered to 0
