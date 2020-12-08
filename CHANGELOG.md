@@ -15,6 +15,7 @@ This document logs the changes per release of TWCManager.
   * Bugfixes
       * Add a sleep of 5 seconds when waking car up to avoid an infinite loop (thanks @dschuesae)
       * Fix a bug with the legacy web interface which causes the Resume Track Green Energy setting of None to fail. Also added a deprecation notice to the web interface to ensure people don't inadvertently use it over the modular interface.
+      * Fixed the Enphase EMS module which was reporting generation values as consumption (thanks Jim!)
 
 ## v1.2.0 - 2020-10-09
 
