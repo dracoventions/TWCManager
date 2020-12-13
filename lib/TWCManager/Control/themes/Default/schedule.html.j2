@@ -21,7 +21,7 @@
                 {{ optionList(timeList, 
                      {
                        "name": "resumeGreenEnergy",
-                       "value": master.settings.get("resumeGreenEnergy", "00:00"),
+                       "value": master.settings.get("Schedule", {}).get("Settings").get("resumeGreenEnergy", "00:00"),
                      })|safe
                 }}
               </td>
@@ -34,7 +34,7 @@
                      ampsList,
                      {
                        "name": "scheduledAmpsMax",
-                       "value": master.settings.get("scheduledAmpsMax", "0"),
+                       "value": master.settings.get("Schedule", {}).get("Settings", {}).get("scheduledAmpsMax", "0"),
                      },
                    )|safe
                 }}
@@ -52,11 +52,15 @@
             <tr>
               <td>&nbsp;</td>
               <td>
-                {{ optionList(timeList, {"name": "startCommonChargeTime"})| safe }}
+                {{ optionList(timeList, 
+                  {"name": "startCommonChargeTime",
+                   "value": master.settings.get("Schedule", {}).get("Common", {}).get("start", "00:00")})|safe }}
               </td>
               <td> to </td>
               <td>
-                {{ optionList(timeList, {"name": "endCommonChargeTime"})| safe }}
+                {{ optionList(timeList, 
+                  {"name": "endCommonChargeTime",
+                   "value": master.settings.get("Schedule", {}).get("Common", {}).get("end", "00:00")})| safe }}
               </td>
               <td>&nbsp;</td>
               <tr>

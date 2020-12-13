@@ -141,8 +141,18 @@ def CreateHTTPHandlerClass(master):
       <tbody>"""
         for i in (x for y in (range(6, 24), range(0, 6)) for x in y):
             page += "<tr><th scope='row'>%02d</th>" % (i)
-            for _ in range(0, 6):
-                page += "<td>&nbsp;</td>"
+            for day in schedule:
+                today = settings.get(day, {})
+                curday = settings.get("Common", {})
+                if (settings.get("schedulePerDay", 0)):
+                    curday = settings.get(day, {})
+                if (today.get("enabled", None) == "on" and
+                   (int(curday.get("start", 0)[:2]) <= int(i)) and
+                   (int(curday.get("end", 0)[:2]) >= int(i))):
+                     page += "<td bgcolor='#CFFAFF'>SC @ " + str(settings.get("Settings", {}).get("scheduledAmpsMax", 0)) + "A</td>"
+                else:
+                    #Todo - need to mark track green + non scheduled chg
+                    page += "<td bgcolor='#FFDDFF'>&nbsp;</td>"
             page += "</tr>"
         page += "</tbody>"
         page += "</table>"
@@ -609,12 +619,18 @@ def CreateHTTPHandlerClass(master):
 
         # Render daily schedule options
         page  = "<tr>"
-        page += "<td>" + self.checkBox("enabled"+suffix, today.get("enabled", 0)) + "</td>"
+        page += "<td>" + self.checkBox("enabled"+suffix, 
+                today.get("enabled", 0)) + "</td>"
         page += "<td>" + str(day) + "</td>"
-        page += "<td>" + self.optionList(self.timeList, {"name": "start"+suffix}) + "</td>"
+        page += "<td>" + self.optionList(self.timeList, 
+          {"name": "start"+suffix,
+           "value": today.get("start", "00:00")}) + "</td>"
         page += "<td> to </td>"
-        page += "<td>" + self.optionList(self.timeList, {"name": "end"+suffix}) + "</td>"
-        page += "<td>" + self.checkBox("flex"+suffix, today.get("flex", 0)) + "</td>"
+        page += "<td>" + self.optionList(self.timeList, 
+          {"name": "end"+suffix,
+           "value": today.get("end", "00:00")}) + "</td>"
+        page += "<td>" + self.checkBox("flex"+suffix, 
+                today.get("flex", 0)) + "</td>"
         page += "<td>Flex Charge</td>"
         page += "</tr>"
         return page
@@ -684,11 +700,27 @@ def CreateHTTPHandlerClass(master):
         # write back to the existing settings nodes so that it is backwards
         # compatible.
 
+        # Green Energy Tracking
+        master.settings["hourResumeTrackGreenEnergy"] = int(master.settings["Schedule"]["Settings"]["resumeGreenEnergy"][:2])
+
         # Scheduled amps
+        master.settings["scheduledAmpsStartHour"] = int(master.settings["Schedule"]["Common"]["start"][:2])
+        master.settings["scheduledAmpsEndHour"] = int(master.settings["Schedule"]["Common"]["end"][:2])
         master.settings["scheduledAmpsMax"] = float(master.settings["Schedule"]["Settings"]["scheduledAmpsMax"])
 
+        # Scheduled Days bitmap backward compatibility
+        master.settings["scheduledAmpsDaysBitmap"] = (
+            (1 if master.settings["Schedule"]["Monday"]["enabled"] else 0)
+            + (2 if master.settings["Schedule"]["Tuesday"]["enabled"] else 0)
+            + (4 if master.settings["Schedule"]["Wednesday"]["enabled"] else 0)
+            + (8 if master.settings["Schedule"]["Thursday"]["enabled"] else 0)
+            + (16 if master.settings["Schedule"]["Friday"]["enabled"] else 0)
+            + (32 if master.settings["Schedule"]["Saturday"]["enabled"] else 0)
+            + (64 if master.settings["Schedule"]["Sunday"]["enabled"] else 0)
+            )
+
         # Save Settings
-        master.saveSettings()
+        master.queue_background_task({"cmd": "saveSettings"})
 
         self.send_response(302)
         self.send_header("Location", "/")
