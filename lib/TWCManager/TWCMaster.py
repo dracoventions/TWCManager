@@ -370,22 +370,23 @@ class TWCMaster:
         else:
             data["isGreenPolicy"] = "No"
 
-        scheduledChargingStartHour = self.getScheduledAmpsStartHour()
-        scheduledChargingEndHour = self.getScheduledAmpsEndHour()
+        data["scheduledChargingStartHour"] = self.getScheduledAmpsStartHour()
+        data["scheduledChargingFlexStart"] = self.getScheduledAmpsTimeFlex()[0]
+        data["scheduledChargingEndHour"] = self.getScheduledAmpsEndHour()
         scheduledChargingDays = self.getScheduledAmpsDaysBitmap()
         scheduledFlexTime = self.getScheduledAmpsTimeFlex()
 
         data["ScheduledCharging"] = {
-            "enabled": scheduledChargingStartHour >= 0
-            and scheduledChargingEndHour >= 0
+            "enabled": data["scheduledChargingStartHour"] >= 0
+            and data["scheduledChargingEndHour"] >= 0
             and scheduledChargingDays > 0
             and self.getScheduledAmpsMax() > 0,
             "amps": self.getScheduledAmpsMax(),
-            "startingMinute": int(scheduledChargingStartHour * 60)
-            if scheduledChargingStartHour >= 0
+            "startingMinute": int(data["scheduledChargingStartHour"] * 60)
+            if data["scheduledChargingStartHour"] >= 0
             else -1,
-            "endingMinute": int(scheduledChargingEndHour * 60)
-            if scheduledChargingEndHour >= 0
+            "endingMinute": int(data["scheduledChargingEndHour"] * 60)
+            if data["scheduledChargingEndHour"] >= 0
             else -1,
             "monday": (scheduledChargingDays & 1) == 1,
             "tuesday": (scheduledChargingDays & 2) == 2,

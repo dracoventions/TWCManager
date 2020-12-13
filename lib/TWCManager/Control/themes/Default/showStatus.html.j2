@@ -43,4 +43,29 @@
           <th>Scheduled Charging Amps</th>
           <td>{{ scheduledAmpsMax }}</td>
         </tr>
-
+        <tr>
+          <th>Scheduled Charging Start Hour</th>
+          <td><div id='scheduledChargingStartHour'></div></td>
+        </tr>
+        <tr>
+          <th>Scheduled Charging End Hour</th>
+          <td><div id='scheduledChargingEndHour'></div></td>
+        </tr>
+        <tr>
+          <th>Is a Green Policy?</th>
+          <td><div id='isGreenPolicy'></div></td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td width = '100%' colspan = '2'>
+      {{ showTWCs()|safe }}
+    </td>
+  </tr>
+  <tr>
+    <td width = '100%' colspan = '2'>
+      {% include 'showCommands.html.j2' %}
+    </td>
+  </tr>
+</table>

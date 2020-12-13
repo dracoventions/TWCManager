@@ -13,6 +13,12 @@
                         $('#'+key).html(json[key]);
                       });
 
+                      // Need to update Scheduled Start hour to show flex start
+                      // hour if they are different
+                      if (json["scheduledChargingStartHour"] != json["scheduledChargingFlexStart"]) {
+                        json["scheduledChargingStartHour"] += "(Flex " + json["scheduledChargingFlexStart"] + ")";
+                      }
+
                       // Change the state of the Charge Now button based on Charge Policy
                       if (json["currentPolicy"] == "Charge Now") {
                         document.getElementById("start_chargenow").value = "Update Charge Now";

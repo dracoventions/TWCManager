@@ -70,6 +70,15 @@
             </td>
             <td width = 50%>
               <table>
-               <tr>
-                 <td colspan = 2><b>Charging Schedule:</b>
-               </tr>
+                <tr>
+                  <td colspan = 2><b>Charging Schedule:</b>
+                </tr>
+                {% for dayOfWeek in ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] %}
+                  {{ chargeScheduleDay(dayOfWeek)|safe }}
+                {% endfor %}
+              </table>
+              </form>
+            </td>
+          </tr>
+          <br />
+          <i>This scheduling interface is currently in compatibility mode to make it compatible with existing scheduling settings. For that reason, whilst you may set start and stop times to the minute, only the hour will currently apply. The ability to set scheduled hours per day is also currently disabled.</i>

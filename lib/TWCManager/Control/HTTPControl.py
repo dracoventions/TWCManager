@@ -104,10 +104,13 @@ def CreateHTTPHandlerClass(master):
         # render HTML, we can keep using those even inside jinja2
         self.templateEnv.globals.update(addButton=self.addButton)
         self.templateEnv.globals.update(ampsList=self.ampsList)
+        self.templateEnv.globals.update(chargeScheduleDay=self.chargeScheduleDay)
         self.templateEnv.globals.update(doChargeSchedule=self.do_chargeSchedule)
+        self.templateEnv.globals.update(hoursDurationList=self.hoursDurationList)
         self.templateEnv.globals.update(navbarItem=self.navbar_item)
         self.templateEnv.globals.update(optionList=self.optionList)
-        self.templateEnv.globals.update(showStatus=self.show_status)
+        self.templateEnv.globals.update(showTWCs=self.show_twcs)
+        self.templateEnv.globals.update(timeList=self.timeList)
 
         # Set master object
         self.master = master
@@ -597,6 +600,25 @@ def CreateHTTPHandlerClass(master):
         )
         return page
 
+    def chargeScheduleDay(self, day):
+
+        # Fetch current settings
+        sched = master.settings.get("Schedule", {})
+        today = sched.get(day, {})
+        suffix = day + "ChargeTime"
+
+        # Render daily schedule options
+        page  = "<tr>"
+        page += "<td>" + self.checkBox("enabled"+suffix, today.get("enabled", 0)) + "</td>"
+        page += "<td>" + str(day) + "</td>"
+        page += "<td>" + self.optionList(self.timeList, {"name": "start"+suffix}) + "</td>"
+        page += "<td> to </td>"
+        page += "<td>" + self.optionList(self.timeList, {"name": "end"+suffix}) + "</td>"
+        page += "<td>" + self.checkBox("flex"+suffix, today.get("flex", 0)) + "</td>"
+        page += "<td>Flex Charge</td>"
+        page += "</tr>"
+        return page
+
     def getFieldValue(self, key):
         # Parse the form value represented by key, and return the
         # value either as an integer or string
@@ -625,6 +647,54 @@ def CreateHTTPHandlerClass(master):
         page += "</select>"
         page += "</div>"
         return page
+
+    def process_save_schedule(self):
+
+        # Check that schedule dict exists within settings.
+        # If not, this would indicate that this is the first time
+        # we have saved the new schedule settings
+        if (master.settings.get("Schedule", None) == None):
+            master.settings["Schedule"] = {}
+
+        # Detect schedule keys. Rather than saving them in a flat
+        # structure, we'll store them multi-dimensionally
+        fieldsout = self.fields.copy()
+        ct = re.compile(r'(?P<trigger>enabled|end|flex|start)(?P<day>.*?)ChargeTime')
+        for key in self.fields:
+            match = ct.match(key)
+            if match:
+                # Detected a multi-dimensional (per-day) key
+                # Rewrite it into the settings array and delete it
+                # from the input
+
+                if master.settings["Schedule"].get(match.group(2), None) == None:
+                    # Create dictionary key for this day
+                    master.settings["Schedule"][match.group(2)] = {}
+
+                # Set per-day settings
+                master.settings["Schedule"][match.group(2)][match.group(1)] = self.getFieldValue(key)
+
+            else:
+                if master.settings["Schedule"].get("Settings", None) == None:
+                    master.settings["Schedule"]["Settings"] = {}
+                master.settings["Schedule"]["Settings"][key] = self.getFieldValue(key)
+
+        # During Phase 1 (backwards compatibility) for the new scheduling
+        # UI, after writing the settings in the inteded new format, we then
+        # write back to the existing settings nodes so that it is backwards
+        # compatible.
+
+        # Scheduled amps
+        master.settings["scheduledAmpsMax"] = float(master.settings["Schedule"]["Settings"]["scheduledAmpsMax"])
+
+        # Save Settings
+        master.saveSettings()
+
+        self.send_response(302)
+        self.send_header("Location", "/")
+        self.end_headers()
+        self.wfile.write("".encode("utf-8"))
+        return
 
     def process_save_settings(self):
 
@@ -682,89 +752,6 @@ def CreateHTTPHandlerClass(master):
             self.end_headers()
             self.wfile.write("".encode("utf-8"))
             return
-
-    def show_commands(self):
-
-        page = """
-          <table class='table table-dark'>
-          <tr><th colspan=4 width = '30%'>Charge Now</th>
-          <th colspan=1 width = '30%'>Commands</th></tr>
-          <tr><td width = '8%'>Charge for:</td>
-          <td width = '7%'>
-        """
-        page += self.optionList(self.hoursDurationList, {"name": "chargeNowDuration"})
-        page += """
-          </td>
-          <td width = '8%'>Charge Rate:</td>
-          <td width = '7%'>
-        """
-        page += self.optionList(self.ampsList[1:], {"name": "chargeNowRate"})
-        page += """
-          </td>
-          <td>
-        """
-        page += self.addButton(
-            ["send_stop_command", "Stop All Charging"],
-            "class='btn btn-outline-danger' data-toggle='tooltip' data-placement='top' title='WARNING: This function causes Tesla Vehicles to Stop Charging until they are physically re-connected to the TWC.'",
-        )
-        page += """
-          </td></tr>
-          <tr><td colspan = '2'>
-        """
-        page += self.addButton(
-            ["start_chargenow", "Start Charge Now"],
-            "class='btn btn-outline-success' data-toggle='tooltip' data-placement='top' title='Note: Charge Now command takes approximately 2 minutes to activate.'",
-        )
-        page += "</td><td colspan = '2'>"
-        page += self.addButton(
-            ["cancel_chargenow", "Cancel Charge Now"], "class='btn btn-outline-danger'"
-        )
-        page += """
-          </td>
-          <td>
-        """
-        page += self.addButton(
-            ["send_start_command", "Start All Charging"],
-            "class='btn btn-outline-success'",
-        )
-        page += """
-          </td></tr>
-          </table>
-        """
-        return page
-
-    def show_status(self):
-
-        page = "<tr><th>Scheduled Charging Start Hour</th>"
-        page += "<td>" + str(master.getScheduledAmpsStartHour())
-        if (
-            master.getScheduledAmpsTimeFlex()[0]
-            != master.getScheduledAmpsStartHour()
-        ):
-            page += " (Flex: "
-            page += str(master.getScheduledAmpsTimeFlex()[0])
-            page += ")"
-        page += "</td></tr>"
-
-        page += "<tr><th>Scheduled Charging End Hour</th>"
-        page += "<td>" + str(master.getScheduledAmpsEndHour()) + "</td>"
-        page += """
-        </tr>
-        <tr>
-          <th>Is a Green Policy?</th>
-          <td><div id='isGreenPolicy'></div></td>
-        </tr>
-        </table></td>
-        """
-
-        page += "<tr><td width = '100%' colspan = '2'>"
-        page += self.show_twcs()
-        page += "</td></tr>"
-
-        page += "<tr><td width = '100%' colspan = '2'>"
-        page += self.show_commands()
-        page += "</td></tr></table>"
-        return page
 
     def show_twcs(self):
 

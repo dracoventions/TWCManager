@@ -1,0 +1,41 @@
+<table class='table table-dark'>
+  <tr>
+    <th colspan=4 width = '30%'>Charge Now</th>
+    <th colspan=1 width = '30%'>Commands</th>
+  </tr>
+  <tr>
+    <td width = '8%'>Charge for:</td>
+    <td width = '7%'>
+      {{ optionList(hoursDurationList, {"name": "chargeNowDuration"})|safe }}
+    </td>
+    <td width = '8%'>Charge Rate:</td>
+    <td width = '7%'>
+      {{ optionList(ampsList[1:], {"name": "chargeNowRate"})|safe }}
+    </td>
+    <td>
+      {{ addButton(
+            ["send_stop_command", "Stop All Charging"],
+            "class='btn btn-outline-danger' data-toggle='tooltip' data-placement='top' title='WARNING: This function causes Tesla Vehicles to Stop Charging until they are physically re-connected to the TWC.'",
+        )|safe }}
+    </td>
+  </tr>
+  <tr>
+    <td colspan = '2'>
+      {{ addButton(
+            ["start_chargenow", "Start Charge Now"],
+            "class='btn btn-outline-success' data-toggle='tooltip' data-placement='top' title='Note: Charge Now command takes approximately 2 minutes to activate.'",
+        )|safe }}
+    </td>
+    <td colspan = '2'>
+      {{ addButton(
+            ["cancel_chargenow", "Cancel Charge Now"], "class='btn btn-outline-danger'"
+        )|safe }}
+    </td>
+    <td>
+      {{ addButton(
+            ["send_start_command", "Start All Charging"],
+            "class='btn btn-outline-success'",
+        )|safe }}
+    </td>
+  </tr>
+</table>
