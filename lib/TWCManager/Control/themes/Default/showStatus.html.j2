@@ -1,0 +1,46 @@
+<table width='100%'>
+  <tr>
+    <td width='60%'>
+      <table class='table table-dark'>
+        <tr>
+          <th>Amps to share across all TWCs:</th>
+          <td><div id='maxAmpsToDivideAmongSlaves'></div></td><td>amps</td>
+        </tr>
+        <tr>
+          <th>Current Generation</th>
+          <td><div id='generationWatts'></div></td><td>watts</td>
+          <td><div id="generationAmps"></div></td><td>amps</td>
+        </tr>
+        <tr>
+          <th>Current Consumption</th>
+          <td><div id='consumptionWatts'></div></td><td>watts</td>
+          <td><div id='consumptionAmps'></div></td><td>amps</td>
+        </tr>
+        <tr>
+          <th>Current Charger Load</th>
+          <td><div id="chargerLoadWatts"></div></td><td>watts</td>
+        </tr>
+
+        <tr>
+          <th>Number of Cars Charging</th>
+          <td>
+            <div id="carsCharging"></div>
+          </td>
+          <td>cars</td>
+        </tr>
+      </table>
+    </td>
+
+    <td width='40%'>
+      <table class='table table-dark'>
+        <tr>
+          <th>Current Policy</th>
+          <td>
+            <div id='currentPolicy'></div>
+          </td>
+        </tr>
+        <tr>
+          <th>Scheduled Charging Amps</th>
+          <td>{{ scheduledAmpsMax }}</td>
+        </tr>
+

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang='en'>
+  <head>
+    <title>TWCManager</title>
+    {% include 'bootstrap.html.j2' %}
+    {% include 'jsrefresh.html.j2' %}
+  </head>
+  <body>
+    {% include 'navbar.html.j2' %}
+    <form method=POST action='/schedule/save'>
+    <table width = 100%>
+      <tr width = 100%>
+        <td width = 50%>
+          <table>
+            <tr valign="top">
+              <td colspan = 2><b>Charge Schedule Settings:</b>
+            </tr>
+            <tr>
+              <td><b>Resume tracking green energy at:</b></td>
+              <td>
+                {{ optionList(timeList, 
+                     {
+                       "name": "resumeGreenEnergy",
+                       "value": master.settings.get("resumeGreenEnergy", "00:00"),
+                     })|safe
+                }}
+              </td>
+              <td colspan = 3><i>Green Energy Tracking will not start until this time each day.</i></td>
+            </tr>
+            <tr>
+              <td><b>Scheduled Charge Rate:</b></td>
+              <td>
+                {{ optionList(
+                     ampsList,
+                     {
+                       "name": "scheduledAmpsMax",
+                       "value": master.settings.get("scheduledAmpsMax", "0"),
+                     },
+                   )|safe
+                }}
+              </td>
+            </tr>
+            <tr>
+              <td><b>Scheduled Charge Time:</b></td>
+              <td colspan=3><input type=radio name="schedulePerDay" value="1" disabled> Specify Charge Time per Day
+            </tr>
+            <tr>
+              <td>&nbsp;</td>
+              <td colspan=3><input type=radio name="schedulePerDay" value="0" checked> Same Charge Time for all scheduled days:
+              <td width = 30%>&nbsp;</td>
+            </tr>
+            <tr>
+              <td>&nbsp;</td>
+              <td>
+                {{ optionList(timeList, {"name": "startCommonChargeTime"})| safe }}
+              </td>
+              <td> to </td>
+              <td>
+                {{ optionList(timeList, {"name": "endCommonChargeTime"})| safe }}
+              </td>
+              <td>&nbsp;</td>
+              <tr>
+                <td><input class='btn btn-outline-success' type=submit value='Save Settings' /></td>
+              </tr>
+              <tr>
+                <td colspan=4>Click <a href='https://github.com/ngardiner/TWCManager/tree/v{{ master.version }}/docs/Scheduling.md' target='_new'>here</a> for more information on Charge Scheduling.
+                </td>
+              </tr>
+            </table>
+            </td>
+            <td width = 50%>
+              <table>
+               <tr>
+                 <td colspan = 2><b>Charging Schedule:</b>
+               </tr>

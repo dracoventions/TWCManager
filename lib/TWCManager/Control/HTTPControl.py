@@ -5,6 +5,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from termcolor import colored
 from datetime import datetime, timedelta
+import jinja2
 import json
 import re
 import threading
@@ -44,48 +45,95 @@ class HTTPControl:
             self.master.releaseModule("lib.TWCManager.Control", "HTTPControl")
             return None
 
-        httpd = ThreadingSimpleServer(("", self.httpPort), HTTPControlHandler)
-        httpd.master = master
+        HTTPHandler = CreateHTTPHandlerClass(master)
+        httpd = ThreadingSimpleServer(("", self.httpPort), HTTPHandler)
         self.master.debugLog(1, "HTTPCtrl", "Serving at port: " + str(self.httpPort))
         threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
 
-class HTTPControlHandler(BaseHTTPRequestHandler):
+def CreateHTTPHandlerClass(master):
+  class HTTPControlHandler(BaseHTTPRequestHandler):
+    ampsList = []
     fields = {}
+    hoursDurationList = []
+    master = None
     path = ""
-    url = None
     post_data = ""
-    version = "v1.2.1"
+    templateEnv = None
+    templateLoader = None
+    timeList = []
+    url = None
 
-    def do_bootstrap(self):
-        page = """
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha384-tsQFqpEReu7ZLhBV2VZlAu7zcOV+rXbYlF2cqB8txI/8aZajjp4Bqd+V6D5IgvKT" crossorigin="anonymous"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
-        <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css' integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'>
-        <link rel='stylesheet' href='/static/css/styles.css'>
-        """
-        page += (
-                "<link rel='icon' type='image/png' href='https://raw.githubusercontent.com/ngardiner/TWCManager"
-                "/master/tree/%s/html/favicon.png'> "
-                % self.version
-        )
-        return page
+    def __init__(self, *args, **kwargs):
+
+        # Populate ampsList so that any function which requires a list of supported
+        # TWC amps can easily access it
+        if not len(self.ampsList):
+            self.ampsList.append([0, "Disabled"])
+            for amp in range(5, (master.config["config"].get("wiringMaxAmpsPerTWC", 5)) + 1):
+                self.ampsList.append([amp, str(amp) + "A"])
+
+        # Populate list of hours
+        if not len(self.hoursDurationList):
+            for hour in range(1, 25):
+                self.hoursDurationList.append([(hour * 3600), str(hour) + "h"])
+
+        if not len(self.timeList):
+            for hour in range(0, 24):
+                for mins in [0, 15, 30, 45]:
+                    strHour = str(hour)
+                    strMins = str(mins)
+                    if hour < 10:
+                        strHour = "0" + str(hour)
+                    if mins < 10:
+                        strMins = "0" + str(mins)
+                    self.timeList.append([strHour + ":" + strMins, strHour + ":" + strMins])
+
+        # Define jinja2 template environment
+        # Note that we specify two paths in order to the template loader.
+        # The first is the user specified template. The second is the default.
+        # Jinja2 will try for the specified template first, however if any files
+        # are not found, it will fall back to the default theme.
+        self.templateLoader = jinja2.FileSystemLoader(searchpath=[
+          pathlib.Path(__file__).resolve().parent.as_posix()+"/themes/" + master.settings.get("webControlTheme", "Default")+"/",
+          pathlib.Path(__file__).resolve().parent.as_posix()+"/themes/Default/"])
+        self.templateEnv = jinja2.Environment(loader=self.templateLoader, autoescape=True)
+
+        # Make certain functions available to jinja2
+        # Where we have helper functions that we've used in the fast to
+        # render HTML, we can keep using those even inside jinja2
+        self.templateEnv.globals.update(addButton=self.addButton)
+        self.templateEnv.globals.update(ampsList=self.ampsList)
+        self.templateEnv.globals.update(doChargeSchedule=self.do_chargeSchedule)
+        self.templateEnv.globals.update(navbarItem=self.navbar_item)
+        self.templateEnv.globals.update(optionList=self.optionList)
+        self.templateEnv.globals.update(showStatus=self.show_status)
+
+        # Set master object
+        self.master = master
+
+        # Call parent constructor last, this is where the request is served
+        BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
+
+    def checkBox(self, name, value):
+        cb = "<input type=checkbox name='" + name + "'"
+        if value:
+            cb += " checked"
+        cb += ">"
+        return cb
 
     def do_chargeSchedule(self):
+        schedule = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ]
+        settings = master.settings.get("Schedule", {})
+
         page = """
     <table class='table table-sm'>
       <thead>
         <th scope='col'>&nbsp;</th>
-        <th scope='col'>Sun</th>
-        <th scope='col'>Mon</th>
-        <th scope='col'>Tue</th>
-        <th scope='col'>Wed</th>
-        <th scope='col'>Thu</th>
-        <th scope='col'>Fri</th>
-        <th scope='col'>Sat</th>
+        """
+        for day in schedule:
+            page += "<th scope='col'>" + day[:3] + "</th>"
+        page += """
       </thead>
       <tbody>"""
         for i in (x for y in (range(6, 24), range(0, 6)) for x in y):
@@ -96,141 +144,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         page += "</tbody>"
         page += "</table>"
 
-        return page
-
-    def do_jsrefresh(self):
-        page = """
-      <script>
-
-      // AJAJ refresh for getStatus API call
-      $(document).ready(function() {  
-          function requestStatus() {
-              $.ajax({
-                  url: "/api/getStatus",
-                  dataType: "text",
-                  cache: false,
-                  success: function(data) {
-                      var json = $.parseJSON(data);
-                      Object.keys(json).forEach(function(key) {
-                        $('#'+key).html(json[key]);
-                      });
-
-                      // Change the state of the Charge Now button based on Charge Policy
-                      if (json["currentPolicy"] == "Charge Now") {
-                        document.getElementById("start_chargenow").value = "Update Charge Now";
-                        document.getElementById("cancel_chargenow").disabled = false;
-                      } else {
-                        document.getElementById("start_chargenow").value = "Start Charge Now";
-                        document.getElementById("cancel_chargenow").disabled = true;
-                      }
-                  }             
-              });
-              setTimeout(requestStatus, 3000);
-          }
-
-          requestStatus();
-      });
-
-      // AJAJ refresh for getSlaveTWCs API call
-      $(document).ready(function() {
-          function requestSlaves() {
-              $.ajax({
-                  url: "/api/getSlaveTWCs",
-                  dataType: "text",
-                  cache: false,
-                  success: function(data) {
-                      var json = $.parseJSON(data);
-                      Object.keys(json).forEach(function(key) {
-                        var slvtwc = json[key];
-                        var twc = '#' + slvtwc['TWCID']
-                        Object.keys(slvtwc).forEach(function(key) {
-                          $(twc+'_'+key).html(slvtwc[key]);
-                        });
-                      });
-                  }
-              });
-              setTimeout(requestSlaves, 3000);
-          }
-
-          requestSlaves();
-      });
-
-      $(document).ready(function() {
-        $("#start_chargenow").click(function(e) {
-          e.preventDefault();
-          $.ajax({
-            type: "POST",
-            url: "/api/chargeNow",
-            data: JSON.stringify({
-              chargeNowRate: $("#chargeNowRate").val(),
-              chargeNowDuration: $("#chargeNowDuration").val()
-            }),
-            dataType: "json"
-          });
-        });
-      });
-
-      $(document).ready(function() {
-        $("#cancel_chargenow").click(function(e) {
-          e.preventDefault();
-          $.ajax({
-            type: "POST",
-            url: "/api/cancelChargeNow",
-            data: {}
-          });
-        });
-      });
-
-      $(document).ready(function() {
-        $("#send_start_command").click(function(e) {
-          e.preventDefault();
-          $.ajax({
-            type: "POST",
-            url: "/api/sendStartCommand",
-            data: {}
-          });
-        });
-      });
-
-      $(document).ready(function() {
-        $("#send_stop_command").click(function(e) {
-          e.preventDefault();
-          $.ajax({
-            type: "POST",
-            url: "/api/sendStopCommand",
-            data: {}
-          });
-        });
-      });
-
-      // Enable tooltips
-      $(function () {
-        $('[data-toggle="tooltip"]').tooltip()
-      })
-      </script> """
-        return page
-
-    def do_navbar(self):
-        page = """
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-            <a class="navbar-brand" href="/">TWCManager</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavTWC" aria-controls="navbarNavTWC" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNavTWC">
-                <ul class="navbar-nav mr-auto">
-        """
-        page += self.navbar_item("/", "Home")
-        page += self.navbar_item("/policy", "Policy")
-        page += self.navbar_item("/schedule", "Schedule")
-        page += self.navbar_item("/settings", "Settings")
-        page += self.navbar_item("/debug", "Debug")
-        page += self.navbar_item("https://github.com/ngardiner/TWCManager", "GitHub")
-        page += "</ul>"
-        page += "<span class='navbar-text'>%s</span>" % self.version
-        page += "</div></nav>"
-        page += "<div class='container-fluid'>"
         return page
 
     def navbar_item(self, url, name):
@@ -250,7 +163,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.send_header("Content-type", "application/json")
             self.end_headers()
 
-            json_data = json.dumps(self.server.master.config)
+            json_data = json.dumps(master.config)
             # Scrub output of passwords and API keys
             json_datas = re.sub(r'"password": ".*?",', "", json_data)
             json_data = re.sub(r'"apiKey": ".*?",', "", json_datas)
@@ -262,7 +175,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
             json_data = json.dumps(
-                self.server.master.getModuleByName("Policy").charge_policy
+                master.getModuleByName("Policy").charge_policy
             )
             self.wfile.write(json_data.encode("utf-8"))
 
@@ -274,7 +187,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 "maxAmps": 0,
                 "reportedAmpsActual": 0,
             }
-            for slaveTWC in self.server.master.getSlaveTWCs():
+            for slaveTWC in master.getSlaveTWCs():
                 TWCID = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
                 data[TWCID] = {
                     "currentVIN": slaveTWC.currentVIN,
@@ -320,7 +233,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.wfile.write(json_data.encode("utf-8"))
 
         elif self.url.path == "/api/getStatus":
-            data = self.server.master.getStatus()
+            data = master.getStatus()
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
@@ -339,18 +252,18 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             startTime = startTime.replace(minute=math.floor(startTime.minute / 5) * 5)
 
             source = (
-                self.server.master.settings["history"]
-                if "history" in self.server.master.settings
+                master.settings["history"]
+                if "history" in master.settings
                 else []
             )
             data = {k: v for k, v in source if datetime.fromisoformat(k) >= startTime}
 
             avgCurrent = 0
-            for slave in self.server.master.getSlaveTWCs():
+            for slave in master.getSlaveTWCs():
                 avgCurrent += slave.historyAvgAmps
             data[
                 endTime.isoformat(timespec="seconds")
-            ] = self.server.master.convertAmpsToWatts(avgCurrent)
+            ] = master.convertAmpsToWatts(avgCurrent)
 
             output = [
                 {
@@ -393,38 +306,38 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 self.wfile.write("".encode("utf-8"))
 
             else:
-                self.server.master.setChargeNowAmps(rate)
-                self.server.master.setChargeNowTimeEnd(durn)
-                self.server.master.queue_background_task({"cmd": "saveSettings"})
+                master.setChargeNowAmps(rate)
+                master.setChargeNowTimeEnd(durn)
+                master.queue_background_task({"cmd": "saveSettings"})
                 self.send_response(202)
                 self.end_headers()
                 self.wfile.write("".encode("utf-8"))
 
         elif self.url.path == "/api/cancelChargeNow":
-            self.server.master.resetChargeNowAmps()
-            self.server.master.queue_background_task({"cmd": "saveSettings"})
+            master.resetChargeNowAmps()
+            master.queue_background_task({"cmd": "saveSettings"})
             self.send_response(202)
             self.end_headers()
             self.wfile.write("".encode("utf-8"))
 
         elif self.url.path == "/api/sendStartCommand":
-            self.server.master.sendStartCommand()
+            master.sendStartCommand()
             self.send_response(204)
             self.end_headers()
 
         elif self.url.path == "/api/sendStopCommand":
-            self.server.master.sendStopCommand()
+            master.sendStopCommand()
             self.send_response(204)
             self.end_headers()
 
         elif self.url.path == "/api/checkArrival":
-            self.server.master.queue_background_task({"cmd": "checkArrival"})
+            master.queue_background_task({"cmd": "checkArrival"})
             self.send_response(202)
             self.end_headers()
             self.wfile.write("".encode("utf-8"))
 
         elif self.url.path == "/api/checkDeparture":
-            self.server.master.queue_background_task({"cmd": "checkDeparture"})
+            master.queue_background_task({"cmd": "checkDeparture"})
             self.send_response(202)
             self.end_headers()
             self.wfile.write("".encode("utf-8"))
@@ -463,18 +376,18 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                     or amps <= 0
                     or weekDaysBitmap == 0
             ):
-                self.server.master.setScheduledAmpsMax(0)
-                self.server.master.setScheduledAmpsStartHour(-1)
-                self.server.master.setScheduledAmpsEndHour(-1)
-                self.server.master.setScheduledAmpsDaysBitmap(0)
+                master.setScheduledAmpsMax(0)
+                master.setScheduledAmpsStartHour(-1)
+                master.setScheduledAmpsEndHour(-1)
+                master.setScheduledAmpsDaysBitmap(0)
             else:
-                self.server.master.setScheduledAmpsMax(amps)
-                self.server.master.setScheduledAmpsStartHour(startingMinute / 60)
-                self.server.master.setScheduledAmpsEndHour(endingMinute / 60)
-                self.server.master.setScheduledAmpsDaysBitmap(weekDaysBitmap)
-            self.server.master.setScheduledAmpsBatterySize(batterySize)
-            self.server.master.setScheduledAmpsFlexStart(flexStart)
-            self.server.master.queue_background_task({"cmd": "saveSettings"})
+                master.setScheduledAmpsMax(amps)
+                master.setScheduledAmpsStartHour(startingMinute / 60)
+                master.setScheduledAmpsEndHour(endingMinute / 60)
+                master.setScheduledAmpsDaysBitmap(weekDaysBitmap)
+            master.setScheduledAmpsBatterySize(batterySize)
+            master.setScheduledAmpsFlexStart(flexStart)
+            master.queue_background_task({"cmd": "saveSettings"})
             self.send_response(202)
             self.end_headers()
             self.wfile.write("".encode("utf-8"))
@@ -487,37 +400,12 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
         self.debugLogAPI("Ending API POST")
 
-    def do_get_debug(self):
-        page = "<!DOCTYPE html>"
-        page += "<html lang='en'><head>"
-        page += "<title>TWCManager</title>"
-        page += self.do_bootstrap()
-        page += self.do_jsrefresh()
-        page += "</head>"
-        page += "<body>"
-        page += self.do_navbar()
-        page += """
-          Debug Interface - Coming soon
-            </div>
-        </body>
-        </html>
-        """
-        return page
-
     def do_get_policy(self):
-        page = "<!DOCTYPE html>"
-        page += "<html lang='en'><head>"
-        page += "<title>TWCManager</title>"
-        page += self.do_bootstrap()
-        page += self.do_jsrefresh()
-        page += "</head>"
-        page += "<body>"
-        page += self.do_navbar()
-        page += """
+        page = """
       <table>
         """
         j = 0
-        for policy in self.server.master.getModuleByName("Policy").charge_policy:
+        for policy in master.getModuleByName("Policy").charge_policy:
             if j == 0:
                 page += "<tr><th>Policy Override Point</th></tr>"
                 page += "<tr><td>Emergency</td></tr>"
@@ -541,114 +429,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
       </div>
     </body>
         """
-        return page
-
-    def do_get_schedule(self):
-        page = "<!DOCTYPE html>"
-        page += "<html lang='en'><head>"
-        page += "<title>TWCManager</title>"
-        page += self.do_bootstrap()
-        page += self.do_jsrefresh()
-        page += "</head>"
-        page += "<body>"
-        page += self.do_navbar()
-        page += """
-        <table>
-          <tr>
-            <td><b>Resume tracking green energy at:</b></td>
-            <td><select name = 'resumeGreenEnergy'>
-        """
-        for hr in range(0, 24):
-            page += "<option value = ''>" + str(hr) + "</option>"
-        page += """
-            </select></td>
-          </tr>
-        """
-        page += """
-        </table>
-        </div>
-    </body>
-        """
-        return page
-
-    def do_get_settings(self):
-        page = "<!DOCTYPE html>"
-        page += "<html lang='en'><head>"
-        page += "<title>TWCManager</title>"
-        page += self.do_bootstrap()
-        page += self.do_jsrefresh()
-        page += "</head>"
-        page += "<body>"
-        page += self.do_navbar()
-        page += """
-
-    <form method=POST action='/settings/save'>
-      <table>
-        <tr>
-          <th>Stop Charging Method</th>
-          <td>
-        """
-        page += self.optionList(
-            [
-                [1, "Tesla API"],
-                [2, "Stop Responding to Slaves"],
-                [3, "Send Stop Command"],
-            ],
-            {
-                "name": "chargeStopMode",
-                "value": self.server.master.settings.get("chargeStopMode", 1),
-            },
-        )
-        page += """
-          </td>
-        </tr>
-        <tr>
-          <th>Non-Scheduled power action:</th>
-          <td>
-        """
-        page += self.optionList(
-            [
-                [1, "Charge at specified Non-Scheduled Charge Rate"],
-                [2, "Do not Charge"],
-                [3, "Track Green Energy"],
-            ],
-            {
-                "name": "nonScheduledAction",
-                "value": self.server.master.settings.get("nonScheduledAction", 1),
-            },
-        )
-        page += """
-        </tr>
-        <tr>
-          <th>Non-scheduled power charge rate:</th>
-          <td>
-        """
-        maxamps = self.server.master.config["config"].get("wiringMaxAmpsPerTWC", 5)
-        amps = []
-        for amp in range(5, (maxamps + 1)):
-            amps.append([amp, str(amp) + "A"])
-        page += self.optionList(
-            amps,
-            {
-                "name": "nonScheduledAmpsMax",
-                "value": self.server.master.settings.get("nonScheduledAmpsMax", "6"),
-            },
-        )
-        page += """
-          </td>
-        </tr>
-        <tr>
-          <td>&nbsp;</td>
-          <td><input class='btn btn-outline-success' type=submit value='Save Settings' /></td>
-        </tr>
-      </table>
-    </form>
-        """
-        page += (
-                "<p>Click <a href='https://github.com/ngardiner/TWCManager/tree/%s/docs/Settings.md' target='_blank'>here</a> for detailed information on settings on this page</p>"
-                % self.version
-        )
-        page += "</div></body></html>"
         return page
 
     def do_GET(self):
@@ -677,7 +457,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                     self.send_response(404)
                     return
 
-        # server API requests
+        # Service API requests
         if self.url.path.startswith("/api/"):
             self.do_API_GET()
             return
@@ -691,42 +471,18 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.send_header("Content-type", "text/html")
             self.end_headers()
 
+            # Load "main" template and render
+            self.template = self.templateEnv.get_template("main.html.j2")
+
+            # Set some values that we use within the template
+            # Check if we're able to access the Tesla API
+            self.apiAvailable = master.getModuleByName(
+                "TeslaAPI"
+            ).car_api_available()
+            self.scheduledAmpsMax = master.getScheduledAmpsMax()
+
             # Send the html message
-            page = "<!DOCTYPE html>"
-            page += "<html lang='en'><head>"
-            page += "<title>TWCManager</title>"
-            page += self.do_bootstrap()
-            page += self.do_jsrefresh()
-            page += "</head>"
-            page += "<body>"
-            page += self.do_navbar()
-            page += "<table border='0' padding='0' margin='0' width='100%'>"
-            page += "<tr width='100%'><td valign='top' width='70%'>"
-
-            if self.url.path == "/apiacct/False":
-                page += "<font color='red'><b>Failed to log in to Tesla Account. Please check username and password and try again.</b></font>"
-
-            if (
-                not self.server.master.teslaLoginAskLater
-                and self.url.path != "/apiacct/True"
-            ):
-                # Check if we have already stored the Tesla credentials
-                # If we can access the Tesla API okay, don't prompt
-                if not self.server.master.getModuleByName(
-                        "TeslaAPI"
-                ).car_api_available():
-                    page += self.request_teslalogin()
-
-            if self.url.path == "/apiacct/True":
-                page += "<b>Thank you, successfully fetched Tesla API token."
-
-            page += self.show_status()
-            page += "</td><td valign=top width='30%'>"
-            page += self.do_chargeSchedule()
-            page += "</td></tr>"
-            page += "</table>"
-            page += "</div>"
-            page += "</html>"
+            page = self.template.render(vars(self))
 
             self.wfile.write(page.encode("utf-8"))
             return
@@ -735,7 +491,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
-            page = self.do_get_debug()
+
+            # Load debug template and render
+            self.template = self.templateEnv.get_template("debug.html.j2")
+            page = self.template.render(self.__dict__)
+
             self.wfile.write(page.encode("utf-8"))
             return
 
@@ -743,7 +503,12 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
-            page = self.do_get_policy()
+
+            # Load policy template and render
+            self.template = self.templateEnv.get_template("policy.html.j2")
+            page = self.template.render(self.__dict__)
+
+            page += self.do_get_policy()
             self.wfile.write(page.encode("utf-8"))
             return
 
@@ -751,7 +516,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
-            page = self.do_get_schedule()
+
+            # Load template and render
+            self.template = self.templateEnv.get_template("schedule.html.j2")
+            page = self.template.render(self.__dict__)
+
             self.wfile.write(page.encode("utf-8"))
             return
 
@@ -759,7 +528,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
-            page = self.do_get_settings()
+
+            # Load template and render
+            self.template = self.templateEnv.get_template("settings.html.j2")
+            page = self.template.render(self.__dict__)
+
             self.wfile.write(page.encode("utf-8"))
             return
 
@@ -790,6 +563,11 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
         self.fields = urllib.parse.parse_qs(self.post_data.decode("utf-8"))
 
+        if self.url.path == "/schedule/save":
+            # User has submitted schedule.
+            self.process_save_schedule()
+            return
+
         if self.url.path == "/settings/save":
             # User has submitted settings.
             # Call dedicated function
@@ -819,6 +597,17 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         )
         return page
 
+    def getFieldValue(self, key):
+        # Parse the form value represented by key, and return the
+        # value either as an integer or string
+        keya = str(key)
+        vala = self.fields[key][0].replace("'", "")
+        try:
+            if int(vala) or vala == "0":
+                return int(vala)
+        except ValueError:
+            return vala
+
     def log_message(self, format, *args):
         pass
 
@@ -841,19 +630,13 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
         # Write settings
         for key in self.fields:
-            keya = str(key)
-            vala = self.fields[key][0].replace("'", "")
-            try:
-                if int(vala):
-                    self.server.master.settings[keya] = int(vala)
-            except ValueError:
-                self.server.master.settings[keya] = vala
+            master.settings[key] = self.getFieldValue(key)
 
         # If Non-Scheduled power action is either Do not Charge or
         # Track Green Energy, set Non-Scheduled power rate to 0
-        if int(self.server.master.settings.get("nonScheduledAction", 1)) > 1:
-            self.server.master.settings["nonScheduledAmpsMax"] = 0
-        self.server.master.queue_background_task({"cmd": "saveSettings"})
+        if int(master.settings.get("nonScheduledAction", 1)) > 1:
+            master.settings["nonScheduledAmpsMax"] = 0
+        master.queue_background_task({"cmd": "saveSettings"})
 
         # Redirect to the index page
         self.send_response(302)
@@ -865,7 +648,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
     def process_teslalogin(self):
         # Check if we are skipping Tesla Login submission
 
-        if not self.server.master.teslaLoginAskLater:
+        if not master.teslaLoginAskLater:
             later = False
             try:
                 later = len(self.fields["later"])
@@ -873,12 +656,12 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
                 later = False
 
             if later:
-                self.server.master.teslaLoginAskLater = True
+                master.teslaLoginAskLater = True
 
-        if not self.server.master.teslaLoginAskLater:
+        if not master.teslaLoginAskLater:
             # Connect to Tesla API
 
-            carapi = self.server.master.getModuleByName("TeslaAPI")
+            carapi = master.getModuleByName("TeslaAPI")
             carapi.setCarApiLastErrorTime(0)
             ret = carapi.car_api_available(
                 self.fields["email"][0], self.fields["password"][0]
@@ -900,28 +683,6 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             self.wfile.write("".encode("utf-8"))
             return
 
-    def request_teslalogin(self):
-        page = "<form action='/tesla-login' method='POST'>"
-        page += "<p>Enter your email and password to allow TWCManager to start and "
-        page += "stop Tesla vehicles you own from charging. These credentials are "
-        page += "sent once to Tesla and are not stored. Credentials must be entered "
-        page += "again if no cars are connected to this charger for over 45 days."
-        page += "</p>"
-        page += "<input type=hidden name='page' value='tesla-login' />"
-        page += "<p>"
-        page += "<table>"
-        page += "<tr><td>Tesla Account E-Mail:</td>"
-        page += "<td><input type='text' name='email' value=''></td></tr>"
-        page += "<tr><td>Password:</td>"
-        page += "<td><input type='password' name='password'></td></tr>"
-        page += "<tr><td><input type='submit' name='submit' value='Log In'></td>"
-        page += "<td><input type='submit' name='later' value='Ask Me Later'></td>"
-        page += "</tr>"
-        page += "</table>"
-        page += "</p>"
-        page += "</form>"
-        return page
-
     def show_commands(self):
 
         page = """
@@ -931,20 +692,13 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
           <tr><td width = '8%'>Charge for:</td>
           <td width = '7%'>
         """
-        hours = []
-        for hour in range(1, 25):
-            hours.append([(hour * 3600), str(hour) + "h"])
-        page += self.optionList(hours, {"name": "chargeNowDuration"})
+        page += self.optionList(self.hoursDurationList, {"name": "chargeNowDuration"})
         page += """
           </td>
           <td width = '8%'>Charge Rate:</td>
           <td width = '7%'>
         """
-        amps = []
-        maxamps = self.server.master.config["config"].get("wiringMaxAmpsPerTWC", 5)
-        for amp in range(5, (maxamps + 1)):
-            amps.append([amp, str(amp) + "A"])
-        page += self.optionList(amps, {"name": "chargeNowRate"})
+        page += self.optionList(self.ampsList[1:], {"name": "chargeNowRate"})
         page += """
           </td>
           <td>
@@ -981,55 +735,19 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
 
     def show_status(self):
 
-        page = """
-        <table width='100%'><tr><td width='60%'>
-        <table class='table table-dark'>
-        <tr>
-          <th>Amps to share across all TWCs:</th>
-          <td><div id='maxAmpsToDivideAmongSlaves'></div></td><td>amps</td>
-        </tr>
-        <tr>
-          <th>Current Generation</th>
-          <td><div id='generationWatts'></div></td><td>watts</td>
-          <td><div id="generationAmps"></div></td><td>amps</td>
-        </tr>
-        <tr>
-          <th>Current Consumption</th>
-          <td><div id='consumptionWatts'></div></td><td>watts</td>
-          <td><div id='consumptionAmps'></div></td><td>amps</td>
-        </tr>
-        <tr>
-          <th>Current Charger Load</th>
-          <td><div id="chargerLoadWatts"></div></td><td>watts</td>
-        </tr>
-        <tr>
-          <th>Number of Cars Charging</th>
-          <td><div id="carsCharging"></div></td>
-          <td>cars</td>
-        </tr>
-        </table></td>
-        """
-
-        page += "<td width='40%'>"
-        page += "<table class='table table-dark'>"
-        page += "<tr><th>Current Policy</th>"
-        page += "<td><div id='currentPolicy'></div></td></tr>"
-        page += "<tr><th>Scheduled Charging Amps</th>"
-        page += "<td>" + str(self.server.master.getScheduledAmpsMax()) + "</td></tr>"
-
-        page += "<tr><th>Scheduled Charging Start Hour</th>"
-        page += "<td>" + str(self.server.master.getScheduledAmpsStartHour())
+        page = "<tr><th>Scheduled Charging Start Hour</th>"
+        page += "<td>" + str(master.getScheduledAmpsStartHour())
         if (
-            self.server.master.getScheduledAmpsTimeFlex()[0]
-            != self.server.master.getScheduledAmpsStartHour()
+            master.getScheduledAmpsTimeFlex()[0]
+            != master.getScheduledAmpsStartHour()
         ):
             page += " (Flex: "
-            page += str(self.server.master.getScheduledAmpsTimeFlex()[0])
+            page += str(master.getScheduledAmpsTimeFlex()[0])
             page += ")"
         page += "</td></tr>"
 
         page += "<tr><th>Scheduled Charging End Hour</th>"
-        page += "<td>" + str(self.server.master.getScheduledAmpsEndHour()) + "</td>"
+        page += "<td>" + str(master.getScheduledAmpsEndHour()) + "</td>"
         page += """
         </tr>
         <tr>
@@ -1067,7 +785,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             <th width='2%'>Commands</th>
           </tr></thead>
         """
-        for slaveTWC in self.server.master.getSlaveTWCs():
+        for slaveTWC in master.getSlaveTWCs():
             twcid = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
             page += "<tr>"
             page += "<td>%s</td>" % twcid
@@ -1106,7 +824,7 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
         return page
 
     def debugLogAPI(self, message):
-        self.server.master.debugLog(10, 
+        master.debugLog(10, 
             "HTTPCtrl", 
             message
             + " (Url: "
@@ -1115,3 +833,5 @@ class HTTPControlHandler(BaseHTTPRequestHandler):
             + str(self.client_address[0])
             + ")",
         )
+
+  return HTTPControlHandler

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang='en'>
+  <head>
+    <title>TWCManager</title>
+    {% include 'bootstrap.html.j2' %}
+    {% include 'jsrefresh.html.j2' %}
+  </head>
+  <body>
+    {% include 'navbar.html.j2' %}
+    <table border='0' padding='0' margin='0' width='100%'>
+      <tr width='100%'>
+        <td valign='top' width='70%'>
+          {% if url.path == "/apiacct/False" %}
+             <font color='red'>
+               <b>Failed to log in to Tesla Account. Please check username and password and try again.</b>
+             </font>
+          {% endif %}
+
+          {% if not master.teslaLoginAskLater
+                and url.path != "/apiacct/True" %}
+                <!-- Check if we have already stored the Tesla credentials
+                     If we can access the Tesla API okay, don't prompt -->
+                {% if not apiAvailable %}
+                    {% include 'request_teslalogin.html.j2' %}
+                {% endif %}
+          {% endif %}
+          {% if url.path == "/apiacct/True" %}
+             <b>Thank you, successfully fetched Tesla API token.</b>
+          {% endif %}
+
+          {% include 'showStatus.html.j2' %}
+          {{ showStatus()|safe }}
+        </td>
+        <td valign=top width='30%'>
+            {{ doChargeSchedule()|safe }}
+        </td>
+      </tr>
+    </table>
+  </div>
+</html>
+
+

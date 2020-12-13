@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang='en'>
+  <head>
+    <title>TWCManager</title>
+    {% include 'bootstrap.html.j2' %}
+    {% include 'jsrefresh.html.j2' %}
+  </head>
+  <body>
+    {% include 'navbar.html.j2' %}
+    <form method=POST action='/settings/save'>
+      <table>
+        <tr>
+          <th>Web Interface Theme</th>
+          <td>
+            {{ optionList(
+              [
+                ["Default", "Default Web Theme"],
+                ["Modern", "Modern Theme"],
+                ["Test", "Test Option (Non Functional)"],
+              ],
+              {
+                "name": "webControlTheme",
+                "value": master.settings.get("webControlTheme", "Default"),
+              },
+            )|safe }}
+          </td>
+        </tr>
+        <tr>
+          <th>Stop Charging Method</th>
+          <td>
+            {{ optionList(
+              [
+                [1, "Tesla API"],
+                [2, "Stop Responding to Slaves"],
+                [3, "Send Stop Command"],
+              ],
+              {
+                "name": "chargeStopMode",
+                "value": master.settings.get("chargeStopMode", 1),
+              },
+            )|safe }}
+          </td>
+        </tr>
+        <tr>
+          <th>Non-Scheduled power action:</th>
+          <td>
+            {{ optionList(
+              [
+                [1, "Charge at specified Non-Scheduled Charge Rate"],
+                [2, "Do not Charge"],
+                [3, "Track Green Energy"],
+              ],
+              {
+                "name": "nonScheduledAction",
+                "value": master.settings.get("nonScheduledAction", 1),
+              },
+            )|safe }}
+          </td>
+        </tr>
+        <tr>
+          <th>Non-scheduled power charge rate:</th>
+          <td>
+            {{ optionList(ampsList[1:], 
+                 {
+                   "name": "nonScheduledAmpsMax",
+                   "value": master.settings.get("nonScheduledAmpsMax", "6")
+                 })|safe }}
+          </td>
+        </tr>
+        <tr>
+          <td>&nbsp;</td>
+          <td><input class='btn btn-outline-success' type=submit value='Save Settings' /></td>
+        </tr>
+      </table>
+    </form>
+    <p>Click <a href='https://github.com/ngardiner/TWCManager/tree/v{{ master.version }}/docs/Settings.md' target='_blank'>here</a> for detailed information on settings on this page</p>
+  </div></body>
+</html>
+

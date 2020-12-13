@@ -1,0 +1,108 @@
+      <script>
+
+      // AJAJ refresh for getStatus API call
+      $(document).ready(function() {  
+          function requestStatus() {
+              $.ajax({
+                  url: "/api/getStatus",
+                  dataType: "text",
+                  cache: false,
+                  success: function(data) {
+                      var json = $.parseJSON(data);
+                      Object.keys(json).forEach(function(key) {
+                        $('#'+key).html(json[key]);
+                      });
+
+                      // Change the state of the Charge Now button based on Charge Policy
+                      if (json["currentPolicy"] == "Charge Now") {
+                        document.getElementById("start_chargenow").value = "Update Charge Now";
+                        document.getElementById("cancel_chargenow").disabled = false;
+                      } else {
+                        document.getElementById("start_chargenow").value = "Start Charge Now";
+                        document.getElementById("cancel_chargenow").disabled = true;
+                      }
+                  }             
+              });
+              setTimeout(requestStatus, 3000);
+          }
+
+          requestStatus();
+      });
+
+      // AJAJ refresh for getSlaveTWCs API call
+      $(document).ready(function() {
+          function requestSlaves() {
+              $.ajax({
+                  url: "/api/getSlaveTWCs",
+                  dataType: "text",
+                  cache: false,
+                  success: function(data) {
+                      var json = $.parseJSON(data);
+                      Object.keys(json).forEach(function(key) {
+                        var slvtwc = json[key];
+                        var twc = '#' + slvtwc['TWCID']
+                        Object.keys(slvtwc).forEach(function(key) {
+                          $(twc+'_'+key).html(slvtwc[key]);
+                        });
+                      });
+                  }
+              });
+              setTimeout(requestSlaves, 3000);
+          }
+
+          requestSlaves();
+      });
+
+      $(document).ready(function() {
+        $("#start_chargenow").click(function(e) {
+          e.preventDefault();
+          $.ajax({
+            type: "POST",
+            url: "/api/chargeNow",
+            data: JSON.stringify({
+              chargeNowRate: $("#chargeNowRate").val(),
+              chargeNowDuration: $("#chargeNowDuration").val()
+            }),
+            dataType: "json"
+          });
+        });
+      });
+
+      $(document).ready(function() {
+        $("#cancel_chargenow").click(function(e) {
+          e.preventDefault();
+          $.ajax({
+            type: "POST",
+            url: "/api/cancelChargeNow",
+            data: {}
+          });
+        });
+      });
+
+      $(document).ready(function() {
+        $("#send_start_command").click(function(e) {
+          e.preventDefault();
+          $.ajax({
+            type: "POST",
+            url: "/api/sendStartCommand",
+            data: {}
+          });
+        });
+      });
+
+      $(document).ready(function() {
+        $("#send_stop_command").click(function(e) {
+          e.preventDefault();
+          $.ajax({
+            type: "POST",
+            url: "/api/sendStopCommand",
+            data: {}
+          });
+        });
+      });
+
+      // Enable tooltips
+      $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+      })
+      </script>

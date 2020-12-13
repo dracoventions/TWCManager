@@ -10,6 +10,7 @@ setup(
     # Dependencies
     install_requires=[
         "commentjson>=0.8.3",
+        "jinja2==2.11.2",
         "paho_mqtt>=1.5.0",
         "pyserial>=3.4",
         "requests>=2.23.0",
