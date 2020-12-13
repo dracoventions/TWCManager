@@ -672,6 +672,13 @@ def CreateHTTPHandlerClass(master):
         if (master.settings.get("Schedule", None) == None):
             master.settings["Schedule"] = {}
 
+        # Slight issue with checkboxes, you have to default them all to
+        # false, otherwise if one is unticked it is just not sent via form data
+        days = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ]
+        for day in days:
+            master.settings["Schedule"][day]["enabled"] = ""
+            master.settings["Schedule"][day]["flex"] = ""
+
         # Detect schedule keys. Rather than saving them in a flat
         # structure, we'll store them multi-dimensionally
         fieldsout = self.fields.copy()
