@@ -145,11 +145,15 @@ def time_now():
     )
 
 
-def unescape_msg(msg: bytearray, msgLen):
+def unescape_msg(inmsg: bytearray, msgLen):
     # Given a message received on the RS485 network, remove leading and trailing
     # C0 byte, unescape special byte values, and verify its data matches the CRC
     # byte.
-    msg = msg[0:msgLen]
+
+    # Note that a bytearray is mutable, whereas a bytes object isn't.
+    # By initializing a bytearray and concatenating the incoming bytearray
+    # to it, we protect against being passed an immutable bytes object
+    msg = bytearray() + inmsg[0:msgLen]
 
     # See notes in RS485.send() for the way certain bytes in messages are escaped.
     # We basically want to change db dc into c0 and db dd into db.
