@@ -57,13 +57,8 @@ class Fronius:
         # Perform updates if necessary
         self.update()
 
-        # Return consumption value. Fronius consumption is either negative
-        # (export to grid) or positive (import from grid). We add generation
-        # value to make it the delta between this and current consumption
-        if (self.consumedW < 0) or (self.consumedW > 0):
-            return float(self.generatedW + self.consumedW)
-        else:
-            return float(0)
+        # Return consumption value (negated, as this is how it's presented)
+        return float(self.consumedW) * -1
 
     def getGeneration(self):
 
@@ -107,7 +102,7 @@ class Fronius:
 
     def getMeterData(self):
         url = "http://" + self.serverIP + ":" + self.serverPort
-        url = url + "/solar_api/v1/GetMeterRealtimeData.cgi?Scope=Device&DeviceId=0"
+        url = url + "/solar_api/v1/GetPowerFlowRealtimeData.fcgi?Scope=System"
 
         return self.getInverterValue(url)
 
@@ -119,12 +114,6 @@ class Fronius:
             inverterData = self.getInverterData()
             if inverterData:
                 try:
-                    self.generatedW = inverterData["Body"]["Data"]["PAC"]["Value"]
-                except (KeyError, TypeError) as e:
-                    self.debugLog(4, "Exception during parsing Inveter Data (PAC)")
-                    self.debugLog(10, e)
-
-                try:
                     self.voltage = inverterData["Body"]["Data"]["UAC"]["Value"]
                 except (KeyError, TypeError) as e:
                     self.debugLog(4, "Exception during parsing Inveter Data (UAC)")
@@ -133,7 +122,14 @@ class Fronius:
             meterData = self.getMeterData()
             if meterData:
                 try:
-                    self.consumedW = float(meterData["Body"]["Data"]["PowerReal_P_Sum"])
+
+                    self.generatedW = meterData["Body"]["Data"]["Site"]["P_PV"]
+                except (KeyError, TypeError) as e:
+                    self.debugLog(4, "Exception during parsing Meter Data (Generation)")
+                    self.debugLog(10, e)
+
+                try:
+                    self.consumedW = meterData["Body"]["Data"]["Site"]["P_Load"]
                 except (KeyError, TypeError) as e:
                     self.debugLog(
                         4, "Exception during parsing Meter Data (Consumption)"
