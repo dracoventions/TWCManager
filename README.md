@@ -40,6 +40,7 @@ EMS Interfaces read solar generation and/or consumption values from an external 
 | [Fronius Inverter](docs/modules/EMS_Fronius.md) | Available v1.1.0 | Supports Fronius Inverter API |
 | [HomeAssistant](docs/modules/EMS_HASS.md)  | Available v1.0.1 | Supports HomeAssistant sensors |
 | [Kostal (Pico/Plenticore)](docs/modules/EMS_Kostal.md) | Available v1.2.1 | Support for Kostal Inverters via ModBus |
+| [SmartMe](docs/modules/EMS_SmartMe.md)     | Available v1.2.1 | Support for smart-me.com API |
 | [SolarEdge](docs/modules/EMS_SolarEdge.md) | Available v1.2.0 | Support for SolarEdge API |
 | [SolarLog](docs/modules/EMS_SolarLog.md)   | Available v1.2.0 | Supports SolarLog Base API |
 | [Tesla Powerwall2](docs/modules/EMS_Powerwall2.md) | Available v1.1.3 | Support for Tesla Powerwall 2 |

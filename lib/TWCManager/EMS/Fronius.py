@@ -70,6 +70,8 @@ class Fronius:
         self.update()
 
         # Return generation value
+        if not self.generatedW:
+            self.generatedW = 0
         return float(self.generatedW)
 
     def getInverterData(self):
@@ -114,7 +116,8 @@ class Fronius:
             inverterData = self.getInverterData()
             if inverterData:
                 try:
-                    self.voltage = inverterData["Body"]["Data"]["UAC"]["Value"]
+                    if "UAC" in inverterData["Body"]["Data"]:
+                        self.voltage = inverterData["Body"]["Data"]["UAC"]["Value"]
                 except (KeyError, TypeError) as e:
                     self.debugLog(4, "Exception during parsing Inveter Data (UAC)")
                     self.debugLog(10, e)
