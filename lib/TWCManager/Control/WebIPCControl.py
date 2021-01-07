@@ -9,6 +9,7 @@ class WebIPCControl:
 
     config = None
     configConfig = None
+    configIPC = None
     debugLevel = 0
     master = None
     webIPCkey = None
@@ -22,6 +23,17 @@ class WebIPCControl:
             self.configConfig = {}
         self.debugLevel = self.configConfig.get("debugLevel", 0)
         self.master = master
+
+        try:
+            self.configIPC = master.config["control"]["IPC"]
+        except KeyError:
+            self.configIPC = {}
+        self.status = self.configIPC.get("enabled", False)
+
+        # Unload if this module is disabled or misconfigured
+        if not self.status:
+            self.master.releaseModule("lib.TWCManager.Control", "WebIPCControl")
+            return None
 
         # Create an IPC (Interprocess Communication) message queue that we can
         # periodically check to respond to queries from the TWCManager web interface.

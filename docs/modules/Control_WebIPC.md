@@ -6,6 +6,22 @@ The Web IPC Control module allows control of the TWCManager Tesla Wall Charger c
 
 This offers decoupling of the Web Server component from TWCManager.
 
+### Note
+
+In v1.2.1, we disable the use of the WebIPC interface by default. We recommend using the new HTTP Control interface. You may need to use the legacy Web Interface if:
+
+   * You are using any feature that is not available in the new interface (should only be the debug interface at this point)
+   * You are interfacing with openWB, which uses the old web interface to control charge rate.
+
+To enable the Web IPC module, configure the following in your ```config.json``` file:
+
+```
+    "control": {
+        "IPC": {
+          "enabled": true
+        },
+```
+
 ### HTTP Control Module vs IPC Web Interface
 
 There are two separate interfaces for managing TWCManager via web browser. These are:
