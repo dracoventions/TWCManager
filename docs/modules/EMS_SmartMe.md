@@ -15,9 +15,11 @@ Note: Only Generation values are supported by this module.
 
 ## JSON Configuration Example
 
+The following configuration should be placed under the "sources" section of the config.json file in your installation, and will enable SmartMe EMS polling.
+
 ```
 "SmartMe": {
-  "enabled": false,
+  "enabled": true,
   "username": "username",
   "password": "password",
   "serialNumber": "ABC1234"
