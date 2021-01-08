@@ -418,24 +418,46 @@ def CreateHTTPHandlerClass(master):
       <table>
         """
         j = 0
-        for policy in master.getModuleByName("Policy").charge_policy:
-            if j == 0:
-                page += "<tr><th>Policy Override Point</th></tr>"
-                page += "<tr><td>Emergency</td></tr>"
-            if j == 1:
-                page += "<tr><th>Policy Override Point</th></tr>"
-                page += "<tr><td>Before</td></tr>"
-            if j == 3:
-                page += "<tr><th>Policy Override Point</th></tr>"
-                page += "<tr><td>After</td></tr>"
-            j += 1
-            page += "<tr><td>&nbsp;</td><td>" + policy["name"] + "</td></tr>"
+        mod_policy = master.getModuleByName("Policy")
+        for policy in mod_policy.charge_policy:
+            if policy in mod_policy.default_policy:
+                cat = "Default"
+                ext = None
+                if j == 0:
+                    ext = "Emergency"
+                elif j == 1:
+                    ext = "Before"
+                elif j == 3:
+                    ext = "After"
+
+                if ext:
+                    page += "<tr><th>Policy Extension Point</th></tr>"
+                    page += "<tr><td>" + ext + "</td></tr>"
+
+                j += 1
+            elif j == 0:
+                cat = "Emergency"
+            elif j == 1:
+                cat = "Before"
+            elif j == 3:
+                cat = "After"
+            page += "<tr><td>&nbsp;</td><td>" + policy["name"] + " (" + cat + ")</td></tr>"
             page += "<tr><th>&nbsp;</th><th>&nbsp;</th><th>Match Criteria</th><th>Condition</th><th>Value</th></tr>"
-            for i in range(0, len(policy["match"])):
+            for match, condition, value in zip(policy["match"], policy["condition"], policy["value"]):
                 page += "<tr><td>&nbsp;</td><td>&nbsp;</td>"
-                page += "<td>" + policy["match"][i] + "</td>"
-                page += "<td>" + policy["condition"][i] + "</td>"
-                page += "<td>" + str(policy["value"][i]) + "</td></tr>"
+                page += "<td>" + str(match)
+                match_result = mod_policy.policyValue(match)
+                if match != match_result:
+                    page += " (" + str(match_result) + ")"
+                page += "</td>"
+
+                page += "<td>" + condition + "</td>"
+
+                page += "<td>" + str(value)
+                value_result = mod_policy.policyValue(value)
+                if value != value_result:
+                    page += " (" + str(value_result) + ")"
+                page += "</td></tr>"
 
         page += """
       </table>
