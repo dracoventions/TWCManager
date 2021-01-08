@@ -419,28 +419,23 @@ def CreateHTTPHandlerClass(master):
         """
         j = 0
         mod_policy = master.getModuleByName("Policy")
+        insertion_points = {
+            0: "Emergency",
+            1: "Before",
+            3: "After"
+        }
         for policy in mod_policy.charge_policy:
             if policy in mod_policy.default_policy:
                 cat = "Default"
-                ext = None
-                if j == 0:
-                    ext = "Emergency"
-                elif j == 1:
-                    ext = "Before"
-                elif j == 3:
-                    ext = "After"
+                ext = insertion_points.get(j, None)
 
                 if ext:
                     page += "<tr><th>Policy Extension Point</th></tr>"
                     page += "<tr><td>" + ext + "</td></tr>"
 
                 j += 1
-            elif j == 0:
-                cat = "Emergency"
-            elif j == 1:
-                cat = "Before"
-            elif j == 3:
-                cat = "After"
+            else:
+                cat = insertion_points.get(j, "Unknown")
             page += "<tr><td>&nbsp;</td><td>" + policy["name"] + " (" + cat + ")</td></tr>"
             page += "<tr><th>&nbsp;</th><th>&nbsp;</th><th>Match Criteria</th><th>Condition</th><th>Value</th></tr>"
             for match, condition, value in zip(policy["match"], policy["condition"], policy["value"]):
