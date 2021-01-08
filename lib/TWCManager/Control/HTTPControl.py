@@ -424,6 +424,7 @@ def CreateHTTPHandlerClass(master):
             1: "Before",
             3: "After"
         }
+        replaced = all(x not in mod_policy.default_policy for x in mod_policy.charge_policy)
         for policy in mod_policy.charge_policy:
             if policy in mod_policy.default_policy:
                 cat = "Default"
@@ -435,7 +436,7 @@ def CreateHTTPHandlerClass(master):
 
                 j += 1
             else:
-                cat = insertion_points.get(j, "Unknown")
+                cat = "Custom" if replaced else insertion_points.get(j, "Unknown")
             page += "<tr><td>&nbsp;</td><td>" + policy["name"] + " (" + cat + ")</td></tr>"
             page += "<tr><th>&nbsp;</th><th>&nbsp;</th><th>Match Criteria</th><th>Condition</th><th>Value</th></tr>"
             for match, condition, value in zip(policy["match"], policy["condition"], policy["value"]):
