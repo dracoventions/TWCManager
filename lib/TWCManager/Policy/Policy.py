@@ -8,7 +8,7 @@ class Policy:
     active_policy = None
 
     # This is the default charge policy.  It can be overridden or extended.
-    charge_policy = [
+    default_policy = [
         # The first policy table entry is for chargeNow. This will fire if
         # chargeNowAmps is set to a positive integer and chargeNowTimeEnd
         # is less than or equal to the current timestamp
@@ -73,6 +73,7 @@ class Policy:
             "charge_limit": "config.greenEnergyLimit",
         },
     ]
+    charge_policy = default_policy[:]
     lastPolicyCheck = 0
     limitOverride = False
     master = None
