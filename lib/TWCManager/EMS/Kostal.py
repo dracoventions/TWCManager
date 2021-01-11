@@ -1,11 +1,14 @@
 # Kostal Modbus interface for realtime solar data
-# written by Andreas Hopfenblatt in 10/2020.
+# written by Andreas Hopfenblatt in Q4/2020.
 # Contact: hopfi2k@me.com
 # Tested with Kostal Plenticore Hybrid 10 inverter
 # should work with other Kostal inverters too
 # connects only via ModBus TCP to the inverter
 # use on your own risk
 #
+import socket
+
+
 class Kostal:
     import time
     from pyModbusTCP import utils
@@ -21,7 +24,7 @@ class Kostal:
     master = None
     serverIP = None
     serverPort = 80
-    status = False
+    enabled = False
     timeout = 10
     voltage = 0
     totalDCPower = 0
@@ -49,20 +52,38 @@ class Kostal:
 
         # initialize variables
         self.debugLevel = self.configConfig.get("debugLevel", 0)
-        self.status = self.configKostal.get("enabled", False)
+        self.enabled = self.configKostal.get("enabled", False)
         self.serverIP = self.configKostal.get("serverIP", None)
         self.modbusPort = int(self.configKostal.get("modbusPort", 1502))
         self.unitID = int(self.configKostal.get("unitID", 71))
 
         # Unload if this module is disabled or not properly configured
-        if ((not self.status) or (not self.serverIP)
-                or (self.serverPort < 1)):
+        if (not self.enabled) or (not self.canConnect()):
+            self.master.debugLog(
+                1,
+                'Kostal',
+                'Error connecting to Kostal Inverter. Please check your configuration!'
+            )
             self.master.releaseModule("lib.TWCManager.EMS", "Kostal")
 
         # module successfully loaded, provide general inverter data
         else:
-            self.getInverterType()
             self.update()
+
+    # check if connection via ModBusTCP is possible
+    def canConnect(self):
+        try:
+            sock = socket.create_connection((self.serverIP, self.modbusPort), timeout=1)
+
+        except socket.timeout as err:
+            self.master.debugLog(1, 'Kostal', 'Timeout connecting to Kostal Inverter. Please check your configuration!')
+            return False
+        except socket.error as err:
+            self.master.debugLog(1, 'Kostal', 'ERROR connecting to Kostal Inverter. Please check your configuration!')
+            return False
+
+        # successfully connected to the inverter
+        return True
 
     # read registers directly from the inverter via Modbus protocol
     def readModbus(self, register, data_format="Float", data_length=2):
@@ -98,6 +119,9 @@ class Kostal:
             # read a string from the modbus register with the given length
             # kostal modbus strings are either 8 or 16 bytes long
             data_raw = self.m_client.read_holding_registers(register, data_length-1)
+            if not data_raw:
+                return False
+
             data_string = ""
             for value in data_raw:
                 hex_value = str(hex(value)[2:])
@@ -120,7 +144,7 @@ class Kostal:
         self.master.debugLog(
             10,
             'Kostal',
-            'Total Solar Power available: ' + f('{self.totalDCPower:5.2f} W')
+            'Total Solar Power available: {:.2f} W'.format(self.totalDCPower)
         )
 
     # update the house consumption from the grid
@@ -130,7 +154,7 @@ class Kostal:
         self.master.debugLog(
             10,
             'Kostal',
-            'Home consumption from Grid: ' + f('{self.home_fromGrid:5.2f} W')
+            'Home consumption from Grid: {:.2f} W'.format(self.home_fromGrid)
         )
 
     # update the house consumption from solar
@@ -140,12 +164,13 @@ class Kostal:
         self.master.debugLog(
             10,
             'Kostal',
-            'Home consumption from Solar: ' + f('{self.home_fromSolar:5.2f} W')
+            'Home consumption from Solar: {:.2f} W'.format(self.home_fromSolar)
         )
 
     # determine the inverter model (type) and the IP it's connected to
     # by reading register 768 (model) and 420 (IP)
     def getInverterType(self):
+        self.inverterType = None
         self.inverterType = self.readModbus(768, "String", 32)
         self.inverterIP = self.readModbus(420, "String", 8)
         self.master.debugLog(
@@ -157,7 +182,7 @@ class Kostal:
     # return the total consumption by the household
     # deduct charger load - if car(s) charging
     def getConsumption(self):
-        if not self.status:
+        if not self.enabled:
             self.master.debugLog(
                 1,
                 'Kostal,',
@@ -172,7 +197,7 @@ class Kostal:
             self.master.debugLog(
                 10,
                 'Kostal',
-                'Total consumption from Grid: ' + f('{self.home_fromGrid + self.home_fromSolar} W')
+                'Total consumption from Grid: {:.2f} W'.format(self.home_fromGrid + self.home_fromSolar)
             )
             return float(self.home_fromGrid + self.home_fromSolar)
 
@@ -182,7 +207,7 @@ class Kostal:
 
     # return the generated power by the inverter
     def getGeneration(self):
-        if not self.status:
+        if not self.enabled:
             self.master.debugLog(
                 10,
                 'Kostal',
