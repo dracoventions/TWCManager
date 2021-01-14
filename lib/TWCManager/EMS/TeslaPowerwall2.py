@@ -102,7 +102,7 @@ class TeslaPowerwall2:
     @property
     def reservePercent(self):
         if self.operatingMode == "backup":
-            return float(98)
+            return float(96)
         else:
             value = self.getOperation()
             return self.adjustPercentage(float(value.get("backup_reserve_percent", 0)))
