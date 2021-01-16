@@ -58,13 +58,24 @@ class ConsoleLogging:
         conwattsDisplay = f("{data.get('conWatts', 0):.0f}W")
         chgwattsDisplay = f("{data.get('chgWatts', 0):.0f}W")
 
-        self.master.debugLog(
-            1,
-            "TWCManager",
-            f(
-                "Green energy generates {colored(genwattsDisplay, 'magenta')}, Consumption {colored(conwattsDisplay, 'magenta')}, Charger Load {colored(chgwattsDisplay, 'magenta')}"
-            ),
-        )
+        if self.config["config"]["subtractChargerLoad"]:
+            othwatts = data.get('conWatts', 0) - data.get('chgWatts', 0)
+            othwattsDisplay = f("{othwatts:.0f}W")
+            self.master.debugLog(
+                1,
+                "TWCManager",
+                f(
+                    "Green energy generates {colored(genwattsDisplay, 'magenta')}, Consumption {colored(conwattsDisplay, 'magenta')} (Other Load {colored(othwattsDisplay, 'magenta')}, Charger Load {colored(chgwattsDisplay, 'magenta')})"
+                ),
+            )
+        else:
+            self.master.debugLog(
+                1,
+                "TWCManager",
+                f(
+                    "Green energy generates {colored(genwattsDisplay, 'magenta')}, Consumption {colored(conwattsDisplay, 'magenta')}, Charger Load {colored(chgwattsDisplay, 'magenta')}"
+                ),
+            )
 
     def slavePower(self, data):
         # Not yet implemented
