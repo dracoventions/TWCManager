@@ -256,9 +256,9 @@ class Policy:
         if value == "now":
             return time.time()
 
-        # If value is "tm_hour", substitute with current hour
-        if value == "tm_hour":
-            return ltNow.tm_hour
+        # If value is "tm_*", substitute with time component
+        if value.startswith("tm_") and hasattr(ltNow, value):
+            return getattr(ltNow, value)
 
         # The remaining checks are case-sensitive!
         #
