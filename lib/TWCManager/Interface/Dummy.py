@@ -5,25 +5,28 @@ class Dummy:
     debugLevel = 0
     enabled = False
     master = None
-    msgBuffer = None
+    msgBuffer = bytes()
     twcID = 1234
     timeLastTx = 0
 
     def __init__(self, master):
         self.master = master
+        classname = self.__class__.__name__
         try:
             self.debugLevel = master.config["config"]["debugLevel"]
         except KeyError:
             pass
 
         # Unload if this module is disabled or misconfigured
+        if "interface" in master.config and classname in master.config["interface"]:
+            self.enabled = master.config["interface"][classname].get("enabled", True)
         if not self.enabled:
-            self.master.releaseModule("lib.TWCManager.Interface", "Dummy")
+            self.master.releaseModule("lib.TWCManager.Interface", classname)
             return None
 
         # Configure the module
         if "interface" in master.config:
-            self.twcID = master.config["interface"]["Dummy"].get("twcID", 1234)
+            self.twcID = master.config["interface"][classname].get("twcID", 1234)
 
     def close(self):
         # NOOP - No need to close anything
