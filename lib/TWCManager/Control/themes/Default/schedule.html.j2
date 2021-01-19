@@ -20,7 +20,7 @@
                 {{ optionList(timeList, 
                      {
                        "name": "resumeGreenEnergy",
-                       "value": master.settings.get("Schedule", {}).get("Settings").get("resumeGreenEnergy", "00:00"),
+                       "value": master.settings.get("Schedule", {}).get("Settings", {}).get("resumeGreenEnergy", "00:00"),
                      })|safe
                 }}
               </td>
