@@ -7,7 +7,7 @@
 
 ## Screenshots
 ![Screenshot](docs/screenshot.png)
-![Screenshot](docs/screenshot2.png)
+![Screenshot](docs/screenshot3.png)
 
 ## How it works
 

@@ -20,6 +20,8 @@ This document logs the changes per release of TWCManager.
   * Expose all time properties to the policy module for evaluation (thanks @MikeBishop)
   * Impovements to policy page in Web UI to show the value of policy parameters (thanks @MikeBishop)
   * Move grace period functionality for vehicles connected prior to policy evaluation to the master module, which opens the door to policy evaluation based on vehicle arrival/VIN (thanks @MikeBishop)
+  * Split and show the values of Charger Load and Other Load in console output when the Subtract Charger Load setting is enabled (thanks @mikey4321)
+  * Added EMS module support for SmartMe API
   * Bugfixes
       * Add a sleep of 5 seconds when waking car up to avoid an infinite loop (thanks @dschuesae)
       * Fix a bug with the legacy web interface which causes the Resume Track Green Energy setting of None to fail. Also added a deprecation notice to the web interface to ensure people don't inadvertently use it over the modular interface.
