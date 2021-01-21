@@ -230,7 +230,7 @@ def background_tasks_thread(master):
             elif task["cmd"] == "updateStatus":
                 update_statuses()
             elif task["cmd"] == "webhook":
-                if(config["config"].get("webhookMethod", "POST") == "GET"):
+                if config["config"].get("webhookMethod", "POST") == "GET":
                     requests.get(task["url"])
                 else:
                     body = master.getStatus()
@@ -573,7 +573,7 @@ while True:
         timeMsgRxStart = time.time()
         while True:
             now = time.time()
-            dataLen = master.getModuleByName("RS485").getBufferLen()
+            dataLen = master.getInterfaceModule().getBufferLen()
             if dataLen == 0:
                 if msgLen == 0:
                     # No message data waiting and we haven't received the
@@ -600,7 +600,7 @@ while True:
                     continue
             else:
                 dataLen = 1
-                data = master.getModuleByName("RS485").read(dataLen)
+                data = master.getInterfaceModule().read(dataLen)
 
             if dataLen != 1:
                 # This should never happen
@@ -1370,7 +1370,7 @@ while True:
                                 0,
                             ),
                         )
-                        master.getModuleByName("RS485").send(
+                        master.getInterfaceModule().send(
                             bytearray(b"\xFD\xEB")
                             + fakeTWCID
                             + kWhPacked
@@ -1448,7 +1448,7 @@ master.queue_background_task({"cmd": "saveSettings"})
 master.backgroundTasksQueue.join()
 
 # Close the input module
-master.getModuleByName("RS485").close()
+master.getInterfaceModule().close()
 
 #
 # End main program
