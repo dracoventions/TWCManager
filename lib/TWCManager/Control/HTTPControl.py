@@ -694,6 +694,8 @@ def CreateHTTPHandlerClass(master):
         # false, otherwise if one is unticked it is just not sent via form data
         days = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ]
         for day in days:
+            if (master.settings["Schedule"].get(day, None) == None):
+                master.settings["Schedule"][day] = {}
             master.settings["Schedule"][day]["enabled"] = ""
             master.settings["Schedule"][day]["flex"] = ""
 
