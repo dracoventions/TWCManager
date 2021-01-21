@@ -31,7 +31,7 @@ class SmartMe:
         self.password = self.configSmartMe.get("password", "")
         self.status = self.configSmartMe.get("enabled", False)
         self.serialNumber = self.configSmartMe.get("serialNumber", None)
-        self.username = self.configSmartMe.get("password", "")
+        self.username = self.configSmartMe.get("username", "")
         self.debugLevel = self.configConfig.get("debugLevel", 0)
 
         # Unload if this module is disabled or misconfigured
@@ -45,8 +45,12 @@ class SmartMe:
             self.master.debugLog(10, "SmartMe", "EMS Module Disabled. Skipping getConsumption")
             return 0
 
-        # Return consumption value
-        return 0
+        # While we don't have separate generation or consumption values, if
+        # the value is a positive value we report it as consumption
+        if self.generatedW < 0:
+            return self.generatedW * -1
+        else:
+            return 0
 
     def getGeneration(self):
 
@@ -58,7 +62,10 @@ class SmartMe:
         self.update()
 
         # Return generation value
-        return self.generatedW
+        if self.generatedW > 0:
+            return self.generatedW
+        else:
+            return 0
 
     def getGenerationValues(self):
         url = "https://smart-me.com/api/DeviceBySerial?serial=" + self.serialNumber
@@ -88,14 +95,21 @@ class SmartMe:
             self.fetchFailed = True
             return False
 
-        jsonResponse = (
-            httpResponse.json()
-            if httpResponse and httpResponse.status_code == 200
-            else None
-        )
+        if httpResponse.status_code != 200:
+            self.master.debugLog(4, "SmartMe", "SmartMe API reports HTTP Status Code "+str(httpResponse.status_code))
+            return False
 
-        if jsonResponse:
-            self.generatedW = float(jsonResponse["ActivePower"])
+        if not httpResponse:
+            self.master.debugLog(4, "SmartMe", "Empty HTTP Response from SmartMe API")
+            return False
+
+        if httpResponse.json():
+            self.generatedW = float(httpResponse.json()["ActivePower"]) * -1
+            if httpResponse.json()["ActivePowerUnit"] == "kW":
+                # Unit is kW, multiply by 1000 for W
+                self.generatedW = (self.generatedW * 1000)
+        else:
+            self.master.debugLog(4, "SmartMe", "No JSON response from SmartMe API")
 
     def setCacheTime(self, cacheTime):
         self.cacheTime = cacheTime

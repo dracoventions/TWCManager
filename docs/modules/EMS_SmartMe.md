@@ -1,8 +1,8 @@
 # SmartMe EMS Module
 
-This module allows querying of [smart-me.com](https://smart-me.com/swagger/ui/index) inverters.
+This module allows querying of [smart-me.com](https://smart-me.com/swagger/ui/index) power sensors.
 
-Note: Only Generation values are supported by this module.
+Note: Only Generation values are supported by this module. The power measured by the sensor will be evaluated as Generation if the value is Negative, or Consumption if the value is Positive. As a result, only a Generation or Consumption value should be shown at any time, but never both.
 
 ## Introduction
 
@@ -10,7 +10,7 @@ Note: Only Generation values are supported by this module.
 | ------------- | --------- |
 | enabled       | *required* Boolean value, ```true``` or ```false```. Determines whether we will poll the SmartMe API |
 | password      | *required* The password for accessing the API |
-| serialNumber  | *required* The Serial Number of the Inverter to query |
+| serialNumber  | *required* The Serial Number of the sensor to query |
 | username      | *required* The username for accessing the API |
 
 ## JSON Configuration Example
