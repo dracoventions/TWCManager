@@ -292,7 +292,7 @@ class Policy:
         if current:
             return (
                 current.get("background_task", "") == "checkGreenEnergy" and
-                not current.get("charge_amps", None)
+                current.get("charge_amps", None) == None
             )
         return False
 
