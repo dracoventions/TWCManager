@@ -37,3 +37,15 @@ The Do not Charge action states that outside of scheduled or Track Green Energy 
       * Track Green Energy
 
 This is an option that currently does not operate (and will only set Non-Scheduled Charging rate to 0). In future, this will allow continuing of Track Green Energy behaviour outside of the hard-coded daylight hours (6am - 8pm).
+
+### Manual Tesla API key override
+
+In some instances, you may prefer to obtain the Tesla API keys yourself. The main benefit of this approach is that you do not need to provide your Tesla username or password to TWCManager.
+
+Another reason to use this feature might be as a temporary workaround if the Tesla authentication flow is changed or the TWCManager authentication function is faulty.
+
+Note: Providing your Tesla username and password to TWCManager to automatically fetch your Tesla API access and refresh tokens does not put your credentials at significant risk as they are only used once to fetch the token before being destroyed, however there may nonetheless be a preference not to provide these credentials at all.
+
+To obtain the key, you will need some knowledge of the Tesla API authentication flow. To assist with this, a <a href="http://registration.teslatasks.com/generateTokens">link</a> to a service which can assist you with this process is provided, however this does therefore require you to provide your credentials to that service. Otherwise, you may want to research the Tesla authentication flow and obtain the tokens yourself, or to obtain them from another application that you have previously authenticated to.
+
+Providing any value for the Access or Refresh tokens will result in the current stored tokens being overridden with the value you supply. We don't perform any validation of the tokens and the previous values are lost. Back up your settings.json file prior to entering your token manually if you need to revert your settings.

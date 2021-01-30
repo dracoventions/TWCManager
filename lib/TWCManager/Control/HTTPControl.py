@@ -757,8 +757,22 @@ def CreateHTTPHandlerClass(master):
 
     def process_save_settings(self):
 
-        # Write settings
+        # This function will write the settings submitted from the settings
+        # page to the settings dict, before triggering a write of the settings
+        # to file
         for key in self.fields:
+
+            # If the key relates to the car API tokens, we need to pass these
+            # to the appropriate module, rather than directly updating the
+            # configuration file (as it would just be overwritten)
+            if (key == "carApiBearerToken" or key == "carApiRefreshToken") and self.getFieldValue(key) != "":
+                carapi = master.getModuleByName("TeslaAPI")
+                if key == "carApiBearerToken":
+                    carapi.setCarApiBearerToken(self.getFieldValue(key))
+                elif key == "carApiRefreshToken":
+                    carapi.setCarApiRefreshToken(self.getFieldValue(key))
+
+            # Write setting to dictionary
             master.settings[key] = self.getFieldValue(key)
 
         # If Non-Scheduled power action is either Do not Charge or
