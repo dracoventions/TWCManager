@@ -1,6 +1,7 @@
 # CSVLogging module. Provides output to CSV file for regular stats
 
 from datetime import datetime
+import logging
 import time
 
 
@@ -36,11 +37,9 @@ class CSVLogging:
         if not self.configLogging.get("mute", None):
             self.configLogging["mute"] = {}
 
-    def debugLog(self, logdata):
-        # debugLog is something of a catch-all if we don't have a specific
-        # logging function for the given data. It allows a log entry to be
-        # passed to us for storage.
-        return
+        handler = logging.FileHandler(self.configLogging["path"] + "/greenenergy.csv")
+        handler.addFilter(self.message_filter)
+        logging.getLogger("").addHandler(handler)
 
     def delimit(self):
         # Return the configured delimiter
@@ -50,25 +49,30 @@ class CSVLogging:
         # Allows query of module capabilities when deciding which Logging module to use
         return self.capabilities.get(capability, False)
 
-    def greenEnergy(self, data):
-        # Check if this status is muted
-        if self.configLogging["mute"].get("GreenEnergy", 0):
-            return None
-
-        # Otherwise, write to the CSV
-        csv = open(self.configLogging["path"] + "/greenenergy.csv", "a+")
-        csv.write(
+    def message_filter(self, record):
+        record.msg = (
             self.qt(int(time.time()))
             + self.delimit()
             + self.qt(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
             + self.delimit()
-            + self.qt(data.get("genWatts", 0))
+            + self.qt(getattr(record, "genWatts", 0))
             + self.delimit()
-            + self.qt(data.get("conWatts", 0))
+            + self.qt(getattr(record, "conWatts", 0))
             + self.delimit()
-            + self.qt(data.get("chgWatts", 0))
-            + "\n"
+            + self.qt(getattr(record, "chgWatts", 0))
         )
+        record.args = ()
+        log_type = getattr(record, "logtype", "")
+        if log_type == "green_energy":
+            if self.configLogging["mute"].get("GreenEnergy", 0):
+                return False
+
+            # self.greenEnergy({"genWatts": record.genWatts, "conWatts": record.chgWatts, "chgWatts": record.chgWatts})
+            return True
+        return False
+
+    def greenEnergy(self, data):
+        pass
 
     def qt(self, string):
         # Perform optional quoting of CSV data

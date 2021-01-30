@@ -1,5 +1,9 @@
 # MySQLLogging module. Provides output to a MySQL Server for regular statistics
 # recording.
+import logging
+
+
+logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class MySQLLogging:
@@ -39,14 +43,14 @@ class MySQLLogging:
 
         try:
             self.db = pymysql.connect(
-                self.configLogging.get("host", ""),
-                self.configLogging.get("username", ""),
-                self.configLogging.get("password", ""),
-                self.configLogging.get("database", ""),
+                host=self.configLogging.get("host", ""),
+                user=self.configLogging.get("username", ""),
+                password=self.configLogging.get("password", ""),
+                database=self.configLogging.get("database", ""),
             )
         except pymysql.err.OperationalError as e:
-            self.master.debugLog(1, "MySQLLog", "Error connecting to MySQL database")
-            self.master.debugLog(1, "MySQLLog", str(e))
+            logger.info("Error connecting to MySQL database")
+            logger.info(str(e))
 
     def debugLog(self, logdata):
         # debugLog is something of a catch-all if we don't have a specific
@@ -83,16 +87,14 @@ class MySQLLogging:
                 ),
             )
         except Exception as e:
-            self.master.debugLog(1, "MySQLLog", "Error updating MySQL database")
-            self.master.debugLog(1, "MySQLLog", str(e))
+            logger.info("Error updating MySQL database")
+            logger.info(str(e))
         if rows:
             # Query was successful. Commit
             self.db.commit()
         else:
             # Issue, log message and rollback
-            self.master.debugLog(
-                1, "MySQLLog", "Error updating MySQL database. Rows = %d" % rows
-            )
+            logger.info("Error updating MySQL database. Rows = %d" % rows)
             self.db.rollback()
         cur.close()
 
@@ -163,16 +165,14 @@ class MySQLLogging:
                 ),
             )
         except Exception as e:
-            self.master.debugLog(1, "MySQLLog", "Error updating MySQL database")
-            self.master.debugLog(1, "MySQLLog", str(e))
+            logger.info("Error updating MySQL database")
+            logger.info(str(e))
         if rows:
             # Query was successful. Commit
             self.db.commit()
         else:
             # Issue, log message and rollback
-            self.master.debugLog(
-                1, "MySQLLog", "Error updating MySQL database. Rows = %d" % rows
-            )
+            logger.info("Error updating MySQL database. Rows = %d" % rows)
             self.db.rollback()
         cursor.close()
 
@@ -199,16 +199,14 @@ class MySQLLogging:
                 query, (data.get("startTime", 0), data.get("startkWh", 0), twcid)
             )
         except Exception as e:
-            self.master.debugLog(1, "MySQLLog", "Error updating MySQL database")
-            self.master.debugLog(1, "MySQLLog", str(e))
+            logger.info("Error updating MySQL database")
+            logger.info(str(e))
         if rows:
             # Query was successful. Commit
             self.db.commit()
         else:
             # Issue, log message and rollback
-            self.master.debugLog(
-                1, "MySQLLog", "Error updating MySQL database. Rows = %d" % rows
-            )
+            logger.info("Error updating MySQL database. Rows = %d" % rows)
             self.db.rollback()
         cur.close()
 
@@ -233,16 +231,14 @@ class MySQLLogging:
         try:
             rows = cur.execute(query, (data.get("endkWh", 0), chgid, twcid))
         except Exception as e:
-            self.master.debugLog(1, "MySQLLog", "Error updating MySQL database")
-            self.master.debugLog(1, "MySQLLog", str(e))
+            logger.info("Error updating MySQL database")
+            logger.info(str(e))
         if rows:
             # Query was successful. Commit
             self.db.commit()
         else:
             # Issue, log message and rollback
-            self.master.debugLog(
-                1, "MySQLLog", "Error updating MySQL database. Rows = %d" % rows
-            )
+            logger.info("Error updating MySQL database. Rows = %d" % rows)
             self.db.rollback()
         cur.close()
         self.slaveSession[twcid] = 0
@@ -270,8 +266,8 @@ class MySQLLogging:
             try:
                 rows = cur.execute(query, (data.get("vehicleVIN", ""), chgid, twcid))
             except Exception as e:
-                self.master.debugLog(1, "MySQLLog", "Error updating MySQL database")
-                self.master.debugLog(1, "MySQLLog", str(e))
+                logger.info("Error updating MySQL database")
+                logger.info(str(e))
             if rows:
                 # Query was successful. Commit
                 self.db.commit()

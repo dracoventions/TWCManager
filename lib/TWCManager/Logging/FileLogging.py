@@ -1,10 +1,25 @@
 # ConsoleLogging module. Provides output to console for logging.
+import logging
 
 from sys import modules
 import logging
 from logging.handlers import TimedRotatingFileHandler
 from ww import f
 import re
+
+
+logger = logging.getLogger(__name__.rsplit(".")[-1])
+
+
+class NoAnsiLogRecord(logging.LogRecord):
+    """ Dummy LogRecord example """
+
+    def getMessage(self):
+        return self.escape_ansi(self.msg % self.args)
+
+    def escape_ansi(self, line):
+        ansi_escape = re.compile(r"(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]")
+        return ansi_escape.sub("", line)
 
 
 class FileLogging:
@@ -41,23 +56,26 @@ class FileLogging:
         self.muteDebugLogLevelGreaterThan = self.mute.get("DebugLogLevelGreaterThan", 1)
 
         # Initialize Logger
-        self.logger = logging.getLogger("TWCManager")
-        self.logger.setLevel(logging.INFO)
         handler = TimedRotatingFileHandler(
             self.configLogging.get("path", "/etc/twcmanager/log") + "/logfile",
             when="H",
             interval=1,
             backupCount=24,
         )
-        handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
-        self.logger.addHandler(handler)
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s - %(name)-10.10s %(levelno)02d %(message)s")
+        )
+        # handler.setLevel(logging.INFO)
+        handler.addFilter(self.message_filter)
+
+        logging.getLogger("").addHandler(handler)
 
     def debugLog(self, logdata):
         # debugLog is something of a catch-all if we don't have a specific
         # logging function for the given data. It allows a log entry to be
         # passed to us for storage.
         if self.muteDebugLogLevelGreaterThan >= logdata["minLevel"]:
-            self.logger.info(
+            logger.info(
                 logdata["function"]
                 + " %02d " % logdata["minLevel"]
                 + self.escape_ansi(logdata["message"])
@@ -71,6 +89,20 @@ class FileLogging:
     def escape_ansi(self, line):
         ansi_escape = re.compile(r"(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]")
         return ansi_escape.sub("", line)
+
+    def message_filter(self, record):
+        # We don't want ansi colors in text logs
+        record.msg = self.escape_ansi(record.msg)
+        log_type = getattr(record, "logtype", "")
+        if log_type == "green_energy":
+            self.greenEnergy(
+                {
+                    "genWatts": record.genWatts,
+                    "conWatts": record.chgWatts,
+                    "chgWatts": record.chgWatts,
+                }
+            )
+        return True
 
     def writeLog(self, functionName, message):
         self.debugLog({"function": functionName, "minLevel": 0, "message": message})

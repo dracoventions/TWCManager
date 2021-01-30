@@ -156,6 +156,7 @@
         #"scheduledLimit": 50,
         #"nonScheduledLimit": -1,
 
+        # Deprecated, use logLevel instead
         # Choose how much debugging info to output.
         # 0 is no output other than errors.
         # 1 is just the most useful info.
@@ -163,7 +164,26 @@
         # 9 includes raw RS-485 messages transmitted and received (2-3 per sec)
         # 10 is all info.
         # 11 is more than all info.  ;)
-        "debugLevel": 1,
+        # "debugLevel": 1,
+
+        # Level     Numeric  debugLevel_equiv
+        #
+        # CRITICAL  50
+        # ERROR     40        0     no output other than errors.
+        # WARNING   30
+        # INFO      20        1     just the most useful info.
+        # INFO2     19        2     add debugging info
+        # INFO3     18        3     add debugging info
+        # INFO4     17        4     add debugging info
+        # INFO5     16        5     add debugging info
+        # INFO6     15        6     add debugging info
+        # INFO7     14        7     add debugging info
+        # INFO8     13        8     add debugging info
+        # INFO9     12        9     includes raw RS-485 msgs tx and rx (2-3 per sec)
+        # DEBUG     10       10     all info.
+        # NOTSET     0       11     more than all info.  ;)
+
+        "logLevel": 20,
 
         # Choose whether to display milliseconds after time on each line of debug info.
         "displayMilliseconds": false,

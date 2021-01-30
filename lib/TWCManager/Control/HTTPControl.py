@@ -1,3 +1,4 @@
+import logging
 import mimetypes
 import os
 import pathlib
@@ -13,6 +14,8 @@ import time
 import urllib.parse
 import math
 from ww import f
+
+logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
@@ -47,7 +50,7 @@ class HTTPControl:
 
         HTTPHandler = CreateHTTPHandlerClass(master)
         httpd = ThreadingSimpleServer(("", self.httpPort), HTTPHandler)
-        self.master.debugLog(1, "HTTPCtrl", "Serving at port: " + str(self.httpPort))
+        logger.info("Serving at port: " + str(self.httpPort))
         threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
 
@@ -1088,9 +1091,7 @@ def CreateHTTPHandlerClass(master):
             return
 
         def debugLogAPI(self, message):
-            master.debugLog(
-                10,
-                "HTTPCtrl",
+            logger.debug(
                 message
                 + " (Url: "
                 + str(self.url.path)

@@ -7,7 +7,6 @@ class DSMR:
 
     baudrate = 115200
     consumedW = 0
-    debugLevel = 0
     generatedW = 0
     serial = None
     serialPort = "/dev/ttyUSB2"
@@ -15,8 +14,7 @@ class DSMR:
     timeout = 0
     voltage = 0
 
-    def __init__(self, debugLevel, config):
-        self.debugLevel = debugLevel
+    def __init__(self, config):
         self.baudrate = config.get("baudrate", "115200")
         self.status = config.get("enabled", False)
         self.serialPort = config.get("serialPort", "/dev/ttyUSB2")

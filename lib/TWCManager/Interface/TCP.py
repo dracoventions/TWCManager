@@ -1,11 +1,14 @@
+import logging
 import socket
+
+
+logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class TCP:
 
     import time
 
-    debugLevel = 0
     enabled = False
     master = None
     port = 6000
@@ -15,10 +18,6 @@ class TCP:
 
     def __init__(self, master):
         self.master = master
-        try:
-            self.debugLevel = master.config["config"]["debugLevel"]
-        except KeyError:
-            pass
 
         # Unload if this module is disabled or misconfigured
         if not self.enabled:
@@ -78,7 +77,7 @@ class TCP:
             i = i + 1
 
         msg = bytearray(b"\xc0" + msg + b"\xc0")
-        self.master.debugLog(9, "IfaceTCP  ", "Tx@: " + self.master.hex_str(msg))
+        logger.log(logging.INFO9, "Tx@: " + self.master.hex_str(msg))
 
         # self.ser.write(msg)
 

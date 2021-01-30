@@ -1,4 +1,7 @@
 # Enphase Monitoring Portal Integration
+import logging
+
+logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class Enphase:
@@ -14,7 +17,6 @@ class Enphase:
     configConfig = None
     configEnphase = None
     consumedW = 0
-    debugLevel = 0
     fetchFailed = False
     generatedW = 0
     importW = 0
@@ -39,7 +41,6 @@ class Enphase:
         except KeyError:
             self.configEnphase = {}
         self.apiKey = self.configEnphase.get("apiKey", None)
-        self.debugLevel = self.configConfig.get("debugLevel", 0)
         self.serverIP = self.configEnphase.get("serverIP", None)
         self.serverPort = self.configEnphase.get("serverPort", 80)
         self.status = self.configEnphase.get("enabled", False)
@@ -61,9 +62,7 @@ class Enphase:
     def getConsumption(self):
 
         if not self.status:
-            self.master.debugLog(
-                10, "Enphase", "Enphase EMS Module Disabled. Skipping getConsumption"
-            )
+            logger.debug("Enphase EMS Module Disabled. Skipping getConsumption")
             return None
 
         # Perform updates if necessary
@@ -75,9 +74,7 @@ class Enphase:
     def getGeneration(self):
 
         if not self.status:
-            self.master.debugLog(
-                10, "Enphase", "Enphase EMS Module Disabled. Skipping getGeneration"
-            )
+            logger.debug("Enphase EMS Module Disabled. Skipping getGeneration")
             return 0
 
         # Perform updates if necessary
@@ -107,19 +104,19 @@ class Enphase:
         try:
             r = self.requests.get(url, timeout=self.timeout)
         except self.requests.exceptions.ConnectionError as e:
-            self.master.debugLog(
-                4, "Enphase", "Error connecting to Enphase Portal to fetch sensor value"
+            logger.log(
+                logging.INFO4,
+                "Error connecting to Enphase Portal to fetch sensor value",
             )
-            self.master.debugLog(10, "Enphase", str(e))
+            logger.debug(str(e))
             self.fetchFailed = True
             return False
 
         try:
             r.raise_for_status()
         except self.requests.exceptions.HTTPError as e:
-            self.master.debugLog(
-                4,
-                "Enphase",
+            logger.log(
+                logging.INFO4,
                 "HTTP status "
                 + str(e.response.status_code)
                 + " connecting to Enphase Portal to fetch sensor value",
@@ -144,15 +141,14 @@ class Enphase:
                         self.consumedW = int(portalData["consumption"][0]["wNow"])
                         self.voltage = int(portalData["consumption"][0]["rmsVoltage"])
                 except (KeyError, TypeError) as e:
-                    self.master.debugLog(
-                        4,
-                        "Enphase",
+                    logger.log(
+                        logging.INFO4,
                         "Exception during parsing Enphase data (current_power)",
                     )
-                    self.master.debugLog(10, "Enphase", e)
+                    logger.debug(e)
             else:
-                self.master.debugLog(
-                    4, "Enphase", "Enphase API result does not contain json content."
+                logger.log(
+                    logging.INFO4, "Enphase API result does not contain json content."
                 )
                 self.fetchFailed = True
 

@@ -1,10 +1,14 @@
+import logging
+
+logger = logging.getLogger(__name__.rsplit(".")[-1])
+
+
 class RS485:
 
     import serial
     import time
 
     baud = 9600
-    debugLevel = 0
     enabled = True
     master = None
     port = None
@@ -14,10 +18,6 @@ class RS485:
     def __init__(self, master):
         self.master = master
         classname = self.__class__.__name__
-        try:
-            self.debugLevel = master.config["config"]["debugLevel"]
-        except KeyError:
-            pass
 
         # Unload if this module is disabled or misconfigured
         if "interface" in master.config and classname in master.config["interface"]:
@@ -97,7 +97,7 @@ class RS485:
             i = i + 1
 
         msg = bytearray(b"\xc0" + msg + b"\xc0")
-        self.master.debugLog(9, "IfaceRS485", "Tx@: " + self.master.hex_str(msg))
+        logger.log(logging.INFO9, "Tx@: " + self.master.hex_str(msg))
 
         self.ser.write(msg)
 

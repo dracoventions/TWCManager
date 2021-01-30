@@ -1,6 +1,10 @@
+import logging
 import time
 from ww import f
 from termcolor import colored
+
+
+logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class Policy:
@@ -157,9 +161,8 @@ class Policy:
 
             if latched or matched:
                 # Yes, we will now enforce policy
-                self.master.debugLog(
-                    7,
-                    "Policy",
+                logger.log(
+                    logging.INFO7,
                     f(
                         "All policy conditions have matched. Policy chosen is {colored(policy['name'], 'red')}"
                     ),
@@ -169,7 +172,7 @@ class Policy:
                 # Now, finish processing
                 return
             else:
-                self.master.debugLog(8, "Policy", "Policy conditions were not matched.")
+                logger.log(logging.INFO8, "Policy conditions were not matched.")
                 continue
 
         # No policy has matched; keep the current policy
@@ -179,10 +182,8 @@ class Policy:
         if self.active_policy != str(policy["name"]):
             self.fireWebhook("exit")
 
-            self.master.debugLog(
-                1,
-                "Policy",
-                f("New policy selected; changing to {colored(policy['name'], 'red')}"),
+            logger.info(
+                f("New policy selected; changing to {colored(policy['name'], 'red')}")
             )
             self.active_policy = str(policy["name"])
             self.limitOverride = False
@@ -195,18 +196,12 @@ class Policy:
         if "charge_amps" in policy:
             if policy["charge_amps"] == "value":
                 self.master.setMaxAmpsToDivideAmongSlaves(int(policy["value"]))
-                self.master.debugLog(
-                    10, "Policy", "Charge at %.2f" % int(policy["value"])
-                )
+                logger.debug("Charge at %.2f" % int(policy["value"]))
             else:
                 self.master.setMaxAmpsToDivideAmongSlaves(
                     self.policyValue(policy["charge_amps"])
                 )
-                self.master.debugLog(
-                    10,
-                    "Policy",
-                    "Charge at %.2f" % self.policyValue(policy["charge_amps"]),
-                )
+                logger.debug("Charge at %.2f" % self.policyValue(policy["charge_amps"]))
 
         # Set flex, if any
         self.master.setAllowedFlex(self.policyValue(policy.get("allowed_flex", 0)))
@@ -300,9 +295,8 @@ class Policy:
         matchValue = self.policyValue(match)
         value = self.policyValue(value)
 
-        self.master.debugLog(
-            8,
-            "Policy",
+        logger.log(
+            logging.INFO8,
             f(
                 "Evaluating Policy match ({colored(match, 'red')} [{matchValue}]), condition ({colored(condition, 'red')}), value ({colored(value, 'red')})"
             ),

@@ -1,8 +1,12 @@
+import logging
+
+logger = logging.getLogger(__name__.rsplit(".")[-1])
+
+
 class Dummy:
 
     import time
 
-    debugLevel = 0
     enabled = False
     master = None
     msgBuffer = bytes()
@@ -12,10 +16,6 @@ class Dummy:
     def __init__(self, master):
         self.master = master
         classname = self.__class__.__name__
-        try:
-            self.debugLevel = master.config["config"]["debugLevel"]
-        except KeyError:
-            pass
 
         # Unload if this module is disabled or misconfigured
         if "interface" in master.config and classname in master.config["interface"]:
@@ -40,7 +40,7 @@ class Dummy:
     def send(self, msg):
         # NOOP - TBD
 
-        self.master.debugLog(9, "IfaceDummy", "Tx@: " + self.master.hex_str(msg))
+        logger.log(logging.INFO9, "Tx@: " + self.master.hex_str(msg))
         self.timeLastTx = self.time.time()
         return 0
 
@@ -51,9 +51,7 @@ class Dummy:
         # like if we read from a serial interface
         localMsgBuffer = self.msgBuffer
         self.msgBuffer = None
-        self.master.debugLog(
-            9, "IfaceDummy", "Rx@: " + self.master.hex_str(localMsgBuffer)
-        )
+        logger.log(logging.INFO9, "Rx@: " + self.master.hex_str(localMsgBuffer))
         return localMsgBuffer
 
     def sendInternal(self, msg):
@@ -90,6 +88,6 @@ class Dummy:
             i = i + 1
 
         msg = bytearray(b"\xc0" + msg + b"\xc0")
-        self.master.debugLog(9, "IfaceDummy", "TxInt@: " + self.master.hex_str(msg))
+        logger.log(logging.INFO9, "TxInt@: " + self.master.hex_str(msg))
 
         self.msgBuffer = msg
