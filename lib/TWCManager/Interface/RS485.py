@@ -49,7 +49,7 @@ class RS485:
             self.port = porta
 
         # Connect to serial port
-        self.ser = self.serial.Serial(self.port, self.baud, timeout=0)
+        self.ser = self.serial.serial_for_url(self.port, self.baud, timeout=0)
 
     def close(self):
         # Close the serial interface
