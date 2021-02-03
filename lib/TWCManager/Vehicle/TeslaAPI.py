@@ -6,6 +6,7 @@ import requests
 import time
 from urllib.parse import parse_qs
 
+
 class TeslaAPI:
 
     import json
@@ -74,8 +75,12 @@ class TeslaAPI:
         for attempt in range(self.maxLoginRetries):
 
             self.verifier = base64.urlsafe_b64encode(os.urandom(86)).rstrip(b"=")
-            challenge = base64.urlsafe_b64encode(hashlib.sha256(self.verifier).digest()).rstrip(b"=")
-            state = base64.urlsafe_b64encode(os.urandom(16)).rstrip(b"=").decode("utf-8")
+            challenge = base64.urlsafe_b64encode(
+                hashlib.sha256(self.verifier).digest()
+            ).rstrip(b"=")
+            state = (
+                base64.urlsafe_b64encode(os.urandom(16)).rstrip(b"=").decode("utf-8")
+            )
 
             params = (
                 ("client_id", "ownerapi"),
@@ -109,12 +114,16 @@ class TeslaAPI:
             self.master.debugLog(
                 2,
                 "TeslaAPI",
-                "Wasn't able to find authentication form after " + str(attempt) + " attempts",
+                "Wasn't able to find authentication form after "
+                + str(attempt)
+                + " attempts",
             )
             return "Phase1Error"
 
         csrf = re.search(r'name="_csrf".+value="([^"]+)"', resp.text).group(1)
-        transaction_id = re.search(r'name="transaction_id".+value="([^"]+)"', resp.text).group(1)
+        transaction_id = re.search(
+            r'name="transaction_id".+value="([^"]+)"', resp.text
+        ).group(1)
 
         if not csrf or not transaction_id:
             # These two parameters are required for Phase 1 (Authentication) auth
@@ -147,7 +156,9 @@ class TeslaAPI:
             self.master.debugLog(
                 2,
                 "TeslaAPI",
-                "Wasn't able to post authentication form after " + str(attempt) + " attempts",
+                "Wasn't able to post authentication form after "
+                + str(attempt)
+                + " attempts",
             )
             return "Phase2Error"
 
@@ -159,7 +170,7 @@ class TeslaAPI:
             code = parse_qs(resp.headers["location"])[self.callbackURL + "?code"]
         except KeyError:
             return "Phase2ErrorTip"
-    
+
         data = {
             "grant_type": "authorization_code",
             "client_id": "ownerapi",
@@ -171,15 +182,15 @@ class TeslaAPI:
         resp = session.post("https://auth.tesla.com/oauth2/v3/token", json=data)
         access_token = resp.json()["access_token"]
 
-        headers = {
-          "authorization": "bearer " + access_token
-        }
+        headers = {"authorization": "bearer " + access_token}
 
         data = {
             "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
             "client_id": self.clientID,
         }
-        resp = session.post("https://owner-api.teslamotors.com/oauth/token", headers=headers, json=data)
+        resp = session.post(
+            "https://owner-api.teslamotors.com/oauth/token", headers=headers, json=data
+        )
         try:
             self.setCarApiBearerToken(resp.json()["access_token"])
             self.setCarApiRefreshToken(resp.json()["refresh_token"])
@@ -305,7 +316,12 @@ class TeslaAPI:
                 ret = self.apiLogin(email, password)
 
                 # If any string is returned, we redirect to it. This helps with MFA login flow
-                if str(ret) != "True" and str(ret) != "False" and str(ret) != "" and str(ret) != "None":
+                if (
+                    str(ret) != "True"
+                    and str(ret) != "False"
+                    and str(ret) != ""
+                    and str(ret) != "None"
+                ):
                     return ret
 
         if self.getCarApiBearerToken() != "":
@@ -1208,10 +1224,10 @@ class TeslaAPI:
     @property
     def minBatteryLevelAtHome(self):
         if time.time() - self.lastChargeCheck > self.chargeUpdateInterval:
-            self.master.queue_background_task({"cmd":"checkCharge"})
+            self.master.queue_background_task({"cmd": "checkCharge"})
         return min(
             [car.batteryLevel for car in self.carApiVehicles if car.atHome],
-            default=10000
+            default=10000,
         )
 
 
