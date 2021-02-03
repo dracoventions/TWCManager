@@ -11,7 +11,6 @@ class TeslaAPI:
     import json
 
     authURL = "https://auth.tesla.com/oauth2/v3/authorize"
-    browserUA = "Mozilla/5.0 (Linux; Android 10; Pixel 3 Build/QQ2A.200305.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/85.0.4183.81 Mobile Safari/537.36"
     callbackURL = "https://auth.tesla.com/void/callback"
     carApiLastErrorTime = 0
     carApiBearerToken = ""
@@ -31,7 +30,6 @@ class TeslaAPI:
     maxLoginRetries = 10
     minChargeLevel = -1
     refreshURL = "https://owner-api.teslamotors.com/oauth/token"
-    teslaUA = "TeslaApp/3.10.9-433/adff2e065/android/10"
     verifier = ""
 
     # Transient errors are ones that usually disappear if we retry the car API
@@ -70,11 +68,8 @@ class TeslaAPI:
 
     def apiLogin(self, email, password):
 
-        headers = {
-            "User-Agent": self.browserUA,
-            "x-tesla-user-agent": self.teslaUA,
-            "X-Requested-With": "com.teslamotors.tesla",
-        }
+        # GET parameters are used both for phase 1 and phase 2
+        params = None
 
         for attempt in range(self.maxLoginRetries):
 
@@ -93,7 +88,7 @@ class TeslaAPI:
             )
 
             session = requests.Session()
-            resp = session.get(self.authURL, headers=headers, params=params)
+            resp = session.get(self.authURL, params=params)
 
             if resp.ok and "<title>" in resp.text:
                 self.master.debugLog(
@@ -116,10 +111,15 @@ class TeslaAPI:
                 "TeslaAPI",
                 "Wasn't able to find authentication form after " + str(attempt) + " attempts",
             )
-            return 0
+            return "Phase1Error"
 
         csrf = re.search(r'name="_csrf".+value="([^"]+)"', resp.text).group(1)
         transaction_id = re.search(r'name="transaction_id".+value="([^"]+)"', resp.text).group(1)
+
+        if not csrf or not transaction_id:
+            # These two parameters are required for Phase 1 (Authentication) auth
+            # If they are missing, we raise an appropriate error to the user's attention
+            return "Phase1Error"
 
         data = {
             "_csrf": csrf,
@@ -133,7 +133,7 @@ class TeslaAPI:
 
         for attempt in range(self.maxLoginRetries):
             resp = session.post(
-                self.authURL, headers=headers, params=params, data=data, allow_redirects=False
+                self.authURL, params=params, data=data, allow_redirects=False
             )
             if resp.ok and (resp.status_code == 302 or "<title>" in resp.text):
                 self.master.debugLog(
@@ -149,12 +149,18 @@ class TeslaAPI:
                 "TeslaAPI",
                 "Wasn't able to post authentication form after " + str(attempt) + " attempts",
             )
+            return "Phase2Error"
 
-        code = parse_qs(resp.headers["location"])[self.callbackURL + "?code"]
+        if resp.status_code == 200 and "/mfa/verify" in resp.text:
+            # This account is using MFA, redirect to MFA code entry page
+            return "MFA"
+
+        try:
+            code = parse_qs(resp.headers["location"])[self.callbackURL + "?code"]
+        except KeyError:
+            return "Phase2ErrorTip"
     
-        headers = {"user-agent": self.browserUA, 
-                   "x-tesla-user-agent": self.teslaUA}
-        payload = {
+        data = {
             "grant_type": "authorization_code",
             "client_id": "ownerapi",
             "code_verifier": self.verifier.decode("utf-8"),
@@ -162,15 +168,18 @@ class TeslaAPI:
             "redirect_uri": self.callbackURL,
         }
 
-        resp = session.post("https://auth.tesla.com/oauth2/v3/token", headers=headers, json=payload)
+        resp = session.post("https://auth.tesla.com/oauth2/v3/token", json=data)
         access_token = resp.json()["access_token"]
 
-        headers["authorization"] = "bearer " + access_token
-        payload = {
+        headers = {
+          "authorization": "bearer " + access_token
+        }
+
+        data = {
             "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
             "client_id": self.clientID,
         }
-        resp = session.post("https://owner-api.teslamotors.com/oauth/token", headers=headers, json=payload)
+        resp = session.post("https://owner-api.teslamotors.com/oauth/token", headers=headers, json=data)
         try:
             self.setCarApiBearerToken(resp.json()["access_token"])
             self.setCarApiRefreshToken(resp.json()["refresh_token"])
@@ -221,6 +230,7 @@ class TeslaAPI:
             self.setCarApiBearerToken(apiResponseDict["access_token"])
             self.setCarApiRefreshToken(apiResponseDict["refresh_token"])
             self.setCarApiTokenExpireTime(now + apiResponseDict["expires_in"])
+            self.master.queue_background_task({"cmd": "saveSettings"})
 
         except KeyError:
             self.master.debugLog(
@@ -292,7 +302,11 @@ class TeslaAPI:
 
             elif email != None and password != None:
                 self.master.debugLog(8, "TeslaAPI", "Attempting password auth")
-                self.apiLogin(email, password)
+                ret = self.apiLogin(email, password)
+
+                # If any string is returned, we redirect to it. This helps with MFA login flow
+                if str(ret) != "True" and str(ret) != "False" and str(ret) != "" and str(ret) != "None":
+                    return ret
 
         if self.getCarApiBearerToken() != "":
             if self.getVehicleCount() < 1:
