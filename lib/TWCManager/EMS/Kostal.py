@@ -6,240 +6,178 @@
 # connects only via ModBus TCP to the inverter
 # use on your own risk
 #
-import socket
+# Changelog:
+# 02/11/2020    Initial release
+# 03/02/2021    Code refactoring and cleanup
+#               Auto detect byte order (since firmware 0.1.17.05075)
+#               Overall stability and performance improvements
+#               Show model and serial number of Inverter in log
+#
+import time
+from pyModbusTCP.client import ModbusClient
+from pyModbusTCP import utils
+
+MIN_CACHE_SECONDS = 10
+ENDIAN_BIG = 0x01           # big endian (ABCD) Sunspec
+ENDIAN_LITTLE = 0x00        # little endian (CDAB) Standard Modbus
 
 
+#
+# Kostal Inverter Class
+#
 class Kostal:
-    import time
-    from pyModbusTCP import utils
-    from pyModbusTCP.client import ModbusClient
+    # Class attributes
+    GridFrequency = 0           # address 0x98 (152)
+    TotalDCPower = 0            # address 0x64 (100)
+    HomeFromGrid = 0            # address 0x6c (108)
+    HomeFromPV = 0              # address 0x72 (114)
 
-    cacheTime = 10              # in seconds
-    config = None
-    configConfig = None
-    configKostal = None
-    debugLevel = 0
-    fetchFailed = False
-    lastFetch = 0
-    master = None
-    serverIP = None
-    serverPort = 80
-    enabled = False
-    timeout = 10
-    voltage = 0
-    totalDCPower = 0
-    home_fromGrid = 0
-    home_fromSolar = 0
-    inverterType = ""
-    inverterIP = ""
-    m_client = None
-
+    #
+    # Constructor
+    #
     def __init__(self, master):
         self.master = master
         self.config = master.config
+        self.lastUpdate = 0
 
         # try to read the config file
         try:
             self.configConfig = master.config["config"]
+            self.configKostal = master.config["sources"]["Kostal"]
         except KeyError:
             self.configConfig = {}
 
-        # try to read values from the config file
-        try:
-            self.configKostal = master.config["sources"]["Kostal"]
-        except KeyError:
-            self.configKostal = {}
-
-        # initialize variables
+        # read configuration values and initialize variables
         self.debugLevel = self.configConfig.get("debugLevel", 0)
         self.enabled = self.configKostal.get("enabled", False)
-        self.serverIP = self.configKostal.get("serverIP", None)
-        self.modbusPort = int(self.configKostal.get("modbusPort", 1502))
+        self.host = self.configKostal.get("serverIP", None)
+        self.port = int(self.configKostal.get("modbusPort", 1502))
         self.unitID = int(self.configKostal.get("unitID", 71))
 
-        # Unload if this module is disabled or not properly configured
-        if (not self.enabled) or (not self.canConnect()):
-            self.master.debugLog(
-                1,
-                'Kostal',
-                'Error connecting to Kostal Inverter. Please check your configuration!'
-            )
-            self.master.releaseModule("lib.TWCManager.EMS", "Kostal")
-
-        # module successfully loaded, provide general inverter data
-        else:
-            self.update()
-
-    # check if connection via ModBusTCP is possible
-    def canConnect(self):
+        # try to open open the Modbus connection
         try:
-            sock = socket.create_connection((self.serverIP, self.modbusPort), timeout=1)
+            self.modbus = ModbusClient(host=self.host, port=self.port, unit_id=self.unitID, auto_open=True)
+            if not self.modbus.open() is True:
+                raise ValueError
+        except ValueError:
+            # if connection not possible, print error message and unload module
+            self.master.debugLog(1, 'Kostal', 'ERROR connecting to inverter. Please check your configuration!')
+            self.master.releaseModule("lib.TWCManager.EMS", "Kostal")
+        else:
+            # detected byte order (Little/Big Endian) by reading register 0x05
+            self.byteorder = ENDIAN_LITTLE
+            if self.modbus.read_holding_registers(5, 1)[0] == ENDIAN_BIG:
+                self.byteorder = ENDIAN_BIG
 
-        except socket.timeout as err:
-            self.master.debugLog(1, 'Kostal', 'Timeout connecting to Kostal Inverter. Please check your configuration!')
-            return False
-        except socket.error as err:
-            self.master.debugLog(1, 'Kostal', 'ERROR connecting to Kostal Inverter. Please check your configuration!')
-            return False
+            # get basic inverter info and output informations into log
+            inv_model = self.__readModbus(768, 'String')
+            inv_class = self.__readModbus(800, 'String')
+            inv_serial = self.__readModbus(559, 'String')
+            self.master.debugLog(1, 'Kostal', inv_model + ' ' + inv_class + ' (S/N: ' + inv_serial + ') found.')
 
-        # successfully connected to the inverter
-        return True
+            # module successfully loaded update all values
+            self.__update()
 
+    #
+    # Destructor
+    # Makes sure that an open Modbus-Connection is gracefully closed
+    #
+    def __del(self):
+        if self.modbus.is_open() is True:
+            self.modbus.close()
+
+    #
+    # Privat Method for reading Modbus values
     # read registers directly from the inverter via Modbus protocol
-    def readModbus(self, register, data_format="Float", data_length=2):
-        # check if ModBus connection is established, and create one if not
-        if self.m_client is None:
-            try:
-                # open Modbus connection for reading
-                self.m_client = self.ModbusClient(
-                    self.serverIP,
-                    port=self.modbusPort,
-                    unit_id=self.unitID,
-                    auto_open=True
-                )
-            except ValueError:
-                self.master.debugLog(
-                    1,
-                    'Kostal',
-                    'Error connection to Kostal ModBus interface. Pls. check your config!'
-                )
-                self.fetchFailed = True
-                return False
+    #
+    def __readModbus(self, address, data_format='Float'):
 
-        # depending on expected data format, read the modbus registers
-        if data_format == "Float" and data_length == 2:
-            # read the given modbus register as float, big endian coded, 2 bytes
-            data_raw = self.m_client.read_holding_registers(register, data_length)
+        # open the Modbus connection if neccessary
+        if not self.modbus.is_open():
+            self.modbus.open()
 
-            # if we received any data, process it and return the converted value
-            if data_raw:
-                return float(self.utils.decode_ieee((data_raw[1] << 16) + data_raw[0]))
+        # default data length is 1 ('U16')
+        length = 1
 
-        elif data_format == "String" and (data_length == 8 or data_length == 32):
-            # read a string from the modbus register with the given length
-            # kostal modbus strings are either 8 or 16 bytes long
-            data_raw = self.m_client.read_holding_registers(register, data_length-1)
-            if not data_raw:
-                return False
+        # if we are retreiving floats, its two bytes
+        if data_format == 'Float':
+            length = 2
 
-            data_string = ""
-            for value in data_raw:
+        # for strings its either 8, 16 or 32 byte, depending on the register
+        elif data_format == 'String':
+            if address in [8, 14, 38, 46, 420, 428, 436, 446, 454, 517]:
+                length = 8
+            elif address in [535, 559]:
+                length = 16
+            else:
+                length = 32
+
+        # read the raw data from the given Modbus address
+        raw = self.modbus.read_holding_registers(address, length)
+        if raw is None:
+            return False
+
+        # decode the raw_data
+        if data_format == 'U16':
+            return int(raw[0])
+
+        elif data_format == 'Float':
+            if self.byteorder == ENDIAN_BIG:
+                return float(utils.decode_ieee((raw[0] << 16) + raw[1]))
+            else:
+                return float(utils.decode_ieee((raw[1] << 16) + raw[0]))
+
+        elif data_format == 'String':
+            data_string = ''
+            for value in raw:
                 hex_value = str(hex(value)[2:])
                 left = int(str(hex_value)[:2], 16)
                 right = int(str(hex_value)[-2:], 16)
                 data_string += chr(left) + chr(right)
 
-            # check if we really received a string and return it
-            if data_raw and data_string:
-                self.fetchFailed = True
-                return str(data_string)
+            return str(data_string)
 
         # if all failed, return false
         return False
 
-    # update the power currently produced by the inverter
-    # by reading register 100
-    def updateTotalDCPower(self):
-        self.totalDCPower = self.readModbus(100)
-        self.master.debugLog(
-            10,
-            'Kostal',
-            'Total Solar Power available: {:.2f} W'.format(self.totalDCPower)
-        )
-
-    # update the house consumption from the grid
-    # by reading register 108
-    def updateHomeFromGrid(self):
-        self.home_fromGrid = self.readModbus(108)
-        self.master.debugLog(
-            10,
-            'Kostal',
-            'Home consumption from Grid: {:.2f} W'.format(self.home_fromGrid)
-        )
-
-    # update the house consumption from solar
-    # by reading register 116
-    def updateHomeFromSolar(self):
-        self.home_fromSolar = self.readModbus(116)
-        self.master.debugLog(
-            10,
-            'Kostal',
-            'Home consumption from Solar: {:.2f} W'.format(self.home_fromSolar)
-        )
-
-    # determine the inverter model (type) and the IP it's connected to
-    # by reading register 768 (model) and 420 (IP)
-    def getInverterType(self):
-        self.inverterType = None
-        self.inverterType = self.readModbus(768, "String", 32)
-        self.inverterIP = self.readModbus(420, "String", 8)
-        self.master.debugLog(
-            10,
-            'Kostal',
-            "Inverter '" + str(self.inverterType) + "' available @" + str(self.inverterIP)
-        )
-
-    # return the total consumption by the household
-    # deduct charger load - if car(s) charging
-    def getConsumption(self):
-        if not self.enabled:
-            self.master.debugLog(
-                1,
-                'Kostal,',
-                'Kostal EMS Module Disabled. Can\'t provide provide consumption data!')
-            return 0
-
-        # Perform updates if necessary
-        self.update()
-
-        # return the total household consumption
-        if self.home_fromGrid > 0.0 or self.home_fromSolar > 0.0:
-            self.master.debugLog(
-                10,
-                'Kostal',
-                'Total consumption from Grid: {:.2f} W'.format(self.home_fromGrid + self.home_fromSolar)
-            )
-            return float(self.home_fromGrid + self.home_fromSolar)
-
-        else:
-            # return zero if no consumption (unlikely though...)
-            return float(0.0)
-
-    # return the generated power by the inverter
-    def getGeneration(self):
-        if not self.enabled:
-            self.master.debugLog(
-                10,
-                'Kostal',
-                'Kostal EMS Module Disabled. Can\'t provide generated power data!')
-            return 0
-
-        # Perform updates if necessary
-        self.update()
-
-        # Return generation value
-        return float(self.totalDCPower)
-
-    def update(self):
-        if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
+    #
+    # Private Method
+    # Update the cached values by reading them from the Modbus
+    #
+    def __update(self):
+        if (int(time.time()) - self.lastUpdate) > MIN_CACHE_SECONDS:
             # Cache has expired. Fetch values from inverter via Modbus
 
-            # let's assume the worst...for now
-            self.fetchFailed = True
+            self.GridFrequency = self.__readModbus(152, 'Float')
+            self.TotalDCPower = self.__readModbus(100, 'Float')
+            self.HomeFromGrid = self.__readModbus(108, 'Float')
+            self.HomeFromPV = self.__readModbus(116, 'Float')
 
-            # update the values by calling the corresponding update-functions
-            self.updateTotalDCPower()
-            self.updateHomeFromGrid()
-            self.updateHomeFromSolar()
+            # set the lastUpdate variable to "now"
+            self.lastUpdate = time.time()
 
-            # close Modbus connection
-            self.m_client.close()
+    #
+    # Public Method
+    # Return the total consumption by the household
+    # deduct charger load - if car(s) charging
+    #
+    def getConsumption(self):
+        # update value if neccessary
+        self.__update()
 
-            # if updating did not failed, it was successful
-            if self.fetchFailed is not True:
-                self.lastFetch = int(self.time.time())
-                return True
+        # return the total household consumption
+        total = self.HomeFromGrid + self.HomeFromPV
+        self.master.debugLog(10, 'Kostal', 'Current Home consumption: {:.2f} W'.format(total))
+        return float(self.HomeFromGrid + self.HomeFromPV)
 
-        else:
-            # no need to update the cache, indicate by returning false
-            return False
+    #
+    # Public Method
+    # Return the generated power by the inverter
+    #
+    def getGeneration(self):
+        # update value if neccessary
+        self.__update()
+
+        # return the Solar generation power
+        self.master.debugLog(10, 'Kostal', 'Current Solar generation: {:.2f} W'.format(self.TotalDCPower))
+        return float(self.TotalDCPower)
