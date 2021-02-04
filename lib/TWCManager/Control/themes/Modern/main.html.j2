@@ -1,0 +1,316 @@
+{% extends "master.html.j2" %}
+{% block pagetitle %}TWCManager - Home{% endblock %}
+{% block content %}
+    <! -- TODO -->
+    <table border='0' padding='0' margin='0' width='100%'>
+      <tr width='100%'>
+        <td valign='top' width='70%'>
+          {% if url.path == "/apiacct/False" %}
+             <font color='red'>
+               <b>Failed to log in to Tesla Account. Please check username and password and try again.</b>
+             </font>
+          {% endif %}
+
+          {% if not master.teslaLoginAskLater
+                and url.path != "/apiacct/True" %}
+                <!-- Check if we have already stored the Tesla credentials
+                     If we can access the Tesla API okay, don't prompt -->
+                {% if not apiAvailable %}
+                    {% include 'request_teslalogin.html.j2' %}
+                {% endif %}
+          {% endif %}
+          {% if url.path == "/apiacct/True" %}
+             <b>Thank you, successfully fetched Tesla API token.</b>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+
+<!-- Home -->
+<div class="container-fluid pt-2">
+    <div class="row border-bottom mb-4">
+        <h1 class="display-4">Home</h1>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-sm-12 col-md-3 col-lg-3 mb-5 mb-md-0">
+            <div class="row justify-content-center">
+                <div>
+                    Generation
+                </div>
+                <div class="float-left ml-2" style="margin-top: -2px;">
+                    <svg width="1.5em" height="1.5em" viewBox="0 0 16 16" class="card-img-top bi bi-sun" fill="orange" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3.5 8a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0z"/>
+                        <path fill-rule="evenodd" d="M8.202.28a.25.25 0 0 0-.404 0l-.91 1.255a.25.25 0 0 1-.334.067L5.232.79a.25.25 0 0 0-.374.155l-.36 1.508a.25.25 0 0 1-.282.19l-1.532-.245a.25.25 0 0 0-.286.286l.244 1.532a.25.25 0 0 1-.189.282l-1.509.36a.25.25 0 0 0-.154.374l.812 1.322a.25.25 0 0 1-.067.333l-1.256.91a.25.25 0 0 0 0 .405l1.256.91a.25.25 0 0 1 .067.334L.79 10.768a.25.25 0 0 0 .154.374l1.51.36a.25.25 0 0 1 .188.282l-.244 1.532a.25.25 0 0 0 .286.286l1.532-.244a.25.25 0 0 1 .282.189l.36 1.508a.25.25 0 0 0 .374.155l1.322-.812a.25.25 0 0 1 .333.067l.91 1.256a.25.25 0 0 0 .405 0l.91-1.256a.25.25 0 0 1 .334-.067l1.322.812a.25.25 0 0 0 .374-.155l.36-1.508a.25.25 0 0 1 .282-.19l1.532.245a.25.25 0 0 0 .286-.286l-.244-1.532a.25.25 0 0 1 .189-.282l1.508-.36a.25.25 0 0 0 .155-.374l-.812-1.322a.25.25 0 0 1 .067-.333l1.256-.91a.25.25 0 0 0 0-.405l-1.256-.91a.25.25 0 0 1-.067-.334l.812-1.322a.25.25 0 0 0-.155-.374l-1.508-.36a.25.25 0 0 1-.19-.282l.245-1.532a.25.25 0 0 0-.286-.286l-1.532.244a.25.25 0 0 1-.282-.189l-.36-1.508a.25.25 0 0 0-.374-.155l-1.322.812a.25.25 0 0 1-.333-.067L8.203.28zM8 2.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="row justify-content-center">
+                <h1 class="meter"><span id="generationWatts">0.0</span></h1>
+            </div>
+            <div class="row justify-content-center display-watt text-muted">
+                <span id="generationAmps">0.00</span>&nbsp;A
+            </div>
+        </div>
+
+        <div class="col-sm-12 col-md-3 col-lg-3 mb-5 mb-md-0">
+            <div class="row justify-content-center">
+                <div>
+                    <span class="text-danger">&#8675;</span>&nbsp;Consumption
+                </div>
+                <div class="float-left ml-2" style="margin-top: -2px;">
+                    <svg width="1.5em" height="1.5em" viewBox="0 0 16 16" class="bi bi-house" fill="dodgerblue" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M2 13.5V7h1v6.5a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V7h1v6.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5zm11-11V6l-2-2V2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5z"/>
+                        <path fill-rule="evenodd" d="M7.293 1.5a1 1 0 0 1 1.414 0l6.647 6.646a.5.5 0 0 1-.708.708L8 2.207 1.354 8.854a.5.5 0 1 1-.708-.708L7.293 1.5z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="row justify-content-center">
+                <h1 class="meter"><span id="consumptionWatts">0.0</span></h1>
+            </div>
+            <div class="row justify-content-center display-watt text-muted">
+                <span id="consumptionAmps">0.00</span>&nbsp;A
+            </div>
+        </div>
+
+
+        <div class="col-sm-12 col-md-3 col-lg-3 mb-5 mb-md-0">
+            <div class="row justify-content-center">
+                <div>
+                    Solar surplus
+                </div>
+                <div class="float-left ml-2" style="margin-top: -2px;">
+                    <svg width="1.5em" height="100%" viewBox="0 0 15 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+                        <g transform="matrix(1,0,0,1,-9,-9.22827)">
+                        <g transform="matrix(0.031203,0,0,0.031203,8.71917,8.94032)">
+                            <path d="M9,522L9,499L32,499L32,476L45,476L45,176L9,176L9,152L34.5,152C56.8,152 59.9,151.8 59.4,150.5C58.5,148.2 60.8,143.4 63.3,142.3C64.5,141.8 68.5,140.5 72.2,139.5L78.8,137.6L70.7,134.2C61.8,130.6 60,129 60,125C60,120.4 62.4,118.4 71,115.9L79.2,113.6L75.8,112.4C69.7,110.3 62.3,106.1 61.6,104.5C59.3,98.3 62.1,94.7 71.4,92L78.9,89.7L71.1,86C63.1,82.1 62,80.9 62,76C62,72.2 65.3,69.8 73.5,67.5L80.2,65.7L75.3,63.6C72.6,62.4 68.8,60.5 66.7,59.3C63.4,57.3 63,56.6 63,53.1C63,47.9 64.6,46.5 73.1,43.9L80.1,41.8L72.8,38.1C64.4,34 62.4,31.1 64.1,26.2C64.8,24.1 66.3,22.7 69,21.6C79.1,17.6 102.8,12.2 120.4,9.9C128.6,8.9 129.4,8.9 131.9,10.7C133.7,12.1 134.6,13.8 134.8,16.3C135.2,21.4 132.7,23.6 125.4,24.4C116.8,25.4 96.9,29 95.6,29.7C93.4,31.1 105.1,33.2 116.5,33.4C130.4,33.7 132.3,34.1 133.8,37.6C135.5,41.2 135.3,42.6 132.8,45.4C130.9,47.5 129.1,48.1 122,48.9C110.1,50.3 95,53.2 95,54.1C95,55.6 105.8,57.3 117,57.6C123.3,57.7 128.8,57.9 129.3,57.9C131,58.1 134,62.2 134,64.4C134,68.7 130.5,71.7 124.8,72.5C114.6,73.7 95.6,77.1 94.2,77.9C91.9,79.2 104.3,81.3 116,81.6C121.8,81.8 127.1,81.9 127.8,82C130,82 133,85.9 133,88.8C133,93 129.8,95.8 124.3,96.5C112.4,98 94.4,101.2 93.7,101.9C92.3,103.3 106.4,105.3 117.8,105.4C127.4,105.5 128.3,105.7 130.1,107.9C134.4,113.1 130.9,119.5 123.2,120.5C110.3,122.1 93,125.4 93.7,126C95.2,127.4 107.7,129 117.3,129C125.7,129 127.3,129.3 129,131C131.6,133.6 131.5,138.3 128.7,141.5C126.8,143.7 125.2,144.3 118.5,145.1C110.2,146.1 88.7,150.3 83.5,151.9C81.5,152.5 93.8,152.9 119.2,152.9L157.9,153L157.4,150.2C156.5,145.6 159.8,142.6 169,140L177,137.6L168.8,134.2C159.9,130.5 158.1,128.9 158,124.8C158,120.7 160.9,118.4 169.1,116L176.4,113.8L168.3,110C160.4,106.3 159,104.9 159,100.6C159,96.5 161.6,94.4 169.7,92C174,90.7 176.8,89.5 176,89.2C172.1,88 162.4,82.7 161.3,81.3C159.6,79.1 159.7,74.9 161.4,72.4C162.3,71.1 165.9,69.4 170.7,68C175,66.7 177.8,65.5 177,65.2C173.1,64 163.4,58.7 162.3,57.3C161.6,56.4 161,54.2 161,52.4C161,48.2 164,45.8 172.2,43.5L178.5,41.8L173.2,39.4C164.2,35.4 162,33.4 162,29.1C162,26.6 162.7,24.7 163.9,23.6C167.8,20.1 194,13.4 215.4,10.5C227,8.9 227.4,8.9 229.9,10.8C231.8,12.2 232.6,13.8 232.8,16.8C233.2,22.2 231.1,23.5 220,25C208.4,26.5 194.7,29.1 193.7,30C192.1,31.5 203.5,33.3 215.1,33.6C221.5,33.7 227.7,34.1 228.8,34.4C231.9,35.4 233.5,40.3 232,44C230.5,47.6 228.7,48.1 211.5,50.4C204.9,51.3 197.7,52.5 195.5,53.2L191.5,54.3L197,55.7C200,56.5 208.3,57.4 215.4,57.7C229.6,58.4 232,59.4 232,64.8C232,69 228.8,71.8 223.3,72.5C213.3,73.7 193.4,77.2 192.1,78C189.8,79.2 207.6,82 217.8,82C228.2,82 231,83.5 231,88.9C231,94.2 228.4,95.9 219,97C208.2,98.3 194,100.9 192.2,101.9C189.8,103.3 202.8,105.3 214.9,105.4C225.5,105.6 226.4,105.7 228.1,107.9C232.2,112.9 229.4,119.4 222.8,120.4C209.5,122.3 192.5,125.1 192.1,125.5C191.9,125.8 191.9,126.2 192.1,126.4C193.2,127.5 206.4,129 215.3,129C226.3,129 229,130.4 229,136.1C229,142.5 226.1,144.4 215,145.5C207.9,146.2 185.1,150.6 181.7,152C180.4,152.5 194.6,152.9 216.8,152.9L254,153L254,149.9C254,144.6 255.5,143.2 264.6,140.4L273.2,137.7L265.7,134.6C256.1,130.6 255,129.6 255,125C255,120.2 256.8,118.7 265.8,116L273.2,113.7L266.4,110.9C258.1,107.4 255.7,105.1 255.7,101C255.7,96.8 258.2,94.7 266.3,92L273.1,89.8L265.6,86.3C257,82.2 254.9,79.2 257,74.1C258.2,71.1 259.4,70.4 268.8,67.5L274,65.8L266.2,62C258.3,58.2 257,56.9 257,52.5C257,49 260,46.4 266,44.5C269,43.6 272.2,42.6 273,42.3C273.9,42 272.1,40.7 268.4,39C265,37.5 261.3,35.3 260.1,34.1C257.5,31.5 257.4,27 259.8,24.2C262.9,20.5 290,13.4 311.9,10.6C321.7,9.3 323.7,9.3 326,10.5C330.6,12.9 331.3,17.4 327.8,21.4C325.9,23.5 324,24.1 317,25C306.4,26.3 292,29 290.1,30C287.6,31.3 298.8,33.2 312.8,33.9C327.4,34.6 329,35.3 329,41.1C329,46.3 326.3,48.1 317,49.1C307.4,50.1 293.1,52.7 289.8,53.9C286.3,55.2 303.7,58 315.1,58C326.1,58 328,59.1 328,65.2C328,70.6 326,71.7 311,73.9C303.6,75 295,76.4 292,77.1L286.5,78.3L291.5,79.7C294.3,80.5 302.6,81.4 310,81.7C325.4,82.3 327,83 327,89C327,94.6 324.8,95.9 312.6,97.5C300.1,99.1 290,101 288.1,102C285.8,103.2 298.9,105.3 310.8,105.6C324,105.9 326,106.9 326,113C326,118.3 323.6,120 314.8,121.1C303.4,122.5 289,125.2 288.5,126C287.7,127.3 300.1,129 310.7,129C322.8,129 325.4,130.3 325.4,136.5C325.4,141.3 321.5,145 316.5,145C312.2,145 292.6,148.4 283,150.9L275.5,152.8L350.7,153L350.2,150.2C349.6,145.7 353.2,142.6 362,140L369.5,137.8L361.6,134.5C353.2,131 351,129.1 351,125.2C351,120.9 352.8,119.2 359.7,117C363.5,115.8 367.2,114.6 368,114.3C369,114 368.6,113.5 366.5,112.6C353.6,107.1 352,105.7 352,100.6C352,96.9 355.1,94.3 361.7,92.4C364.9,91.5 367.9,90.5 368.4,90.2C368.9,89.9 366.4,88.4 362.9,86.8C354.5,83 353,81.5 353,77C353,72.3 354.9,70.6 362.5,68.5C365.8,67.5 368.9,66.5 369.3,66.3C369.7,66 367,64.4 363.3,62.6C355.5,58.8 353.7,57 353.7,53C353.7,48.7 356.3,46.5 363.6,44.4C367.1,43.4 370,42.2 370,41.8C370,41.5 367.9,40.4 365.4,39.4C359.8,37.3 354,32.1 354,29.2C354,24.8 358,22.1 369,18.9C384.4,14.5 402.2,11 413.1,10.3C422.4,9.7 422.7,9.8 424.3,12.1C426.5,15.1 426.5,19.2 424.3,21.9C422.9,23.6 420.6,24.3 414,25.1C404.8,26.2 386,29.7 385.3,30.4C384.2,31.5 395.8,33.2 408,33.7C415.4,34 422.1,34.7 422.9,35.3C427,38.7 426,46 421.2,47.8C419.7,48.3 414,49.3 408.5,49.9C403,50.5 395.1,51.9 391,52.8L383.5,54.6L392.5,56.3C397.5,57.2 405.9,58 411.2,58C420.4,58 420.9,58.1 422.9,60.6C425.3,63.6 425.5,64.9 423.9,68.4C422.5,71.4 419.4,72.6 411.5,73.4C408.2,73.8 400.3,75 394,76.2L382.5,78.3L387.5,79.7C390.3,80.5 398.7,81.4 406.3,81.7C419.5,82.2 420.1,82.4 422,84.8C424.5,87.9 424.5,91.1 422.3,93.9C420.8,95.7 418.5,96.3 409.3,97.6C398.6,99 384,101.7 383.3,102.4C382.4,103.3 396.8,105.3 407.8,105.9C418.5,106.4 420.4,106.8 421.6,108.4C424.3,112.2 422.5,118.2 418.1,119.8C416.7,120.4 410.1,121.5 403.5,122.4C396.9,123.3 389.7,124.5 387.5,125.1L383.5,126.3L386.5,127.2C388.2,127.7 396,128.4 403.8,128.8C417.3,129.5 418.3,129.6 420.1,131.9C423.8,136.4 421.3,143.6 415.7,144.4C397.1,147.2 385.3,149.4 379.5,150.9L372.5,152.8L416.3,152.9L460,153L460,177.2L443,176.8L426,176.5L426,476L438,476L438,499L461,499L461,522L9,522ZM239.8,380L320.7,318.5L250.3,317.5L281,267C297.9,239.2 311.6,216.3 311.4,216.2C311.3,216 274.5,243.6 229.7,277.7L148.3,339.5L183.6,339.8L218.9,340L203.3,365.8C194.7,379.9 180.8,402.9 172.3,416.8C163.8,430.8 157.4,442 157.9,441.8C158.4,441.7 195.3,413.8 239.8,380Z" style="fill:rgb(0,157,18);fill-rule:nonzero;"/>
+                        </g>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+            <div class="row justify-content-center">
+                <h1 class="meter"><span id="surplusWatts">0.0</span></h1>
+            </div>
+            <div class="row justify-content-center display-watt text-muted">
+                <span id="surplusAmps">0.00</span>&nbsp;A
+            </div>
+        </div>
+
+        <div class="col-sm-12 col-md-3 col-lg-3 mb-5 mb-md-0">
+            <div class="row justify-content-center">
+                <div>
+                    <h6>Charging<span id="carsCharging" class="ml-1 badge badge-pill badge-grey">0</span></h6>
+                </div>
+                <div class="float-left ml-2" style="margin-top: -2px;">
+                    <svg width="1.5em" height="1.5em" viewBox="0 0 16 16" class="bi bi-plug" fill="limegreen" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M6 0a.5.5 0 0 1 .5.5V3h3V.5a.5.5 0 0 1 1 0V3h1a.5.5 0 0 1 .5.5v3A3.5 3.5 0 0 1 8.5 10c-.002.434-.01.845-.04 1.22-.041.514-.126 1.003-.317 1.424a2.083 2.083 0 0 1-.97 1.028C6.725 13.9 6.169 14 5.5 14c-.998 0-1.61.33-1.974.718A1.922 1.922 0 0 0 3 16H2c0-.616.232-1.367.797-1.968C3.374 13.42 4.261 13 5.5 13c.581 0 .962-.088 1.218-.219.241-.123.4-.3.514-.55.121-.266.193-.621.23-1.09.027-.34.035-.718.037-1.141A3.5 3.5 0 0 1 4 6.5v-3a.5.5 0 0 1 .5-.5h1V.5A.5.5 0 0 1 6 0zM5 4v2.5A2.5 2.5 0 0 0 7.5 9h1A2.5 2.5 0 0 0 11 6.5V4H5z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="row justify-content-center">
+                <h1 class="meter"><span id="chargerLoadWatts">0.0</span></h1>
+            </div>
+            <div class="row justify-content-center display-watt text-muted">
+                <span id="chargerLoadAmps">0.0</span>&nbsp;A&nbsp;|&nbsp;0&nbsp;A&nbsp;<small class="mt-1">avail.</small>
+            </div>
+        </div>
+
+        <!-- show active policy -->
+        <div class="row w-100 justify-content-center mt-5">
+            <div class="col-sm-11 col-md-10 col-lg-8">
+                <div class="jumbotron px-5 py-4 rounded-xl" style="background-color: #f0f0f0; pointer-events:none;">
+                    <div class="form-group row" style="margin-bottom: -1em!important;">
+                        {% set active = master.settings.get("nonScheduledAction", 1) %}
+                        <label for="colBtns" class="col-2 col-form-label display-5">Charge Policy</label>
+                        <div class="col-10 btn-group" id="colBtns" role="group">
+                            <button type="button" class="btn btn-{% if active != 3 %}outline-{% endif %}primary" role="button" aria-describedby="helpText">Solar Surplus</button>
+                            <button type="button" class="btn btn-{% if active != 1 %}outline-{% endif %}primary" role="button" aria-describedby="helpText">Fixed Rate/Amps</button>
+                            <button type="button" class="btn btn-{% if active != 2 %}outline-{% endif %}primary" role="button" aria-describedby="helpText">Don't charge</button>
+                        </div>
+                        <div class="col-10 offset-2">
+                            <small id="helpText" class="form-text text-muted">
+                                {% if active == 1 %}
+                                    Charges a vehicle at a fixed rate of x Amps whenever it is plugged in
+                                {% elif active == 2 %}
+                                    Doesn't charge a vehicle when plugged in unless manually started (e.g. in the Tesla App)
+                                {% elif active == 3 %}
+                                    Charges a vehicle if Solar production is {{ master.settings.get("minAmpsPerTWC", 5) }} Amps or more than the current consumption
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- end Home -->
+
+<!-- Charge points -->
+<div class="container-fluid pt-4">
+    <div class="row border-bottom mb-4">
+        <h1 class="display-4">Charge Point{% if (slaves|count > 1) %}s{% endif %}</h1>
+    </div>
+
+    <div class="row pb-2 border-bottom text-center">
+        {% set slaves = master.getSlaveTWCs() %}
+        {% for charger in slaves %}
+        <div class="col-12">
+            <div class="row col-12">
+                <div class="col"><!-- icon column -->
+                    <div class="row">
+                        <div class="col">
+                            <svg height="4em" viewBox="0 0 78 142" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5;">
+                                <g transform="matrix(1,0,0,1,-58.6302,-49.9425)">
+                                    <g transform="matrix(1.25227,0,0,0.981636,-34.4875,13.0036)">
+                                        <path d="M116.037,39.022C115.797,38.575 83.43,38.476 83.096,39.022C77.024,48.944 74.984,83.654 75.169,97.089C75.28,105.116 76.478,144.135 81.364,153.398C82.664,155.861 94.199,157.333 100.289,157.333C106.306,157.333 116.891,155.968 117.891,153.398C121.673,143.672 123.219,107.967 123.512,97.089C124.026,77.966 121.313,48.87 116.037,39.022Z" style="fill:none;"/>
+                                        <clipPath id="_clip1">
+                                            <path d="M116.037,39.022C115.797,38.575 83.43,38.476 83.096,39.022C77.024,48.944 74.984,83.654 75.169,97.089C75.28,105.116 76.478,144.135 81.364,153.398C82.664,155.861 94.199,157.333 100.289,157.333C106.306,157.333 116.891,155.968 117.891,153.398C121.673,143.672 123.219,107.967 123.512,97.089C124.026,77.966 121.313,48.87 116.037,39.022Z"/>
+                                        </clipPath>
+                                        <g clip-path="url(#_clip1)">
+                                            <g transform="matrix(0.988571,0,0,0.987743,1.07957,1.38293)">
+                                                <path d="M100,107.668L100,146.78" style="fill:none;stroke:rgb(94,159,40);stroke-width:1.8px;"/>
+                                            </g>
+                                        </g>
+                                        <path d="M116.037,39.022C115.797,38.575 83.43,38.476 83.096,39.022C77.024,48.944 74.984,83.654 75.169,97.089C75.28,105.116 76.478,144.135 81.364,153.398C82.664,155.861 94.199,157.333 100.289,157.333C106.306,157.333 116.891,155.968 117.891,153.398C121.673,143.672 123.219,107.967 123.512,97.089C124.026,77.966 121.313,48.87 116.037,39.022Z" style="fill:none;stroke:black;stroke-width:1.78px;"/>
+                                    </g>
+                                    <g transform="matrix(1,0,0,1,0.475625,-8.83563)">
+                                        <path d="M122.47,116.245C122.47,116.245 126.137,118.829 126.928,121.411C128.504,126.554 129.718,145.816 129.718,145.816L132.341,145.816C132.341,145.816 136.379,125.697 134.366,118.836C132.574,112.732 122.177,105.674 122.177,105.674C122.177,105.674 122.47,109.197 122.47,110.891L122.47,116.245Z" style="fill:none;stroke:black;stroke-width:2px;"/>
+                                    </g>
+                                    <g transform="matrix(1.01098,0,0,1.20996,-0.993229,-39.451)">
+                                        <path d="M90.658,170.995C92.296,189.853 129.911,210.487 131.271,145.981" style="fill:none;stroke:black;stroke-width:1.79px;stroke-linejoin:bevel;"/>
+                                    </g>
+                                </g>
+                            </svg>
+                        </div>
+                        <div class="col pt-1">
+                            {% set twcid = '%0x%0x' % (charger.TWCID[0], charger.TWCID[1]) %}
+                            <div class="row">
+                                <small>{{ twcid }}</small>
+                            </div>
+                            <div class="row">
+                                <small>Version <span id="{{ twcid }}_version"></span></small>
+                            </div>
+                            <div class="row">
+                                <small>State <span id="{{ twcid }}_state"></span></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col"><!-- max Amps -->
+                    <div class="row">
+                        <div class="col-12">
+                            <span id="{{ twcid }}_chargeTime" class="meter">00:00:00</span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <small class="text-muted">Charging time counter</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col"><!-- Amps offered -->
+                    <div class="row">
+                        <div class="col-12">
+                            <span id="{{ twcid }}_lastAmpsOffered" class="meter amps"></span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <small class="text-muted">Amps offered</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col"><!-- Amps in use -->
+                    <div class="row">
+                        <div class="col-12">
+                            <span id="{{ twcid }}_reportedAmpsActual" class="meter amps"></span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <small class="text-muted">Amps in use</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col"><!-- Lifetime kWh -->
+                    <div class="row">
+                        <div class="col-12">
+                            <span id="{{ twcid }}_lifetimekWh" class="meter kwh"></span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <small class="text-muted">Lifetime kWh</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col"><!-- Voltage -->
+                    <div class="row" style="line-height: 0.9rem;">
+                        <div class="col-12">
+                            <div class="row justify-content-center">
+                                L<span class="phase">1</span><span id="{{ twcid }}_voltsPhaseA" class="volt"></span>
+                            </div>
+                            <div class="row justify-content-center">
+                                L<span class="phase">2</span><span id="{{ twcid }}_voltsPhaseB" class="volt"></span>
+                            </div>
+                            <div class="row justify-content-center">
+                                L<span class="phase">3</span><span id="{{ twcid }}_voltsPhaseC" class="volt"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <small class="text-muted">Phase/Voltage</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col"><!-- Vehicle -->
+                    <div class="row">
+                        <div class="col-12 text-left" style="line-height: 1.37em;">
+                            Vehicle:<br>
+                            Current: <span id="{{ twcid }}_currentVIN"></span><br>
+                            Last: <span id="{{ twcid }}_lastVIN"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+<!-- end Charge Points -->
+
+<!--  Global Actions -->
+<div class="container-fluid pt-4">
+    <div class="row justify-content-center">
+        <div class="col-3">
+            <form>
+                <div class="form-group p-2">
+                    <label for="chargeNowDuration" class="text-muted mb-0">Charge duration <span class="text-dark font-weight-bold" id="{{ twcid }}_durationVal">1</span> hours</label>
+                    <input type="range" class="custom-range" id="chargeNowDuration" name="chargeNowDuration" min="1" max="24" step="1" value="1" onInput="$('#{{ twcid }}_durationVal').html($(this).val())">
+                </div>
+            </form>
+        </div>
+        <div class="col-3">
+            {% set ampsMin = ampsList|first %}
+            {% set ampsMax = ampsList|last %}
+            <form>
+                <div class="form-group p-2">
+                    <label for="chargeNowRate" class="text-muted mb-0">Charge with <span class="text-dark font-weight-bold" id="{{ twcid }}_ampsVal">{{ defaultChargeAmps }}</span> A</label>
+                    <input type="range" class="custom-range" id="chargeNowRate" name="chargeNowRate" min="{{ ampsMin[0]}}" max="{{ ampsMax[0] }}" step="1" value="{{ defaultChargeAmps }}" onInput="$('#{{ twcid }}_ampsVal').html($(this).val())">
+                </div>
+            </form>
+        </div>
+            <div class="col-2">
+                <div class="form-group p-3 m-1">
+                    <button type="submit" class="btn btn-light btn-small border" id="start_chargenow" value="Charge now"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- end Global Actions -->
+{% endblock %}
+{% block javascripts %}{% include "jsrefresh.html.j2" %}{% endblock %}

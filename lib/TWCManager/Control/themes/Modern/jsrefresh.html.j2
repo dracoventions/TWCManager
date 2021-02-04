@@ -1,0 +1,147 @@
+<script>
+    // enable tooltips
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+
+    // AJAJ refresh for getStatus API call
+    $(document).ready(function() {
+        function requestStatus() {
+            $.ajax({
+                url: "/api/getStatus",
+                dataType: "text",
+                cache: false,
+                success: function(data) {
+                    var json = $.parseJSON(data);
+                    var generation = parseFloat(json['generationWatts']);
+                    var consumption = parseFloat(json['consumptionWatts']);
+                    var surplus = 0;
+
+                    Object.keys(json).forEach(function(key) {
+                        if (key == 'generationWatts' || key == 'consumptionWatts' || key == 'chargerLoadWatts') {
+                            var gen = json[key];
+                            if (gen > 1000) {
+                                gen = gen * 0.001;
+                                json[key] = gen.toFixed(2) + '&nbsp;<span class="text-secondary">kW</span>';
+                            } else {
+                                json[key] = Math.round(gen) + '&nbsp;<span class="text-secondary">Watt</span>';
+                            }
+                        }
+                        $('#'+key).html(json[key]);
+                    });
+
+                    // calculate power surplus
+                    var surplusAmps = 0.0;
+                    if (generation > consumption) {
+                        surplus = generation - consumption;
+                        if (surplus > 1000) {
+                            surplus = surplus * 0.001;
+                            $('#surplusWatts').html(surplus.toFixed(2) + '&nbsp;<span class="text-secondary">kW</span>');
+                        } else {
+                            $('#surplusWatts').html(Math.round(surplus) + '&nbsp;<span class="text-secondary">Watt</span>');
+                            $('#surplusAmps').html();
+                        }
+                        surplusAmps = parseFloat(json['generationAmps']) - parseFloat(json['consumptionAmps']);
+
+                        // color consumption green, as it is fully covered by solar
+                        $('#consumptionWatts').css('color', 'green');
+                    } else {
+                        $('#consumptionWatts').css('color', 'black');
+                    }
+
+                    $('#surplusAmps').html(surplusAmps.toFixed(2));
+
+                    // Change the state of the Charge Now button based on Charge Policy
+                    if (json["currentPolicy"] == "Charge Now") {
+                        if ($("#start_chargenow").length) {
+                            $("#start_chargenow").html("Update Charge Now");
+                            $("#cancel_chargenow").prop( "disabled", false);
+                        }
+                    } else {
+                        if ($("#start_chargenow").length) {
+                            $("#start_chargenow").html("Charge Now");
+                            $("cancel_chargenow").prop( "disabled", true );
+                        }
+                    }
+                }
+            });
+            setTimeout(requestStatus, 3000);
+        }
+        requestStatus();
+    });
+
+    // AJAJ refresh for getSlaveTWCs API call
+    $(document).ready(function() {
+        function requestSlaves() {
+            $.ajax({
+                url: "/api/getSlaveTWCs",
+                dataType: "text",
+                cache: false,
+                success: function(data) {
+                    var json = $.parseJSON(data);
+                    Object.keys(json).forEach(function(key) {
+                        var slvtwc = json[key];
+                        var twc = '#' + slvtwc['TWCID']
+                        Object.keys(slvtwc).forEach(function(key) {
+                          $(twc+'_'+key).html(slvtwc[key]);
+                        });
+                    });
+                }
+            });
+            setTimeout(requestSlaves, 3000);
+        }
+        requestSlaves();
+    });
+
+    $(document).ready(function() {
+        $("#start_chargenow").click(function(e) {
+            e.preventDefault();
+            // submit charge command via AJAX
+            $.ajax({
+                type: "POST",
+                url: "/api/chargeNow",
+                data: JSON.stringify({
+                    chargeNowRate: $("#chargeNowRate").val(),
+                    chargeNowDuration: $("#chargeNowDuration").val()
+                }),
+                dataType: "json"
+            }).done( function(data) {
+                console.log('Starting to charge now!');
+                $(this).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>Update charging');
+            });
+        });
+    });
+
+    $(document).ready(function() {
+        $("#cancel_chargenow").click(function(e) {
+            e.preventDefault();
+            $.ajax({
+                type: "POST",
+                url: "/api/cancelChargeNow",
+                data: {}
+            });
+        });
+    });
+
+    $(document).ready(function() {
+        $("#send_start_command").click(function(e) {
+            e.preventDefault();
+            $.ajax({
+                type: "POST",
+                url: "/api/sendStartCommand",
+                data: {}
+            });
+        });
+    });
+
+    $(document).ready(function() {
+        $("#send_stop_command").click(function(e) {
+            e.preventDefault();
+            $.ajax({
+                type: "POST",
+                url: "/api/sendStopCommand",
+                data: {}
+            });
+        });
+    });
+</script>

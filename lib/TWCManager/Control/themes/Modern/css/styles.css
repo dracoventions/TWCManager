@@ -1,0 +1,67 @@
+/*
+ * This files contains additional CSS settings
+ * used for the TWC Manager
+ */
+.display-4 {
+    font-weight: 200;
+}
+
+.display-5 {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.meter {
+    font-size: 2.2rem;
+    font-weight: 300;
+    line-height: 1.2;
+    margin-bottom: 0;
+}
+
+.amps::after {
+    margin-left: 0.3rem;
+    content: "A";
+    color: #6c757d;    // .text-secondary color
+}
+
+.kwh::after {
+    margin-left: 0.4rem;
+    content: "kWh";
+    color: #6c757d;    // .text-secondary color
+}
+
+.volt {
+    margin-left: 0.2rem;
+}
+
+.volt::after {
+    margin-left: 0.15rem;
+    content: "V";
+    color: #6c757d;
+}
+
+.car {
+    stroke: #6c757d;
+    fill: #6c757d;
+}
+
+.phase {
+    position: relative;
+    font-size: 75%;
+    bottom: -0.4em;
+    margin-left: 2px;
+    color: #6c757d;
+}
+
+.display-watt {
+    margin-top: -6px;
+}
+
+.badge-grey {
+    background-color: #dfdfdf;
+}
+
+.rounded-xl {
+    border-radius: 1rem !important;
+}
+
