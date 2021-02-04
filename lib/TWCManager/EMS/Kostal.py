@@ -46,6 +46,7 @@ class Kostal:
             self.configKostal = master.config["sources"]["Kostal"]
         except KeyError:
             self.configConfig = {}
+            self.configKostal = {}
 
         # read configuration values and initialize variables
         self.debugLevel = self.configConfig.get("debugLevel", 0)
