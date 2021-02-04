@@ -1,0 +1,18 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="/">TWCManager</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavTWC" aria-controls="navbarNavTWC" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNavTWC">
+        <ul class="navbar-nav mr-auto">
+          {{ navbarItem("/", "Home")|safe }}
+          {{ navbarItem("/policy", "Policy")|safe }}
+          {{ navbarItem("/schedule", "Schedule")|safe }}
+          {{ navbarItem("/settings", "Settings")|safe }}
+          {{ navbarItem("/debug", "Debug")|safe }}
+          {{ navbarItem("https://github.com/ngardiner/TWCManager", "GitHub")|safe }}
+        </ul>
+        <span class='navbar-text'>v{{ master.version }}</span>
+   </div>
+</nav>
