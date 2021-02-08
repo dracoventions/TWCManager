@@ -291,8 +291,8 @@ class Policy:
         current = self.getPolicyByName(self.active_policy)
         if current:
             return (
-                current.get("background_task", "") == "checkGreenEnergy" and
-                current.get("charge_amps", None) == None
+                current.get("background_task", "") == "checkGreenEnergy"
+                and current.get("charge_amps", None) == None
             )
         return False
 

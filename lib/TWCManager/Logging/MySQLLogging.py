@@ -4,9 +4,7 @@
 
 class MySQLLogging:
 
-    capabilities = {
-      "queryGreenEnergy": True
-    }
+    capabilities = {"queryGreenEnergy": True}
     config = None
     configConfig = None
     configLogging = None
@@ -112,16 +110,12 @@ class MySQLLogging:
         rows = 0
         try:
             rows = cur.execute(
-                query,
-                (
-                    data.get("dateBegin", 0),
-                    data.get("dateEnd", 0),
-                ),
+                query, (data.get("dateBegin", 0), data.get("dateEnd", 0))
             )
         except Exception as e:
             self.master.debugLog(1, "MySQLLog", str(e))
 
-        result={}
+        result = {}
         if rows:
             # Query was successful. Commit
             result = cur.fetchall()
@@ -132,7 +126,6 @@ class MySQLLogging:
             )
         cur.close()
         return list(result)
-
 
     def slavePower(self, data):
         # Check if this status is muted

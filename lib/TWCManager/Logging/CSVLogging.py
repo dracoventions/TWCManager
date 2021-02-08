@@ -6,9 +6,7 @@ import time
 
 class CSVLogging:
 
-    capabilities = {
-      "queryGreenEnergy": False
-    }
+    capabilities = {"queryGreenEnergy": False}
     config = None
     configConfig = None
     configLogging = None

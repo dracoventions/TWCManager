@@ -979,8 +979,8 @@ class TWCSlave:
             self.masterHeartbeatData = bytearray(
                 [
                     (0x09 if self.protocolVersion == 2 else 0x05),
-                    (desiredHundredthsOfAmps >> 8) & 0xFF,
-                    desiredHundredthsOfAmps & 0xFF,
+                    (desiredHundredthsOfAmps >> 8) & 0xff,
+                    desiredHundredthsOfAmps & 0xff,
                     0x00,
                     0x00,
                     0x00,

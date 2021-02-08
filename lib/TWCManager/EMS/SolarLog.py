@@ -69,9 +69,7 @@ class SolarLog:
 
     def getConsumptionAndGenerationValues(self):
         url = "http://" + self.serverIP + "/getjp"
-        headers = {
-            "content-type": "application/json",
-        }
+        headers = {"content-type": "application/json"}
         payload = '{"801":{"170":null, "175":null}}'
 
         # Update fetchFailed boolean to False before fetch attempt
@@ -140,9 +138,7 @@ class SolarLog:
             return False
 
         url = "http://" + self.serverIP + "/getjp"
-        headers = {
-            "content-type": "application/json",
-        }
+        headers = {"content-type": "application/json"}
         payload = '{"782":null}'
 
         # Update fetchFailed boolean to False before fetch attempt

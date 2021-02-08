@@ -163,15 +163,15 @@ def unescape_msg(inmsg: bytearray, msgLen):
     # the end looking at i+1.
     i = 0
     while i < len(msg):
-        if msg[i] == 0xDB:
-            if msg[i + 1] == 0xDC:
+        if msg[i] == 0xdb:
+            if msg[i + 1] == 0xdc:
                 # Replace characters at msg[i] and msg[i+1] with 0xc0,
                 # shortening the string by one character. In Python, msg[x:y]
                 # refers to a substring starting at x and ending immediately
                 # before y. y - x is the length of the substring.
-                msg[i : i + 2] = [0xC0]
-            elif msg[i + 1] == 0xDD:
-                msg[i : i + 2] = [0xDB]
+                msg[i : i + 2] = [0xc0]
+            elif msg[i + 1] == 0xdd:
+                msg[i : i + 2] = [0xdb]
             else:
                 debugLog(
                     1,
@@ -182,7 +182,7 @@ def unescape_msg(inmsg: bytearray, msgLen):
 
                 # Replace the character with something even though it's probably
                 # not the right thing.
-                msg[i : i + 2] = [0xDB]
+                msg[i : i + 2] = [0xdb]
         i = i + 1
 
     # Remove leading and trailing C0 byte.
@@ -613,13 +613,13 @@ while True:
 
             timeMsgRxStart = now
             timeLastRx = now
-            if msgLen == 0 and data[0] != 0xC0:
+            if msgLen == 0 and data[0] != 0xc0:
                 # We expect to find these non-c0 bytes between messages, so
                 # we don't print any warning at standard debug levels.
                 debugLog(11, "Ignoring byte %02X between messages." % (data[0]))
                 ignoredData += data
                 continue
-            elif msgLen > 0 and msgLen < 15 and data[0] == 0xC0:
+            elif msgLen > 0 and msgLen < 15 and data[0] == 0xc0:
                 # If you see this when the program is first started, it
                 # means we started listening in the middle of the TWC
                 # sending a message so we didn't see the whole message and
@@ -669,7 +669,7 @@ while True:
             #   http://www.ti.com/lit/an/slyt514/slyt514.pdf
             # This explains what happens without "termination" resistors:
             #   https://e2e.ti.com/blogs_/b/analogwire/archive/2016/07/28/rs-485-basics-when-termination-is-necessary-and-how-to-do-it-properly
-            if msgLen >= 16 and data[0] == 0xC0:
+            if msgLen >= 16 and data[0] == 0xc0:
                 break
 
         if msgLen >= 16:
@@ -720,7 +720,7 @@ while True:
             for i in range(1, len(msg) - 1):
                 checksum += msg[i]
 
-            if (checksum & 0xFF) != checksumExpected:
+            if (checksum & 0xff) != checksumExpected:
                 debugLog(
                     1,
                     "ERROR: Checksum %X does not match %02X.  Ignoring message: %s"
@@ -1184,19 +1184,19 @@ while True:
                         master.slaveHeartbeatData[0] = heartbeatData[0]
                         timeToRaise2A = now + 10
                         amps -= 280
-                        master.slaveHeartbeatData[3] = (amps >> 8) & 0xFF
-                        master.slaveHeartbeatData[4] = amps & 0xFF
+                        master.slaveHeartbeatData[3] = (amps >> 8) & 0xff
+                        master.slaveHeartbeatData[4] = amps & 0xff
                     elif heartbeatData[0] == 0x06:
                         # Raise amp setpoint by 2 permanently and reply with
                         # state 06.  After 44 seconds, report state 0A.
                         timeTo0Aafter06 = now + 44
                         master.slaveHeartbeatData[0] = heartbeatData[0]
                         amps += 200
-                        master.slaveHeartbeatData[1] = (amps >> 8) & 0xFF
-                        master.slaveHeartbeatData[2] = amps & 0xFF
+                        master.slaveHeartbeatData[1] = (amps >> 8) & 0xff
+                        master.slaveHeartbeatData[2] = amps & 0xff
                         amps -= 80
-                        master.slaveHeartbeatData[3] = (amps >> 8) & 0xFF
-                        master.slaveHeartbeatData[4] = amps & 0xFF
+                        master.slaveHeartbeatData[3] = (amps >> 8) & 0xff
+                        master.slaveHeartbeatData[4] = amps & 0xff
                     elif (
                         heartbeatData[0] == 0x05
                         or heartbeatData[0] == 0x08
@@ -1211,12 +1211,12 @@ while True:
 
                             ampsUsed = (heartbeatData[1] << 8) + heartbeatData[2]
                             ampsUsed -= 80
-                            master.slaveHeartbeatData[3] = (ampsUsed >> 8) & 0xFF
-                            master.slaveHeartbeatData[4] = ampsUsed & 0xFF
+                            master.slaveHeartbeatData[3] = (ampsUsed >> 8) & 0xff
+                            master.slaveHeartbeatData[4] = ampsUsed & 0xff
                     elif heartbeatData[0] == 0:
                         if timeTo0Aafter06 > 0 and timeTo0Aafter06 < now:
                             timeTo0Aafter06 = 0
-                            master.slaveHeartbeatData[0] = 0x0A
+                            master.slaveHeartbeatData[0] = 0x0a
                         elif timeToRaise2A > 0 and timeToRaise2A < now:
                             # Real slave raises amps used by 2 exactly 10
                             # seconds after being sent into state 07. It raises
@@ -1225,9 +1225,9 @@ while True:
                             # timing here but hopefully close enough.
                             timeToRaise2A = 0
                             amps -= 80
-                            master.slaveHeartbeatData[3] = (amps >> 8) & 0xFF
-                            master.slaveHeartbeatData[4] = amps & 0xFF
-                            master.slaveHeartbeatData[0] = 0x0A
+                            master.slaveHeartbeatData[3] = (amps >> 8) & 0xff
+                            master.slaveHeartbeatData[4] = amps & 0xff
+                            master.slaveHeartbeatData[0] = 0x0a
                     elif heartbeatData[0] == 0x02:
                         debugLog(
                             1,
@@ -1355,10 +1355,10 @@ while True:
                         kWhCounter = int(master.getkWhDelivered())
                         kWhPacked = bytearray(
                             [
-                                ((kWhCounter >> 24) & 0xFF),
-                                ((kWhCounter >> 16) & 0xFF),
-                                ((kWhCounter >> 8) & 0xFF),
-                                (kWhCounter & 0xFF),
+                                ((kWhCounter >> 24) & 0xff),
+                                ((kWhCounter >> 16) & 0xff),
+                                ((kWhCounter >> 8) & 0xff),
+                                (kWhCounter & 0xff),
                             ]
                         )
                         debugLog(

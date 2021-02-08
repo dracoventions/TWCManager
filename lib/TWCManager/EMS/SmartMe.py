@@ -35,14 +35,18 @@ class SmartMe:
         self.debugLevel = self.configConfig.get("debugLevel", 0)
 
         # Unload if this module is disabled or misconfigured
-        if (not self.status) or (not self.serialNumber or not self.username or not self.password):
+        if (not self.status) or (
+            not self.serialNumber or not self.username or not self.password
+        ):
             self.master.releaseModule("lib.TWCManager.EMS", "SmartMe")
             return None
 
     def getConsumption(self):
 
         if not self.status:
-            self.master.debugLog(10, "SmartMe", "EMS Module Disabled. Skipping getConsumption")
+            self.master.debugLog(
+                10, "SmartMe", "EMS Module Disabled. Skipping getConsumption"
+            )
             return 0
 
         # While we don't have separate generation or consumption values, if
@@ -55,7 +59,9 @@ class SmartMe:
     def getGeneration(self):
 
         if not self.status:
-            self.master.debugLog(10, "SmartMe", "EMS Module Disabled. Skipping getGeneration")
+            self.master.debugLog(
+                10, "SmartMe", "EMS Module Disabled. Skipping getGeneration"
+            )
             return 0
 
         # Perform updates if necessary
@@ -69,9 +75,7 @@ class SmartMe:
 
     def getGenerationValues(self):
         url = "https://smart-me.com/api/DeviceBySerial?serial=" + self.serialNumber
-        headers = {
-            "content-type": "application/json",
-        }
+        headers = {"content-type": "application/json"}
 
         # Update fetchFailed boolean to False before fetch attempt
         # This will change to true if the fetch failed, ensuring we don't then use the value to update our cache
@@ -81,22 +85,28 @@ class SmartMe:
             self.master.debugLog(10, "SmartMe", "Fetching SmartMe EMS sensor values")
             self.session = self.requests.Session()
             self.session.auth = (self.username, self.password)
-            httpResponse = self.session.get(
-                url, headers=headers, timeout=self.timeout
-            )
+            httpResponse = self.session.get(url, headers=headers, timeout=self.timeout)
         except self.requests.exceptions.ConnectionError as e:
-            self.master.debugLog(4, "SmartMe", "Error connecting to SmartMe to fetching sensor values")
+            self.master.debugLog(
+                4, "SmartMe", "Error connecting to SmartMe to fetching sensor values"
+            )
             self.master.debugLog(10, "SmartMe", str(e))
             self.fetchFailed = True
             return False
         except self.requests.exceptions.ReadTimeout as e:
-            self.master.debugLog(4, "SmartMe", "Read Timeout occurred fetching SmartMe sensor values")
+            self.master.debugLog(
+                4, "SmartMe", "Read Timeout occurred fetching SmartMe sensor values"
+            )
             self.master.debugLog(10, "SmartMe", str(e))
             self.fetchFailed = True
             return False
 
         if httpResponse.status_code != 200:
-            self.master.debugLog(4, "SmartMe", "SmartMe API reports HTTP Status Code "+str(httpResponse.status_code))
+            self.master.debugLog(
+                4,
+                "SmartMe",
+                "SmartMe API reports HTTP Status Code " + str(httpResponse.status_code),
+            )
             return False
 
         if not httpResponse:
@@ -107,7 +117,7 @@ class SmartMe:
             self.generatedW = float(httpResponse.json()["ActivePower"]) * -1
             if httpResponse.json()["ActivePowerUnit"] == "kW":
                 # Unit is kW, multiply by 1000 for W
-                self.generatedW = (self.generatedW * 1000)
+                self.generatedW = self.generatedW * 1000
         else:
             self.master.debugLog(4, "SmartMe", "No JSON response from SmartMe API")
 

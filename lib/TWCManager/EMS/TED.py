@@ -53,7 +53,9 @@ class TED:
     def getConsumption(self):
 
         if not self.status:
-            self.master.debugLog(10, "TED", "TED EMS Module Disabled. Skipping getConsumption")
+            self.master.debugLog(
+                10, "TED", "TED EMS Module Disabled. Skipping getConsumption"
+            )
             return 0
 
         # Perform updates if necessary
@@ -65,7 +67,9 @@ class TED:
     def getGeneration(self):
 
         if not self.status:
-            self.master.debugLog(10, "TED", "TED EMS Module Disabled. Skipping getGeneration")
+            self.master.debugLog(
+                10, "TED", "TED EMS Module Disabled. Skipping getGeneration"
+            )
             return 0
 
         # Perform updates if necessary
@@ -82,7 +86,9 @@ class TED:
         try:
             r = self.requests.get(url, timeout=self.timeout)
         except self.requests.exceptions.ConnectionError as e:
-            self.master.debugLog(4, "TED", "Error connecting to TED to fetch solar data")
+            self.master.debugLog(
+                4, "TED", "Error connecting to TED to fetch solar data"
+            )
             self.master.debugLog(10, "TED", str(e))
             self.fetchFailed = True
             return False
@@ -105,7 +111,9 @@ class TED:
                     b"^Solar,[^,]+,-?([^, ]+),", value, self.re.MULTILINE
                 )
             else:
-                self.master.debugLog(5, "TED", "Failed to find value in response from TED")
+                self.master.debugLog(
+                    5, "TED", "Failed to find value in response from TED"
+                )
                 self.fetchFailed = True
 
             if m:

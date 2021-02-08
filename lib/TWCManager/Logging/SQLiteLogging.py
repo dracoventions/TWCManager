@@ -3,9 +3,7 @@
 
 class SQLiteLogging:
 
-    capabilities = {
-      "queryGreenEnergy": False
-    }
+    capabilities = {"queryGreenEnergy": False}
     config = None
     configConfig = None
     configLogging = None

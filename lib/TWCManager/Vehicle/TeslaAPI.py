@@ -215,10 +215,7 @@ class TeslaAPI:
     def apiRefresh(self):
         # Refresh tokens expire in 45
         # days when first issued, so we'll get a new token every 15 days.
-        headers = {
-            "accept": "application/json",
-            "Content-Type": "application/json",
-        }
+        headers = {"accept": "application/json", "Content-Type": "application/json"}
         data = {
             "client_id": self.clientID,
             "client_secret": self.clientSecret,
@@ -260,7 +257,7 @@ class TeslaAPI:
             self.master.queue_background_task({"cmd": "saveSettings"})
 
     def car_api_available(
-            self, email=None, password=None, charge=None, applyLimit=None
+        self, email=None, password=None, charge=None, applyLimit=None
     ):
         now = time.time()
         apiResponseDict = {}
@@ -294,8 +291,8 @@ class TeslaAPI:
 
         # Authentiate to Tesla API
         if (
-                self.getCarApiBearerToken() == ""
-                or self.getCarApiTokenExpireTime() - now < 30 * 24 * 60 * 60
+            self.getCarApiBearerToken() == ""
+            or self.getCarApiTokenExpireTime() - now < 30 * 24 * 60 * 60
         ):
             if self.getCarApiRefreshToken() != "":
                 headers = {
@@ -317,10 +314,10 @@ class TeslaAPI:
 
                 # If any string is returned, we redirect to it. This helps with MFA login flow
                 if (
-                        str(ret) != "True"
-                        and str(ret) != "False"
-                        and str(ret) != ""
-                        and str(ret) != "None"
+                    str(ret) != "True"
+                    and str(ret) != "False"
+                    and str(ret) != ""
+                    and str(ret) != "None"
                 ):
                     return ret
 
@@ -568,7 +565,7 @@ class TeslaAPI:
                                 if "error" in apiResponseDict:
                                     error = apiResponseDict["error"]
                                     for knownError in self.getCarApiTransientErrors():
-                                        if knownError == error[0: len(knownError)]:
+                                        if knownError == error[0 : len(knownError)]:
                                             foundKnownError = True
                                             break
 
@@ -610,8 +607,8 @@ class TeslaAPI:
                             )
 
                     if (
-                            vehicle.firstWakeAttemptTime > 0
-                            and now - vehicle.firstWakeAttemptTime > 60 * 60
+                        vehicle.firstWakeAttemptTime > 0
+                        and now - vehicle.firstWakeAttemptTime > 60 * 60
                     ):
                         # It should never take over an hour to wake a car.  If it
                         # does, ask user to report an error.
@@ -621,9 +618,9 @@ class TeslaAPI:
                             "ERROR: We have failed to wake a car from '"
                             + state
                             + "' state for %.1f hours.\n"
-                              "Please private message user CDragon at "
-                              "http://teslamotorsclub.com with a copy of this error. "
-                              "Also include this: %s"
+                            "Please private message user CDragon at "
+                            "http://teslamotorsclub.com with a copy of this error. "
+                            "Also include this: %s"
                             % (
                                 ((now - vehicle.firstWakeAttemptTime) / 60 / 60),
                                 str(apiResponseDict),
@@ -631,8 +628,8 @@ class TeslaAPI:
                         )
 
         if (
-                now - self.getCarApiLastErrorTime() < (self.getCarApiErrorRetryMins() * 60)
-                or self.getCarApiBearerToken() == ""
+            now - self.getCarApiLastErrorTime() < (self.getCarApiErrorRetryMins() * 60)
+            or self.getCarApiBearerToken() == ""
         ):
             self.master.debugLog(
                 8,
@@ -696,8 +693,8 @@ class TeslaAPI:
         # is another case of a bug that's been causing car GPS to freeze  the
         # last couple months.
         if (
-                abs(self.master.getHomeLatLon()[0] - lat) > 0.0289
-                or abs(self.master.getHomeLatLon()[1] - lon) > 0.0289
+            abs(self.master.getHomeLatLon()[0] - lat) > 0.0289
+            or abs(self.master.getHomeLatLon()[1] - lon) > 0.0289
         ):
             return False
 
@@ -751,9 +748,9 @@ class TeslaAPI:
                 continue
 
             if (
-                    vehicle.update_charge()
-                    and vehicle.batteryLevel < self.minChargeLevel
-                    and not charge
+                vehicle.update_charge()
+                and vehicle.batteryLevel < self.minChargeLevel
+                and not charge
             ):
                 # If the vehicle's charge state is lower than the configured minimum,
                 #   don't stop it from charging, even if we'd otherwise not charge.
@@ -765,8 +762,8 @@ class TeslaAPI:
             self.updateLastStartOrStopChargeTime()
 
             if (
-                    self.config["config"]["onlyChargeMultiCarsAtHome"]
-                    and self.getVehicleCount() > 1
+                self.config["config"]["onlyChargeMultiCarsAtHome"]
+                and self.getVehicleCount() > 1
             ):
                 # When multiple cars are enrolled in the car API, only start/stop
                 # charging cars parked at home.
@@ -852,7 +849,7 @@ class TeslaAPI:
                             foundKnownError = False
                             error = apiResponseDict["error"]
                             for knownError in self.getCarApiTransientErrors():
-                                if knownError == error[0: len(knownError)]:
+                                if knownError == error[0 : len(knownError)]:
                                     # I see these errors often enough that I think
                                     # it's worth re-trying in 1 minute rather than
                                     # waiting carApiErrorRetryMins minutes for retry
@@ -946,8 +943,8 @@ class TeslaAPI:
                 break
 
         if (
-                self.config["config"]["debugLevel"] >= 1
-                and self.getLastStartOrStopChargeTime() == now
+            self.config["config"]["debugLevel"] >= 1
+            and self.getLastStartOrStopChargeTime() == now
         ):
             self.master.debugLog(
                 1, "TeslaAPI", "Car API " + startOrStop + " charge result: " + result
@@ -971,9 +968,9 @@ class TeslaAPI:
 
         now = time.time()
         if (
-                not checkArrival
-                and not checkDeparture
-                and now - self.carApiLastChargeLimitApplyTime < 60
+            not checkArrival
+            and not checkDeparture
+            and now - self.carApiLastChargeLimitApplyTime < 60
         ):
             # Don't change limits more often than once a minute
             self.master.debugLog(
@@ -1002,12 +999,12 @@ class TeslaAPI:
                 needToWake = True
                 vehicle.stopAskingToStartCharging = False
             if (
-                    wasAtHome
-                    and (
-                            limit != lastApplied
-                            or checkDeparture
-                            or (vehicle.update_location(cacheTime=3600) and not vehicle.atHome)
-                    )
+                wasAtHome
+                and (
+                    limit != lastApplied
+                    or checkDeparture
+                    or (vehicle.update_location(cacheTime=3600) and not vehicle.atHome)
+                )
             ) or (not wasAtHome and checkArrival):
                 vehicle.stopTryingToApplyLimit = False
 
@@ -1289,8 +1286,8 @@ class CarApiVehicle:
             return False
 
         if (
-                self.firstWakeAttemptTime == 0
-                and time.time() - self.lastAPIAccessTime < 2 * 60
+            self.firstWakeAttemptTime == 0
+            and time.time() - self.lastAPIAccessTime < 2 * 60
         ):
             # If it's been less than 2 minutes since we successfully woke this car, it
             # should still be awake.  No need to check.  It returns to sleep state about
@@ -1352,7 +1349,7 @@ class CarApiVehicle:
                     error = apiResponseDict["error"]
 
                     for knownError in self.carapi.getCarApiTransientErrors():
-                        if knownError == error[0: len(knownError)]:
+                        if knownError == error[0 : len(knownError)]:
                             # I see these errors often enough that I think
                             # it's worth re-trying in 1 minute rather than
                             # waiting carApiErrorRetryMins minutes for retry
@@ -1375,8 +1372,8 @@ class CarApiVehicle:
                 # A successful call to drive_state will not contain a
                 # response['reason'], so we check if the 'reason' key exists.
                 if (
-                        "reason" in response
-                        and response["reason"] == "could_not_wake_buses"
+                    "reason" in response
+                    and response["reason"] == "could_not_wake_buses"
                 ):
                     # Retry after 5 seconds.  See notes in car_api_charge where
                     # 'could_not_wake_buses' is handled.
@@ -1447,8 +1444,8 @@ class CarApiVehicle:
         now = time.time()
 
         if (
-                now - self.lastLimitAttemptTime <= 300
-                or self.carapi.getCarApiRetryRemaining(self.lastErrorTime)
+            now - self.lastLimitAttemptTime <= 300
+            or self.carapi.getCarApiRetryRemaining(self.lastErrorTime)
         ):
             return False
 
@@ -1500,7 +1497,7 @@ class CarApiVehicle:
                     foundKnownError = False
                     error = apiResponseDict["error"]
                     for knownError in self.carapi.getCarApiTransientErrors():
-                        if knownError == error[0: len(knownError)]:
+                        if knownError == error[0 : len(knownError)]:
                             # I see these errors often enough that I think
                             # it's worth re-trying in 1 minute rather than
                             # waiting carApiErrorRetryMins minutes for retry

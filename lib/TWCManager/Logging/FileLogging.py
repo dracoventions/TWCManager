@@ -9,9 +9,7 @@ import re
 
 class FileLogging:
 
-    capabilities = {
-      "queryGreenEnergy": False
-    }
+    capabilities = {"queryGreenEnergy": False}
     config = None
     configConfig = None
     configLogging = None
@@ -75,13 +73,7 @@ class FileLogging:
         return ansi_escape.sub("", line)
 
     def writeLog(self, functionName, message):
-        self.debugLog(
-            {
-                "function": functionName,
-                "minLevel": 0,
-                "message": message,
-            }
-        )
+        self.debugLog({"function": functionName, "minLevel": 0, "message": message})
 
     def greenEnergy(self, data):
         # Check if this status is muted

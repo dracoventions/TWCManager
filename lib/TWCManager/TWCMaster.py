@@ -47,13 +47,13 @@ class TWCMaster:
         "kWhDelivered": 119,
         "nonScheduledAmpsMax": 0,
         "respondToSlaves": 1,
-        "scheduledAmpsDaysBitmap": 0x7F,
+        "scheduledAmpsDaysBitmap": 0x7f,
         "scheduledAmpsEndHour": -1,
         "scheduledAmpsMax": 0,
         "scheduledAmpsStartHour": -1,
     }
     slaveHeartbeatData = bytearray(
-        [0x01, 0x0F, 0xA0, 0x0F, 0xA0, 0x00, 0x00, 0x00, 0x00]
+        [0x01, 0x0f, 0xa0, 0x0f, 0xa0, 0x00, 0x00, 0x00, 0x00]
     )
     slaveTWCs = {}
     slaveTWCRoundRobin = []
@@ -274,7 +274,7 @@ class TWCMaster:
         return self.getModulesByType("Interface")[0]["ref"]
 
     def getScheduledAmpsDaysBitmap(self):
-        return self.settings.get("scheduledAmpsDaysBitmap", 0x7F)
+        return self.settings.get("scheduledAmpsDaysBitmap", 0x7f)
 
     def getScheduledAmpsBatterySize(self):
         return self.settings.get("scheduledAmpsBatterySize", 100)
@@ -669,11 +669,11 @@ class TWCMaster:
     def master_id_conflict(self):
         # We're playing fake slave, and we got a message from a master with our TWCID.
         # By convention, as a slave we must change our TWCID because a master will not.
-        self.TWCID[0] = random.randint(0, 0xFF)
-        self.TWCID[1] = random.randint(0, 0xFF)
+        self.TWCID[0] = random.randint(0, 0xff)
+        self.TWCID[1] = random.randint(0, 0xff)
 
         # Real slaves change their sign during a conflict, so we do too.
-        self.slaveSign[0] = random.randint(0, 0xFF)
+        self.slaveSign[0] = random.randint(0, 0xff)
 
         self.debugLog(
             1,

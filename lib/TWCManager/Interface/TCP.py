@@ -55,7 +55,7 @@ class TCP:
         for i in range(1, len(msg)):
             checksum += msg[i]
 
-        msg.append(checksum & 0xFF)
+        msg.append(checksum & 0xff)
 
         # Escaping special chars:
         # The protocol uses C0 to mark the start and end of the message.  If a C0
@@ -69,10 +69,10 @@ class TCP:
 
         i = 0
         while i < len(msg):
-            if msg[i] == 0xC0:
+            if msg[i] == 0xc0:
                 msg[i : i + 1] = b"\xdb\xdc"
                 i = i + 1
-            elif msg[i] == 0xDB:
+            elif msg[i] == 0xdb:
                 msg[i : i + 1] = b"\xdb\xdd"
                 i = i + 1
             i = i + 1

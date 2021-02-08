@@ -7,9 +7,7 @@ from ww import f
 
 class ConsoleLogging:
 
-    capabilities = {
-      "queryGreenEnergy": False
-    }
+    capabilities = {"queryGreenEnergy": False}
     config = None
     configConfig = None
     configLogging = None
@@ -66,7 +64,7 @@ class ConsoleLogging:
         chgwattsDisplay = f("{data.get('chgWatts', 0):.0f}W")
 
         if self.config["config"]["subtractChargerLoad"]:
-            othwatts = data.get('conWatts', 0) - data.get('chgWatts', 0)
+            othwatts = data.get("conWatts", 0) - data.get("chgWatts", 0)
             othwattsDisplay = f("{othwatts:.0f}W")
             self.master.debugLog(
                 1,
