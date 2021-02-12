@@ -495,7 +495,13 @@
           "generationItem": "Generation item name",
           "serverIP": "192.168.1.2",
           "serverPort": "8080"
+        },
+      # The Efergy server allows fetching of consumption from https://engage.efergy.com/ token is needed
+        "Efergy": {
+            "enabled": false,
+            "token": "xx"
         }
+
     },
 
     # Status plugins allow us to export status detail out of TWCManager.
