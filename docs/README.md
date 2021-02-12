@@ -111,11 +111,12 @@ After starting TWCManager, the script will run in the foreground and will regula
 
 ## Running TWCManager as a Service
 
-The following commands make TWCManager run automatically (as a service) when the Raspberry Pi boots up.  These instructions assume that TWCManager is installed in the default position (/home/pi/TWCManager)
+The following commands make TWCManager run automatically (as a service) when the Raspberry Pi boots up.
 
 Enable the service. The --now flag also makes it start immediately. This will persist after rebooting.
 ```
-sudo systemctl enable /home/pi/TWCManager/twcmanager.service --now
+sudo cp twcmanager.service /etc/systemd/system/twcmanager.service
+sudo systemctl enable twcmanager.service --now
 ```
 To check the output of the TWCManager service
 ```
@@ -124,11 +125,6 @@ journalctl -f
 To disable the TWCManager service permanently use the following command.  This will persist after rebooting.
 ```
 sudo systemctl disable twcmanager
-```
-If the service is located on a different location, the service can also be copied to an alternative location.  This should not be required for a default install.
-```
-sudo cp /home/pi/TWCManager/twcmanager.service /etc/systemd/system/twcmanager.service
-sudo systemctl enable twcmanager.service --now
 ```
 
 ## Developing for TWCManager
