@@ -109,6 +109,28 @@ After starting TWCManager, the script will run in the foreground and will regula
    * The line below this reports the same values but in amps instead of watts.
    * The final line shows the minAmpsPerTWC value, which is the minimum number of amps that the master must offer each slave before we tell the attached vehicle to charge (via the Tesla API).
 
+## Running TWCManager as a Service
+
+The following commands make TWCManager run automatically (as a service) when the Raspberry Pi boots up.  These instructions assume that TWCManager is installed in the default position (/home/pi/TWCManager)
+
+Enable the service. The --now flag also makes it start immediately. This will persist after rebooting.
+```
+sudo systemctl enable /home/pi/TWCManager/twcmanager.service --now
+```
+To check the output of the TWCManager service
+```
+journalctl -f
+```
+To disable the TWCManager service permanently use the following command.  This will persist after rebooting.
+```
+sudo systemctl disable twcmanager
+```
+If the service is located on a different location, the service can also be copied to an alternative location.  This should not be required for a default install.
+```
+sudo cp /home/pi/TWCManager/twcmanager.service /etc/systemd/system/twcmanager.service
+sudo systemctl enable twcmanager.service --now
+```
+
 ## Developing for TWCManager
 
 Your contributions are most welcome! If you've been working on a new EMS module or you want to contribute to the project in any way, please take a look at our [Development Guide](DevelopmentGuide.md) and feel free to get involved!
