@@ -93,31 +93,10 @@ class FileLogging:
     def message_filter(self, record):
         # We don't want ansi colors in text logs
         record.msg = self.escape_ansi(record.msg)
-        log_type = getattr(record, "logtype", "")
-        if log_type == "green_energy":
-            self.greenEnergy(
-                {
-                    "genWatts": record.genWatts,
-                    "conWatts": record.chgWatts,
-                    "chgWatts": record.chgWatts,
-                }
-            )
         return True
 
     def writeLog(self, functionName, message):
         self.debugLog({"function": functionName, "minLevel": 0, "message": message})
-
-    def greenEnergy(self, data):
-        # Check if this status is muted
-        if self.mute.get("GreenEnergy", 0):
-            return None
-
-        self.writeLog(
-            "TWCManager",
-            f(
-                "Green energy generates {data.get('genWatts', 0):.0f}W, Consumption {data.get('conWatts', 0):.0f}W, Charger Load {data.get('chgWatts', 0):.0f}W"
-            ),
-        )
 
     def slavePower(self, data):
         # Not yet implemented

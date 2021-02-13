@@ -794,6 +794,19 @@ class TWCMaster:
                 self.settings["Vehicles"][slaveTWC.lastVIN]["totalkWh"] += delta
                 self.queue_background_task({"cmd": "saveSettings"})
 
+        logger.info(
+            "Charge Session Stopped for Slave TWC %02X%02X",
+            slaveTWC.TWCID[0],
+            slaveTWC.TWCID[1],
+            extra={
+                "logtype": "charge_sessions",
+                "chargestate": "stop",
+                "TWCID": slaveTWC.TWCID,
+                "endkWh": slaveTWC.lifetimekWh,
+                "endTime": int(time.time()),
+                "endFormat": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        )
         # Update Charge Session details in logging modules
         for module in self.getModulesByType("Logging"):
             module["ref"].stopChargeSession(
@@ -807,6 +820,19 @@ class TWCMaster:
 
     def recordVehicleSessionStart(self, slaveTWC):
         # Update Charge Session details in logging modules
+        logger.info(
+            "Charge Session Started for Slave TWC %02X%02X",
+            slaveTWC.TWCID[0],
+            slaveTWC.TWCID[1],
+            extra={
+                "logtype": "charge_sessions",
+                "chargestate": "start",
+                "TWCID": slaveTWC.TWCID,
+                "startkWh": slaveTWC.lifetimekWh,
+                "startTime": int(time.time()),
+                "startFormat": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        )
         for module in self.getModulesByType("Logging"):
             module["ref"].startChargeSession(
                 {
@@ -847,6 +873,17 @@ class TWCMaster:
                 self.settings["Vehicles"][slaveTWC.currentVIN]["totalkWh"] = 0
         self.queue_background_task({"cmd": "saveSettings"})
 
+        logger.info(
+            "Charge Session updated for Slave TWC %02X%02X",
+            slaveTWC.TWCID[0],
+            slaveTWC.TWCID[1],
+            extra={
+                "logtype": "charge_sessions",
+                "chargestate": "update",
+                "TWCID": slaveTWC.TWCID,
+                "vehicleVIN": slaveTWC.currentVIN,
+            },
+        )
         # Update Charge Session details in logging modules
         for module in self.getModulesByType("Logging"):
             module["ref"].updateChargeSession(

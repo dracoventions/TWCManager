@@ -43,30 +43,6 @@ class ConsoleLogging:
         # Allows query of module capabilities when deciding which Logging module to use
         return self.capabilities.get(capability, False)
 
-    def greenEnergy(self, data):
-        # Check if this status is muted
-        if self.configLogging["mute"].get("GreenEnergy", 0):
-            return None
-
-        genwattsDisplay = f("{data.get('genWatts', 0):.0f}W")
-        conwattsDisplay = f("{data.get('conWatts', 0):.0f}W")
-        chgwattsDisplay = f("{data.get('chgWatts', 0):.0f}W")
-
-        if self.config["config"]["subtractChargerLoad"]:
-            othwatts = data.get("conWatts", 0) - data.get("chgWatts", 0)
-            othwattsDisplay = f("{othwatts:.0f}W")
-            logger.info(
-                f(
-                    "Green energy generates {colored(genwattsDisplay, 'magenta')}, Consumption {colored(conwattsDisplay, 'magenta')} (Other Load {colored(othwattsDisplay, 'magenta')}, Charger Load {colored(chgwattsDisplay, 'magenta')})"
-                )
-            )
-        else:
-            logger.info(
-                f(
-                    "Green energy generates {colored(genwattsDisplay, 'magenta')}, Consumption {colored(conwattsDisplay, 'magenta')}, Charger Load {colored(chgwattsDisplay, 'magenta')}"
-                )
-            )
-
     def slavePower(self, data):
         # Not yet implemented
         return None

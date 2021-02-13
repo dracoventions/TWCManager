@@ -1097,7 +1097,7 @@ def CreateHTTPHandlerClass(master):
                 + str(self.url.path)
                 + " / IP: "
                 + str(self.client_address[0])
-                + ")",
+                + ")"
             )
 
     return HTTPControlHandler

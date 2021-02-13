@@ -387,6 +387,36 @@ def update_statuses():
         genwatts = master.getGeneration()
         conwatts = master.getConsumption()
         chgwatts = master.getChargerLoad()
+        genwattsDisplay = f("{genwatts:.0f}W")
+        conwattsDisplay = f("{conwatts:.0f}W")
+        chgwattsDisplay = f("{chgwatts:.0f}W")
+
+        if config["config"]["subtractChargerLoad"]:
+            othwatts = conwatts - chgwatts
+            othwattsDisplay = f("{othwatts:.0f}W")
+            logger.info(
+                f(
+                    "Green energy generates {colored(genwattsDisplay, 'magenta')}, Consumption {colored(conwattsDisplay, 'magenta')} (Other Load {colored(othwattsDisplay, 'magenta')}, Charger Load {colored(chgwattsDisplay, 'magenta')})"
+                ),
+                extra={
+                    "logtype": "green_energy",
+                    "genWatts": genwatts,
+                    "conWatts": conwatts,
+                    "chgWatts": chgwatts,
+                },
+            )
+        else:
+            logger.info(
+                f(
+                    "Green energy generates {colored(genwattsDisplay, 'magenta')}, Consumption {colored(conwattsDisplay, 'magenta')}, Charger Load {colored(chgwattsDisplay, 'magenta')}"
+                ),
+                extra={
+                    "logtype": "green_energy",
+                    "genWatts": genwatts,
+                    "conWatts": conwatts,
+                    "chgWatts": chgwatts,
+                },
+            )
 
         logger.info(
             f(
@@ -402,11 +432,6 @@ def update_statuses():
                 "chgWatts": chgwatts,
             },
         )
-        # FIXME: remove
-        for module in master.getModulesByType("Logging"):
-            module["ref"].greenEnergy(
-                {"genWatts": genwatts, "conWatts": conwatts, "chgWatts": chgwatts}
-            )
 
         nominalOffer = master.convertWattsToAmps(
             genwatts
@@ -1047,6 +1072,21 @@ while True:
                     voltsPhaseC = (vPhaseC[0] << 8) + vPhaseC[1]
                     data = msgMatch.group(6)
 
+                    logger.info(
+                        "Slave TWC %02X%02X: Delivered %d kWh, voltage per phase: (%d, %d, %d).",
+                        senderID[0],
+                        senderID[1],
+                        kWh,
+                        voltsPhaseA,
+                        voltsPhaseB,
+                        voltsPhaseC,
+                        extra={
+                            "logtype": "slave_status",
+                            "TWCID": senderID,
+                            "kWh": kWh,
+                            "voltsPerPhase": [voltsPhaseA, voltsPhaseB, voltsPhaseC],
+                        },
+                    )
                     for module in master.getModulesByType("Logging"):
                         module["ref"].slaveStatus(
                             {
