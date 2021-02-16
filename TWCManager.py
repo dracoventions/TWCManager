@@ -418,21 +418,6 @@ def update_statuses():
                 },
             )
 
-        logger.info(
-            f(
-                "Green energy generates {colored('%dW', 'magenta')}, Consumption {colored('%dW', 'magenta')}, Charger Load {colored('%dW', 'magenta')}"
-            ),
-            genwatts,
-            conwatts,
-            chgwatts,
-            extra={
-                "logtype": "green_energy",
-                "genWatts": genwatts,
-                "conWatts": conwatts,
-                "chgWatts": chgwatts,
-            },
-        )
-
         nominalOffer = master.convertWattsToAmps(
             genwatts
             - (conwatts - (chgwatts if config["config"]["subtractChargerLoad"] else 0))

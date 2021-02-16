@@ -41,16 +41,68 @@ class CSVLogging:
             self.configLogging["path"] + "/greenenergy.csv"
         )
         green_energy_handler.addFilter(self.green_energy_filter)
+        green_energy_formatter = logging.Formatter(
+            self.qt("%(created)d")
+            + self.delimit()
+            + self.qt("%(asctime)s")
+            + self.delimit()
+            + self.qt("%(genWatts).1f")
+            + self.delimit()
+            + self.qt("%(conWatts).1f")
+            + self.delimit()
+            + self.qt("%(chgWatts).1f"),
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+        green_energy_handler.setFormatter(green_energy_formatter)
         logging.getLogger("").addHandler(green_energy_handler)
+
         slave_status_handler = logging.FileHandler(
             self.configLogging["path"] + "/slavestatus.csv"
         )
         slave_status_handler.addFilter(self.slave_status_filter)
+        slave_status_formatter = logging.Formatter(
+            self.qt("{TWCID[0]:02X}{TWCID[1]:02X}")
+            + self.delimit()
+            + self.qt("{created:.0f}")
+            + self.delimit()
+            + self.qt("{asctime:s}")
+            + self.delimit()
+            + self.qt("{kWh:d}")
+            + self.delimit()
+            + self.qt("{voltsPerPhase[0]:d}")
+            + self.delimit()
+            + self.qt("{voltsPerPhase[1]:d}")
+            + self.delimit()
+            + self.qt("{voltsPerPhase[2]:d}"),
+            datefmt="%Y-%m-%d %H:%M:%S",
+            style="{",
+        )
+        slave_status_handler.setFormatter(slave_status_formatter)
         logging.getLogger("").addHandler(slave_status_handler)
+
         charge_sessions_handler = logging.FileHandler(
             self.configLogging["path"] + "/chargesessions.csv"
         )
         charge_sessions_handler.addFilter(self.charge_sessions_filter)
+        charge_sessions_formatter = logging.Formatter(
+            self.qt("{TWCID[0]:02X}{TWCID[1]:02X}")
+            + self.delimit()
+            + self.qt("{startTime:d}")
+            + self.delimit()
+            + self.qt("{startFormat:s}")
+            + self.delimit()
+            + self.qt("{startkWh:d}")
+            + self.delimit()
+            + self.qt("{endTime:d}")
+            + self.delimit()
+            + self.qt("{endFormat:s}")
+            + self.delimit()
+            + self.qt("{endkWh:d}")
+            + self.delimit()
+            + self.qt("{vehicleVIN:s}"),
+            style="{",
+        )
+        charge_sessions_handler.setFormatter(charge_sessions_formatter)
         logging.getLogger("").addHandler(charge_sessions_handler)
 
     def delimit(self):
@@ -75,54 +127,13 @@ class CSVLogging:
         # Allows query of module capabilities when deciding which Logging module to use
         return self.capabilities.get(capability, False)
 
-    def message_filter(self, record):
-        record.msg = (
-            self.qt(int(time.time()))
-            + self.delimit()
-            + self.qt(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-            + self.delimit()
-            + self.qt(getattr(record, "genWatts", 0))
-            + self.delimit()
-            + self.qt(getattr(record, "conWatts", 0))
-            + self.delimit()
-            + self.qt(getattr(record, "chgWatts", 0))
-        )
-        record.args = ()
-        return True
-
     def slavePower(self, data):
         # FIXME: remove function
-        # Check if this status is muted
-        if self.configLogging["mute"].get("SlavePower", 0):
-            return None
-
-        # Not Yet Implemented
         return None
 
     def slaveStatus(self, data):
         # FIXME: remove function
-        # Check if this status is muted
-        if self.configLogging["mute"].get("SlaveStatus", 0):
-            return None
-
-        # Otherwise, write to the CSV
-        csv = open(self.configLogging["path"] + "/slavestatus.csv", "a+")
-        csv.write(
-            self.qt("%02X%02X" % (data["TWCID"][0], data["TWCID"][1]))
-            + self.delimit()
-            + self.qt(int(time.time()))
-            + self.delimit()
-            + self.qt(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-            + self.delimit()
-            + self.qt(data["kWh"])
-            + self.delimit()
-            + self.qt(data["voltsPerPhase"][0])
-            + self.delimit()
-            + self.qt(data["voltsPerPhase"][1])
-            + self.delimit()
-            + self.qt(data["voltsPerPhase"][2])
-            + "\n"
-        )
+        return
 
     def slave_status_filter(self, record):
         log_type = getattr(record, "logtype", "")
@@ -130,90 +141,19 @@ class CSVLogging:
             "SlaveStatus", 0
         ):
             return False
-
-        record.msg = (
-            self.qt(
-                "%02X%02X" % (getattr(record, "TWCID")[0], getattr(record, "TWCID")[1])
-            )
-            + self.delimit()
-            + self.qt(int(time.time()))
-            + self.delimit()
-            + self.qt(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-            + self.delimit()
-            + self.qt(getattr(record, "kWh"))
-            + self.delimit()
-            + self.qt(getattr(record, "voltsPerPhase")[0])
-            + self.delimit()
-            + self.qt(getattr(record, "voltsPerPhase")[1])
-            + self.delimit()
-            + self.qt(getattr(record, "voltsPerPhase")[2])
-        )
-        record.args = ()
         return True
 
     def startChargeSession(self, data):
         # FIXME: remove function
-        # Check if this status is muted
-        if self.configLogging["mute"].get("ChargeSessions", 0):
-            return None
-
-        # Called when a Charge Session Starts.
-        twcid = "%02X%02X" % (data["TWCID"][0], data["TWCID"][1])
-
-        # Store the open charging session in memory.
-        self.openSessions[data["TWCID"]] = {
-            "startTime": data.get("startTime", 0),
-            "startFormat": data.get("startFormat", ""),
-            "startkWh": data.get("startkWh", 0),
-        }
+        return
 
     def stopChargeSession(self, data):
         # FIXME: remove function
-        # Check if this status is muted
-        if self.configLogging["mute"].get("ChargeSessions", 0):
-            return None
-
-        # Called when a Charge Session Ends.
-        # Write the charge session data to CSV
-        twcid = "%02X%02X" % (data["TWCID"][0], data["TWCID"][1])
-
-        # Update the open charging session in memory.
-        self.openSessions[data["TWCID"]]["endTime"] = data.get("endTime", 0)
-        self.openSessions[data["TWCID"]]["endFormat"] = data.get("endFormat", 0)
-        self.openSessions[data["TWCID"]]["endkWh"] = data.get("endkWh", 0)
-
-        csv = open(self.configLogging["path"] + "/chargesessions.csv", "a+")
-        csv.write(
-            self.qt(twcid)
-            + self.delimit()
-            + self.qt(self.openSessions[data["TWCID"]].get("startTime", 0))
-            + self.delimit()
-            + self.qt(self.openSessions[data["TWCID"]].get("startFormat", 0))
-            + self.delimit()
-            + self.qt(self.openSessions[data["TWCID"]].get("startkWh", 0))
-            + self.delimit()
-            + self.qt(self.openSessions[data["TWCID"]].get("endTime", 0))
-            + self.delimit()
-            + self.qt(self.openSessions[data["TWCID"]].get("endFormat", 0))
-            + self.delimit()
-            + self.qt(self.openSessions[data["TWCID"]].get("endkWh", 0))
-            + self.delimit()
-            + self.qt(self.openSessions[data["TWCID"]].get("vehicleVIN", ""))
-            + "\n"
-        )
+        return
 
     def updateChargeSession(self, data):
-        # Check if this status is muted
-        if self.configLogging["mute"].get("ChargeSessions", 0):
-            return None
-
-        # Called when additional information needs to be updated for a
-        # charge session
-        twcid = "%02X%02X" % (data["TWCID"][0], data["TWCID"][1])
-
-        # Update the open charging session in memory.
-        if data.get("vehicleVIN", None):
-            self.openSessions[data["TWCID"]]["vehicleVIN"] = data.get("vehicleVIN", "")
+        # FIXME: remove function
+        return
 
     def charge_sessions_filter(self, record):
         log_type = getattr(record, "logtype", "")
@@ -269,34 +209,12 @@ class CSVLogging:
             self.openSessions[getattr(record, "TWCID")]["endkWh"] = getattr(
                 record, "endkWh", 0
             )
-
-            record.msg = (
-                self.qt(twcid)
-                + self.delimit()
-                + self.qt(
-                    self.openSessions[getattr(record, "TWCID")].get("startTime", 0)
-                )
-                + self.delimit()
-                + self.qt(
-                    self.openSessions[getattr(record, "TWCID")].get("startFormat", 0)
-                )
-                + self.delimit()
-                + self.qt(
-                    self.openSessions[getattr(record, "TWCID")].get("startkWh", 0)
-                )
-                + self.delimit()
-                + self.qt(self.openSessions[getattr(record, "TWCID")].get("endTime", 0))
-                + self.delimit()
-                + self.qt(
-                    self.openSessions[getattr(record, "TWCID")].get("endFormat", 0)
-                )
-                + self.delimit()
-                + self.qt(self.openSessions[getattr(record, "TWCID")].get("endkWh", 0))
-                + self.delimit()
-                + self.qt(
-                    self.openSessions[getattr(record, "TWCID")].get("vehicleVIN", "")
-                )
-            )
-            record.args = ()
+            record.startTime = self.openSessions[getattr(record, "TWCID")].get("startTime", 0)
+            record.startFormat = self.openSessions[getattr(record, "TWCID")].get("startFormat", 0)
+            record.startkWh = self.openSessions[getattr(record, "TWCID")].get("startkWh", 0)
+            record.endTime = self.openSessions[getattr(record, "TWCID")].get("endTime", 0)
+            record.endFormat = self.openSessions[getattr(record, "TWCID")].get("endFormat", 0)
+            record.endkWh = self.openSessions[getattr(record, "TWCID")].get("endkWh", 0)
+            record.vehicleVIN = self.openSessions[getattr(record, "TWCID")].get("vehicleVIN", "")
             return True
         return False
