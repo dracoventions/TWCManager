@@ -129,6 +129,7 @@ logger = logging.getLogger("TWCManager")
 modules_available = [
     "Logging.ConsoleLogging",
     "Logging.FileLogging",
+    "Logging.SentryLogging",
     "Logging.CSVLogging",
     "Logging.MySQLLogging",
     #    "Logging.SQLiteLogging",

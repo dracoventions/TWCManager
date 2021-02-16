@@ -381,6 +381,24 @@
               "SlavePower": false,
               "SlaveStatus": false,
               "DebugLogLevelGreaterThan": 1
+          }
+        },
+        "Sentry": {
+          "enabled": true,
+	  # The DSN can be found in Sentry under SDK Setup of a project
+	  "DSN": "",
+          # The mute parameter allows turning specific logging on or off.
+          # In the example below, charge sessions are logged, but not the
+          # regular charger status messages. These are valid under any of the
+          # logging modules
+          # For the debug output, you can mute Log Levels greater than the 
+          # value specified here.
+          "mute":{
+              "ChargeSessions": false,
+              "GreenEnergy": false,
+              "SlavePower": false,
+              "SlaveStatus": false,
+              "DebugLogLevelGreaterThan": 1
           }                 
         },
         "CSV": {
