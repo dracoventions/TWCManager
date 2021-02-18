@@ -639,8 +639,8 @@ def CreateHTTPHandlerClass(master):
 
         if self.url.path == "/graphs/dates":
             # User has submitted dates to graph this period.
-            objIni = datetime.strptime(self.getFieldValue("dateIni"), "%Y-%m-%dT%H:%M:%S")
-            objEnd = datetime.strptime(self.getFieldValue("dateEnd"), "%Y-%m-%dT%H:%M:%S")
+            objIni = datetime.strptime(self.getFieldValue("dateIni"), "%Y-%m-%dT%H:%M")
+            objEnd = datetime.strptime(self.getFieldValue("dateEnd"), "%Y-%m-%dT%H:%M")
             self.process_save_graphs(objIni,objEnd)
             self.send_response(302)
             self.send_header("Location", "/graphsP")
@@ -953,8 +953,8 @@ def CreateHTTPHandlerClass(master):
 
         data = {}
         data[0] = {
-                "initial":init.strftime("%Y-%m-%dT%H:%M:%S"),
-                "end":end.strftime("%Y-%m-%dT%H:%M:%S"),
+                "initial":init.strftime("%Y-%m-%dT%H:%M"),
+                "end":end.strftime("%Y-%m-%dT%H:%M"),
                 }
         i=1
         while i<len(result):
