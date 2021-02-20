@@ -55,6 +55,11 @@ class Kostal:
         self.port = int(self.configKostal.get("modbusPort", 1502))
         self.unitID = int(self.configKostal.get("unitID", 71))
 
+        # Unload if this module is disabled or misconfigured
+        if (not self.enabled) or (not self.host):
+            self.master.releaseModule("lib.TWCManager.EMS", "Kostal")
+            return None
+
         # try to open open the Modbus connection
         try:
             self.modbus = ModbusClient(host=self.host, port=self.port, unit_id=self.unitID, auto_open=True)
