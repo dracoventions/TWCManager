@@ -453,7 +453,7 @@
         "Powerwall2": {
           "enabled": false,
           "serverIP": "192.168.1.2",
-      # Password is optional. Specify it if authentication is enabled.
+      # Password is required starting in firmware 20.49.0
           "password": "test123",
       # The following value specifies the minimum battery level of the 
       # Powerwall2 before the car will be able to charge. This avoids a
