@@ -18,8 +18,8 @@ from pyModbusTCP.client import ModbusClient
 from pyModbusTCP import utils
 
 MIN_CACHE_SECONDS = 10
-ENDIAN_BIG = 0x01           # big endian (ABCD) Sunspec
-ENDIAN_LITTLE = 0x00        # little endian (CDAB) Standard Modbus
+ENDIAN_BIG = 0x01  # big endian (ABCD) Sunspec
+ENDIAN_LITTLE = 0x00  # little endian (CDAB) Standard Modbus
 
 
 #
@@ -27,10 +27,10 @@ ENDIAN_LITTLE = 0x00        # little endian (CDAB) Standard Modbus
 #
 class Kostal:
     # Class attributes
-    GridFrequency = 0           # address 0x98 (152)
-    TotalDCPower = 0            # address 0x64 (100)
-    HomeFromGrid = 0            # address 0x6c (108)
-    HomeFromPV = 0              # address 0x72 (114)
+    GridFrequency = 0  # address 0x98 (152)
+    TotalDCPower = 0  # address 0x64 (100)
+    HomeFromGrid = 0  # address 0x6c (108)
+    HomeFromPV = 0  # address 0x72 (114)
 
     #
     # Constructor
@@ -62,12 +62,18 @@ class Kostal:
 
         # try to open open the Modbus connection
         try:
-            self.modbus = ModbusClient(host=self.host, port=self.port, unit_id=self.unitID, auto_open=True)
+            self.modbus = ModbusClient(
+                host=self.host, port=self.port, unit_id=self.unitID, auto_open=True
+            )
             if not self.modbus.open() is True:
                 raise ValueError
         except ValueError:
             # if connection not possible, print error message and unload module
-            self.master.debugLog(1, 'Kostal', 'ERROR connecting to inverter. Please check your configuration!')
+            self.master.debugLog(
+                1,
+                "Kostal",
+                "ERROR connecting to inverter. Please check your configuration!",
+            )
             self.master.releaseModule("lib.TWCManager.EMS", "Kostal")
         else:
             # detected byte order (Little/Big Endian) by reading register 0x05
@@ -76,10 +82,14 @@ class Kostal:
                 self.byteorder = ENDIAN_BIG
 
             # get basic inverter info and output informations into log
-            inv_model = self.__readModbus(768, 'String')
-            inv_class = self.__readModbus(800, 'String')
-            inv_serial = self.__readModbus(559, 'String')
-            self.master.debugLog(1, 'Kostal', inv_model + ' ' + inv_class + ' (S/N: ' + inv_serial + ') found.')
+            inv_model = self.__readModbus(768, "String")
+            inv_class = self.__readModbus(800, "String")
+            inv_serial = self.__readModbus(559, "String")
+            self.master.debugLog(
+                1,
+                "Kostal",
+                inv_model + " " + inv_class + " (S/N: " + inv_serial + ") found.",
+            )
 
             # module successfully loaded update all values
             self.__update()
@@ -96,7 +106,7 @@ class Kostal:
     # Privat Method for reading Modbus values
     # read registers directly from the inverter via Modbus protocol
     #
-    def __readModbus(self, address, data_format='Float'):
+    def __readModbus(self, address, data_format="Float"):
 
         # open the Modbus connection if neccessary
         if not self.modbus.is_open():
@@ -106,11 +116,11 @@ class Kostal:
         length = 1
 
         # if we are retreiving floats, its two bytes
-        if data_format == 'Float':
+        if data_format == "Float":
             length = 2
 
         # for strings its either 8, 16 or 32 byte, depending on the register
-        elif data_format == 'String':
+        elif data_format == "String":
             if address in [8, 14, 38, 46, 420, 428, 436, 446, 454, 517]:
                 length = 8
             elif address in [535, 559]:
@@ -124,17 +134,17 @@ class Kostal:
             return False
 
         # decode the raw_data
-        if data_format == 'U16':
+        if data_format == "U16":
             return int(raw[0])
 
-        elif data_format == 'Float':
+        elif data_format == "Float":
             if self.byteorder == ENDIAN_BIG:
                 return float(utils.decode_ieee((raw[0] << 16) + raw[1]))
             else:
                 return float(utils.decode_ieee((raw[1] << 16) + raw[0]))
 
-        elif data_format == 'String':
-            data_string = ''
+        elif data_format == "String":
+            data_string = ""
             for value in raw:
                 hex_value = str(hex(value)[2:])
                 left = int(str(hex_value)[:2], 16)
@@ -154,10 +164,10 @@ class Kostal:
         if (int(time.time()) - self.lastUpdate) > MIN_CACHE_SECONDS:
             # Cache has expired. Fetch values from inverter via Modbus
 
-            self.GridFrequency = self.__readModbus(152, 'Float')
-            self.TotalDCPower = self.__readModbus(100, 'Float')
-            self.HomeFromGrid = self.__readModbus(108, 'Float')
-            self.HomeFromPV = self.__readModbus(116, 'Float')
+            self.GridFrequency = self.__readModbus(152, "Float")
+            self.TotalDCPower = self.__readModbus(100, "Float")
+            self.HomeFromGrid = self.__readModbus(108, "Float")
+            self.HomeFromPV = self.__readModbus(116, "Float")
 
             # set the lastUpdate variable to "now"
             self.lastUpdate = time.time()
@@ -173,7 +183,9 @@ class Kostal:
 
         # return the total household consumption
         total = self.HomeFromGrid + self.HomeFromPV
-        self.master.debugLog(10, 'Kostal', 'Current Home consumption: {:.2f} W'.format(total))
+        self.master.debugLog(
+            10, "Kostal", "Current Home consumption: {:.2f} W".format(total)
+        )
         return float(self.HomeFromGrid + self.HomeFromPV)
 
     #
@@ -185,5 +197,7 @@ class Kostal:
         self.__update()
 
         # return the Solar generation power
-        self.master.debugLog(10, 'Kostal', 'Current Solar generation: {:.2f} W'.format(self.TotalDCPower))
+        self.master.debugLog(
+            10, "Kostal", "Current Solar generation: {:.2f} W".format(self.TotalDCPower)
+        )
         return float(self.TotalDCPower)
