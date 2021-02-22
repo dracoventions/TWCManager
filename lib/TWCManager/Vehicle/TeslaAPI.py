@@ -812,35 +812,32 @@ class TeslaAPI:
                                 )
                                 vehicle.stopAskingToStartCharging = True
                                 self.resetCarApiLastErrorTime(vehicle)
+                            elif reason == "could_not_wake_buses":
+                                # This error often happens if you call
+                                # charge_start too quickly after another command
+                                # like drive_state. Even if you delay 5 seconds
+                                # between the commands, this error still comes
+                                # up occasionally. Retrying often succeeds, so
+                                # wait 5 secs and retry.
+                                # If all retries fail, we'll try again in a
+                                # minute because we set
+                                # carApiLastStartOrStopChargeTime = now earlier.
+                                time.sleep(5)
+                                continue
                             else:
-                                # Car was unable to charge for some other reason, such
-                                # as 'could_not_wake_buses'.
-                                if reason == "could_not_wake_buses":
-                                    # This error often happens if you call
-                                    # charge_start too quickly after another command
-                                    # like drive_state. Even if you delay 5 seconds
-                                    # between the commands, this error still comes
-                                    # up occasionally. Retrying often succeeds, so
-                                    # wait 5 secs and retry.
-                                    # If all retries fail, we'll try again in a
-                                    # minute because we set
-                                    # carApiLastStartOrStopChargeTime = now earlier.
-                                    time.sleep(5)
-                                    continue
-                                else:
-                                    # Start or stop charge failed with an error I
-                                    # haven't seen before, so wait
-                                    # carApiErrorRetryMins mins before trying again.
-                                    logger.info(
-                                        'ERROR "'
-                                        + reason
-                                        + '" when trying to '
-                                        + startOrStop
-                                        + " car charging via Tesla car API.  Will try again later."
-                                        + "\nIf this error persists, please private message user CDragon at http://teslamotorsclub.com with a copy of this error."
-                                    )
-                                    result = "error"
-                                    self.updateCarApiLastErrorTime(vehicle)
+                                # Start or stop charge failed with an error I
+                                # haven't seen before, so wait
+                                # carApiErrorRetryMins mins before trying again.
+                                logger.info(
+                                    'ERROR "'
+                                    + reason
+                                    + '" when trying to '
+                                    + startOrStop
+                                    + " car charging via Tesla car API.  Will try again later."
+                                    + "\nIf this error persists, please file an issue at https://github.com/ngardiner/TWCManager/ with a copy of this error.",
+                                )
+                                result = "error"
+                                self.updateCarApiLastErrorTime(vehicle)
 
                 except (KeyError, TypeError):
                     # This catches cases like trying to access
