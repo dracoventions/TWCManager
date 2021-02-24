@@ -20,6 +20,8 @@ class TeslaAPI:
     carApiRefreshToken = ""
     carApiTokenExpireTime = time.time()
     carApiLastStartOrStopChargeTime = 0
+    carApiLastStartOrStopChargeAction = None
+    carApiLastStartOrStopFlipTime = 0
     carApiLastChargeLimitApplyTime = 0
     clientID = "81527cff06843c8634fdc09e8ac0abefb46ac849f38fe1e431c2ef2106796384"
     clientSecret = "c7257eb71a564034f9419ee651c7d0e5f7aa6bfbd18bafb5c5c033b093bb2fa3"
@@ -676,7 +678,15 @@ class TeslaAPI:
             for vehicle in self.getCarApiVehicles():
                 vehicle.stopAskingToStartCharging = False
 
-        if now - self.getLastStartOrStopChargeTime() < self.startStopDelay:
+        if (now - self.getLastStartOrStopChargeTime() < 60) or (
+            now - self.carApiLastStartOrStopFlipTime < self.startStopDelay
+        ):
+            if self.carApiLastStartOrStopChargeAction != charge:
+                # If we're repeatedly changing our minds about whether to charge or not,
+                # stay how we are until the system settles down.
+                self.carApiLastStartOrStopChargeAction = charge
+                self.carApiLastStartOrStopFlipTime = now
+
             # Don't start or stop more often than once a minute
             logger.log(
                 logging.DEBUG2,
@@ -721,6 +731,10 @@ class TeslaAPI:
             # to wake cars.  Setting this prevents any command below from being sent
             # more than once per minute.
             self.updateLastStartOrStopChargeTime()
+
+            if self.carApiLastStartOrStopChargeAction != charge:
+                self.carApiLastStartOrStopChargeAction = charge
+                self.carApiLastStartOrStopFlipTime = now
 
             if (
                 self.config["config"]["onlyChargeMultiCarsAtHome"]
