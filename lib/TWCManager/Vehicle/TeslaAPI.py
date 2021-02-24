@@ -26,6 +26,7 @@ class TeslaAPI:
     lastChargeLimitApplied = 0
     lastChargeCheck = 0
     chargeUpdateInterval = 1800
+    startStopDelay = 60
     carApiVehicles = []
     config = None
     master = None
@@ -57,6 +58,7 @@ class TeslaAPI:
         try:
             self.config = master.config
             self.minChargeLevel = self.config["config"].get("minChargeLevel", -1)
+            self.startStopDelay = self.config["config"].get("startStopDelay", 60)
             self.chargeUpdateInterval = self.config["config"].get(
                 "cloudUpdateInterval", 1800
             )
@@ -674,11 +676,11 @@ class TeslaAPI:
             for vehicle in self.getCarApiVehicles():
                 vehicle.stopAskingToStartCharging = False
 
-        if now - self.getLastStartOrStopChargeTime() < 60:
+        if now - self.getLastStartOrStopChargeTime() < self.startStopDelay:
             # Don't start or stop more often than once a minute
             logger.log(
                 logging.DEBUG2,
-                "car_api_charge return because under 60 sec since last carApiLastStartOrStopChargeTime",
+                "car_api_charge return because not long enough since last carApiLastStartOrStopChargeTime",
             )
             return "error"
 
@@ -911,12 +913,12 @@ class TeslaAPI:
         if (
             not checkArrival
             and not checkDeparture
-            and now - self.carApiLastChargeLimitApplyTime < 60
+            and now - self.carApiLastChargeLimitApplyTime < self.startStopDelay
         ):
             # Don't change limits more often than once a minute
             logger.log(
                 logging.DEBUG2,
-                "applyChargeLimit return because under 60 sec since last carApiLastChargeLimitApplyTime",
+                "applyChargeLimit return because not long enough since last carApiLastChargeLimitApplyTime",
             )
             return "error"
 

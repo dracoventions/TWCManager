@@ -596,7 +596,7 @@ class TWCSlave:
         # If we find it at that value, set it to the current value reported by the
         # TWC.
         if self.lastAmpsOffered < 0:
-            self.lastAmpsOffered = self.reportedAmpsMax
+            self.lastAmpsOffered = self.set_last_amps_offered(self.reportedAmpsMax)
 
         # If power starts flowing, check whether a car has arrived
         if (

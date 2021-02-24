@@ -64,6 +64,11 @@
         # rates really does.
         "minAmpsPerTWC": 12,
 
+        # By default, TWCManager won't start or stop charging more frequently than
+        # once per minute.  You can increase this value if you want to start/stop
+        # less frequently; it's not recommended to decrease it.
+        #"startStopDelay": 60,
+
         # When you have more than one vehicle associated with the Tesla car API and
         # onlyChargeMultiCarsAtHome = True, cars will only be controlled by the API when
         # parked at home. For example, when one vehicle is plugged in at home and
