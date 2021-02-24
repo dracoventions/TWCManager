@@ -680,6 +680,7 @@ class TeslaAPI:
 
         if (now - self.getLastStartOrStopChargeTime() < 60) or (
             now - self.carApiLastStartOrStopFlipTime < self.startStopDelay
+            and charge != self.carApiLastStartOrStopChargeAction
         ):
             if self.carApiLastStartOrStopChargeAction != charge:
                 # If we're repeatedly changing our minds about whether to charge or not,
