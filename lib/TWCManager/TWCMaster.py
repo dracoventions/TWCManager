@@ -769,11 +769,12 @@ class TWCMaster:
             # a charge starts or we determine the car is done charging.  To avoid
             # wasting memory queing up a bunch of these tasks when we're handling
             # a charge cmd already, don't queue two of the same task.
+            self.backgroundTasksCmds[task["cmd"]].update(task)
             return
 
         # Insert task['cmd'] in backgroundTasksCmds to prevent queuing another
         # task['cmd'] till we've finished handling this one.
-        self.backgroundTasksCmds[task["cmd"]] = True
+        self.backgroundTasksCmds[task["cmd"]] = task
 
         # Queue the task to be handled by background_tasks_thread.
         self.backgroundTasksQueue.put(task)
