@@ -91,6 +91,42 @@ class MySQLLogging:
             self.db.rollback()
         cur.close()
 
+    def queryGreenEnergy(self, data):
+        # Check if this status is muted
+        if self.configLogging["mute"].get("GreenEnergy", 0):
+            return None
+        # Ensure database connection is alive, or reconnect if not
+        self.db.ping(reconnect=True)
+
+        query = """
+            SELECT * from green_energy where time>%s and time<%s
+        """
+        cur = self.db.cursor()
+        rows = 0
+        try:
+            rows = cur.execute(
+                query,
+                (
+                    data.get("dateBegin", 0),
+                    data.get("dateEnd", 0),
+                ),
+            )
+        except Exception as e:
+            self.master.debugLog(1, "MySQLLog", str(e))
+
+        result={}
+        if rows:
+            # Query was successful. Commit
+            result = cur.fetchall()
+        else:
+            # Issue, log message
+            self.master.debugLog(
+                1, "MySQLLog", "Error query MySQL database. Rows = %d" % rows
+            )
+        cur.close()
+        return list(result)
+
+
     def slavePower(self, data):
         # Check if this status is muted
         if self.configLogging["mute"].get("SlavePower", 0):

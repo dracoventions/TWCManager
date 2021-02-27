@@ -574,6 +574,33 @@ def CreateHTTPHandlerClass(master):
             self.wfile.write(page.encode("utf-8"))
             return
 
+        if self.url.path == "/graphs" or self.url.path == "/graphsP":
+            # We query the last 24h by default
+            now = datetime.now().replace(second=0, microsecond=0)
+            initial=now - timedelta(hours=24)
+            end= now
+            # It we came from a POST the dates should be already stored in settings
+            if self.url.path == "/graphs":
+               self.process_save_graphs(initial,end)
+
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            # Load debug template and render
+            self.template = self.templateEnv.get_template("graphs.html.j2")
+            page = self.template.render(self.__dict__)
+            self.wfile.write(page.encode("utf-8"))
+            return
+
+        if self.url.path == "/graphs/date":
+            inicio=master.settings["Graphs"]["Initial"]
+            fin=master.settings["Graphs"]["End"]
+
+            self.process_graphs(inicio,fin)
+            return
+
+
+
         # All other routes missed, return 404
         self.send_response(404)
 
@@ -609,6 +636,19 @@ def CreateHTTPHandlerClass(master):
             # Pass it to the dedicated process_teslalogin function
             self.process_teslalogin()
             return
+
+        if self.url.path == "/graphs/dates":
+            # User has submitted dates to graph this period.
+            objIni = datetime.strptime(self.getFieldValue("dateIni"), "%Y-%m-%dT%H:%M")
+            objEnd = datetime.strptime(self.getFieldValue("dateEnd"), "%Y-%m-%dT%H:%M")
+            self.process_save_graphs(objIni,objEnd)
+            self.send_response(302)
+            self.send_header("Location", "/graphsP")
+            self.end_headers()
+
+            self.wfile.write("".encode("utf-8"))
+            return
+
 
         # All other routes missed, return 404
         self.send_response(404)
@@ -881,6 +921,62 @@ def CreateHTTPHandlerClass(master):
         page += "<td><div id='total_lifetimekWh'></div></td>"
         page += "</tr></table></td></tr></table>"
         return page
+
+    def process_save_graphs(self,initial,end):
+        # Check that Graphs dict exists within settings.
+        # If not, this would indicate that this is the first time
+        # we have saved it
+        if (master.settings.get("Graphs", None) == None):
+            master.settings["Graphs"] = {}
+        master.settings["Graphs"]["Initial"]=initial
+        master.settings["Graphs"]["End"]=end
+
+        return
+
+    def process_graphs(self,init,end):
+        # This function will query the green_energy SQL table
+        result={}
+        try:
+           module = self.master.getModuleByName("MySQLLogging")
+           result= module.queryGreenEnergy(
+                               {
+                                   "dateBegin": init,
+                                   "dateEnd": end
+                               }
+                             )
+        except Exception as e:
+            master.debugLog(1,
+                "HTTPCtrl",
+                "Excepcion queryGreenEnergy: "
+                + e,
+            )
+
+        data = {}
+        data[0] = {
+                "initial":init.strftime("%Y-%m-%dT%H:%M"),
+                "end":end.strftime("%Y-%m-%dT%H:%M"),
+                }
+        i=1
+        while i<len(result):
+            data[i] = {
+                "time": result[i][0].strftime("%Y-%m-%dT%H:%M:%S"),
+                "genW": str(result[i][1]),
+                "conW": str(result[i][2]),
+                "chgW": str(result[i][3]),
+                }
+            i=i+1
+
+        self.send_response(200)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+
+        json_data = json.dumps(data)
+        try:
+            self.wfile.write(json_data.encode("utf-8"))
+        except BrokenPipeError:
+            master.debugLog(10,"HTTPCtrl","Connection Error: Broken Pipe")
+        return
+
 
     def debugLogAPI(self, message):
         master.debugLog(10, 

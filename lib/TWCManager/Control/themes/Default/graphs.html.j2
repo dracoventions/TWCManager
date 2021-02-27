@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang='en'>
+  <head>
+    <title>TWCManager</title>
+    {% include 'bootstrap.html.j2' %}
+    {% include 'drawChart.html.j2' %}
+  </head>
+  <body>
+    {% include 'navbar.html.j2' %}
+    <form method=POST action='/graphs/dates'>
+        <p>Initial Date: <input type="datetime-local" name="dateIni" id="initial">  End Date: <input type="datetime-local" name="dateEnd" id="end"> 
+
+        <input type="submit" value="Submit">
+
+    </form>
+
+    <div id='contenedor'></div>
+
+  </body>
+</html>

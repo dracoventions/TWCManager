@@ -1,0 +1,110 @@
+<script src="https://code.jquery.com/jquery.js"></script>
+<script src="http://code.highcharts.com/stock/highstock.js"></script>
+<script src="http://code.highcharts.com/modules/exporting.js"></script>
+
+<script>
+
+// AJAJ refresh graph from SQL database
+$(document).ready(function() {
+    
+    function drawChart() {
+        $.ajax({
+            url: "/graphs/date",
+            dataType: "text",
+            cache: false,
+            success: function(data) {
+               var json = $.parseJSON(data);
+
+               document.getElementById("initial").setAttribute('value',json[0]["initial"]);
+               document.getElementById("end").setAttribute('value',json[0]["end"]);
+               var d = new Date();
+               var n = d.getTimezoneOffset();
+               Highcharts.setOptions({
+                   time: {
+                       timezoneOffset: n
+                  }
+               });
+
+
+               chartDiana = new Highcharts.StockChart({
+                   chart: {
+                           renderTo: 'contenedor'
+
+                   },
+                   rangeSelector : {
+                           enabled: false
+                   },
+                   title: {
+                       text: 'Generation - Consumption - Charger'
+                   },
+                   xAxis: {
+                       type: 'datetime'
+                       //tickPixelInterval: 150,
+                       //maxZoom: 20 * 1000
+                   },
+                   yAxis: {
+                       minPadding: 0.05,
+                       maxPadding: 0.05,
+                       title: {
+                           text: 'Watts',
+                           margin: 100
+                       }
+                   },
+                   series: [{
+                       name: 'PV',
+                       data: (function() {
+                              var data = [];
+                              Object.keys(json).forEach(function(key) {
+                                 if(key>0)
+                                 {
+                                    data.push([Date.parse(json[key]["time"]),parseInt(json[key]["genW"])]);
+                                 }
+                              })
+
+                              return data;
+                           })()},
+                       {
+                       name: 'CONSUMPTION',
+                       data: (function() {
+                              var data = [];
+                              Object.keys(json).forEach(function(key) {
+                                 if(key>0)
+                                 {
+                                    data.push([Date.parse(json[key]["time"]),parseInt(json[key]["conW"])]);
+                                 }
+                              })
+
+                              return data;
+                          })()},
+                       {
+                       name: 'CHARGE',
+                       data: (function() {
+                              var data = [];
+                              Object.keys(json).forEach(function(key) {
+                                 if(key>0)
+                                 {
+                                    data.push([Date.parse(json[key]["time"]),parseInt(json[key]["chgW"])]);
+                                 }
+                              })
+
+                              return data;
+                              })()
+                   }],
+                   credits: {
+                           enabled: false
+                   }
+               }); // end chatDiana
+
+               } // end success
+
+          }); //end ajax
+
+
+     } //end drawChart
+
+     drawChart();
+
+}); //end ready
+
+
+</script>
