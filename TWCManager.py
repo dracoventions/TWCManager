@@ -283,7 +283,10 @@ def check_green_energy():
     for module in master.getModulesByType("EMS"):
         master.setConsumption(module["name"], module["ref"].getConsumption())
         master.setGeneration(module["name"], module["ref"].getGeneration())
-    master.setMaxAmpsToDivideAmongSlaves(master.getMaxAmpsToDivideGreenEnergy())
+
+    # Set max amps iff charge_amps isn't specified on the policy.
+    if master.getModuleByName("Policy").policyIsGreen():
+        master.setMaxAmpsToDivideAmongSlaves(master.getMaxAmpsToDivideGreenEnergy())
 
 
 def update_statuses():

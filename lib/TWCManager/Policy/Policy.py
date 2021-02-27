@@ -288,12 +288,13 @@ class Policy:
         return value
 
     def policyIsGreen(self):
-        if self.getPolicyByName(self.active_policy):
+        current = self.getPolicyByName(self.active_policy)
+        if current:
             return (
-                self.getPolicyByName(self.active_policy).get("background_task", "")
-                == "checkGreenEnergy"
+                current.get("background_task", "") == "checkGreenEnergy" and
+                current.get("charge_amps", None) == None
             )
-        return 0
+        return False
 
     def doesConditionMatch(self, match, condition, value, exitOn):
         matchValue = self.policyValue(match)
