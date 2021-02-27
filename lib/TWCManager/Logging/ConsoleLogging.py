@@ -7,6 +7,9 @@ from ww import f
 
 class ConsoleLogging:
 
+    capabilities = {
+      "queryGreenEnergy": False
+    }
     config = None
     configConfig = None
     configLogging = None
@@ -48,6 +51,10 @@ class ConsoleLogging:
             )
 
         return
+
+    def getCapabilities(self, capability):
+        # Allows query of module capabilities when deciding which Logging module to use
+        return self.capabilities.get(capability, False)
 
     def greenEnergy(self, data):
         # Check if this status is muted

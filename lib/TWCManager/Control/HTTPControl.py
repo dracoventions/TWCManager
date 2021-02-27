@@ -639,13 +639,23 @@ def CreateHTTPHandlerClass(master):
 
         if self.url.path == "/graphs/dates":
             # User has submitted dates to graph this period.
-            objIni = datetime.strptime(self.getFieldValue("dateIni"), "%Y-%m-%dT%H:%M")
-            objEnd = datetime.strptime(self.getFieldValue("dateEnd"), "%Y-%m-%dT%H:%M")
-            self.process_save_graphs(objIni,objEnd)
-            self.send_response(302)
-            self.send_header("Location", "/graphsP")
-            self.end_headers()
+            objIni = self.getFieldValue("dateIni")
+            objEnd = self.getFieldValue("dateEnd")
 
+            if not objIni or not objEnd:
+                # Redirect back to graphs page if no Start or End time supplied
+                self.send_response(302)
+                self.send_header("Location", "/graphs")
+
+            else:
+
+                self.process_save_graphs(
+                    datetime.strptime(objIni, "%Y-%m-%dT%H:%M"),
+                    datetime.strptime(objEnd, "%Y-%m-%dT%H:%M"))
+                self.send_response(302)
+                self.send_header("Location", "/graphsP")
+
+            self.end_headers()
             self.wfile.write("".encode("utf-8"))
             return
 
@@ -696,7 +706,10 @@ def CreateHTTPHandlerClass(master):
         # Parse the form value represented by key, and return the
         # value either as an integer or string
         keya = str(key)
-        vala = self.fields[key][0].replace("'", "")
+        try:
+            vala = self.fields[key][0].replace("'", "")
+        except KeyError:
+            return None
         try:
             if int(vala) or vala == "0":
                 return int(vala)
@@ -936,8 +949,25 @@ def CreateHTTPHandlerClass(master):
     def process_graphs(self,init,end):
         # This function will query the green_energy SQL table
         result={}
+
+        # We will use the first loaded logging module with query capabilities to build the graphs.
+        module = None
+
+        for candidate_module in master.getModulesByType("Logging"):
+            if candidate_module["ref"].getCapabilities("queryGreenEnergy"):
+                master.debugLog(6,"HTTPCtrl","Logging module %s supports queryGreenEnergy" % candidate_module["name"])
+                module = candidate_module["ref"]
+            else:
+                master.debugLog(6,"HTTPCtrl","Logging module %s does not support queryGreenEnergy" % candidate_module["name"])
+
+        # If we were unable to find a loaded Logging module with the capability to query
+        # values for graphs, return a HTTP error code
+        if not module:
+            self.send_response(400)
+            self.end_headers()
+            return
+
         try:
-           module = self.master.getModuleByName("MySQLLogging")
            result= module.queryGreenEnergy(
                                {
                                    "dateBegin": init,
@@ -955,7 +985,7 @@ def CreateHTTPHandlerClass(master):
         data[0] = {
                 "initial":init.strftime("%Y-%m-%dT%H:%M"),
                 "end":end.strftime("%Y-%m-%dT%H:%M"),
-                }
+        }
         i=1
         while i<len(result):
             data[i] = {

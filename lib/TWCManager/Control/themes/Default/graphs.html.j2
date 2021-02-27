@@ -7,6 +7,7 @@
   </head>
   <body>
     {% include 'navbar.html.j2' %}
+    {% if master.checkModuleCapability("Logging", "queryGreenEnergy") %}
     <form method=POST action='/graphs/dates'>
         <p>Initial Date: <input type="datetime-local" name="dateIni" id="initial">  End Date: <input type="datetime-local" name="dateEnd" id="end"> 
 
@@ -15,6 +16,9 @@
     </form>
 
     <div id='contenedor'></div>
+    {% else %}
+    <b>Note:</b> Graphs require the use of a Logging module which supports querying of saved data. Currently this is: MySQL
+    {% endif %}
 
   </body>
 </html>

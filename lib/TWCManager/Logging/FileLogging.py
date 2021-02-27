@@ -9,6 +9,9 @@ import re
 
 class FileLogging:
 
+    capabilities = {
+      "queryGreenEnergy": False
+    }
     config = None
     configConfig = None
     configLogging = None
@@ -62,6 +65,10 @@ class FileLogging:
                 + self.escape_ansi(logdata["message"])
             )
         return
+
+    def getCapabilities(self, capability):
+        # Allows query of module capabilities when deciding which Logging module to use
+        return self.capabilities.get(capability, False)
 
     def escape_ansi(self, line):
         ansi_escape = re.compile(r"(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]")

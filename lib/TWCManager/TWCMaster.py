@@ -100,6 +100,17 @@ class TWCMaster:
         except ValueError as e:
             self.debugLog(10, "TWCMaster", "Exception in advanceHistorySnap: " + str(e))
 
+    def checkModuleCapability(self, type, capability):
+        # For modules which advertise capabilities, scan all loaded modules of a certain type and
+        # report on if any of those modules advertise the reported capability
+        match = False
+
+        for module in self.getModulesByType(type):
+            if module["ref"].getCapabilities(capability):
+                match = True
+
+        return match
+
     def checkScheduledCharging(self):
 
         # Check if we're within the hours we must use scheduledAmpsMax instead

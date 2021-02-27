@@ -4,6 +4,9 @@
 
 class MySQLLogging:
 
+    capabilities = {
+      "queryGreenEnergy": True
+    }
     config = None
     configConfig = None
     configLogging = None
@@ -52,6 +55,10 @@ class MySQLLogging:
         # logging function for the given data. It allows a log entry to be
         # passed to us for storage.
         return
+
+    def getCapabilities(self, capability):
+        # Allows query of module capabilities when deciding which Logging module to use
+        return self.capabilities.get(capability, False)
 
     def greenEnergy(self, data):
         # Check if this status is muted
