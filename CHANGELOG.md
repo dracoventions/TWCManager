@@ -25,6 +25,7 @@ This document logs the changes per release of TWCManager.
   * Added EMS module for Efergy (thanks @juanjoqg)
   * Added Graph visualisation for supported Logging modules - MySQL currently (thanks @juanjoqg)
   * Updates to accomodate Powerwall authentication flow changes (thanks @MikeBishop)
+  * Do not override the charge_amps set in a policy when running checkGreenEnergy, allowing for Green Energy tracking numbers to be updated when Charge Now or Scheduled Charging policies are active (thanks @MikeBishop)
   * Bugfixes
       * Add a sleep of 5 seconds when waking car up to avoid an infinite loop (thanks @dschuesae)
       * Fix a bug with the legacy web interface which causes the Resume Track Green Energy setting of None to fail. Also added a deprecation notice to the web interface to ensure people don't inadvertently use it over the modular interface.
