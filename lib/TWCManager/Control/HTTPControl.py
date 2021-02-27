@@ -581,7 +581,9 @@ def CreateHTTPHandlerClass(master):
             end= now
             # It we came from a POST the dates should be already stored in settings
             if self.url.path == "/graphs":
-               self.process_save_graphs(initial,end)
+               self.process_save_graphs(
+                   str(initial.strftime("%Y-%m-%dT%H:%M")),
+                   str(end.strftime("%Y-%m-%dT%H:%M")))
 
             self.send_response(200)
             self.send_header("Content-type", "text/html")
@@ -649,9 +651,7 @@ def CreateHTTPHandlerClass(master):
 
             else:
 
-                self.process_save_graphs(
-                    datetime.strptime(objIni, "%Y-%m-%dT%H:%M"),
-                    datetime.strptime(objEnd, "%Y-%m-%dT%H:%M"))
+                self.process_save_graphs(objIni, objEnd)
                 self.send_response(302)
                 self.send_header("Location", "/graphsP")
 
@@ -970,8 +970,8 @@ def CreateHTTPHandlerClass(master):
         try:
            result= module.queryGreenEnergy(
                                {
-                                   "dateBegin": init,
-                                   "dateEnd": end
+                                   "dateBegin": datetime.strptime(init, "%Y-%m-%dT%H:%M"),
+                                   "dateEnd": datetime.strptime(end, "%Y-%m-%dT%H:%M")
                                }
                              )
         except Exception as e:
@@ -983,8 +983,8 @@ def CreateHTTPHandlerClass(master):
 
         data = {}
         data[0] = {
-                "initial":init.strftime("%Y-%m-%dT%H:%M"),
-                "end":end.strftime("%Y-%m-%dT%H:%M"),
+                "initial":init,
+                "end":end,
         }
         i=1
         while i<len(result):

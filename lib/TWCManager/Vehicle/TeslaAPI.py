@@ -343,6 +343,12 @@ class TeslaAPI:
                     )
                     self.master.debugLog(6, "TeslaAPI", "Response: " + req.text)
                     pass
+                except self.json.decoder.JSONDecodeError:
+                    self.master.debugLog(
+                        1, "TeslaAPI", "Could not parse JSON result from " + url
+                    )
+                    self.master.debugLog(6, "TeslaAPI", "Response: " + req.text)
+                    pass
 
                 try:
                     self.master.debugLog(
