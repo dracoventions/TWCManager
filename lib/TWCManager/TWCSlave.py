@@ -1,4 +1,3 @@
-from termcolor import colored
 from ww import f
 from datetime import datetime
 import logging
@@ -151,10 +150,16 @@ class TWCSlave:
                 self.lastHeartbeatDebugOutput = debugOutput
                 self.timeLastHeartbeatDebugOutput = self.time.time()
 
-                for module in self.master.getModulesByType("Logging"):
-                    module["ref"].slavePower(
-                        {"TWCID": self.TWCID, "status": heartbeatData[0]}
-                    )
+                logger.info(
+                    "Slave power for TWCID %s, status: %s",
+                    self.TWCID,
+                    heartbeatData[0],
+                    extra={
+                        "logtype": "slave_power",
+                        "TWCID": self.TWCID,
+                        "status": heartbeatData[0],
+                    },
+                )
 
         except IndexError:
             # This happens if we try to access, say, heartbeatData[8] when

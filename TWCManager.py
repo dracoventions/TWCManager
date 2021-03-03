@@ -35,8 +35,6 @@ import os.path
 import math
 import re
 import sys
-from termcolor import colored
-import termcolor
 import time
 import traceback
 from datetime import datetime
@@ -45,27 +43,6 @@ from ww import f
 from lib.TWCManager.TWCMaster import TWCMaster
 import requests
 from enum import Enum
-
-# file_handler = logging.FileHandler(filename='tmp.log')
-stdout_handler = logging.StreamHandler(sys.stdout)
-handlers = [stdout_handler]
-
-
-class Loglevel(Enum):
-    CRITICAL = 50
-    ERROR = 40
-    WARNING = 30
-    INFO = 20
-    INFO2 = 19
-    INFO3 = 18
-    INFO4 = 17
-    INFO5 = 16
-    INFO6 = 15
-    INFO7 = 14
-    INFO8 = 13
-    INFO9 = 12
-    DEBUG = 10
-    NOTSET = 0
 
 
 logging.addLevelName(19, "INFO2")
@@ -76,6 +53,7 @@ logging.addLevelName(15, "INFO6")
 logging.addLevelName(14, "INFO7")
 logging.addLevelName(13, "INFO8")
 logging.addLevelName(12, "INFO9")
+logging.addLevelName(9, "DEBUG2")
 logging.INFO2 = 19
 logging.INFO3 = 18
 logging.INFO4 = 17
@@ -84,42 +62,8 @@ logging.INFO6 = 15
 logging.INFO7 = 14
 logging.INFO8 = 13
 logging.INFO9 = 12
+logging.DEBUG2 = 9
 
-
-class ColoredFormatter(logging.Formatter):
-    def __init__(self, msg, use_color=True):
-        logging.Formatter.__init__(self, msg)
-        self.use_color = use_color
-
-    def format(self, record):
-        levelname = record.levelname
-        # if self.use_color and levelname in COLORS:
-        #    levelname_color = COLOR_SEQ % (30 + COLORS[levelname]) + levelname + RESET_SEQ
-        #    record.levelname = levelname_color
-
-
-FMT_STR = "\033[%dm%s"
-# color_formatter = ColoredFormatter(FMT_STR % (termcolor.COLORS['yellow'], '[%(asctime)s]') + termcolor.RESET + ' {%(filename)s:%(lineno)d} %(levelname)s - %(message)s')
-# color_formatter = ColoredFormatter('[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s')
-color_formatter = logging.Formatter(
-    FMT_STR % (termcolor.COLORS["yellow"], "%(asctime)s") + termcolor.RESET + " "
-    # + FMT_STR % (termcolor.COLORS["green"], "%(filename)s:%(lineno)d ")
-    + FMT_STR % (termcolor.COLORS["green"], "%(name)-10.10s")
-    + " "
-    + termcolor.RESET
-    + FMT_STR % (termcolor.COLORS["cyan"], "%(levelno)d")
-    + termcolor.RESET
-    + " %(message)s",
-    "%H:%M:%S",
-)
-stdout_handler.setFormatter(color_formatter)
-
-logging.basicConfig(
-    # level=logging.DEBUG,
-    level=1,
-    format="[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
-    handlers=handlers,
-)
 
 logger = logging.getLogger("TWCManager")
 
@@ -195,7 +139,7 @@ if logLevel == None:
         8: 13,
         9: 12,
         10: 10,
-        11: 0,
+        11: 9,
     }
     for debug, log in debug_to_log.items():
         if debug >= debugLevel:
@@ -255,15 +199,15 @@ def unescape_msg(inmsg: bytearray, msgLen):
     # the end looking at i+1.
     i = 0
     while i < len(msg):
-        if msg[i] == 0xdb:
-            if msg[i + 1] == 0xdc:
+        if msg[i] == 0xDB:
+            if msg[i + 1] == 0xDC:
                 # Replace characters at msg[i] and msg[i+1] with 0xc0,
                 # shortening the string by one character. In Python, msg[x:y]
                 # refers to a substring starting at x and ending immediately
                 # before y. y - x is the length of the substring.
-                msg[i : i + 2] = [0xc0]
-            elif msg[i + 1] == 0xdd:
-                msg[i : i + 2] = [0xdb]
+                msg[i : i + 2] = [0xC0]
+            elif msg[i + 1] == 0xDD:
+                msg[i : i + 2] = [0xDB]
             else:
                 logger.info(
                     "ERROR: Special character 0xDB in message is "
@@ -273,7 +217,7 @@ def unescape_msg(inmsg: bytearray, msgLen):
 
                 # Replace the character with something even though it's probably
                 # not the right thing.
-                msg[i : i + 2] = [0xdb]
+                msg[i : i + 2] = [0xDB]
         i = i + 1
 
     # Remove leading and trailing C0 byte.
@@ -332,10 +276,11 @@ def background_tasks_thread(master):
 
         except:
             logger.info(
-                colored("BackgroundError", "red")
-                + ": "
+                "%s: "
                 + traceback.format_exc()
-                + ", occurred when processing background task"
+                + ", occurred when processing background task",
+                "BackgroundError",
+                extra={"colored": "red"},
             )
             pass
 
@@ -396,26 +341,31 @@ def update_statuses():
             othwatts = conwatts - chgwatts
             othwattsDisplay = f("{othwatts:.0f}W")
             logger.info(
-                f(
-                    "Green energy generates {colored(genwattsDisplay, 'magenta')}, Consumption {colored(conwattsDisplay, 'magenta')} (Other Load {colored(othwattsDisplay, 'magenta')}, Charger Load {colored(chgwattsDisplay, 'magenta')})"
-                ),
+                "Green energy generates %s, Consumption %s (Other Load %s, Charger Load %s)",
+                genwattsDisplay,
+                conwattsDisplay,
+                othwattsDisplay,
+                chgwattsDisplay,
                 extra={
                     "logtype": "green_energy",
                     "genWatts": genwatts,
                     "conWatts": conwatts,
                     "chgWatts": chgwatts,
+                    "colored": "magenta"
                 },
             )
         else:
             logger.info(
-                f(
-                    "Green energy generates {colored(genwattsDisplay, 'magenta')}, Consumption {colored(conwattsDisplay, 'magenta')}, Charger Load {colored(chgwattsDisplay, 'magenta')}"
-                ),
+                "Green energy generates %s, Consumption %s, Charger Load %s",
+                genwattsDisplay,
+                conwattsDisplay,
+                chgwattsDisplay,
                 extra={
                     "logtype": "green_energy",
                     "genWatts": genwatts,
                     "conWatts": conwatts,
                     "chgWatts": chgwatts,
+                    "colored": "magenta"
                 },
             )
 
@@ -434,18 +384,24 @@ def update_statuses():
         generation = f("{master.convertWattsToAmps(genwatts):.2f}A")
         consumption = f("{master.convertWattsToAmps(conwatts):.2f}A")
         logger.info(
-            f(
-                "Limiting charging to {colored(generation, 'magenta')} - {colored(consumption, 'magenta')} = {colored(maxampsDisplay, 'magenta')}."
-            )
+            "Limiting charging to %s - %s = %s.",
+            generation,
+            consumption,
+            maxampsDisplay,
+            extra={"colored": "magenta"},
         )
 
     else:
         # For all other modes, simply show the Amps to charge at
-        logger.info(f("Limiting charging to {colored(maxampsDisplay, 'magenta')}."))
+        logger.info(
+            "Limiting charging to %s.", maxampsDisplay, extra={"colored": "magenta"}
+        )
 
     # Print minimum charge for all charging policies
     minchg = f("{config['config']['minAmpsPerTWC']}A")
-    logger.info(f("Charge when above {colored(minchg, 'magenta')} (minAmpsPerTWC)."))
+    logger.info(
+        "Charge when above %s (minAmpsPerTWC).", minchg, extra={"colored": "magenta"}
+    )
 
     # Update Sensors with min/max amp values
     for module in master.getModulesByType("Status"):
@@ -527,24 +483,20 @@ for module in modules_available:
             {"name": modulename[1], "ref": modinstance, "type": modulename[0]}
         )
     except ImportError as e:
-        logger.info(
-            colored("ImportError", "red")
-            + ": "
-            + str(e)
-            + ", when importing module "
-            + colored(module, "red")
-            + ", not using "
-            + colored(module, "red")
+        logger.error(
+            "%s: " + str(e) + ", when importing %s, not using %s",
+            "ImportError",
+            module,
+            module,
+            extra={"colored": "red"},
         )
     except ModuleNotFoundError as e:
         logger.info(
-            colored("ModuleNotFoundError", "red")
-            + ": "
-            + str(e)
-            + ", when importing "
-            + colored(module, "red")
-            + ", not using "
-            + colored(module, "red")
+            "%s: " + str(e) + ", when importing %s, not using %s",
+            "ModuleNotFoundError",
+            module,
+            module,
+            extra={"colored": "red"},
         )
     except:
         raise
@@ -718,15 +670,15 @@ while True:
 
             timeMsgRxStart = now
             timeLastRx = now
-            if msgLen == 0 and data[0] != 0xc0:
+            if msgLen == 0 and data[0] != 0xC0:
                 # We expect to find these non-c0 bytes between messages, so
                 # we don't print any warning at standard debug levels.
                 logger.log(
-                    logging.NOTSET, "Ignoring byte %02X between messages." % (data[0])
+                    logging.DEBUG2, "Ignoring byte %02X between messages." % (data[0])
                 )
                 ignoredData += data
                 continue
-            elif msgLen > 0 and msgLen < 15 and data[0] == 0xc0:
+            elif msgLen > 0 and msgLen < 15 and data[0] == 0xC0:
                 # If you see this when the program is first started, it
                 # means we started listening in the middle of the TWC
                 # sending a message so we didn't see the whole message and
@@ -775,7 +727,7 @@ while True:
             #   http://www.ti.com/lit/an/slyt514/slyt514.pdf
             # This explains what happens without "termination" resistors:
             #   https://e2e.ti.com/blogs_/b/analogwire/archive/2016/07/28/rs-485-basics-when-termination-is-necessary-and-how-to-do-it-properly
-            if msgLen >= 16 and data[0] == 0xc0:
+            if msgLen >= 16 and data[0] == 0xC0:
                 break
 
         if msgLen >= 16:
@@ -828,7 +780,7 @@ while True:
             for i in range(1, len(msg) - 1):
                 checksum += msg[i]
 
-            if (checksum & 0xff) != checksumExpected:
+            if (checksum & 0xFF) != checksumExpected:
                 logger.info(
                     "ERROR: Checksum %X does not match %02X.  Ignoring message: %s"
                     % (checksum, checksumExpected, hex_str(msg))
@@ -1073,18 +1025,6 @@ while True:
                             "voltsPerPhase": [voltsPhaseA, voltsPhaseB, voltsPhaseC],
                         },
                     )
-                    for module in master.getModulesByType("Logging"):
-                        module["ref"].slaveStatus(
-                            {
-                                "TWCID": senderID,
-                                "kWh": kWh,
-                                "voltsPerPhase": [
-                                    voltsPhaseA,
-                                    voltsPhaseB,
-                                    voltsPhaseC,
-                                ],
-                            }
-                        )
 
                     # Update the timestamp of the last reciept of this message
                     master.lastkWhMessage = time.time()
@@ -1258,7 +1198,7 @@ while True:
                         # This message was intended for another slave.
                         # Ignore it.
                         logger.log(
-                            logging.NOTSET,
+                            logging.DEBUG2,
                             "Master %02X%02X sent "
                             "heartbeat message %s to receiver %02X%02X "
                             "that isn't our fake slave."
@@ -1296,19 +1236,19 @@ while True:
                         master.slaveHeartbeatData[0] = heartbeatData[0]
                         timeToRaise2A = now + 10
                         amps -= 280
-                        master.slaveHeartbeatData[3] = (amps >> 8) & 0xff
-                        master.slaveHeartbeatData[4] = amps & 0xff
+                        master.slaveHeartbeatData[3] = (amps >> 8) & 0xFF
+                        master.slaveHeartbeatData[4] = amps & 0xFF
                     elif heartbeatData[0] == 0x06:
                         # Raise amp setpoint by 2 permanently and reply with
                         # state 06.  After 44 seconds, report state 0A.
                         timeTo0Aafter06 = now + 44
                         master.slaveHeartbeatData[0] = heartbeatData[0]
                         amps += 200
-                        master.slaveHeartbeatData[1] = (amps >> 8) & 0xff
-                        master.slaveHeartbeatData[2] = amps & 0xff
+                        master.slaveHeartbeatData[1] = (amps >> 8) & 0xFF
+                        master.slaveHeartbeatData[2] = amps & 0xFF
                         amps -= 80
-                        master.slaveHeartbeatData[3] = (amps >> 8) & 0xff
-                        master.slaveHeartbeatData[4] = amps & 0xff
+                        master.slaveHeartbeatData[3] = (amps >> 8) & 0xFF
+                        master.slaveHeartbeatData[4] = amps & 0xFF
                     elif (
                         heartbeatData[0] == 0x05
                         or heartbeatData[0] == 0x08
@@ -1323,12 +1263,12 @@ while True:
 
                             ampsUsed = (heartbeatData[1] << 8) + heartbeatData[2]
                             ampsUsed -= 80
-                            master.slaveHeartbeatData[3] = (ampsUsed >> 8) & 0xff
-                            master.slaveHeartbeatData[4] = ampsUsed & 0xff
+                            master.slaveHeartbeatData[3] = (ampsUsed >> 8) & 0xFF
+                            master.slaveHeartbeatData[4] = ampsUsed & 0xFF
                     elif heartbeatData[0] == 0:
                         if timeTo0Aafter06 > 0 and timeTo0Aafter06 < now:
                             timeTo0Aafter06 = 0
-                            master.slaveHeartbeatData[0] = 0x0a
+                            master.slaveHeartbeatData[0] = 0x0A
                         elif timeToRaise2A > 0 and timeToRaise2A < now:
                             # Real slave raises amps used by 2 exactly 10
                             # seconds after being sent into state 07. It raises
@@ -1337,9 +1277,9 @@ while True:
                             # timing here but hopefully close enough.
                             timeToRaise2A = 0
                             amps -= 80
-                            master.slaveHeartbeatData[3] = (amps >> 8) & 0xff
-                            master.slaveHeartbeatData[4] = amps & 0xff
-                            master.slaveHeartbeatData[0] = 0x0a
+                            master.slaveHeartbeatData[3] = (amps >> 8) & 0xFF
+                            master.slaveHeartbeatData[4] = amps & 0xFF
+                            master.slaveHeartbeatData[0] = 0x0A
                     elif heartbeatData[0] == 0x02:
                         logger.info(
                             "Master heartbeat contains error %ld: %s"
@@ -1462,10 +1402,10 @@ while True:
                         kWhCounter = int(master.getkWhDelivered())
                         kWhPacked = bytearray(
                             [
-                                ((kWhCounter >> 24) & 0xff),
-                                ((kWhCounter >> 16) & 0xff),
-                                ((kWhCounter >> 8) & 0xff),
-                                (kWhCounter & 0xff),
+                                ((kWhCounter >> 24) & 0xFF),
+                                ((kWhCounter >> 16) & 0xFF),
+                                ((kWhCounter >> 8) & 0xFF),
+                                (kWhCounter & 0xFF),
                             ]
                         )
                         logger.info(

@@ -369,7 +369,7 @@ class TeslaAPI:
                         # which doesn't make sense for us to keep requesting it
                         # to start charging, so we will stop.
                         logger.log(
-                            logging.NOTSET,
+                            logging.DEBUG2,
                             "Don't repeatedly request API to charge "
                             + vehicle.name
                             + ", because vehicle.stopAskingToStartCharging "
@@ -379,7 +379,7 @@ class TeslaAPI:
 
                     if applyLimit is True and vehicle.stopTryingToApplyLimit:
                         logger.log(
-                            logging.NOTSET,
+                            logging.DEBUG2,
                             "Don't wake "
                             + vehicle.name
                             + " to set the charge limit - it has already been set",
@@ -391,7 +391,7 @@ class TeslaAPI:
                         # API generated an error on this vehicle. Don't send it more
                         # commands yet.
                         logger.log(
-                            logging.NOTSET,
+                            logging.DEBUG2,
                             "Don't send commands to "
                             + vehicle.name
                             + " because it returned an error in the last "
@@ -685,7 +685,7 @@ class TeslaAPI:
         if now - self.getLastStartOrStopChargeTime() < 60:
             # Don't start or stop more often than once a minute
             logger.log(
-                logging.NOTSET,
+                logging.DEBUG2,
                 "car_api_charge return because under 60 sec since last carApiLastStartOrStopChargeTime",
             )
             return "error"
@@ -923,7 +923,7 @@ class TeslaAPI:
         ):
             # Don't change limits more often than once a minute
             logger.log(
-                logging.NOTSET,
+                logging.DEBUG2,
                 "applyChargeLimit return because under 60 sec since last carApiLastChargeLimitApplyTime",
             )
             return "error"
@@ -1090,7 +1090,7 @@ class TeslaAPI:
                 return 0
             else:
                 logger.log(
-                    logging.NOTSET,
+                    logging.DEBUG2,
                     "Backoff is "
                     + str(backoff)
                     + ", lasterror delta is "

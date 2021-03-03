@@ -4,7 +4,6 @@ import os
 import pathlib
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
-from termcolor import colored
 from datetime import datetime, timedelta
 import jinja2
 import json

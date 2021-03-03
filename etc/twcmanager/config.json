@@ -181,7 +181,7 @@
         # INFO8     13        8     add debugging info
         # INFO9     12        9     includes raw RS-485 msgs tx and rx (2-3 per sec)
         # DEBUG     10       10     all info.
-        # NOTSET     0       11     more than all info.  ;)
+        # DEBUG2     9       11     more than all info.  ;)
 
         "logLevel": 20,
 

@@ -127,14 +127,6 @@ class CSVLogging:
         # Allows query of module capabilities when deciding which Logging module to use
         return self.capabilities.get(capability, False)
 
-    def slavePower(self, data):
-        # FIXME: remove function
-        return None
-
-    def slaveStatus(self, data):
-        # FIXME: remove function
-        return
-
     def slave_status_filter(self, record):
         log_type = getattr(record, "logtype", "")
         if log_type != "slave_status" or self.configLogging["mute"].get(
@@ -142,18 +134,6 @@ class CSVLogging:
         ):
             return False
         return True
-
-    def startChargeSession(self, data):
-        # FIXME: remove function
-        return
-
-    def stopChargeSession(self, data):
-        # FIXME: remove function
-        return
-
-    def updateChargeSession(self, data):
-        # FIXME: remove function
-        return
 
     def charge_sessions_filter(self, record):
         log_type = getattr(record, "logtype", "")
@@ -209,12 +189,24 @@ class CSVLogging:
             self.openSessions[getattr(record, "TWCID")]["endkWh"] = getattr(
                 record, "endkWh", 0
             )
-            record.startTime = self.openSessions[getattr(record, "TWCID")].get("startTime", 0)
-            record.startFormat = self.openSessions[getattr(record, "TWCID")].get("startFormat", 0)
-            record.startkWh = self.openSessions[getattr(record, "TWCID")].get("startkWh", 0)
-            record.endTime = self.openSessions[getattr(record, "TWCID")].get("endTime", 0)
-            record.endFormat = self.openSessions[getattr(record, "TWCID")].get("endFormat", 0)
+            record.startTime = self.openSessions[getattr(record, "TWCID")].get(
+                "startTime", 0
+            )
+            record.startFormat = self.openSessions[getattr(record, "TWCID")].get(
+                "startFormat", 0
+            )
+            record.startkWh = self.openSessions[getattr(record, "TWCID")].get(
+                "startkWh", 0
+            )
+            record.endTime = self.openSessions[getattr(record, "TWCID")].get(
+                "endTime", 0
+            )
+            record.endFormat = self.openSessions[getattr(record, "TWCID")].get(
+                "endFormat", 0
+            )
             record.endkWh = self.openSessions[getattr(record, "TWCID")].get("endkWh", 0)
-            record.vehicleVIN = self.openSessions[getattr(record, "TWCID")].get("vehicleVIN", "")
+            record.vehicleVIN = self.openSessions[getattr(record, "TWCID")].get(
+                "vehicleVIN", ""
+            )
             return True
         return False

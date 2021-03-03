@@ -4,9 +4,6 @@ import logging
 import sentry_sdk
 from sentry_sdk.integrations.logging import LoggingIntegration
 
-import re
-
-
 logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
@@ -21,6 +18,7 @@ class SentryLogging:
     muteDebugLogLevelGreaterThan = 1
 
     def __init__(self, master):
+        # raise ImportError
         self.master = master
         self.config = master.config
         try:
@@ -48,28 +46,4 @@ class SentryLogging:
             level=logging.INFO,  # Capture info and above as breadcrumbs
             event_level=logging.ERROR,  # Send errors as events
         )
-        sentry_sdk.init(
-            self.dsn,
-            integrations=[sentry_logging],
-            traces_sample_rate=1.0,
-        )
-
-    def slavePower(self, data):
-        # FIXME: remove function
-        return None
-
-    def slaveStatus(self, data):
-        # FIXME: remove function
-        return
-
-    def startChargeSession(self, data):
-        # FIXME: remove function
-        return
-
-    def stopChargeSession(self, data):
-        # FIXME: remove function
-        return
-
-    def updateChargeSession(self, data):
-        # FIXME: remove function
-        return
+        sentry_sdk.init(self.dsn, integrations=[sentry_logging], traces_sample_rate=1.0)

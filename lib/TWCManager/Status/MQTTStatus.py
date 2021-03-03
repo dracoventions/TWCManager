@@ -2,7 +2,6 @@
 # Publishes the provided key and value pair to the provided topic prefix
 
 import logging
-from termcolor import colored
 from ww import f
 
 
@@ -122,9 +121,9 @@ class MQTTStatus:
         # to the server, and then disconnect.
 
         logger.debug("Connected to MQTT Broker with RC: " + str(rc))
-        logger.log(logging.NOTSET, "Copy Message Buffer")
+        logger.log(logging.DEBUG2, "Copy Message Buffer")
         self.msgQueueBuffer = self.msgQueue.copy()
-        logger.log(logging.NOTSET, "Clear Message Buffer")
+        logger.log(logging.DEBUG2, "Clear Message Buffer")
         self.msgQueue.clear()
 
         for msg in self.msgQueueBuffer:

@@ -11,17 +11,6 @@ import re
 logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
-class NoAnsiLogRecord(logging.LogRecord):
-    """ Dummy LogRecord example """
-
-    def getMessage(self):
-        return self.escape_ansi(self.msg % self.args)
-
-    def escape_ansi(self, line):
-        ansi_escape = re.compile(r"(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]")
-        return ansi_escape.sub("", line)
-
-
 class FileLogging:
 
     capabilities = {"queryGreenEnergy": False}
@@ -65,84 +54,8 @@ class FileLogging:
         handler.setFormatter(
             logging.Formatter("%(asctime)s - %(name)-10.10s %(levelno)02d %(message)s")
         )
-        # handler.setLevel(logging.INFO)
-        handler.addFilter(self.message_filter)
-
         logging.getLogger("").addHandler(handler)
-
-    def debugLog(self, logdata):
-        # debugLog is something of a catch-all if we don't have a specific
-        # logging function for the given data. It allows a log entry to be
-        # passed to us for storage.
-        if self.muteDebugLogLevelGreaterThan >= logdata["minLevel"]:
-            logger.info(
-                logdata["function"]
-                + " %02d " % logdata["minLevel"]
-                + self.escape_ansi(logdata["message"])
-            )
-        return
 
     def getCapabilities(self, capability):
         # Allows query of module capabilities when deciding which Logging module to use
         return self.capabilities.get(capability, False)
-
-    def escape_ansi(self, line):
-        ansi_escape = re.compile(r"(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]")
-        return ansi_escape.sub("", line)
-
-    def message_filter(self, record):
-        # We don't want ansi colors in text logs
-        record.msg = self.escape_ansi(record.msg)
-        return True
-
-    def writeLog(self, functionName, message):
-        self.debugLog({"function": functionName, "minLevel": 0, "message": message})
-
-    def slavePower(self, data):
-        # Not yet implemented
-        return None
-
-    def slaveStatus(self, data):
-        # Check if this status is muted
-        if self.mute.get("SlaveStatus", 0):
-            return None
-
-        self.writeLog(
-            "TWCManager",
-            "Slave TWC %02X%02X: Delivered %d kWh, voltage per phase: (%d, %d, %d)."
-            % (
-                data["TWCID"][0],
-                data["TWCID"][1],
-                data["kWh"],
-                data["voltsPerPhase"][0],
-                data["voltsPerPhase"][1],
-                data["voltsPerPhase"][2],
-            ),
-        )
-
-    def startChargeSession(self, data):
-        # Check if this status is muted
-        if self.mute.get("ChargeSessions", 0):
-            return None
-
-        # Called when a Charge Session Starts.
-        twcid = "%02X%02X" % (data["TWCID"][0], data["TWCID"][0])
-        self.writeLog("TWCManager", "Charge Session Started for Slave TWC %s" % twcid)
-
-    def stopChargeSession(self, data):
-        # Check if this status is muted
-        if self.mute.get("ChargeSessions", 0):
-            return None
-
-        # Called when a Charge Session Ends.
-        twcid = "%02X%02X" % (data["TWCID"][0], data["TWCID"][0])
-        self.writeLog("TWCManager", "Charge Session Stopped for Slave TWC %s" % twcid)
-
-    def updateChargeSession(self, data):
-        # Check if this status is muted
-        if self.mute.get("ChargeSessions", 0):
-            return None
-
-        # Called when additional information needs to be updated for a
-        # charge session. For console output, we ignore this.
-        return None

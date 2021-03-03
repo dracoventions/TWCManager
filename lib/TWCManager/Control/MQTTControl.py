@@ -1,5 +1,4 @@
 import logging
-from termcolor import colored
 from ww import f
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])

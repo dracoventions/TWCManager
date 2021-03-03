@@ -1,7 +1,6 @@
 import logging
 import time
 from ww import f
-from termcolor import colored
 
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
@@ -163,9 +162,9 @@ class Policy:
                 # Yes, we will now enforce policy
                 logger.log(
                     logging.INFO7,
-                    f(
-                        "All policy conditions have matched. Policy chosen is {colored(policy['name'], 'red')}"
-                    ),
+                    "All policy conditions have matched. Policy chosen is %s",
+                    policy["name"],
+                    extra={"colored": "red"},
                 )
                 self.enforcePolicy(policy, matched)
 
@@ -183,7 +182,9 @@ class Policy:
             self.fireWebhook("exit")
 
             logger.info(
-                f("New policy selected; changing to {colored(policy['name'], 'red')}")
+                "New policy selected; changing to %s",
+                policy["name"],
+                extra={"colored": "red"},
             )
             self.active_policy = str(policy["name"])
             self.limitOverride = False
@@ -298,8 +299,12 @@ class Policy:
         logger.log(
             logging.INFO8,
             f(
-                "Evaluating Policy match ({colored(match, 'red')} [{matchValue}]), condition ({colored(condition, 'red')}), value ({colored(value, 'red')})"
+                "Evaluating Policy match (%s [{matchValue}]), condition (%s), value (%s)"
             ),
+            match,
+            condition,
+            value,
+            extra={"colored": "red"},
         )
 
         if all([isinstance(a, list) for a in (matchValue, condition, value)]):

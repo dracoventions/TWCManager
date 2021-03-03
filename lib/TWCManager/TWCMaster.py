@@ -7,7 +7,6 @@ import logging
 import os.path
 import queue
 from sys import modules
-from termcolor import colored
 import threading
 import time
 from ww import f
@@ -49,13 +48,13 @@ class TWCMaster:
         "kWhDelivered": 119,
         "nonScheduledAmpsMax": 0,
         "respondToSlaves": 1,
-        "scheduledAmpsDaysBitmap": 0x7f,
+        "scheduledAmpsDaysBitmap": 0x7F,
         "scheduledAmpsEndHour": -1,
         "scheduledAmpsMax": 0,
         "scheduledAmpsStartHour": -1,
     }
     slaveHeartbeatData = bytearray(
-        [0x01, 0x0f, 0xa0, 0x0f, 0xa0, 0x00, 0x00, 0x00, 0x00]
+        [0x01, 0x0F, 0xA0, 0x0F, 0xA0, 0x00, 0x00, 0x00, 0x00]
     )
     slaveTWCs = {}
     slaveTWCRoundRobin = []
@@ -246,7 +245,7 @@ class TWCMaster:
         return self.getModulesByType("Interface")[0]["ref"]
 
     def getScheduledAmpsDaysBitmap(self):
-        return self.settings.get("scheduledAmpsDaysBitmap", 0x7f)
+        return self.settings.get("scheduledAmpsDaysBitmap", 0x7F)
 
     def getScheduledAmpsBatterySize(self):
         return self.settings.get("scheduledAmpsBatterySize", 100)
@@ -618,7 +617,7 @@ class TWCMaster:
                 logger.info(
                     "If this is the case, you may need to locate the old config file and migrate some settings manually."
                 )
-                logger.log(logging.NOTSET, str(e))
+                logger.log(logging.DEBUG2, str(e))
 
         # Step 2 - Send settings to other modules
         carapi = self.getModuleByName("TeslaAPI")
@@ -629,11 +628,11 @@ class TWCMaster:
     def master_id_conflict(self):
         # We're playing fake slave, and we got a message from a master with our TWCID.
         # By convention, as a slave we must change our TWCID because a master will not.
-        self.TWCID[0] = random.randint(0, 0xff)
-        self.TWCID[1] = random.randint(0, 0xff)
+        self.TWCID[0] = random.randint(0, 0xFF)
+        self.TWCID[1] = random.randint(0, 0xFF)
 
         # Real slaves change their sign during a conflict, so we do too.
-        self.slaveSign[0] = random.randint(0, 0xff)
+        self.slaveSign[0] = random.randint(0, 0xFF)
 
         logger.info(
             "Master's TWCID matches our fake slave's TWCID.  "
@@ -750,9 +749,9 @@ class TWCMaster:
         if not module["ref"] and not module["modulename"]:
             logger.log(
                 logging.INFO2,
-                f(
-                    "registerModule called for module {colored(module['name'], 'red')} without an existing reference or a module to instantiate."
-                ),
+                "registerModule called for module %s without an existing reference or a module to instantiate.",
+                module["name"],
+                extra={"colored": "red"},
             )
         elif module["ref"]:
             # If the reference is passed, it means this module has already been
@@ -763,7 +762,9 @@ class TWCMaster:
                 if not module["name"] in self.releasedModules:
                     logger.log(
                         logging.INFO7,
-                        f("Registered module {colored(module['name'], 'red')}"),
+                        "Registered module %s",
+                        module["name"],
+                        extra={"colored": "red"},
                     )
                     self.modules[module["name"]] = {
                         "ref": module["ref"],
@@ -772,9 +773,9 @@ class TWCMaster:
             else:
                 logger.log(
                     logging.INFO7,
-                    f(
-                        "Avoided re-registration of module {colored(module['name'], 'red')}, which has already been loaded"
-                    ),
+                    "Avoided re-registration of module %s, which has already been loaded",
+                    module["name"],
+                    extra={"colored": "red"},
                 )
 
     def recordVehicleSessionEnd(self, slaveTWC):
@@ -794,6 +795,7 @@ class TWCMaster:
                 self.settings["Vehicles"][slaveTWC.lastVIN]["totalkWh"] += delta
                 self.queue_background_task({"cmd": "saveSettings"})
 
+        # Update Charge Session details in logging modules
         logger.info(
             "Charge Session Stopped for Slave TWC %02X%02X",
             slaveTWC.TWCID[0],
@@ -807,16 +809,6 @@ class TWCMaster:
                 "endFormat": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             },
         )
-        # Update Charge Session details in logging modules
-        for module in self.getModulesByType("Logging"):
-            module["ref"].stopChargeSession(
-                {
-                    "TWCID": slaveTWC.TWCID,
-                    "endkWh": slaveTWC.lifetimekWh,
-                    "endTime": int(time.time()),
-                    "endFormat": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                }
-            )
 
     def recordVehicleSessionStart(self, slaveTWC):
         # Update Charge Session details in logging modules
@@ -833,15 +825,6 @@ class TWCMaster:
                 "startFormat": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             },
         )
-        for module in self.getModulesByType("Logging"):
-            module["ref"].startChargeSession(
-                {
-                    "TWCID": slaveTWC.TWCID,
-                    "startkWh": slaveTWC.lifetimekWh,
-                    "startTime": int(time.time()),
-                    "startFormat": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                }
-            )
 
     def recordVehicleVIN(self, slaveTWC):
         # Record Slave TWC ID as being capable of reporting VINs, if it is not
@@ -873,6 +856,7 @@ class TWCMaster:
                 self.settings["Vehicles"][slaveTWC.currentVIN]["totalkWh"] = 0
         self.queue_background_task({"cmd": "saveSettings"})
 
+        # Update Charge Session details in logging modules
         logger.info(
             "Charge Session updated for Slave TWC %02X%02X",
             slaveTWC.TWCID[0],
@@ -884,11 +868,6 @@ class TWCMaster:
                 "vehicleVIN": slaveTWC.currentVIN,
             },
         )
-        # Update Charge Session details in logging modules
-        for module in self.getModulesByType("Logging"):
-            module["ref"].updateChargeSession(
-                {"TWCID": slaveTWC.TWCID, "vehicleVIN": slaveTWC.currentVIN}
-            )
 
     def releaseBackgroundTasksLock(self):
         self.backgroundTasksLock.release()
@@ -905,7 +884,9 @@ class TWCMaster:
         if modules.get(fullname, None):
             del modules[fullname]
 
-        logger.log(logging.INFO7, f("Released module {colored(module, 'red')}"))
+        logger.log(
+            logging.INFO7, "Released module %s", module, extra={"colored": "red"}
+        )
 
     def removeNormalChargeLimit(self, ID):
         if "chargeLimits" in self.settings and str(ID) in self.settings["chargeLimits"]:
