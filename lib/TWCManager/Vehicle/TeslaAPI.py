@@ -96,24 +96,19 @@ class TeslaAPI:
             resp = session.get(self.authURL, params=params)
 
             if resp.ok and "<title>" in resp.text:
-                self.master.debugLog(
-                    6,
-                    "TeslaAPI",
+                logger.log(logging.INFO6,
                     "Tesla Auth form fetch success, attempt: " + str(attempt),
                 )
                 break
             else:
-                self.master.debugLog(
-                    6,
-                    "TeslaAPI",
+                logger.log(logging.INFO6,
                     "Tesla auth form fetch failed, attempt: " + str(attempt),
                 )
 
             time.sleep(3)
         else:
-            self.master.debugLog(
-                2,
-                "TeslaAPI",
+            logger.log(
+                logging.INFO2,
                 "Wasn't able to find authentication form after "
                 + str(attempt)
                 + " attempts",
@@ -145,17 +140,15 @@ class TeslaAPI:
                 self.authURL, params=params, data=data, allow_redirects=False
             )
             if resp.ok and (resp.status_code == 302 or "<title>" in resp.text):
-                self.master.debugLog(
-                    2,
-                    "TeslaAPI",
+                logger.log(
+                    logging.INFO2,
                     "Posted auth form successfully after " + str(attempt) + " attempts",
                 )
                 break
             time.sleep(3)
         else:
-            self.master.debugLog(
-                2,
-                "TeslaAPI",
+            logger.log(
+                    logging.INFO2,
                 "Wasn't able to post authentication form after "
                 + str(attempt)
                 + " attempts",
@@ -198,9 +191,8 @@ class TeslaAPI:
             self.master.queue_background_task({"cmd": "saveSettings"})
 
         except KeyError:
-            self.master.debugLog(
-                2,
-                "TeslaAPI",
+            logger.log(
+                logging.INFO2,
                 "ERROR: Can't access Tesla car via API.  Please log in again via web interface.",
             )
             self.updateCarApiLastErrorTime()
@@ -227,14 +219,14 @@ class TeslaAPI:
         now = time.time()
         try:
             req = requests.post(self.refreshURL, headers=headers, json=data)
-            self.master.debugLog(2, "TeslaAPI", "Car API request" + str(req))
+            logger.log(logging.INFO2, "Car API request" + str(req))
             apiResponseDict = self.json.loads(req.text)
         except requests.exceptions.RequestException:
             pass
 
         try:
-            self.master.debugLog(
-                4, "TeslaAPI", "Car API auth response" + str(apiResponseDict)
+            logger.log(
+                logging.INFO4, "Car API auth response" + str(apiResponseDict)
             )
             self.setCarApiBearerToken(apiResponseDict["access_token"])
             self.setCarApiRefreshToken(apiResponseDict["refresh_token"])
@@ -242,8 +234,8 @@ class TeslaAPI:
             self.master.queue_background_task({"cmd": "saveSettings"})
 
         except KeyError:
-            self.master.debugLog(
-                2,
+            logger.log(
+                logging.INFO2,
                 "TeslaAPI",
                 "ERROR: Can't access Tesla car via API.  Please log in again via web interface.",
             )
@@ -336,10 +328,10 @@ class TeslaAPI:
                     logger.log(logging.INFO6, "Response: " + req.text)
                     pass
                 except self.json.decoder.JSONDecodeError:
-                    self.master.debugLog(
-                        1, "TeslaAPI", "Could not parse JSON result from " + url
+                    logger.info(
+                        "Could not parse JSON result from " + url
                     )
-                    self.master.debugLog(6, "TeslaAPI", "Response: " + req.text)
+                    logger.log(logging.INFO6, "Response: " + req.text)
                     pass
 
                 try:

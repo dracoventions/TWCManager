@@ -1,8 +1,6 @@
 # CSVLogging module. Provides output to CSV file for regular stats
 
-from datetime import datetime
 import logging
-import time
 
 
 class CSVLogging:

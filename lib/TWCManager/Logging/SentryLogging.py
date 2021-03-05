@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 class SentryLogging:
 
+    capabilities = {"queryGreenEnergy": False}
     config = None
     configConfig = None
     configLogging = None
@@ -47,3 +48,7 @@ class SentryLogging:
             event_level=logging.ERROR,  # Send errors as events
         )
         sentry_sdk.init(self.dsn, integrations=[sentry_logging], traces_sample_rate=1.0)
+
+    def getCapabilities(self, capability):
+        # Allows query of module capabilities when deciding which Logging module to use
+        return self.capabilities.get(capability, False)

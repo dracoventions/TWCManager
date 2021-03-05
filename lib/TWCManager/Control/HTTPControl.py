@@ -1034,19 +1034,17 @@ def CreateHTTPHandlerClass(master):
 
             for candidate_module in master.getModulesByType("Logging"):
                 if candidate_module["ref"].getCapabilities("queryGreenEnergy"):
-                    master.debugLog(
-                        6,
-                        "HTTPCtrl",
-                        "Logging module %s supports queryGreenEnergy"
-                        % candidate_module["name"],
+                    logger.log(
+                        logging.INFO6,
+                        "Logging module %s supports queryGreenEnergy",
+                        candidate_module["name"],
                     )
                     module = candidate_module["ref"]
                 else:
-                    master.debugLog(
-                        6,
-                        "HTTPCtrl",
-                        "Logging module %s does not support queryGreenEnergy"
-                        % candidate_module["name"],
+                    logger.log(
+                        logging.INFO6,
+                        "Logging module %s does not support queryGreenEnergy",
+                        candidate_module["name"],
                     )
 
             # If we were unable to find a loaded Logging module with the capability to query
@@ -1064,7 +1062,7 @@ def CreateHTTPHandlerClass(master):
                     }
                 )
             except Exception as e:
-                master.debugLog(1, "HTTPCtrl", "Excepcion queryGreenEnergy: " + e)
+                logger.exception("Excepcion queryGreenEnergy:")
 
             data = {}
             data[0] = {"initial": init, "end": end}
@@ -1086,7 +1084,7 @@ def CreateHTTPHandlerClass(master):
             try:
                 self.wfile.write(json_data.encode("utf-8"))
             except BrokenPipeError:
-                master.debugLog(10, "HTTPCtrl", "Connection Error: Broken Pipe")
+                logger.debug("Connection Error: Broken Pipe")
             return
 
         def debugLogAPI(self, message):

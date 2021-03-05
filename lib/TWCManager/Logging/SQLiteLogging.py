@@ -1,9 +1,63 @@
 # SQLiteLogging module. Provides output to SQLite Database for regular stats
+import logging
+
+
+class SQLiteHandler(logging.Handler):
+
+    def __init__(self, conn):
+        logging.Handler.__init__(self)
+        self.conn = conn
+
+    def emit(self, record):
+        self.format(record)
+        charge_state = getattr(record, "chargestate", "")
+        if charge_state == "start":
+            # Called when a Charge Session Starts.
+            twcid = "%02X%02X" % (
+                getattr(record, "TWCID")[0],
+                getattr(record, "TWCID")[1],
+            )
+
+            query = "INSERT INTO charge_sessions (startTime, startkWh, TWCID) values (?,?,?)"
+            self.conn.execute(
+                query,
+                (
+                    getattr(record, "startTime", 0),
+                    getattr(record, "startkWh", 0),
+                    twcid,
+                ),
+            )
+            self.conn.commit()
+        elif charge_state == "update":
+            # Called when additional information needs to be updated for a
+            # charge session
+            twcid = "%02X%02X" % (
+                getattr(record, "TWCID")[0],
+                getattr(record, "TWCID")[1],
+            )
+
+            # Update the open charging session in memory.
+            if getattr(record, "vehicleVIN", None):
+                query = "UPDATE charge_sessions SET vehicleVIN = ? WHERE TWCID = ?"
+                self.conn.execute(query, (getattr(record, "vehicleVIN", "")))
+                self.conn.commit()
+        elif charge_state == "stop":
+            # Called when a Charge Session Ends.
+            twcid = "%02X%02X" % (
+                getattr(record, "TWCID")[0],
+                getattr(record, "TWCID")[1],
+            )
+            query = "UPDATE charge_sessions SET endTime = ?, endkWh = ? WHERE TWCID = ?"
+            self.conn.execute(
+                query,
+                (getattr(record, "endTime", 0), getattr(record, "endkWh", 0), twcid),
+            )
+            self.conn.commit()
 
 
 class SQLiteLogging:
 
-    capabilities = {"queryGreenEnergy": False}
+    capabilities = {"queryGreenEnergy": True}
     config = None
     configConfig = None
     configLogging = None
@@ -28,29 +82,27 @@ class SQLiteLogging:
             self.master.releaseModule("lib.TWCManager.Logging", "SQLiteLogging")
             return None
 
+        # Initialize the mute config tree if it is not already
+        if not self.configLogging.get("mute", None):
+            self.configLogging["mute"] = {}
+
         # Import sqlite module if module is not released
         import sqlite3
 
-        self.db = sqlite3.connect(self.configLogging["path"])
+        self.conn = sqlite3.connect(self.configLogging["path"])
 
-        # Check if the database schema has been applied
-        if not self.checkTable("charge_sessions"):
-            self.createSchema()
+        # Make sure schema has been created
+        self.createSchema()
 
-    def checkTable(self, tableName):
-        # Confirm if a given table exists within the schema
-        query = "SELECT name FROM sqlite_master WHERE type='table' "
-        query += "AND name = ?"
-
-        cur = self.db.cursor()
-        cur.execute(query, (tableName))
-        cur.close()
+        charge_sessions_handler = SQLiteHandler(self.conn)
+        charge_sessions_handler.addFilter(self.charge_sessions_filter)
+        logging.getLogger("").addHandler(charge_sessions_handler)
 
     def createSchema(self):
         # Initialize the database schema for a database that does not
         # yet exist
         query = """
-          CREATE TABLE charge_sessions (
+          CREATE TABLE IF NOT EXISTS charge_sessions (
             startTime int,
             startkWh int,
             TWCID varchar(4),
@@ -60,50 +112,18 @@ class SQLiteLogging:
             primary key(startTime, TWCID)
           );
         """
-
-    def debugLog(self, logdata):
-        # debugLog is something of a catch-all if we don't have a specific
-        # logging function for the given data. It allows a log entry to be
-        # passed to us for storage.
-        return
+        self.conn.execute(query)
+        self.conn.commit()
 
     def getCapabilities(self, capability):
         # Allows query of module capabilities when deciding which Logging module to use
         return self.capabilities.get(capability, False)
 
-    def slavePower(self, data):
-        # Not Yet Implemented
-        return None
-
-    def slaveStatus(self, data):
-        # Not yet implemented
-        return None
-
-    def startChargeSession(self, data):
-        # Called when a Charge Session Starts.
-        twcid = "%02X%02X" % (data["TWCID"][0], data["TWCID"][0])
-        query = (
-            "INSERT INTO charge_sessions (startTime, startkWh, TWCID) values (?,?,?)"
-        )
-        cur = self.db.cursor()
-        cur.execute(query, (data.get("startTime", 0), data.get("startkWh", 0), twcid))
-        cur.close()
-
-    def stopChargeSession(self, data):
-        # Called when a Charge Session Ends.
-        twcid = "%02X%02X" % (data["TWCID"][0], data["TWCID"][0])
-        query = "UPDATE charge_sessions SET endTime = ?, endkWh = ? WHERE TWCID = ?"
-        cur = self.db.cursor()
-        cur.execute(query, (data.get("endTime", 0), data.get("endkWh", 0), twcid))
-        cur.close()
-
-    def updateChargeSession(self, data):
-        # Called when additional information needs to be updated for a
-        # charge session
-        twcid = "%02X%02X" % (data["TWCID"][0], data["TWCID"][0])
-        if data.get("vehicleVIN", None):
-            query = "UPDATE charge_sessions SET vehicleVIN = ? WHERE TWCID = ?"
-            cur = self.db.cursor()
-            cur.execute(query, (data.get("vehicleVIN", "")))
-            cur.close()
-        return None
+    def charge_sessions_filter(self, record):
+        log_type = getattr(record, "logtype", "")
+        # Check if this status is muted or it is not the correct log type
+        if log_type != "charge_sessions" or self.configLogging["mute"].get(
+            "ChargeSessions", 0
+        ):
+            return False
+        return True

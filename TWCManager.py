@@ -76,7 +76,7 @@ modules_available = [
     "Logging.SentryLogging",
     "Logging.CSVLogging",
     "Logging.MySQLLogging",
-    #    "Logging.SQLiteLogging",
+    "Logging.SQLiteLogging",
     "Interface.Dummy",
     "Interface.RS485",
     "Interface.TCP",
