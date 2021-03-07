@@ -213,7 +213,7 @@ class SQLiteLogging:
                 query, (data.get("dateBegin", 0), data.get("dateEnd", 0))
             )
         except Exception as e:
-            logger.exception("Error executing queryGreenEnergy query")
+            logger.exception("Error executing queryGreenEnergy query: %s", e)
         else:
             if rows:
                 # Query was successful. Commit
