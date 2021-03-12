@@ -26,16 +26,16 @@ The following packages are required to fetch and install the TWCManager project.
 
 ```
 sudo apt-get update
-sudo apt-get install -y git python3 python3-setuptools
+sudo apt-get install -y git python3 python3-setuptools python3-dev
 ```
 
 ### Default to Python3
 
 TWCManager requires a minimum of python 3.3 to work correctly.
 
-### Raspbian Buster
+### Raspberry Pi OS / Raspbian Buster
 
-You may need to set python3 as your default python interpreter version on Debian Buster. The following command will set python 3.7 as your default interpreter.
+You may need to set python3 as your default python interpreter version on Raspberry Pi OS / Debian Buster. The following command will set python 3.7 as your default interpreter.
 
 ```
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
