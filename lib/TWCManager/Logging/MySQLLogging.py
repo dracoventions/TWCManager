@@ -41,10 +41,10 @@ class MySQLLogging:
 
         try:
             self.db = pymysql.connect(
-                self.configLogging.get("host", ""),
-                self.configLogging.get("username", ""),
-                self.configLogging.get("password", ""),
-                self.configLogging.get("database", ""),
+                host=self.configLogging.get("host", ""),
+                user=self.configLogging.get("username", ""),
+                password=self.configLogging.get("password", ""),
+                database=self.configLogging.get("database", ""),
             )
         except pymysql.err.OperationalError as e:
             self.master.debugLog(1, "MySQLLog", "Error connecting to MySQL database")
