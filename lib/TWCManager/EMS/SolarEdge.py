@@ -1,4 +1,7 @@
 # SolarEdge Monitoring Portal Integration
+import logging
+
+logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class SolarEdge:
@@ -15,7 +18,6 @@ class SolarEdge:
     configSolarEdge = None
     consumedW = 0
     debugFile = "/tmp/twcmanager_solaredge_debug.txt"
-    debugLevel = 0
     debugMode = 0
     fetchFailed = False
     generatedW = 0
@@ -44,7 +46,6 @@ class SolarEdge:
             self.configSolarEdge = {}
         self.apiKey = self.configSolarEdge.get("apiKey", None)
         self.debugFile = self.configConfig.get("debugFile", self.debugFile)
-        self.debugLevel = self.configConfig.get("debugLevel", 0)
         self.debugMode = self.configSolarEdge.get("debugMode", self.debugMode)
         self.status = self.configSolarEdge.get("enabled", self.status)
         self.siteID = self.configSolarEdge.get("siteID", None)
@@ -57,11 +58,7 @@ class SolarEdge:
     def getConsumption(self):
 
         if not self.status:
-            self.master.debugLog(
-                10,
-                "SolarEdge",
-                "SolarEdge EMS Module Disabled. Skipping getConsumption",
-            )
+            logger.debug("SolarEdge EMS Module Disabled. Skipping getConsumption")
             return 0
 
         # Perform updates if necessary
@@ -73,9 +70,7 @@ class SolarEdge:
     def getGeneration(self):
 
         if not self.status:
-            self.master.debugLog(
-                10, "SolarEdge", "SolarEdge EMS Module Disabled. Skipping getGeneration"
-            )
+            logger.debug("SolarEdge EMS Module Disabled. Skipping getGeneration")
             return 0
 
         # Perform updates if necessary
@@ -106,21 +101,19 @@ class SolarEdge:
         try:
             r = self.requests.get(url, timeout=self.timeout)
         except self.requests.exceptions.ConnectionError as e:
-            self.master.debugLog(
-                4,
-                "SolarEdge",
+            logger.log(
+                logging.INFO4,
                 "Error connecting to SolarEdge Portal to fetch sensor value",
             )
-            self.master.debugLog(10, "SolarEdge", str(e))
+            logger.debug(str(e))
             self.fetchFailed = True
             return False
 
         try:
             r.raise_for_status()
         except self.requests.exceptions.HTTPError as e:
-            self.master.debugLog(
-                4,
-                "SolarEdge",
+            logger.log(
+                logging.INFO4,
                 "HTTP status "
                 + str(e.response.status_code)
                 + " connecting to SolarEdge Portal to fetch sensor value",
@@ -158,16 +151,14 @@ class SolarEdge:
                             portalData["overview"]["currentPower"]["power"]
                         )
                     except (KeyError, TypeError) as e:
-                        self.master.debugLog(
-                            4,
-                            "SolarEdge",
+                        logger.log(
+                            logging.INFO4,
                             "Exception during parsing SolarEdge data (currentPower)",
                         )
-                        self.master.debugLog(10, "SolarEdge", e)
+                        logger.debug(e)
                 else:
-                    self.master.debugLog(
-                        4,
-                        "SolarEdge",
+                    logger.log(
+                        logging.INFO4,
                         "SolarEdge API result does not contain json content.",
                     )
                     self.fetchFailed = True
@@ -215,20 +206,17 @@ class SolarEdge:
                             )
 
                     else:
-                        self.master.debugLog(
-                            1,
-                            "SolarEdge",
+                        logger.info(
                             "Unknown SolarEdge Consumption Value unit: %s "
-                            % str(portalData["siteCurrentPowerFlow"]["unit"]),
+                            % str(portalData["siteCurrentPowerFlow"]["unit"])
                         )
 
                 except (KeyError, TypeError) as e:
-                    self.master.debugLog(
-                        4,
-                        "SolarEdge",
+                    logger.log(
+                        logging.INFO4,
                         "Exception during parsing SolarEdge consumption data",
                     )
-                    self.master.debugLog(10, "SolarEdge", e)
+                    logger.debug(e)
 
             # Check if we are still in the initial poll period, and if so, record any consumption
             # reported to the pollconsumption counter. The reason for this is that if that value
@@ -238,17 +226,13 @@ class SolarEdge:
                 self.pollConsumption += self.consumedW
             elif self.pollMode == 0:
                 if self.pollConsumption:
-                    self.master.debugLog(
-                        1,
-                        "SolarEdge",
-                        "Detected consumption status capability. Switching to pollMode = 2",
+                    logger.info(
+                        "Detected consumption status capability. Switching to pollMode = 2"
                     )
                     self.pollMode = 2
                 else:
-                    self.master.debugLog(
-                        1,
-                        "SolarEdge",
-                        "Detected no consumption status capability. Switching to pollMode = 1",
+                    logger.info(
+                        "Detected no consumption status capability. Switching to pollMode = 1"
                     )
                     self.pollMode = 1
 

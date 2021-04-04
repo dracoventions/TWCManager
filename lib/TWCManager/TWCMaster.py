@@ -3,16 +3,18 @@
 from lib.TWCManager.TWCSlave import TWCSlave
 from datetime import datetime, timedelta
 import json
+import logging
 import os.path
 import queue
 from sys import modules
-from termcolor import colored
 import threading
 import time
 from ww import f
 import math
 import random
 import bisect
+
+logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class TWCMaster:
@@ -24,7 +26,6 @@ class TWCMaster:
     backgroundTasksDelayed = []
     config = None
     consumptionValues = {}
-    debugLevel = 0
     debugOutputToFile = False
     generationValues = {}
     lastkWhMessage = time.time()
@@ -75,7 +76,6 @@ class TWCMaster:
 
     def __init__(self, TWCID, config):
         self.config = config
-        self.debugLevel = config["config"].get("debugLevel", 1)
         self.debugOutputToFile = config["config"].get("debugOutputToFile", False)
         self.TWCID = TWCID
         self.subtractChargerLoad = config["config"]["subtractChargerLoad"]
@@ -98,7 +98,7 @@ class TWCMaster:
                 minute=math.floor(futureSnap.minute / 5) * 5, second=0, microsecond=0
             )
         except ValueError as e:
-            self.debugLog(10, "TWCMaster", "Exception in advanceHistorySnap: " + str(e))
+            logger.debug("Exception in advanceHistorySnap: " + str(e))
 
     def checkModuleCapability(self, type, capability):
         # For modules which advertise capabilities, scan all loaded modules of a certain type and
@@ -166,35 +166,6 @@ class TWCMaster:
 
     def countSlaveTWC(self):
         return int(len(self.slaveTWCRoundRobin))
-
-    def debugLog(self, minlevel, function, message, fields=[]):
-        # Trim/pad the module name as needed
-        if len(function) < 10:
-            for _ in range(len(function), 10):
-                function += " "
-        data = {
-            "debugLevel": self.debugLevel,
-            "fields": fields,
-            "function": function,
-            "logTime": self.time_now(),
-            "minLevel": minlevel,
-            "message": message,
-        }
-        atLeastOne = False
-        # Pass the debugLog message to all enabled Logging modules
-        for module in self.getModulesByType("Logging"):
-            atLeastOne = True
-            module["ref"].debugLog(data)
-
-        # First calls won't be printed, because there is no logger registered
-        if not (atLeastOne):
-            if data["debugLevel"] >= data["minLevel"]:
-                print(
-                    colored(data["logTime"] + " ", "yellow")
-                    + colored(f("{data['function']}"), "green")
-                    + colored(f(" {data['minLevel']} "), "cyan")
-                    + f("{data['message']}")
-                )
 
     def deleteBackgroundTask(self, task):
         del self.backgroundTasksCmds[task["cmd"]]
@@ -570,9 +541,7 @@ class TWCMaster:
         for slaveTWC in self.getSlaveTWCs():
             totalAmps += slaveTWC.reportedAmpsActual
 
-        self.debugLog(
-            10, "TWCMaster", "Total amps all slaves are using: " + str(totalAmps)
-        )
+        logger.debug("Total amps all slaves are using: " + str(totalAmps))
         return totalAmps
 
     def getVoltageMeasurement(self):
@@ -599,10 +568,8 @@ class TWCMaster:
                     ]
                 )
             else:
-                self.debugLog(
-                    1,
-                    "TWCMaster",
-                    "FATAL:  Mix of three-phase and single-phase not currently supported.",
+                logger.info(
+                    "FATAL:  Mix of three-phase and single-phase not currently supported."
                 )
                 return (
                     self.config["config"].get("defaultVoltage", 240),
@@ -636,29 +603,21 @@ class TWCMaster:
             try:
                 self.settings = json.load(inconfig)
             except Exception as e:
-                self.debugLog(
-                    1,
-                    "TWCMaster",
+                logger.info(
                     "There was an exception whilst loading settings file "
                     + self.config["config"]["settingsPath"]
-                    + "/settings.json",
+                    + "/settings.json"
                 )
-                self.debugLog(
-                    1,
-                    "TWCMaster",
-                    "Some data may have been loaded. This may be because the file is being created for the first time.",
+                logger.info(
+                    "Some data may have been loaded. This may be because the file is being created for the first time."
                 )
-                self.debugLog(
-                    1,
-                    "TWCMaster",
-                    "It may also be because you are upgrading from a TWCManager version prior to v1.1.4, which used the old settings file format.",
+                logger.info(
+                    "It may also be because you are upgrading from a TWCManager version prior to v1.1.4, which used the old settings file format."
                 )
-                self.debugLog(
-                    1,
-                    "TWCMaster",
-                    "If this is the case, you may need to locate the old config file and migrate some settings manually.",
+                logger.info(
+                    "If this is the case, you may need to locate the old config file and migrate some settings manually."
                 )
-                self.debugLog(11, "TWCMaster", str(e))
+                logger.log(logging.DEBUG2, str(e))
 
         # Step 2 - Send settings to other modules
         carapi = self.getModuleByName("TeslaAPI")
@@ -675,12 +634,10 @@ class TWCMaster:
         # Real slaves change their sign during a conflict, so we do too.
         self.slaveSign[0] = random.randint(0, 0xFF)
 
-        self.debugLog(
-            1,
-            "TWCMaster",
+        logger.info(
             "Master's TWCID matches our fake slave's TWCID.  "
             "Picked new random TWCID %02X%02X with sign %02X"
-            % (self.TWCID[0], self.TWCID[1], self.slaveSign[0]),
+            % (self.TWCID[0], self.TWCID[1], self.slaveSign[0])
         )
 
     def newSlave(self, newSlaveID, maxAmps):
@@ -697,11 +654,10 @@ class TWCMaster:
         self.addSlaveTWC(slaveTWC)
 
         if self.countSlaveTWC() > 3:
-            self.debugLog(
-                1,
-                "TWCMaster"
-                "WARNING: More than 3 slave TWCs seen on network.  "
-                "Dropping oldest: " + self.hex_str(self.getSlaveTWCID(0)) + ".",
+            logger.info(
+                "WARNING: More than 3 slave TWCs seen on network. Dropping oldest: "
+                + self.hex_str(self.getSlaveTWCID(0))
+                + "."
             )
             self.deleteSlaveTWC(self.getSlaveTWCID(0))
 
@@ -757,9 +713,7 @@ class TWCMaster:
                     slaveTWC.isCharging,
                     "",
                 )
-        self.debugLog(
-            10, "TWCMaster", "Number of cars charging now: " + str(carsCharging)
-        )
+        logger.debug("Number of cars charging now: " + str(carsCharging))
 
         if carsCharging == 0:
             self.stopTimeout = datetime.max
@@ -794,11 +748,11 @@ class TWCMaster:
         # This function is used during module instantiation to either reference a
         # previously loaded module, or to instantiate a module for the first time
         if not module["ref"] and not module["modulename"]:
-            debugLog(
-                2,
-                f(
-                    "registerModule called for module {colored(module['name'], 'red')} without an existing reference or a module to instantiate."
-                ),
+            logger.log(
+                logging.INFO2,
+                "registerModule called for module %s without an existing reference or a module to instantiate.",
+                module["name"],
+                extra={"colored": "red"},
             )
         elif module["ref"]:
             # If the reference is passed, it means this module has already been
@@ -807,22 +761,22 @@ class TWCMaster:
             # Check this module has not already been instantiated
             if not self.modules.get(module["name"], None):
                 if not module["name"] in self.releasedModules:
-                    self.debugLog(
-                        7,
-                        "TWCMaster",
-                        f("Registered module {colored(module['name'], 'red')}"),
+                    logger.log(
+                        logging.INFO7,
+                        "Registered module %s",
+                        module["name"],
+                        extra={"colored": "red"},
                     )
                     self.modules[module["name"]] = {
                         "ref": module["ref"],
                         "type": module["type"],
                     }
             else:
-                self.debugLog(
-                    7,
-                    "TWCMaster",
-                    f(
-                        "Avoided re-registration of module {colored(module['name'], 'red')}, which has already been loaded"
-                    ),
+                logger.log(
+                    logging.INFO7,
+                    "Avoided re-registration of module %s, which has already been loaded",
+                    module["name"],
+                    extra={"colored": "red"},
                 )
 
     def recordVehicleSessionEnd(self, slaveTWC):
@@ -843,27 +797,35 @@ class TWCMaster:
                 self.queue_background_task({"cmd": "saveSettings"})
 
         # Update Charge Session details in logging modules
-        for module in self.getModulesByType("Logging"):
-            module["ref"].stopChargeSession(
-                {
-                    "TWCID": slaveTWC.TWCID,
-                    "endkWh": slaveTWC.lifetimekWh,
-                    "endTime": int(time.time()),
-                    "endFormat": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                }
-            )
+        logger.info(
+            "Charge Session Stopped for Slave TWC %02X%02X",
+            slaveTWC.TWCID[0],
+            slaveTWC.TWCID[1],
+            extra={
+                "logtype": "charge_sessions",
+                "chargestate": "stop",
+                "TWCID": slaveTWC.TWCID,
+                "endkWh": slaveTWC.lifetimekWh,
+                "endTime": int(time.time()),
+                "endFormat": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        )
 
     def recordVehicleSessionStart(self, slaveTWC):
         # Update Charge Session details in logging modules
-        for module in self.getModulesByType("Logging"):
-            module["ref"].startChargeSession(
-                {
-                    "TWCID": slaveTWC.TWCID,
-                    "startkWh": slaveTWC.lifetimekWh,
-                    "startTime": int(time.time()),
-                    "startFormat": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                }
-            )
+        logger.info(
+            "Charge Session Started for Slave TWC %02X%02X",
+            slaveTWC.TWCID[0],
+            slaveTWC.TWCID[1],
+            extra={
+                "logtype": "charge_sessions",
+                "chargestate": "start",
+                "TWCID": slaveTWC.TWCID,
+                "startkWh": slaveTWC.lifetimekWh,
+                "startTime": int(time.time()),
+                "startFormat": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        )
 
     def recordVehicleVIN(self, slaveTWC):
         # Record Slave TWC ID as being capable of reporting VINs, if it is not
@@ -896,10 +858,17 @@ class TWCMaster:
         self.queue_background_task({"cmd": "saveSettings"})
 
         # Update Charge Session details in logging modules
-        for module in self.getModulesByType("Logging"):
-            module["ref"].updateChargeSession(
-                {"TWCID": slaveTWC.TWCID, "vehicleVIN": slaveTWC.currentVIN}
-            )
+        logger.info(
+            "Charge Session updated for Slave TWC %02X%02X",
+            slaveTWC.TWCID[0],
+            slaveTWC.TWCID[1],
+            extra={
+                "logtype": "charge_sessions",
+                "chargestate": "update",
+                "TWCID": slaveTWC.TWCID,
+                "vehicleVIN": slaveTWC.currentVIN,
+            },
+        )
 
     def releaseBackgroundTasksLock(self):
         self.backgroundTasksLock.release()
@@ -916,7 +885,9 @@ class TWCMaster:
         if modules.get(fullname, None):
             del modules[fullname]
 
-        self.debugLog(7, "TWCMaster", f("Released module {colored(module, 'red')}"))
+        logger.log(
+            logging.INFO7, "Released module %s", module, extra={"colored": "red"}
+        )
 
     def removeNormalChargeLimit(self, ID):
         if "chargeLimits" in self.settings and str(ID) in self.settings["chargeLimits"]:
@@ -976,16 +947,12 @@ class TWCMaster:
             try:
                 json.dump(self.settings, outconfig)
             except TypeError as e:
-                self.debugLog(
-                    1,
-                    "TWCMaster",
-                    "Exception raised while attempting to save settings file:",
-                )
-                self.debugLog(1, "TWCMaster", str(e))
+                logger.info("Exception raised while attempting to save settings file:")
+                logger.info(str(e))
 
     def send_master_linkready1(self):
 
-        self.debugLog(8, "TWCMaster", "Send master linkready1")
+        logger.log(logging.INFO8, "Send master linkready1")
 
         # When master is powered on or reset, it sends 5 to 7 copies of this
         # linkready1 message followed by 5 copies of linkready2 (I've never seen
@@ -1042,7 +1009,7 @@ class TWCMaster:
 
     def send_master_linkready2(self):
 
-        self.debugLog(8, "TWCMaster", "Send master linkready2")
+        logger.log(logging.INFO8, "Send master linkready2")
 
         # This linkready2 message is also sent 5 times when master is booted/reset
         # and then not sent again if no other TWCs are heard from on the network.
@@ -1114,17 +1081,11 @@ class TWCMaster:
         # Accepts a number of amps to define the amperage at which we
         # should charge
         if amps > self.config["config"]["wiringMaxAmpsAllTWCs"]:
-            self.debugLog(
-                1,
-                "TWCMaster",
-                "setChargeNowAmps failed because specified amps are above wiringMaxAmpsAllTWCs",
+            logger.info(
+                "setChargeNowAmps failed because specified amps are above wiringMaxAmpsAllTWCs"
             )
         elif amps < 0:
-            self.debugLog(
-                1,
-                "TWCMaster",
-                "setChargeNowAmps failed as specified amps is less than 0",
-            )
+            logger.info("setChargeNowAmps failed as specified amps is less than 0")
         else:
             self.settings["chargeNowAmps"] = amps
 
@@ -1168,14 +1129,12 @@ class TWCMaster:
         if amps > self.config["config"]["wiringMaxAmpsAllTWCs"]:
             # Never tell the slaves to draw more amps than the physical charger
             # wiring can handle.
-            self.debugLog(
-                1,
-                "TWCMaster",
+            logger.info(
                 "ERROR: specified maxAmpsToDivideAmongSlaves "
                 + str(amps)
                 + " > wiringMaxAmpsAllTWCs "
                 + str(self.config["config"]["wiringMaxAmpsAllTWCs"])
-                + ".\nSee notes above wiringMaxAmpsAllTWCs in the 'Configuration parameters' section.",
+                + ".\nSee notes above wiringMaxAmpsAllTWCs in the 'Configuration parameters' section."
             )
             amps = self.config["config"]["wiringMaxAmpsAllTWCs"]
 
@@ -1222,7 +1181,7 @@ class TWCMaster:
             if now < snaptime:
                 return
         except ValueError as e:
-            self.debugLog(10, "TWCSlave  ", str(e))
+            logger.debug("TWCSlave  ", str(e))
             return
 
         for slave in self.getSlaveTWCs():

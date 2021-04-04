@@ -1,8 +1,11 @@
 # MQTT Status Output
 # Publishes the provided key and value pair to the provided topic prefix
 
-from termcolor import colored
+import logging
 from ww import f
+
+
+logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class MQTTStatus:
@@ -16,7 +19,6 @@ class MQTTStatus:
     configConfig = None
     configMQTT = {}
     connectionState = 0
-    debugLevel = 0
     master = None
     msgQueue = []
     msgQueueBuffer = []
@@ -40,7 +42,6 @@ class MQTTStatus:
             self.configMQTT = self.config["status"]["MQTT"]
         except KeyError:
             self.configMQTT = {}
-        self.debugLevel = self.configConfig.get("debugLevel", 0)
         self.status = self.configMQTT.get("enabled", False)
         self.brokerIP = self.configMQTT.get("brokerIP", None)
         self.topicPrefix = self.configMQTT.get("topicPrefix", None)
@@ -88,9 +89,7 @@ class MQTTStatus:
 
             # Now, we attempt to establish a connection to the MQTT broker
             if self.connectionState == 0:
-                self.master.debugLog(
-                    10, "MQTTStatus", "MQTT Status: Attempting to Connect"
-                )
+                logger.debug("MQTT Status: Attempting to Connect")
                 try:
                     client = self.mqtt.Client()
                     if self.username and self.password:
@@ -102,20 +101,18 @@ class MQTTStatus:
                     self.connectionState = 1
                     client.loop_start()
                 except ConnectionRefusedError as e:
-                    self.master.debugLog(
-                        4,
-                        "MQTTStatus",
+                    logger.log(
+                        logging.INFO4,
                         "Error connecting to MQTT Broker to publish topic values",
                     )
-                    self.master.debugLog(10, "MQTTStatus", str(e))
+                    logger.debug(str(e))
                     return False
                 except OSError as e:
-                    self.master.debugLog(
-                        4,
-                        "MQTTStatus",
+                    logger.log(
+                        logging.INFO4,
                         "Error connecting to MQTT Broker to publish topic values",
                     )
-                    self.master.debugLog(10, "MQTTStatus", str(e))
+                    logger.debug(str(e))
                     return False
 
     def mqttConnected(self, client, userdata, flags, rc):
@@ -123,18 +120,15 @@ class MQTTStatus:
         # connects to the MQTT server. It will then publish all queued messages
         # to the server, and then disconnect.
 
-        self.master.debugLog(
-            10, "MQTTStatus", "Connected to MQTT Broker with RC: " + str(rc)
-        )
-        self.master.debugLog(11, "MQTTStatus", "Copy Message Buffer")
+        logger.debug("Connected to MQTT Broker with RC: " + str(rc))
+        logger.log(logging.DEBUG2, "Copy Message Buffer")
         self.msgQueueBuffer = self.msgQueue.copy()
-        self.master.debugLog(11, "MQTTStatus", "Clear Message Buffer")
+        logger.log(logging.DEBUG2, "Clear Message Buffer")
         self.msgQueue.clear()
 
         for msg in self.msgQueueBuffer:
-            self.master.debugLog(
-                8,
-                "MQTTStatus",
+            logger.log(
+                logging.INFO8,
                 "Publishing MQTT Topic "
                 + str(msg["topic"])
                 + " (value is "
@@ -144,10 +138,8 @@ class MQTTStatus:
             try:
                 pub = client.publish(msg["topic"], payload=msg["payload"], qos=0)
             except e:
-                self.master.debugLog(
-                    4, "MQTTStatus", "Error publishing MQTT Topic Status"
-                )
-                self.master.debugLog(10, "MQTTStatus", str(e))
+                logger.log(logging.INFO4, "Error publishing MQTT Topic Status")
+                logger.debug(str(e))
 
         client.loop_stop()
         self.msgQueueBuffer.clear()

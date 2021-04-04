@@ -1,8 +1,11 @@
+import logging
 import re
 import struct
 import sysv_ipc
 import time
 import math
+
+logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class WebIPCControl:
@@ -68,10 +71,8 @@ class WebIPCControl:
             self.webIPCkey, sysv_ipc.IPC_CREAT, 0o666
         )
         if self.webIPCqueue == None:
-            self.master.debugLog(
-                1,
-                "WebIPCCtrl",
-                "ERROR: Can't create Interprocess Communication message queue to communicate with web interface.",
+            logger.info(
+                "ERROR: Can't create Interprocess Communication message queue to communicate with web interface."
             )
 
         # After the IPC message queue is created, if you type 'sudo ipcs -q' on the
@@ -122,9 +123,7 @@ class WebIPCControl:
                 if m:
                     webMsgRedacted = m.group(1) + b"[HIDDEN]"
 
-                self.master.debugLog(
-                    1,
-                    "WebIPCCtrl",
+                logger.info(
                     "Web query: '"
                     + str(webMsgRedacted)
                     + "', id "
@@ -132,7 +131,7 @@ class WebIPCControl:
                     + ", time "
                     + str(webMsgTime)
                     + ", type "
-                    + str(webMsgType),
+                    + str(webMsgType)
                 )
                 webResponseMsg = ""
                 numPackets = 0
@@ -251,20 +250,16 @@ class WebIPCControl:
                             else 13,
                         )
                         if (twcMsg[0:2] == b"\xFC\x19") or (twcMsg[0:2] == b"\xFC\x1A"):
-                            self.master.debugLog(
-                                1,
-                                "WebIPCCtrl",
+                            logger.info(
                                 "\n*** ERROR: Web interface requested sending command:\n"
                                 + self.master.hex_str(twcMsg)
-                                + "\nwhich could permanently disable the TWC.  Aborting.\n",
+                                + "\nwhich could permanently disable the TWC.  Aborting.\n"
                             )
                         elif twcMsg[0:2] == b"\xFB\xE8":
-                            self.master.debugLog(
-                                1,
-                                "WebIPCCtrl",
+                            logger.info(
                                 "\n*** ERROR: Web interface requested sending command:\n"
                                 + self.master.hex_str(twcMsg)
-                                + "\nwhich could crash the TWC.  Aborting.\n",
+                                + "\nwhich could crash the TWC.  Aborting.\n"
                             )
                         else:
                             self.master.lastTWCResponseMsg = bytearray()
@@ -375,15 +370,11 @@ class WebIPCControl:
                     if m:
                         self.config["config"]["debugLevel"] = int(m.group(1))
                 else:
-                    self.master.debugLog(
-                        1,
-                        "WebIPCCtrl",
-                        "Unknown IPC request from web server: " + str(webMsg),
-                    )
+                    logger.info("Unknown IPC request from web server: " + str(webMsg))
 
                 if len(webResponseMsg) > 0:
-                    self.master.debugLog(
-                        5, "WebIPCCtrl", "Web query response: '" + webResponseMsg + "'"
+                    logger.log(
+                        logging.INFO5, "Web query response: '" + webResponseMsg + "'"
                     )
 
                     try:
@@ -421,10 +412,8 @@ class WebIPCControl:
                                 )
 
                     except sysv_ipc.BusyError:
-                        self.master.debugLog(
-                            0,
-                            "WebIPCCtrl",
-                            "Error: IPC queue full when trying to send response to web interface.",
+                        logger.error(
+                            "Error: IPC queue full when trying to send response to web interface."
                         )
 
         except sysv_ipc.BusyError:

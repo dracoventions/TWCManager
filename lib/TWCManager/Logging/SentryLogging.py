@@ -1,17 +1,13 @@
-# ConsoleLogging module. Provides output to console for logging.
+# SentryLogging module. Provides output to console for logging.
 import logging
 
-from sys import modules
-import logging
-from logging.handlers import TimedRotatingFileHandler
-from ww import f
-import re
-
+import sentry_sdk
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
-class FileLogging:
+class SentryLogging:
 
     capabilities = {"queryGreenEnergy": False}
     config = None
@@ -23,6 +19,7 @@ class FileLogging:
     muteDebugLogLevelGreaterThan = 1
 
     def __init__(self, master):
+        # raise ImportError
         self.master = master
         self.config = master.config
         try:
@@ -30,14 +27,15 @@ class FileLogging:
         except KeyError:
             self.configConfig = {}
         try:
-            self.configLogging = master.config["logging"]["FileLogger"]
+            self.configLogging = master.config["logging"]["Sentry"]
         except KeyError:
             self.configLogging = {}
         self.status = self.configLogging.get("enabled", False)
+        self.dsn = self.configLogging.get("DSN", False)
 
         # Unload if this module is disabled or misconfigured
-        if not self.status:
-            self.master.releaseModule("lib.TWCManager.Logging", "FileLogging")
+        if not self.status or not self.dsn:
+            self.master.releaseModule("lib.TWCManager.Logging", "SentryLogging")
             return None
 
         # Initialize the mute config tree if it is not already
@@ -45,16 +43,11 @@ class FileLogging:
         self.muteDebugLogLevelGreaterThan = self.mute.get("DebugLogLevelGreaterThan", 1)
 
         # Initialize Logger
-        handler = TimedRotatingFileHandler(
-            self.configLogging.get("path", "/etc/twcmanager/log") + "/logfile",
-            when="H",
-            interval=1,
-            backupCount=24,
+        sentry_logging = LoggingIntegration(
+            level=logging.INFO,  # Capture info and above as breadcrumbs
+            event_level=logging.ERROR,  # Send errors as events
         )
-        handler.setFormatter(
-            logging.Formatter("%(asctime)s - %(name)-10.10s %(levelno)02d %(message)s")
-        )
-        logging.getLogger("").addHandler(handler)
+        sentry_sdk.init(self.dsn, integrations=[sentry_logging], traces_sample_rate=1.0)
 
     def getCapabilities(self, capability):
         # Allows query of module capabilities when deciding which Logging module to use

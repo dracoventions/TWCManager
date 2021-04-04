@@ -1,3 +1,8 @@
+import logging
+
+logger = logging.getLogger(__name__.rsplit(".")[-1])
+
+
 class SolarLog:
 
     # SolarLog EMS Module
@@ -12,7 +17,6 @@ class SolarLog:
     configSolarLog = None
     consumedW = 0
     excludeConsumedW = 0
-    debugLevel = 0
     fetchFailed = False
     generatedW = 0
     lastFetch = 0
@@ -33,20 +37,16 @@ class SolarLog:
         self.excludeConsumptionInverters = self.configSolarLog.get(
             "excludeConsumptionInverters", []
         )
-        self.debugLevel = self.configConfig.get("debugLevel", 0)
 
         # Unload if this module is disabled or misconfigured
         if (not self.status) or (not self.serverIP):
             self.master.releaseModule("lib.TWCManager.EMS", "SolarLog")
             return None
 
-    def debugLog(self, minlevel, message):
-        self.master.debugLog(minlevel, "SolarLog", message)
-
     def getConsumption(self):
 
         if not self.status:
-            self.debugLog(10, "SolarLog EMS Module Disabled. Skipping getConsumption")
+            logger.debug("SolarLog EMS Module Disabled. Skipping getConsumption")
             return 0
 
         # Perform updates if necessary
@@ -58,7 +58,7 @@ class SolarLog:
     def getGeneration(self):
 
         if not self.status:
-            self.debugLog(10, "SolarLog EMS Module Disabled. Skipping getGeneration")
+            logger.debug("SolarLog EMS Module Disabled. Skipping getGeneration")
             return 0
 
         # Perform updates if necessary
@@ -69,9 +69,7 @@ class SolarLog:
 
     def getConsumptionAndGenerationValues(self):
         url = "http://" + self.serverIP + "/getjp"
-        headers = {
-            "content-type": "application/json",
-        }
+        headers = {"content-type": "application/json"}
         payload = '{"801":{"170":null, "175":null}}'
 
         # Update fetchFailed boolean to False before fetch attempt
@@ -79,18 +77,22 @@ class SolarLog:
         self.fetchFailed = False
 
         try:
-            self.debugLog(10, "Fetching SolarLog EMS sensor values")
+            logger.debug("Fetching SolarLog EMS sensor values")
             httpResponse = self.requests.post(
                 url, data=payload, headers=headers, timeout=self.timeout
             )
         except self.requests.exceptions.ConnectionError as e:
-            self.debugLog(4, "Error connecting to SolarLog to fetching sensor values")
-            self.debugLog(10, str(e))
+            logger.log(
+                logging.INFO4, "Error connecting to SolarLog to fetching sensor values"
+            )
+            logger.debug(str(e))
             self.fetchFailed = True
             return False
         except self.requests.exceptions.ReadTimeout as e:
-            self.debugLog(4, "Read Timeout occurred fetching SolarLog sensor values")
-            self.debugLog(10, str(e))
+            logger.log(
+                logging.INFO4, "Read Timeout occurred fetching SolarLog sensor values"
+            )
+            logger.debug(str(e))
             self.fetchFailed = True
             return False
 
@@ -107,8 +109,9 @@ class SolarLog:
             # (because then there is something else using the energy)
             self.smartEnergyInvertersActive = self.excludeConsumptionInverters.copy()
             smartEnergyInvertersActiveIndex = 0
-            self.debugLog(
-                8, "SmartMeters found " + str(len(self.excludeConsumptionInverters))
+            logger.log(
+                logging.INFO8,
+                "SmartMeters found " + str(len(self.excludeConsumptionInverters)),
             )
             while smartEnergyInvertersActiveIndex < len(
                 self.excludeConsumptionInverters
@@ -126,12 +129,15 @@ class SolarLog:
                     )
                     == 0
                 ):
-                    self.debugLog(
-                        8, "SmartMeter " + str(inverterIndex) + " is inactive"
+                    logger.log(
+                        logging.INFO8,
+                        "SmartMeter " + str(inverterIndex) + " is inactive",
                     )
                     self.smartEnergyInvertersActive.remove(inverterIndex)
                 else:
-                    self.debugLog(8, "SmartMeter " + str(inverterIndex) + " is active")
+                    logger.log(
+                        logging.INFO8, "SmartMeter " + str(inverterIndex) + " is active"
+                    )
                 smartEnergyInvertersActiveIndex += 1
 
     def getInverterValues(self):
@@ -140,9 +146,7 @@ class SolarLog:
             return False
 
         url = "http://" + self.serverIP + "/getjp"
-        headers = {
-            "content-type": "application/json",
-        }
+        headers = {"content-type": "application/json"}
         payload = '{"782":null}'
 
         # Update fetchFailed boolean to False before fetch attempt
@@ -150,18 +154,23 @@ class SolarLog:
         self.fetchFailed = False
 
         try:
-            self.debugLog(10, "Fetching SolarLog EMS inverter values")
+            logger.debug("Fetching SolarLog EMS inverter values")
             httpResponse = self.requests.post(
                 url, data=payload, headers=headers, timeout=self.timeout
             )
         except self.requests.exceptions.ConnectionError as e:
-            self.debugLog(4, "Error connecting to SolarLog to fetching inverter values")
-            self.debugLog(10, str(e))
+            logger.log(
+                logging.INFO4,
+                "Error connecting to SolarLog to fetching inverter values",
+            )
+            logger.debug(str(e))
             self.fetchFailed = True
             return False
         except self.requests.exceptions.ReadTimeout as e:
-            self.debugLog(4, "Read Timeout occurred fetching SolarLog inverter values")
-            self.debugLog(10, str(e))
+            logger.log(
+                logging.INFO4, "Read Timeout occurred fetching SolarLog inverter values"
+            )
+            logger.debug(str(e))
             self.fetchFailed = True
             return False
 

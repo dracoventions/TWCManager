@@ -1,7 +1,11 @@
 # HomeAssistant Status Output
 # Publishes the provided sensor key and value pair to a HomeAssistant instance
 
+import logging
 from ww import f
+
+
+logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class HASSStatus:
@@ -14,7 +18,6 @@ class HASSStatus:
     config = None
     configConfig = None
     configHASS = None
-    debugLevel = 0
     master = None
     msgRateInSeconds = 60
     resendRateInSeconds = 3600
@@ -47,7 +50,6 @@ class HASSStatus:
         self.msgRateInSeconds = self.configHASS.get("msgRateInSeconds", 60)
         self.resendRateInSeconds = self.configHASS.get("resendRateInSeconds", 3600)
         self.retryRateInSeconds = self.configHASS.get("retryRateInSeconds", 60)
-        self.debugLevel = self.configConfig.get("debugLevel", 0)
 
         # Unload if this module is disabled or misconfigured
         if (
@@ -108,9 +110,8 @@ class HASSStatus:
             "content-type": "application/json",
         }
         try:
-            self.master.debugLog(
-                8,
-                "HASSStatus",
+            logger.log(
+                logging.INFO8,
                 f(
                     "Sending POST request to HomeAssistant for sensor {msg.sensor} (value {msg.value})."
                 ),
@@ -157,28 +158,26 @@ class HASSStatus:
                 self.time.time() + self.resendRateInSeconds
             )
         except self.requests.exceptions.ConnectionError as e:
-            self.master.debugLog(
-                4,
-                "HASSStatus",
+            logger.log(
+                logging.INFO4,
                 "Error connecting to HomeAssistant to publish sensor values",
             )
-            self.master.debugLog(10, "HASSStatus", str(e))
+            logger.debug(str(e))
             self.settingRetryRate(msg)
             return False
         except self.requests.exceptions.ReadTimeout as e:
-            self.master.debugLog(
-                4,
-                "HASSStatus",
+            logger.log(
+                logging.INFO4,
                 "Error connecting to HomeAssistant to publish sensor values",
             )
-            self.master.debugLog(10, "HASSStatus", str(e))
+            logger.debug(str(e))
             self.settingRetryRate(msg)
             return False
         except Exception as e:
-            self.master.debugLog(
-                4, "HASSStatus", "Error during publishing HomeAssistant sensor values"
+            logger.log(
+                logging.INFO4, "Error during publishing HomeAssistant sensor values"
             )
-            self.master.debugLog(10, "HASSStatus", str(e))
+            logger.debug(str(e))
             self.settingRetryRate(msg)
             return False
 

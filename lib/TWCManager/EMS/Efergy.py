@@ -1,4 +1,4 @@
-# Efergy 
+# Efergy
 
 
 class Efergy:
@@ -13,7 +13,7 @@ class Efergy:
     consumedW = 0
     debugLevel = 0
     fetchFailed = False
-    token=0
+    token = 0
     generatedW = 0
     importW = 0
     exportW = 0
@@ -40,7 +40,7 @@ class Efergy:
         self.serverPort = self.configEfergy.get("serverPort", "80")
 
         # Unload if this module is disabled or misconfigured
-        if (not self.status):
+        if not self.status:
             self.master.releaseModule("lib.TWCManager.EMS", "Efergy")
             return None
 
@@ -73,7 +73,6 @@ class Efergy:
             self.generatedW = 0
         return float(self.generatedW)
 
-
     def getValue(self, url):
 
         # Fetch the specified URL from the Efergy and return the data
@@ -82,9 +81,7 @@ class Efergy:
         try:
             r = self.requests.get(url, timeout=self.timeout)
         except self.requests.exceptions.ConnectionError as e:
-            self.debugLog(
-                4, "Error connecting to Efergy to fetch sensor value"
-            )
+            self.debugLog(4, "Error connecting to Efergy to fetch sensor value")
             self.debugLog(10, str(e))
             self.fetchFailed = True
             return False
@@ -94,7 +91,10 @@ class Efergy:
         return jsondata
 
     def getMeterData(self):
-        url = "https://engage.efergy.com/mobile_proxy/getCurrentValuesSummary?token="+self.token
+        url = (
+            "https://engage.efergy.com/mobile_proxy/getCurrentValuesSummary?token="
+            + self.token
+        )
 
         return self.getValue(url)
 
@@ -107,7 +107,7 @@ class Efergy:
 
             if meterData:
                 try:
-                    self.consumedW = list(meterData[0]['data'][0].values())[0]
+                    self.consumedW = list(meterData[0]["data"][0].values())[0]
                 except (KeyError, TypeError) as e:
                     self.debugLog(
                         4, "Exception during parsing Meter Data (Consumption)"

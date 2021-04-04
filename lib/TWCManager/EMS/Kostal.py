@@ -13,6 +13,7 @@
 #               Overall stability and performance improvements
 #               Show model and serial number of Inverter in log
 #
+import logging
 import time
 from pyModbusTCP.client import ModbusClient
 from pyModbusTCP import utils
@@ -20,6 +21,8 @@ from pyModbusTCP import utils
 MIN_CACHE_SECONDS = 10
 ENDIAN_BIG = 0x01  # big endian (ABCD) Sunspec
 ENDIAN_LITTLE = 0x00  # little endian (CDAB) Standard Modbus
+
+logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 #
@@ -49,7 +52,6 @@ class Kostal:
             self.configKostal = {}
 
         # read configuration values and initialize variables
-        self.debugLevel = self.configConfig.get("debugLevel", 0)
         self.enabled = self.configKostal.get("enabled", False)
         self.host = self.configKostal.get("serverIP", None)
         self.port = int(self.configKostal.get("modbusPort", 1502))
@@ -69,10 +71,8 @@ class Kostal:
                 raise ValueError
         except ValueError:
             # if connection not possible, print error message and unload module
-            self.master.debugLog(
-                1,
-                "Kostal",
-                "ERROR connecting to inverter. Please check your configuration!",
+            logger.info(
+                "ERROR connecting to inverter. Please check your configuration!"
             )
             self.master.releaseModule("lib.TWCManager.EMS", "Kostal")
         else:
@@ -85,10 +85,8 @@ class Kostal:
             inv_model = self.__readModbus(768, "String")
             inv_class = self.__readModbus(800, "String")
             inv_serial = self.__readModbus(559, "String")
-            self.master.debugLog(
-                1,
-                "Kostal",
-                inv_model + " " + inv_class + " (S/N: " + inv_serial + ") found.",
+            logger.info(
+                inv_model + " " + inv_class + " (S/N: " + inv_serial + ") found."
             )
 
             # module successfully loaded update all values
@@ -183,9 +181,7 @@ class Kostal:
 
         # return the total household consumption
         total = self.HomeFromGrid + self.HomeFromPV
-        self.master.debugLog(
-            10, "Kostal", "Current Home consumption: {:.2f} W".format(total)
-        )
+        logger.debug("Current Home consumption: {:.2f} W".format(total))
         return float(self.HomeFromGrid + self.HomeFromPV)
 
     #
@@ -197,7 +193,5 @@ class Kostal:
         self.__update()
 
         # return the Solar generation power
-        self.master.debugLog(
-            10, "Kostal", "Current Solar generation: {:.2f} W".format(self.TotalDCPower)
-        )
+        logger.debug("Current Solar generation: {:.2f} W".format(self.TotalDCPower))
         return float(self.TotalDCPower)

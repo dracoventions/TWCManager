@@ -1,17 +1,167 @@
 # MySQLLogging module. Provides output to a MySQL Server for regular statistics
 # recording.
+import logging
+
+
+logger = logging.getLogger(__name__.rsplit(".")[-1])
+
+
+class MySQLHandler(logging.Handler):
+    slaveSession = {}
+
+    def __init__(self, db):
+
+        logging.Handler.__init__(self)
+        self.db = db
+
+    def emit(self, record):
+        self.format(record)
+        log_type = getattr(record, "logtype", "")
+        if log_type == "charge_sessions":
+            charge_state = getattr(record, "chargestate", "")
+            if charge_state == "start":
+                # Called when a Charge Session Starts.
+                twcid = "%02X%02X" % (
+                    getattr(record, "TWCID")[0],
+                    getattr(record, "TWCID")[1],
+                )
+                self.slaveSession[twcid] = getattr(record, "startTime", 0)
+
+                query = """
+                    INSERT INTO charge_sessions (chargeid, startTime, startkWh, slaveTWC)
+                    VALUES (%s,now(),%s,%s)
+                """
+
+                # Ensure database connection is alive, or reconnect if not
+                self.db.ping(reconnect=True)
+
+                cur = self.db.cursor()
+                rows = 0
+                try:
+                    rows = cur.execute(
+                        query,
+                        (
+                            getattr(record, "startTime", 0),
+                            getattr(record, "startkWh", 0),
+                            twcid,
+                        ),
+                    )
+                except Exception as e:
+                    logger.error("Error updating MySQL database: %s", e)
+                if rows:
+                    # Query was successful. Commit
+                    self.db.commit()
+                else:
+                    # Issue, log message and rollback
+                    logger.info("Error updating MySQL database. Rows = %d", rows)
+                    self.db.rollback()
+                cur.close()
+            elif charge_state == "update":
+                # Called when additional information needs to be updated for a
+                # charge session
+                twcid = "%02X%02X" % (
+                    getattr(record, "TWCID")[0],
+                    getattr(record, "TWCID")[1],
+                )
+                chgid = self.slaveSession.get(twcid, 0)
+                if getattr(record, "vehicleVIN", None):
+                    query = """
+                        UPDATE charge_sessions SET vehicleVIN = %s
+                        WHERE chargeid = %s AND slaveTWC = %s"
+                    """
+
+                    # Ensure database connection is alive, or reconnect if not
+                    self.db.ping(reconnect=True)
+
+                    cur = self.db.cursor()
+                    rows = 0
+                    try:
+                        rows = cur.execute(query, (getattr(record, "vehicleVIN", ""), chgid, twcid))
+                    except Exception as e:
+                        logger.error("Error updating MySQL database: %s", e)
+                    if rows:
+                        # Query was successful. Commit
+                        self.db.commit()
+                    else:
+                        # Issue, log message and rollback
+                        self.db.rollback()
+                    cur.close()
+            elif charge_state == "stop":
+                # Called when a Charge Session Ends.
+                twcid = "%02X%02X" % (
+                    getattr(record, "TWCID")[0],
+                    getattr(record, "TWCID")[1],
+                )
+                chgid = self.slaveSession.get(twcid, 0)
+                query = """
+                    UPDATE charge_sessions SET endTime = now(), endkWh = %s
+                    WHERE chargeid = %s AND slaveTWC = %s
+                """
+
+                # Ensure database connection is alive, or reconnect if not
+                self.db.ping(reconnect=True)
+
+                cur = self.db.cursor()
+                rows = 0
+                try:
+                    rows = cur.execute(
+                        query,
+                        (
+                            getattr(record, "endkWh", 0),
+                            chgid,
+                            twcid,
+                        ),
+                    )
+                except Exception as e:
+                    logger.error("Error updating MySQL database: %s", e)
+                if rows:
+                    # Query was successful. Commit
+                    self.db.commit()
+                else:
+                    # Issue, log message and rollback
+                    logger.error("Error updating MySQL database. Rows = %d", rows)
+                    self.db.rollback()
+                cur.close()
+                self.slaveSession[twcid] = 0
+        elif log_type == "green_energy":
+            # Ensure database connection is alive, or reconnect if not
+            self.db.ping(reconnect=True)
+
+            query = """
+                INSERT INTO green_energy (time, genW, conW, chgW)
+                VALUES (now(), %s, %s, %s)
+            """
+
+            cur = self.db.cursor()
+            rows = 0
+            try:
+                rows = cur.execute(
+                    query,
+                    (
+                        getattr(record, "genWatts", 0),
+                        getattr(record, "conWatts", 0),
+                        getattr(record, "chgWatts", 0),
+                    ),
+                )
+            except Exception as e:
+                logger.error("Error updating MySQL database: %s", e)
+            if rows:
+                # Query was successful. Commit
+                self.db.commit()
+            else:
+                # Issue, log message and rollback
+                logger.info("Error updating MySQL database. Rows = %d" % rows)
+                self.db.rollback()
+            cur.close()
 
 
 class MySQLLogging:
 
-    capabilities = {
-      "queryGreenEnergy": True
-    }
+    capabilities = {"queryGreenEnergy": True}
     config = None
     configConfig = None
     configLogging = None
     db = None
-    slaveSession = {}
     status = False
 
     def __init__(self, master):
@@ -37,6 +187,7 @@ class MySQLLogging:
             self.configLogging["mute"] = {}
 
         # Import MySQL module if module is not released
+        global pymysql
         import pymysql
 
         try:
@@ -47,56 +198,35 @@ class MySQLLogging:
                 database=self.configLogging.get("database", ""),
             )
         except pymysql.err.OperationalError as e:
-            self.master.debugLog(1, "MySQLLog", "Error connecting to MySQL database")
-            self.master.debugLog(1, "MySQLLog", str(e))
-
-    def debugLog(self, logdata):
-        # debugLog is something of a catch-all if we don't have a specific
-        # logging function for the given data. It allows a log entry to be
-        # passed to us for storage.
-        return
+            logger.info("Error connecting to MySQL database")
+            logger.info(str(e))
+        else:
+            mysql_handler = MySQLHandler(db=self.db)
+            mysql_handler.addFilter(self.mysql_filter)
+            logging.getLogger("").addHandler(mysql_handler)
 
     def getCapabilities(self, capability):
         # Allows query of module capabilities when deciding which Logging module to use
         return self.capabilities.get(capability, False)
 
-    def greenEnergy(self, data):
-        # Check if this status is muted
-        if self.configLogging["mute"].get("GreenEnergy", 0):
-            return None
-
-        # Ensure database connection is alive, or reconnect if not
-        self.db.ping(reconnect=True)
-
-        query = """
-            INSERT INTO green_energy (time, genW, conW, chgW) 
-            VALUES (now(), %s, %s, %s)
-        """
-
-        cur = self.db.cursor()
-        rows = 0
-        try:
-            rows = cur.execute(
-                query,
-                (
-                    data.get("genWatts", 0),
-                    data.get("conWatts", 0),
-                    data.get("chgWatts", 0),
-                ),
-            )
-        except Exception as e:
-            self.master.debugLog(1, "MySQLLog", "Error updating MySQL database")
-            self.master.debugLog(1, "MySQLLog", str(e))
-        if rows:
-            # Query was successful. Commit
-            self.db.commit()
-        else:
-            # Issue, log message and rollback
-            self.master.debugLog(
-                1, "MySQLLog", "Error updating MySQL database. Rows = %d" % rows
-            )
-            self.db.rollback()
-        cur.close()
+    def mysql_filter(self, record):
+        log_type = getattr(record, "logtype", "")
+        # Check if this status is muted or it is not the correct log type
+        if log_type == "charge_sessions" and not self.configLogging["mute"].get(
+            "ChargeSessions", 0
+        ):
+            return True
+        # Check if this status is muted or it is not the correct log type
+        if log_type == "green_energy" and not self.configLogging["mute"].get(
+            "GreenEnergy", 0
+        ):
+            return True
+        # Check if this status is muted or it is not the correct log type
+        if log_type == "slave_status" and not self.configLogging["mute"].get(
+            "SlaveStatus", 0
+        ):
+            return True
+        return False
 
     def queryGreenEnergy(self, data):
         # Check if this status is muted
@@ -110,37 +240,22 @@ class MySQLLogging:
         """
         cur = self.db.cursor()
         rows = 0
+        result = {}
         try:
             rows = cur.execute(
-                query,
-                (
-                    data.get("dateBegin", 0),
-                    data.get("dateEnd", 0),
-                ),
+                query, (data.get("dateBegin", 0), data.get("dateEnd", 0))
             )
         except Exception as e:
-            self.master.debugLog(1, "MySQLLog", str(e))
-
-        result={}
-        if rows:
-            # Query was successful. Commit
-            result = cur.fetchall()
+            logger.exception("Error executing queryGreenEnergy query: %s", e)
         else:
-            # Issue, log message
-            self.master.debugLog(
-                1, "MySQLLog", "Error query MySQL database. Rows = %d" % rows
-            )
-        cur.close()
+            if rows:
+                # Query was successful. Commit
+                result = cur.fetchall()
+            else:
+                # Issue, log message
+                logger.error("Error query MySQL database. Rows = %d", rows)
+            cur.close()
         return list(result)
-
-
-    def slavePower(self, data):
-        # Check if this status is muted
-        if self.configLogging["mute"].get("SlavePower", 0):
-            return None
-
-        # Not Yet Implemented
-        return None
 
     def slaveStatus(self, data):
         # Check if this status is muted
@@ -170,120 +285,13 @@ class MySQLLogging:
                 ),
             )
         except Exception as e:
-            self.master.debugLog(1, "MySQLLog", "Error updating MySQL database")
-            self.master.debugLog(1, "MySQLLog", str(e))
+            logger.info("Error updating MySQL database")
+            logger.info(str(e))
         if rows:
             # Query was successful. Commit
             self.db.commit()
         else:
             # Issue, log message and rollback
-            self.master.debugLog(
-                1, "MySQLLog", "Error updating MySQL database. Rows = %d" % rows
-            )
+            logger.info("Error updating MySQL database. Rows = %d" % rows)
             self.db.rollback()
         cursor.close()
-
-    def startChargeSession(self, data):
-        # Check if this status is muted
-        if self.configLogging["mute"].get("ChargeSessions", 0):
-            return None
-
-        # Called when a Charge Session Starts.
-        twcid = "%02X%02X" % (data["TWCID"][0], data["TWCID"][0])
-        self.slaveSession[twcid] = data.get("startTime", 0)
-        query = """
-            INSERT INTO charge_sessions (chargeid, startTime, startkWh, slaveTWC) 
-            VALUES (%s,now(),%s,%s)
-        """
-
-        # Ensure database connection is alive, or reconnect if not
-        self.db.ping(reconnect=True)
-
-        cur = self.db.cursor()
-        rows = 0
-        try:
-            rows = cur.execute(
-                query, (data.get("startTime", 0), data.get("startkWh", 0), twcid)
-            )
-        except Exception as e:
-            self.master.debugLog(1, "MySQLLog", "Error updating MySQL database")
-            self.master.debugLog(1, "MySQLLog", str(e))
-        if rows:
-            # Query was successful. Commit
-            self.db.commit()
-        else:
-            # Issue, log message and rollback
-            self.master.debugLog(
-                1, "MySQLLog", "Error updating MySQL database. Rows = %d" % rows
-            )
-            self.db.rollback()
-        cur.close()
-
-    def stopChargeSession(self, data):
-        # Check if this status is muted
-        if self.configLogging["mute"].get("ChargeSessions", 0):
-            return None
-
-        # Called when a Charge Session Ends.
-        twcid = "%02X%02X" % (data["TWCID"][0], data["TWCID"][0])
-        chgid = self.slaveSession.get(twcid, 0)
-        query = """
-            UPDATE charge_sessions SET endTime = now(), endkWh = %s 
-            WHERE chargeid = %s AND slaveTWC = %s
-        """
-
-        # Ensure database connection is alive, or reconnect if not
-        self.db.ping(reconnect=True)
-
-        cur = self.db.cursor()
-        rows = 0
-        try:
-            rows = cur.execute(query, (data.get("endkWh", 0), chgid, twcid))
-        except Exception as e:
-            self.master.debugLog(1, "MySQLLog", "Error updating MySQL database")
-            self.master.debugLog(1, "MySQLLog", str(e))
-        if rows:
-            # Query was successful. Commit
-            self.db.commit()
-        else:
-            # Issue, log message and rollback
-            self.master.debugLog(
-                1, "MySQLLog", "Error updating MySQL database. Rows = %d" % rows
-            )
-            self.db.rollback()
-        cur.close()
-        self.slaveSession[twcid] = 0
-
-    def updateChargeSession(self, data):
-        # Check if this status is muted
-        if self.configLogging["mute"].get("ChargeSessions", 0):
-            return None
-
-        # Called when additional information needs to be updated for a
-        # charge session
-        twcid = "%02X%02X" % (data["TWCID"][0], data["TWCID"][0])
-        chgid = self.slaveSession.get(twcid, 0)
-        if data.get("vehicleVIN", None):
-            query = """
-                UPDATE charge_sessions SET vehicleVIN = %s 
-                WHERE chargeid = %s AND slaveTWC = %s
-            """
-
-            # Ensure database connection is alive, or reconnect if not
-            self.db.ping(reconnect=True)
-
-            cur = self.db.cursor()
-            rows = 0
-            try:
-                rows = cur.execute(query, (data.get("vehicleVIN", ""), chgid, twcid))
-            except Exception as e:
-                self.master.debugLog(1, "MySQLLog", "Error updating MySQL database")
-                self.master.debugLog(1, "MySQLLog", str(e))
-            if rows:
-                # Query was successful. Commit
-                self.db.commit()
-            else:
-                # Issue, log message and rollback
-                self.db.rollback()
-            cur.close()
-        return None
