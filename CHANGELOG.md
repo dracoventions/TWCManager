@@ -2,7 +2,9 @@
 
 This document logs the changes per release of TWCManager.
 
-## v1.2.1 - Current development branch
+## v1.2.2 - Current development branch
+
+## v1.2.1 - 2021-04-04
 
   * Added support for Kostal inverters (Pico/Plenticore) (thanks @hopfi2k)
   * Added support for smart-me.com inverter API
@@ -26,6 +28,8 @@ This document logs the changes per release of TWCManager.
   * Added Graph visualisation for supported Logging modules - MySQL currently (thanks @juanjoqg)
   * Updates to accomodate Powerwall authentication flow changes (thanks @MikeBishop)
   * Do not override the charge_amps set in a policy when running checkGreenEnergy, allowing for Green Energy tracking numbers to be updated when Charge Now or Scheduled Charging policies are active (thanks @MikeBishop)
+  * Significant overhaul of logging module interface to utilize the python logger architecture rather than implementing our own infrastructure (thanks @tjikkun!)
+  * When competing background tasks are submitted, update the existing task details rather than dropping it completely (thanks @MikeBishop)
   * Bugfixes
       * Add a sleep of 5 seconds when waking car up to avoid an infinite loop (thanks @dschuesae)
       * Fix a bug with the legacy web interface which causes the Resume Track Green Energy setting of None to fail. Also added a deprecation notice to the web interface to ensure people don't inadvertently use it over the modular interface.
