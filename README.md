@@ -1,13 +1,14 @@
 # TWCManager
 
-[![Stable Release](https://img.shields.io/badge/Stable_Release-1.2.0-blue)](https://github.com/ngardiner/TWCManager/releases/tag/1.2.0)
-[![Development Release](https://img.shields.io/badge/Devel_Release-1.2.1-green.svg)](https://github.com/ngardiner/TWCManager/tree/v1.2.1)
+[![Stable Release](https://img.shields.io/badge/Stable_Release-1.2.1-blue)](https://github.com/ngardiner/TWCManager/releases/tag/1.2.1)
+[![Development Release](https://img.shields.io/badge/Devel_Release-1.2.2-green.svg)](https://github.com/ngardiner/TWCManager/tree/main)
 ![GitHub commits](https://img.shields.io/github/commit-activity/m/ngardiner/TWCManager)
 ![Contributors](https://img.shields.io/github/contributors/ngardiner/TWCManager)
 
 ## Screenshots
 ![Screenshot](docs/screenshot.png)
 ![Screenshot](docs/screenshot3.png)
+![Screenshot](docs/screenshot4.png)
 
 ## How it works
 
