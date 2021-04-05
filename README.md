@@ -28,6 +28,7 @@ To enable TWCManager to gather the solar generation information that it requires
 | ---------------- | ---------------- | ----------------------- |
 | [HTTPControl](docs/modules/Control_HTTP.md) | Available v1.1.3 | Allows control via embedded HTTP server (with RESTful API interface) |
 | [MQTTControl](docs/modules/Control_MQTT.md) | Available v1.1.2 | Allows control via MQTT |
+| [OCPPControl](docs/modules/Control_OCPP.md) | Available v1.2.2 | Allows integration with [OCPP](https://pypi.org/project/ocpp/) |
 | [WebIPCControl](docs/modules/Control_WebIPC.md) | Available v1.1.4 | Allows control via PHP scripts (sysv IPC) |
 
 ### EMS Interfaces
@@ -60,6 +61,7 @@ This can be useful if you would like to track charger activity and use it for gr
 | [CSV](docs/modules/Logging_CSV.md)         | Log data to CSV files |
 | [Files](docs/modules/Logging_Files.md)   | Log data to a log files |
 | [MySQL](docs/modules/Logging_MySQL.md)     | Log data to a MySQL Database |
+| [Sentry](docs/modules/Logging_Sentry.md)   | Log data to a Sentry project |
 | [SQLite](docs/modules/Logging_SQLite.md)   | Log data to a SQLite Database |
 
 ### Status Interfaces

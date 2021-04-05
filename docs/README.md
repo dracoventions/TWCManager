@@ -31,7 +31,12 @@ sudo apt-get install -y git python3 python3-setuptools python3-dev
 
 ### Default to Python3
 
-TWCManager requires a minimum of python 3.3 to work correctly.
+TWCManager requires a minimum of python 3.3 to work correctly. To attempt to support Raspberry Pi OS versions going back to 2018, TWCManager is regularly tested against Python 3.3 to ensure that support is retained. As of TWCManager v1.2.2, a number of features are beginning to diverge based on minimum Python versions being higher than those required by TWCManager, so the following features may be unavailable if your Python version is below the minimum:
+
+   * Support for sentry logging module requires a minimum Python 3.6 version
+   * Support for OCPP control module requires a minimum Python 3.6 version
+
+Raspberry Pi OS version 9 (stretch) from 2019 ships with Python 3.5.3. If you are running Raspberry Pi OS version 9 or earlier, you may not have access to a Python interpreter which supports the above features. You may want to consider the use of [pyenv](pyenv.md) to support installation of a newer Python interpreter.
 
 ### Raspberry Pi OS / Raspbian Buster
 
@@ -59,21 +64,21 @@ You can check that this command has been successful by running ```python --versi
 
 During this step, the source code and all related files will be cloned from the GitHub repository and installed into the appropriate location on your system.
 
-We have two versions of the codebase that you may want to check out. The stable version is **v1.2.0**, which will only change for stability or urgent fixes. To check out **v1.2.0**, follow these steps:
-
-```
-git clone https://github.com/ngardiner/TWCManager
-cd TWCManager
-git checkout v1.2.0
-sudo make install
-```
-
-Alternatively, the **v1.2.1** branch is the development branch, where all of the new ideas and features are tested prior to becoming the stable branch. This version has more features, but we can't guarantee stability.
+We have two versions of the codebase that you may want to check out. The stable version is **v1.2.1**, which will only change for stability or urgent fixes. To check out **v1.2.1**, follow these steps:
 
 ```
 git clone https://github.com/ngardiner/TWCManager
 cd TWCManager
 git checkout v1.2.1
+sudo make install
+```
+
+Alternatively, the **main** branch is the development branch, where all of the new ideas and features are tested prior to becoming the stable branch. This version has more features, but we can't guarantee stability.
+
+```
+git clone https://github.com/ngardiner/TWCManager
+cd TWCManager
+git checkout main
 make install
 ```
 
