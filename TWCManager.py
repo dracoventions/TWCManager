@@ -77,6 +77,7 @@ modules_available = [
     "Logging.CSVLogging",
     "Logging.MySQLLogging",
     "Logging.SQLiteLogging",
+    "Protocol.TWCProtocol",
     "Interface.Dummy",
     "Interface.RS485",
     "Interface.TCP",
@@ -812,6 +813,7 @@ while True:
 
                 msgMatch = re.search(
                     b"^\xfd\xe2(..)(.)(..)\x00\x00\x00\x00\x00\x00.+\Z", msg, re.DOTALL
+
                 )
                 if msgMatch and foundMsgMatch == False:
                     # Handle linkready message from slave.

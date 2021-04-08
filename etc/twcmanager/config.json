@@ -215,7 +215,8 @@
         # The dummy module is used for testing. It will simulate an actual
         # slave TWC for the purpose of offline testing of TWCManager.
         # Most people would not enable this module.
-        "twcID": 1234
+        # This should be a two-byte ID
+        "twcID": "AB"
       },
       "RS485": {
         "enabled": true,

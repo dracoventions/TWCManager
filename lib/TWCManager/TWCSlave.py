@@ -317,7 +317,7 @@ class TWCSlave:
                 # Increase array length to 9
                 self.master.slaveHeartbeatData.append(0x00)
 
-        self.master.getModuleByName("RS485").send(
+        self.master.getModulesByType("Interface")[0]["ref"].send(
             bytearray(b"\xFD\xE0")
             + self.master.getFakeTWCID()
             + bytearray(masterID)
@@ -543,7 +543,7 @@ class TWCSlave:
                 ).getCarApiVehicles():
                     vehicle.stopAskingToStartCharging = False
 
-        self.master.getModuleByName("RS485").send(
+        self.master.getModulesByType("Interface")[0]["ref"].send(
             bytearray(b"\xFB\xE0")
             + self.master.getFakeTWCID()
             + bytearray(self.TWCID)
