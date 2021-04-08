@@ -31,12 +31,26 @@ sudo apt-get install -y git python3 python3-setuptools python3-dev
 
 ### Default to Python3
 
-TWCManager requires a minimum of python 3.3 to work correctly. To attempt to support Raspberry Pi OS versions going back to 2018, TWCManager is regularly tested against Python 3.3 to ensure that support is retained. As of TWCManager v1.2.2, a number of features are beginning to diverge based on minimum Python versions being higher than those required by TWCManager, so the following features may be unavailable if your Python version is below the minimum:
+TWCManager requires a minimum of python 3.5 to work correctly. To attempt to support Raspberry Pi OS versions going back to 2019, TWCManager is regularly tested against Python 3.5 to ensure that support is retained. As of TWCManager v1.2.2, a number of features are beginning to diverge based on minimum Python versions being higher than those required by TWCManager, so the following features may be unavailable if your Python version is below the minimum:
 
-   * Support for sentry logging module requires a minimum Python 3.6 version
    * Support for OCPP control module requires a minimum Python 3.6 version
 
 Raspberry Pi OS version 9 (stretch) from 2019 ships with Python 3.5.3. If you are running Raspberry Pi OS version 9 or earlier, you may not have access to a Python interpreter which supports the above features. You may want to consider the use of [pyenv](pyenv.md) to support installation of a newer Python interpreter.
+
+Python versions below 3.6 may show the following error when running ```setup.py```:
+
+```
+Traceback (most recent call last):
+  File "setup.py", line 3, in <module>
+    from setuptools import setup, find_namespace_packages
+ImportError: cannot import name find_namespace_packages
+```
+
+This indicates an older version of setuptools is installed. To resolve this issue, run the following command:
+
+```
+pip3 install --upgrade setuptools
+```
 
 ### Raspberry Pi OS / Raspbian Buster
 

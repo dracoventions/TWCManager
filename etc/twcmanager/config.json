@@ -252,7 +252,12 @@
         "topicPrefix": "TWC",
         "username": "mqttuser",
         "password": "mqttpass"
+      },
+      "OCPP": {
+          "enabled": false,
+          "serverPort": 9000
       }
+
     },
 
     # In the below policy segment of the configuration, we can tune the behaviour
