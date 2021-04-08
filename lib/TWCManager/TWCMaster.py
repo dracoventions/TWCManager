@@ -1181,7 +1181,7 @@ class TWCMaster:
             if now < snaptime:
                 return
         except ValueError as e:
-            logger.debug("TWCSlave  ", str(e))
+            logger.debug(logging.DEBUG2, str(e))
             return
 
         for slave in self.getSlaveTWCs():
