@@ -2,6 +2,9 @@ DEPS := lighttpd screen git
 SUDO := sudo
 VER := $(shell lsb_release -sr)
 
+build:
+	./setup.py install	
+
 install:
 
 	$(SUDO) apt-get update

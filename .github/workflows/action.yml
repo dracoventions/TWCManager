@@ -1,0 +1,38 @@
+name: "Deploy TWCManager"
+on:
+  push:
+
+jobs:
+  twcamanager-python3.4:
+    runs-on: [ "self-hosted", "python3.4.10" ]
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v2
+
+      - name: "Upgrade setuptools"
+        run: pip3 install -u setuptools
+
+      - name: "Build Project"
+        run: make build
+
+  twcamanager-python3.5:
+    runs-on: [ "self-hosted", "python3.5.3" ]
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v2
+
+      - name: "Upgrade setuptools"
+        run: pip3 install -u setuptools
+
+      - name: "Build Project"
+        run: make build
+
+  twcamanager-python3.6:
+    runs-on: [ "self-hosted", "python3.6.13" ]
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v2
+
+      - name: "Build Project"
+        run: make build
+

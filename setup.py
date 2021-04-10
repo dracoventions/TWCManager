@@ -7,22 +7,25 @@ setup(
     version="1.2.2",
     package_dir={"": "lib"},
     packages=find_namespace_packages(where="lib"),
+    python_requires=">= 3.4",
     # Dependencies
     install_requires=[
-        "commentjson>=0.8.3",
+        "commentjson < 0.9.0; python_version < '3.6'",
+        "commentjson >= 0.8.3; python_version >= '3.6'",
         "jinja2==2.11.2",
+        "MarkupSafe < 2.0.0; python_version < '3.6'",
         "ocpp",
         "paho_mqtt>=1.5.0",
         "pyModbusTCP>=0.1.8",
-        "pymysql", 
+        "pymysql==0.9.3; python_version < '3.6'",
+        "pymysql; python_version >= '3.6'",
         "pyserial>=3.4",
         "requests>=2.23.0",
         "sentry_sdk>=0.11.2",
-        "sysv_ipc>=1.0.1",
+        "sysv_ipc < 1.1.0; python_version < '3.6'",
+        "sysv_ipc >= 1.0.1; python_version >= '3.6'",
         "termcolor>=1.1.0",
-# Not adding this dependency yet, it is neede for OCPP but will stop this
-# project from working for those using Python 3.5
-#        "websockets",
+        "websockets; python_version >= '3.6'",
         "ww>=0.2.1"
     ],
     # Package Metadata
