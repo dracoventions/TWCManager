@@ -3,7 +3,7 @@ on:
   push:
 
 jobs:
-  twcamanager-python3.4:
+  twcamanager-python3_4:
     runs-on: [ "self-hosted", "python3.4.10" ]
     steps:
       - name: "Checkout Repository"
@@ -15,7 +15,7 @@ jobs:
       - name: "Build Project"
         run: make build
 
-  twcamanager-python3.5:
+  twcamanager-python3_5:
     runs-on: [ "self-hosted", "python3.5.3" ]
     steps:
       - name: "Checkout Repository"
@@ -27,7 +27,7 @@ jobs:
       - name: "Build Project"
         run: make build
 
-  twcamanager-python3.6:
+  twcamanager-python3_6:
     runs-on: [ "self-hosted", "python3.6.13" ]
     steps:
       - name: "Checkout Repository"
