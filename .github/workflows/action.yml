@@ -10,7 +10,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: "Upgrade setuptools"
-        run: pip3 install -u setuptools
+        run: pip3 install --upgrade setuptools
 
       - name: "Build Project"
         run: make build
@@ -22,13 +22,25 @@ jobs:
         uses: actions/checkout@v2
 
       - name: "Upgrade setuptools"
-        run: pip3 install -u setuptools
+        run: pip3 install --upgrade setuptools
 
       - name: "Build Project"
         run: make build
 
   twcamanager-python3_6:
     runs-on: [ "self-hosted", "python3.6.13" ]
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v2
+
+      - name: "Upgrade setuptools"
+        run: pip3 install --upgrade setuptools
+
+      - name: "Build Project"
+        run: make build
+
+  twcamanager-python3_7:
+    runs-on: [ "self-hosted", "python3.7.10" ]
     steps:
       - name: "Checkout Repository"
         uses: actions/checkout@v2
