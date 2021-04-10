@@ -4,6 +4,15 @@ VER := $(shell lsb_release -sr)
 
 build: deps setup
 
+config:
+	# Create configuration directory
+	$(SUDO) mkdir -p /etc/twcmanager
+ifeq (,$(wildcard /etc/twcmanager/config.json))
+	$(SUDO) cp etc/twcmanager/config.json /etc/twcmanager/
+endif
+	$(SUDO) chown root:pi /etc/twcmanager -R
+	$(SUDO) chmod 775 /etc/twcmanager
+
 deps:
 	$(SUDO) apt-get update
 
@@ -21,28 +30,12 @@ else
 	$(SUDO) apt-get install -y $(DEPS) php7.3-cgi
 endif
 	$(SUDO) lighty-enable-mod fastcgi-php ; exit 0
+ifeq ($(VER), 20.04)
+	$(SUDO) service lighttpd restart
+else
 	$(SUDO) service lighttpd force-reload
 
-install: deps
-
-	$(SUDO) lighty-enable-mod fastcgi-php ; exit 0
-	$(SUDO) service lighttpd force-reload
-
-	$(SUDO) cp html/* /var/www/html/
-	$(SUDO) chown -R www-data:www-data /var/www/html
-	$(SUDO) chmod -R 755 /var/www/html
-	$(SUDO) usermod -a -G www-data pi
-
-	# Install TWCManager packages
-	$(SUDO) ./setup.py install
-
-	# Create configuration directory
-	$(SUDO) mkdir -p /etc/twcmanager
-ifeq (,$(wildcard /etc/twcmanager/config.json))
-	$(SUDO) cp etc/twcmanager/config.json /etc/twcmanager/
-endif
-	$(SUDO) chown root:pi /etc/twcmanager -R
-	$(SUDO) chmod 775 /etc/twcmanager
+install: deps setup webfiles config
 
 testconfig:
 	# Create configuration directory
@@ -55,4 +48,13 @@ endif
 
 setup:
 	# Install TWCManager packages
+ifeq ($(VER), 20.04)
 	$(SUDO) python3 setup.py install
+else
+	$(SUDO) ./setup.py install
+
+webfiles:
+	$(SUDO) cp html/* /var/www/html/
+	$(SUDO) chown -R www-data:www-data /var/www/html
+	$(SUDO) chmod -R 755 /var/www/html
+	$(SUDO) usermod -a -G www-data pi

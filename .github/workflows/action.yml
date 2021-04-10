@@ -15,6 +15,9 @@ jobs:
       - name: "Build Project"
         run: make build
 
+      - name: "Install Legacy Web Files"
+        run: make webfiles
+
       - name: "Deploy Test Configuration"
         run: make testconfig
 
@@ -29,6 +32,9 @@ jobs:
 
       - name: "Build Project"
         run: make build
+
+      - name: "Install Legacy Web Files"
+        run: make webfiles
 
       - name: "Deploy Test Configuration"
         run: make testconfig
@@ -45,6 +51,9 @@ jobs:
       - name: "Build Project"
         run: make build
 
+      - name: "Install Legacy Web Files"
+        run: make webfiles
+
       - name: "Deploy Test Configuration"
         run: make testconfig
 
@@ -56,6 +65,9 @@ jobs:
 
       - name: "Build Project"
         run: make build
+
+      - name: "Install Legacy Web Files"
+        run: make webfiles
 
       - name: "Deploy Test Configuration"
         run: make testconfig
