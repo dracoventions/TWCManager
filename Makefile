@@ -30,11 +30,7 @@ else
 	$(SUDO) apt-get install -y $(DEPS) php7.3-cgi
 endif
 	$(SUDO) lighty-enable-mod fastcgi-php ; exit 0
-ifeq ($(VER), 20.04)
-	$(SUDO) service lighttpd restart
-else
-	$(SUDO) service lighttpd force-reload
-endif
+	$(SUDO) service lighttpd force-reload ; exit 0
 
 install: deps setup webfiles config
 
