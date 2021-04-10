@@ -2,11 +2,9 @@ DEPS := lighttpd screen git
 SUDO := sudo
 VER := $(shell lsb_release -sr)
 
-build:
-	./setup.py install	
+build: deps setup
 
-install:
-
+deps:
 	$(SUDO) apt-get update
 
 ifeq ($(VER), 9.11)
@@ -20,6 +18,11 @@ else ifeq ($(VER), 16.10)
 else
 	$(SUDO) apt-get install -y $(DEPS) php7.3-cgi
 endif
+	$(SUDO) lighty-enable-mod fastcgi-php ; exit 0
+	$(SUDO) service lighttpd force-reload
+
+install: deps
+
 	$(SUDO) lighty-enable-mod fastcgi-php ; exit 0
 	$(SUDO) service lighttpd force-reload
 
@@ -38,3 +41,16 @@ ifeq (,$(wildcard /etc/twcmanager/config.json))
 endif
 	$(SUDO) chown root:pi /etc/twcmanager -R
 	$(SUDO) chmod 775 /etc/twcmanager
+
+testconfig:
+	# Create configuration directory
+	$(SUDO) mkdir -p /etc/twcmanager
+ifeq (,$(wildcard /etc/twcmanager/.testconfig.json))
+	$(SUDO) cp etc/twcmanager/.testconfig.json /etc/twcmanager/
+endif
+	$(SUDO) chown root:pi /etc/twcmanager -R
+	$(SUDO) chmod 775 /etc/twcmanager
+
+setup:
+	# Install TWCManager packages
+	$(SUDO) python3 setup.py install

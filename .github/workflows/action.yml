@@ -3,7 +3,7 @@ on:
   push:
 
 jobs:
-  twcamanager-python3_4:
+  twcmanager-python3_4:
     runs-on: [ "self-hosted", "python3.4.10" ]
     steps:
       - name: "Checkout Repository"
@@ -15,7 +15,10 @@ jobs:
       - name: "Build Project"
         run: make build
 
-  twcamanager-python3_5:
+      - name: "Deploy Test Configuration"
+        run: make testconfig
+
+  twcmanager-python3_5:
     runs-on: [ "self-hosted", "python3.5.3" ]
     steps:
       - name: "Checkout Repository"
@@ -27,7 +30,10 @@ jobs:
       - name: "Build Project"
         run: make build
 
-  twcamanager-python3_6:
+      - name: "Deploy Test Configuration"
+        run: make testconfig
+
+  twcmanager-python3_6:
     runs-on: [ "self-hosted", "python3.6.13" ]
     steps:
       - name: "Checkout Repository"
@@ -39,7 +45,10 @@ jobs:
       - name: "Build Project"
         run: make build
 
-  twcamanager-python3_7:
+      - name: "Deploy Test Configuration"
+        run: make testconfig
+
+  twcmanager-python3_7:
     runs-on: [ "self-hosted", "python3.7.10" ]
     steps:
       - name: "Checkout Repository"
@@ -47,4 +56,7 @@ jobs:
 
       - name: "Build Project"
         run: make build
+
+      - name: "Deploy Test Configuration"
+        run: make testconfig
 
