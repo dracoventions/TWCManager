@@ -49,8 +49,8 @@ endif
 
 setup:
 	# Install TWCManager packages
-ifeq ($(VER), 20.04)
-	$(SUDO) python3 setup.py install
+ifeq ($(CI), 1)
+	$(SUDO) /home/docker/.pyenv/shims/python3 setup.py install
 else
 	$(SUDO) ./setup.py install
 endif
