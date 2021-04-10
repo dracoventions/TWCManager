@@ -21,6 +21,9 @@ jobs:
       - name: "Deploy Test Configuration"
         run: make testconfig
 
+      - name: "Start TWCManager"
+        run: python3 -m TWCManager
+
   twcmanager-python3_5:
     runs-on: [ "self-hosted", "python3.5.3" ]
     steps:
@@ -38,6 +41,9 @@ jobs:
 
       - name: "Deploy Test Configuration"
         run: make testconfig
+
+      - name: "Start TWCManager"
+        run: python3 -m TWCManager
 
   twcmanager-python3_6:
     runs-on: [ "self-hosted", "python3.6.13" ]
@@ -57,6 +63,9 @@ jobs:
       - name: "Deploy Test Configuration"
         run: make testconfig
 
+      - name: "Start TWCManager"
+        run: python3 -m TWCManager
+
   twcmanager-python3_7:
     runs-on: [ "self-hosted", "python3.7.10" ]
     steps:
@@ -71,4 +80,7 @@ jobs:
 
       - name: "Deploy Test Configuration"
         run: make testconfig
+
+      - name: "Start TWCManager"
+        run: python3 -m TWCManager
 

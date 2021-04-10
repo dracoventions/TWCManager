@@ -34,6 +34,7 @@ ifeq ($(VER), 20.04)
 	$(SUDO) service lighttpd restart
 else
 	$(SUDO) service lighttpd force-reload
+endif
 
 install: deps setup webfiles config
 
@@ -52,6 +53,7 @@ ifeq ($(VER), 20.04)
 	$(SUDO) python3 setup.py install
 else
 	$(SUDO) ./setup.py install
+endif
 
 webfiles:
 	$(SUDO) cp html/* /var/www/html/
