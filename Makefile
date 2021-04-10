@@ -15,6 +15,8 @@ else ifeq ($(VER), 16.04)
 	$(SUDO) apt-get install -y $(DEPS) php7.0-cgi
 else ifeq ($(VER), 16.10)
 	$(SUDO) apt-get install -y $(DEPS) php7.0-cgi
+else ifeq ($(VER), 20.04)
+	$(SUDO) apt-get install -y $(DEPS) php7.4-cgi
 else
 	$(SUDO) apt-get install -y $(DEPS) php7.3-cgi
 endif
