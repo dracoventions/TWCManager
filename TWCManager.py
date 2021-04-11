@@ -96,6 +96,7 @@ modules_available = [
     "EMS.TeslaPowerwall2",
     "EMS.TED",
     "EMS.Efergy",
+    "EMS.Growatt",
     "Status.HASSStatus",
     "Status.MQTTStatus",
 ]

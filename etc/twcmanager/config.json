@@ -538,7 +538,13 @@
         "Efergy": {
             "enabled": false,
             "token": "xx"
-        }
+        },
+      #Growatt: I'm using a growatt pypi package to very easily pull the data
+        "Growatt": {
+            "enabled": false,
+            "username":"username",
+	    "password":"password"
+	}
 
     },
 
