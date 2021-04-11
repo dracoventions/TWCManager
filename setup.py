@@ -18,6 +18,7 @@ setup(
         "termcolor>=1.1.0",
         "ww>=0.2.1",
         "pyModbusTCP>=0.1.8",
+        "growattServer>=1.0.0"
     ],
     # Package Metadata
     author="Nathan Gardiner",
