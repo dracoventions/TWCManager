@@ -45,7 +45,7 @@ class Growatt:
             self.master.releaseModule("lib.TWCManager.EMS", "Growatt")
             return None
 
-    def getConsumption(self):
+    def getConsumption(self): #gets called by TWCManager.py
 
         if not self.status:
             logger.debug("EMS Module Disabled. Skipping getConsumption")
@@ -58,7 +58,7 @@ class Growatt:
         return self.consumedW 
 
 
-    def getGeneration(self):
+    def getGeneration(self): #gets called by TWCManager.py
 
         if not self.status:
             logger.debug("EMS Module Disabled. Skipping getGeneration")
@@ -68,17 +68,15 @@ class Growatt:
         self.update()
 
         # Return generation value
-        if self.generatedW > 0:
-            return self.generatedW
-        else:
-            return 0
+        return self.generatedW
 
     def getGenerationValues(self):
+
         if not self.status:
             logger.debug("EMS Module Disabled. Skipping getGeneration")
             return 0
-        api = growattServer.GrowattApi()
 
+        api = growattServer.GrowattApi()
 
         try:
             logger.debug("Fetching Growatt EMS sensor values")
@@ -100,17 +98,16 @@ class Growatt:
             plant_ID= plant_list['plantId']
             inverter= api.device_list(plant_ID)[0]
             deviceAilas = inverter["deviceAilas"]
-            datalog_sn = inverter["datalogSn"]
             status = api.mix_system_status(deviceAilas, plant_ID)
             plant_info=api.plant_info(plant_ID)
             device = plant_info['deviceList'][0]
             device_sn = device['deviceSn']
             mix_status = api.mix_system_status(device_sn, plant_ID)
-            self.generatedW = calc_pv_total = (float(status['pPv1']) + float(status['pPv2'])) 
+            self.generatedW = (float(status['pPv1']) + float(status['pPv2']))
             self.consumedW = float(status['pLocalLoad'])*1000
             self.batterySOC = float(mix_status['SOC'])
         else:
-            logger.log(logging.INFO4, "No JSON response from Growatt API")
+            logger.log(logging.INFO4, "No response from Growatt API")
 
     def setCacheTime(self, cacheTime):
         self.cacheTime = cacheTime
