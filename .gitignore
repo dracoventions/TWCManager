@@ -4,3 +4,5 @@ config.json
 .vscode/
 dist/
 TWCManager.egg-info/
+.idea/
+venv/
