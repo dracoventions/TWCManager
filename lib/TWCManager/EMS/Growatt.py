@@ -28,6 +28,8 @@ class Growatt:
     status = False
     timeout = 2
     username = None
+    useBatteryAt = 80 #set to 100 if you don't want to use from battery
+    batteryGenerates = 4800 #my battery is 9.6kwh it generates half of that number as kw
 
     def __init__(self, master):
         self.master = master
@@ -103,9 +105,16 @@ class Growatt:
             device = plant_info['deviceList'][0]
             device_sn = device['deviceSn']
             mix_status = api.mix_system_status(device_sn, plant_ID)
-            self.generatedW = (float(status['pPv1']) + float(status['pPv2']))
-            self.consumedW = float(status['pLocalLoad'])*1000
             self.batterySOC = float(mix_status['SOC'])
+            gen_calc = float(status['pPv1']) + float(status['pPv2'])
+            gen_calc = gen_calc*1000
+            gen_api = float(status['ppv'])*1000 
+
+            if self.useBatteryAt<self.batterySOC:
+                self.generatedW = gen_api+self.batteryGenerates
+            else:
+                self.generatedW = gen_api 
+            self.consumedW =float(status['pLocalLoad'])*1000 
         else:
             logger.log(logging.INFO4, "No response from Growatt API")
 
