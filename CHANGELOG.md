@@ -4,7 +4,10 @@ This document logs the changes per release of TWCManager.
 
 ## v1.2.2 - Current development branch
 
+  * Added CI pipeline for effective integration testing of changes going forward
   * Added SmartPi EMS interface
+  * Added Volkszahler EMS interface
+  * Added functionality to Dummy module to emulate TWC communication to the point that Policy selection occurs
   * Bugfixes
     * Better handling of permissions issues when attempting to save settings.json - alerts user to check file permissions via Web Interface
     * Fixed issue with logging errors when a certain exception is raised in the Snapshot History function

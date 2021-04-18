@@ -51,7 +51,7 @@ EMS Interfaces read solar generation and/or consumption values from an external 
 | [SolarLog](docs/modules/EMS_SolarLog.md)   | Available v1.2.0 | Supports SolarLog Base API |
 | [Tesla Powerwall2](docs/modules/EMS_Powerwall2.md) | Available v1.1.3 | Support for Tesla Powerwall 2 |
 | [The Energy Detective](docs/modules/EMS_TED.md) | Available v1.1.2 | Support for TED (The Energy Detective) |
-| Volkszahler | TBD | TBD |
+| [Volkszähler](docs/modules/EMS_Volkszahler.md)  | Available v1.2.2 | Support for Volkszahler |
 
 ### Logging Interfaces
 
