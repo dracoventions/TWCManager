@@ -37,11 +37,10 @@ class Efergy:
         self.debugLevel = self.configConfig.get("debugLevel", 0)
         self.status = self.configEfergy.get("enabled", False)
         self.token = self.configEfergy.get("token", None)
-        self.serverPort = self.configEfergy.get("serverPort", "80")
 
         # Unload if this module is disabled or misconfigured
         if not self.status:
-            self.master.releaseModule("lib.TWCManager.EMS", "Efergy")
+            self.master.releaseModule("lib.TWCManager.EMS", __name__)
             return None
 
     def debugLog(self, minlevel, message):
