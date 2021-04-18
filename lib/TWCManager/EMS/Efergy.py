@@ -40,16 +40,13 @@ class Efergy:
 
         # Unload if this module is disabled or misconfigured
         if not self.status:
-            self.master.releaseModule("lib.TWCManager.EMS", __name__)
+            self.master.releaseModule("lib.TWCManager.EMS", self.__class__.__name__)
             return None
-
-    def debugLog(self, minlevel, message):
-        self.master.debugLog(minlevel, "Efergy", message)
 
     def getConsumption(self):
 
         if not self.status:
-            self.debugLog(10, "Efergy EMS Module Disabled. Skipping getConsumption")
+            logger.debug("Efergy EMS Module Disabled. Skipping getConsumption")
             return 0
 
         # Perform updates if necessary
@@ -61,7 +58,7 @@ class Efergy:
     def getGeneration(self):
 
         if not self.status:
-            self.debugLog(10, "Efergy EMS Module Disabled. Skipping getGeneration")
+            logger.debug("Efergy EMS Module Disabled. Skipping getGeneration")
             return 0
 
         # Perform updates if necessary
@@ -80,8 +77,8 @@ class Efergy:
         try:
             r = self.requests.get(url, timeout=self.timeout)
         except self.requests.exceptions.ConnectionError as e:
-            self.debugLog(4, "Error connecting to Efergy to fetch sensor value")
-            self.debugLog(10, str(e))
+            logger.log(logging.INFO4, "Error connecting to Efergy to fetch sensor value")
+            logger.debug(str(e))
             self.fetchFailed = True
             return False
 
@@ -108,10 +105,10 @@ class Efergy:
                 try:
                     self.consumedW = list(meterData[0]["data"][0].values())[0]
                 except (KeyError, TypeError) as e:
-                    self.debugLog(
-                        4, "Exception during parsing Meter Data (Consumption)"
+                    logger.log(
+                        logging.INFO4, "Exception during parsing Meter Data (Consumption)"
                     )
-                    self.debugLog(10, e)
+                    logger.debug(str(e))
 
             # Update last fetch time
             if self.fetchFailed is not True:
