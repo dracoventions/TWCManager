@@ -9,6 +9,7 @@ This document logs the changes per release of TWCManager.
     * Better handling of permissions issues when attempting to save settings.json - alerts user to check file permissions via Web Interface
     * Fixed issue with logging errors when a certain exception is raised in the Snapshot History function
     * Fixed issue with Modern web interface Charge Now setting not working
+    * Fix behaviour of Stop Responding to Slaves charge stop mode, by re-enabling slave communication after 60 seconds
 
 ## v1.2.1 - 2021-04-04
 

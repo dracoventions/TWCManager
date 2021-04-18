@@ -1247,6 +1247,7 @@ class TWCMaster:
                 self.getModuleByName("Policy").overrideLimit()
         if stopMode == 2:
             self.settings["respondToSlaves"] = 0
+            self.settings["respondToSlavesExpiry"] = time.time() + 60
         if stopMode == 3:
             self.sendStopCommand()
 

@@ -331,8 +331,14 @@ class TWCSlave:
         # that we store in masterHeartbeatData.
 
         if self.master.settings.get("respondToSlaves", 1) == 0:
-            # We have been instructed not to send master heartbeats
-            return
+            if self.master.settings.get("respondToSlavesExpiry", time.time()) > time.time():
+                # We have been instructed not to send master heartbeats
+                return
+            else:
+                # We were previously told to stop responding to slaves, but
+                # the time limit for this has been exceeded. Start responding
+                # again
+                self.master.settings["respondToSlaves"] = 1
 
         # Meaning of data:
         #
