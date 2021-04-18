@@ -30,6 +30,7 @@ class TWCMaster:
     generationValues = {}
     lastkWhMessage = time.time()
     lastkWhPoll = 0
+    lastSaveFailed = 0
     lastTWCResponseMsg = None
     masterTWCID = ""
     maxAmpsToDivideAmongSlaves = 0
@@ -943,12 +944,17 @@ class TWCMaster:
         self.settings["carApiTokenExpireTime"] = carapi.getCarApiTokenExpireTime()
 
         # Step 2 - Write the settings dict to a JSON file
-        with open(fileName, "w") as outconfig:
-            try:
+        try:
+            with open(fileName, "w") as outconfig:
                 json.dump(self.settings, outconfig)
-            except TypeError as e:
-                logger.info("Exception raised while attempting to save settings file:")
-                logger.info(str(e))
+            self.lastSaveFailed = 0
+        except PermissionError as e:
+            logger.info("Permission Denied trying to save to settings.json. Please check the permissions of the file and try again.")
+            self.lastSaveFailed = 1
+        except TypeError as e:
+            logger.info("Exception raised while attempting to save settings file:")
+            logger.info(str(e))
+            self.lastSaveFailed = 1
 
     def send_master_linkready1(self):
 
@@ -1181,7 +1187,7 @@ class TWCMaster:
             if now < snaptime:
                 return
         except ValueError as e:
-            logger.debug(logging.DEBUG2, str(e))
+            logger.debug(str(e))
             return
 
         for slave in self.getSlaveTWCs():

@@ -102,7 +102,7 @@
                 url: "/api/chargeNow",
                 data: JSON.stringify({
                     chargeNowRate: $("#chargeNowRate").val(),
-                    chargeNowDuration: $("#chargeNowDuration").val()
+                    chargeNowDuration: ($("#chargeNowDuration").val()*60*60)
                 }),
                 dataType: "json"
             }).done( function(data) {

@@ -22,6 +22,14 @@
           {% if url.path == "/apiacct/True" %}
              <b>Thank you, successfully fetched Tesla API token.</b>
           {% endif %}
+          {% if master.lastSaveFailed %}
+             <font color=red>
+               <b>We experienced an error trying to save your settings. This mea
+ns that while your current settings will be retained for the current session, th
+ey will not be saved if TWCManager exits. Please check the permissions on /etc/t
+wcmanager/settings.json and try saving your settings again.</b>
+             </font>
+          {% endif %}
         </td>
       </tr>
     </table>
