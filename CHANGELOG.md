@@ -4,9 +4,11 @@ This document logs the changes per release of TWCManager.
 
 ## v1.2.2 - Current development branch
 
-  * Better handling of permissions issues when attempting to save settings.json - alerts user to check file permissions via Web Interface
-  * Fixed issue with logging errors when a certain exception is raised in the Snapshot History function
-  * Fixed issue with Modern web interface Charge Now setting not working
+  * Added SmartPi EMS interface
+  * Bugfixes
+    * Better handling of permissions issues when attempting to save settings.json - alerts user to check file permissions via Web Interface
+    * Fixed issue with logging errors when a certain exception is raised in the Snapshot History function
+    * Fixed issue with Modern web interface Charge Now setting not working
 
 ## v1.2.1 - 2021-04-04
 

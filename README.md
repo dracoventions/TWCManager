@@ -2,6 +2,7 @@
 
 [![Stable Release](https://img.shields.io/badge/Stable_Release-1.2.1-blue)](https://github.com/ngardiner/TWCManager/releases/tag/1.2.1)
 [![Development Release](https://img.shields.io/badge/Devel_Release-1.2.2-green.svg)](https://github.com/ngardiner/TWCManager/tree/main)
+[![Build Status](https://github.com/ngardiner/TWCManager/actions/workflows/action.yml/badge.svg)
 ![GitHub commits](https://img.shields.io/github/commit-activity/m/ngardiner/TWCManager)
 ![Contributors](https://img.shields.io/github/contributors/ngardiner/TWCManager)
 
@@ -43,6 +44,7 @@ EMS Interfaces read solar generation and/or consumption values from an external 
 | [HomeAssistant](docs/modules/EMS_HASS.md)  | Available v1.0.1 | Supports HomeAssistant sensors |
 | [Kostal (Pico/Plenticore)](docs/modules/EMS_Kostal.md) | Available v1.2.1 | Support for Kostal Inverters via ModBus |
 | [SmartMe](docs/modules/EMS_SmartMe.md)     | Available v1.2.1 | Support for smart-me.com API |
+| [SmartPi](docs/modules/EMS_SmartPi.md)     | Available v1.2.2 | Support for SmartPi Smart Meter |
 | [SolarEdge](docs/modules/EMS_SolarEdge.md) | Available v1.2.0 | Support for SolarEdge API |
 | [SolarLog](docs/modules/EMS_SolarLog.md)   | Available v1.2.0 | Supports SolarLog Base API |
 | [Tesla Powerwall2](docs/modules/EMS_Powerwall2.md) | Available v1.1.3 | Support for Tesla Powerwall 2 |

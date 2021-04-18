@@ -93,6 +93,7 @@ modules_available = [
     "EMS.Kostal",
     "EMS.OpenHab",
     "EMS.SmartMe",
+    "EMS.SmartPi",
     "EMS.SolarEdge",
     "EMS.SolarLog",
     "EMS.TeslaPowerwall2",

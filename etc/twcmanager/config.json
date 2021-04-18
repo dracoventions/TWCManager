@@ -511,6 +511,11 @@
           "password": "password",
           "serialNumber": "ABC1234"
         },
+        "SmartPi": {
+          "enabled": false,
+          "serverIP": "192.168.1.2",
+          "serverPort": "1080"
+        },
       # SolarEdge API, consumed from the internet-based SolarEdge Potal
         "SolarEdge": {
           "enabled": false,
