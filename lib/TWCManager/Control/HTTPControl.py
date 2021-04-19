@@ -355,14 +355,16 @@ def CreateHTTPHandlerClass(master):
                     master.setChargeNowAmps(rate)
                     master.setChargeNowTimeEnd(durn)
                     master.queue_background_task({"cmd": "saveSettings"})
-                    self.send_response(202)
+                    master.getModuleByName("Policy").applyPolicyImmediately()
+                    self.send_response(204)
                     self.end_headers()
                     self.wfile.write("".encode("utf-8"))
 
             elif self.url.path == "/api/cancelChargeNow":
                 master.resetChargeNowAmps()
                 master.queue_background_task({"cmd": "saveSettings"})
-                self.send_response(202)
+                master.getModuleByName("Policy").applyPolicyImmediately()
+                self.send_response(204)
                 self.end_headers()
                 self.wfile.write("".encode("utf-8"))
 
