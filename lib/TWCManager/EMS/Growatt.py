@@ -28,8 +28,8 @@ class Growatt:
     status = False
     timeout = 2
     username = None
-    useBatteryAt = 80 #set to 100 if you don't want to use from battery
-    batteryGenerates = 4800 #my battery is 9.6kwh it generates half of that number as kw
+    useBatteryAt = None 
+    batteryMaxOutput = None 
 
     def __init__(self, master):
         self.master = master
@@ -39,6 +39,8 @@ class Growatt:
         self.password = self.configGrowatt.get("password", "")
         self.status = self.configGrowatt.get("enabled", False)
         self.username = self.configGrowatt.get("username", "")
+        self.useBatteryAt = float(self.configGrowatt.get("useBatteryAt", ""))
+        self.batteryMaxOutput = float(self.configGrowatt.get("batteryMaxOutput", ""))
 
         # Unload if this module is disabled or misconfigured
         if (not self.status) or (
@@ -107,11 +109,11 @@ class Growatt:
             mix_status = api.mix_system_status(device_sn, plant_ID)
             self.batterySOC = float(mix_status['SOC'])
             gen_calc = float(status['pPv1']) + float(status['pPv2'])
-            gen_calc = gen_calc*1000
+            gen_calc *= 1000
             gen_api = float(status['ppv'])*1000 
 
             if self.useBatteryAt<self.batterySOC:
-                self.generatedW = gen_api+self.batteryGenerates
+                self.generatedW = gen_api+self.batteryMaxOutput
             else:
                 self.generatedW = gen_api 
             self.consumedW =float(status['pLocalLoad'])*1000 
