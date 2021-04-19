@@ -540,10 +540,15 @@
             "token": "xx"
         },
       #Growatt: I'm using a growatt pypi package to very easily pull the data
+      #useBatteyAt describes at whihc SOC the system will add the battery's maxOutput to the pool of available power
+      #batteryMaxOutput is the maximum watt that the battery will output calculated by dividing battery Wh in two,
+      #in my case that's 9600wh and half of that is 4800
         "Growatt": {
             "enabled": false,
             "username":"username",
-	    "password":"password"
+	    "password":"password",
+	    "useBatteryAt":"80", 
+	    "batteryMaxOutput":"4800" 
 	}
 
     },
