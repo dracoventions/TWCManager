@@ -29,7 +29,9 @@ class Growatt:
     timeout = 2
     username = None
     useBatteryAt = None 
+    useBatteryTill = None
     batteryMaxOutput = None 
+    dischargingTill = None
 
     def __init__(self, master):
         self.master = master
@@ -40,7 +42,9 @@ class Growatt:
         self.status = self.configGrowatt.get("enabled", False)
         self.username = self.configGrowatt.get("username", "")
         self.useBatteryAt = float(self.configGrowatt.get("useBatteryAt", ""))
+        self.useBatteryTill = float(self.configGrowatt.get("useBatteryTill", ""))
         self.batteryMaxOutput = float(self.configGrowatt.get("batteryMaxOutput", ""))
+        self.discharginTill = self.useBatteryAt
 
         # Unload if this module is disabled or misconfigured
         if (not self.status) or (
@@ -113,8 +117,10 @@ class Growatt:
             gen_api = float(status['ppv'])*1000 
 
             if self.useBatteryAt<self.batterySOC:
+                self.discharginTill = self.useBatteryTill
                 self.generatedW = gen_api+self.batteryMaxOutput
             else:
+                self.discharginTill = self.useBatteryAt
                 self.generatedW = gen_api 
             self.consumedW =float(status['pLocalLoad'])*1000 
         else:
