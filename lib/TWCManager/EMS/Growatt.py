@@ -1,5 +1,6 @@
 import logging
 import growattServer
+import datetime
         
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
@@ -32,6 +33,8 @@ class Growatt:
     useBatteryTill = None
     batteryMaxOutput = None 
     dischargingTill = None
+    useBatteryBefore = None
+    now = None
 
     def __init__(self, master):
         self.master = master
@@ -44,8 +47,11 @@ class Growatt:
         self.useBatteryAt = float(self.configGrowatt.get("useBatteryAt", ""))
         self.useBatteryTill = float(self.configGrowatt.get("useBatteryTill", ""))
         self.batteryMaxOutput = float(self.configGrowatt.get("batteryMaxOutput", ""))
+        timestring = self.configGrowatt.get("useBatteryBefore", "")
+        timelist =timestring.split(":")
+        self.useBatteryBefore = datetime.time(int(timelist[0]),int(timelist[1]))
         self.discharginTill = self.useBatteryAt
-
+        self.now = datetime.datetime.now().time()
         # Unload if this module is disabled or misconfigured
         if (not self.status) or (
             not self.username or not self.password
@@ -115,8 +121,8 @@ class Growatt:
             gen_calc = float(status['pPv1']) + float(status['pPv2'])
             gen_calc *= 1000
             gen_api = float(status['ppv'])*1000 
-
-            if self.useBatteryAt<self.batterySOC:
+            inTime = self.now>datetime.time(00,00) and self.now < self.useBatteryBefore
+            if self.useBatteryAt<self.batterySOC and inTime:
                 self.discharginTill = self.useBatteryTill
                 self.generatedW = gen_api+self.batteryMaxOutput
             else:
@@ -134,6 +140,7 @@ class Growatt:
 
     def update(self):
         # Update function - determine if an update is required
+        self.now = datetime.datetime.now().time()
 
         if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from Growatt.
