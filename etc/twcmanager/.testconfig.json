@@ -248,11 +248,11 @@
         "listenPort": 8088
       },
       "MQTT": {
-        "enabled": false,
-        "brokerIP": "192.168.1.2",
+        "enabled": true,
+        "brokerIP": "127.0.0.1",
         "topicPrefix": "TWC",
-        "username": "mqttuser",
-        "password": "mqttpass"
+        "username": "twcmanager",
+        "password": "twcmanager"
       },
       "OCPP": {
           "enabled": false,
@@ -419,14 +419,14 @@
             # logging modules
             "mute":{
                 "ChargeSessions": false,
-                "GreenEnergy": true,
-                "SlavePower": true,
-                "SlaveStatus": true,
+                "GreenEnergy": false,
+                "SlavePower": false,
+                "SlaveStatus": false
             }
         },
         "MySQL": {
-            "enabled": false,
-            "host": "1.2.3.4",
+            "enabled": true,
+            "host": "127.0.0.1",
             "database": "twcmanager",
             "username": "twcmanager",
             "password": "twcmanager"
@@ -447,19 +447,19 @@
         # useful if you have one interface that provides generation detail and another that provides consumption
         # detail, but if both systems provided both values, it would be duplicated.
         "Enphase": {
-            "enabled": false,
+            "enabled": true,
 
             # Note that Enphase is an either/or, either Cloud or Local
             # Enabling both of these sections will not give you the intended
             # outcome.
             #
             # Cloud API:
-            "apiKey": "ABC123",
-            "systemID": "12345",
-            "userID": "4d6a51330a"
+            #"apiKey": "ABC123",
+            #"systemID": "12345",
+            #"userID": "4d6a51330a"
             # Local API:
-            #"serverIP": "192.168.1.2",
-            #"serverPort": 80
+            "serverIP": "127.0.0.1",
+            "serverPort": 1080
 
         },
         "Fronius": {
@@ -510,6 +510,11 @@
           "username": "username",
           "password": "password",
           "serialNumber": "ABC1234"
+        },
+        "SmartPi": {
+          "enabled": true,
+          "serverIP": "127.0.0.1",
+          "serverPort": "1080"
         },
       # SolarEdge API, consumed from the internet-based SolarEdge Potal
         "SolarEdge": {
@@ -577,14 +582,11 @@
             "apiKey": "ABC123"
         },
         "MQTT": {
-            "enabled": false,
-            "brokerIP": "192.168.1.1",
-            "topicPrefix": "TWC"
-
-       # Username and password are optional. If your broker requires a username and password to authenticate
-       # clients, set them here. Otherwise, leave them commented out
-          #  "username": "mqttuser",
-          #  "password": "mqttpass"
+            "enabled": true,
+            "brokerIP": "127.0.0.1",
+            "topicPrefix": "TWC",
+            "username": "twcmanager",
+            "password": "twcmanager"
         }
     }
 }

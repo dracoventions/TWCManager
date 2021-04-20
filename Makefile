@@ -2,6 +2,8 @@ DEPS := lighttpd screen git
 SUDO := sudo
 VER := $(shell lsb_release -sr)
 
+.PHONY: tests
+
 build: deps setup
 
 config:
@@ -37,10 +39,10 @@ install: deps setup webfiles config
 testconfig:
 	# Create configuration directory
 	$(SUDO) mkdir -p /etc/twcmanager
-ifeq (,$(wildcard /etc/twcmanager/.testconfig.json))
-	$(SUDO) cp etc/twcmanager/.testconfig.json /etc/twcmanager/
+ifeq (,$(wildcard /etc/twcmanager/config.json))
+	$(SUDO) cp etc/twcmanager/.testconfig.json /etc/twcmanager/config.json
 endif
-	$(SUDO) chown root:pi /etc/twcmanager -R
+	$(SUDO) chown 1000:1000 /etc/twcmanager -R
 	$(SUDO) chmod 775 /etc/twcmanager
 
 setup:
@@ -50,6 +52,9 @@ ifeq ($(CI), 1)
 else
 	$(SUDO) ./setup.py install
 endif
+
+tests:
+	cd tests && make
 
 webfiles:
 	$(SUDO) cp html/* /var/www/html/
