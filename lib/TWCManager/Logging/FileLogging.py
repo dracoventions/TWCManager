@@ -45,16 +45,21 @@ class FileLogging:
         self.muteDebugLogLevelGreaterThan = self.mute.get("DebugLogLevelGreaterThan", 1)
 
         # Initialize Logger
-        handler = TimedRotatingFileHandler(
-            self.configLogging.get("path", "/etc/twcmanager/log") + "/logfile",
-            when="H",
-            interval=1,
-            backupCount=24,
-        )
-        handler.setFormatter(
-            logging.Formatter("%(asctime)s - %(name)-10.10s %(levelno)02d %(message)s")
-        )
-        logging.getLogger("").addHandler(handler)
+        handler = None
+        try:
+            handler = TimedRotatingFileHandler(
+                self.configLogging.get("path", "/etc/twcmanager/log") + "/logfile",
+                when="H",
+                interval=1,
+                backupCount=24,
+            )
+        except PermissionError:
+            logger.error("Permission Denied error opening logfile for writing")
+        if handler:
+            handler.setFormatter(
+                logging.Formatter("%(asctime)s - %(name)-10.10s %(levelno)02d %(message)s")
+            )
+            logging.getLogger("").addHandler(handler)
 
     def getCapabilities(self, capability):
         # Allows query of module capabilities when deciding which Logging module to use
