@@ -95,6 +95,8 @@ class MQTTControl:
             if len(plsplit) == 2:
                 self.master.setChargeNowAmps(int(plsplit[0]))
                 self.master.setChargeNowTimeEnd(int(plsplit[1]))
+                self.master.getModuleByName("Policy").applyPolicyImmediately()
+                self.master.queue_background_task({"cmd": "saveSettings"})
             else:
                 logger.info(
                     "MQTT chargeNow command failed: Expecting comma seperated string in format amps,seconds"
@@ -103,6 +105,8 @@ class MQTTControl:
         if message.topic == self.topicPrefix + "/control/chargeNowEnd":
             logger.log(logging.INFO3, "MQTT Message called chargeNowEnd")
             self.master.resetChargeNowAmps()
+            self.master.getModuleByName("Policy").applyPolicyImmediately()
+            self.master.queue_background_task({"cmd": "saveSettings"})
 
         if message.topic == self.topicPrefix + "/control/stop":
             logger.log(logging.INFO3, "MQTT Message called Stop")

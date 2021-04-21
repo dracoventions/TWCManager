@@ -128,6 +128,10 @@ class Policy:
                 if policy_engine.get("policyCheckInterval"):
                     self.policyCheckInterval = policy_engine.get("policyCheckInterval")
 
+    def applyPolicyImmediately(self):
+        self.lastPolicyCheck = 0
+        self.setChargingPerPolicy()
+
     def setChargingPerPolicy(self):
         # This function is called for the purpose of evaluating the charging
         # policy and matching the first rule which matches our scenario.
