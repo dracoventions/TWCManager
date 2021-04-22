@@ -343,7 +343,7 @@ def update_statuses():
         chgwattsDisplay = f("{chgwatts:.0f}W")
 
         if config["config"]["subtractChargerLoad"]:
-            if cnnwatts > 0:
+            if conwatts > 0:
                 othwatts = conwatts - chgwatts
             else:
                 othwatts = 0
