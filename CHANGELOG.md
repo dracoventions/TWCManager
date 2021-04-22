@@ -8,6 +8,7 @@ This document logs the changes per release of TWCManager.
   * (@ngardiner) - Added Volkszahler EMS interface
   * (@ngardiner) - Added functionality to Dummy module to emulate TWC communication to the point that Policy selection occurs
   * (@MikeBishop) - Implement Policy Shortcut function to allow Charge Now to take immediate effect
+  * (@GMerg) - Added OpenWeatherMap
   * Bugfixes
     * (@ngardiner) - Better handling of permissions issues when attempting to save settings.json - alerts user to check file permissions via Web Interface
     * (@ngardiner) - Fixed issue with logging errors when a certain exception is raised in the Snapshot History function
