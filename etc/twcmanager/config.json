@@ -548,7 +548,8 @@
             "username":"username",
 	    "password":"password",
 	    "useBatteryAt":"80", 
-	    "batteryMaxOutput":"4800" 
+	    "batteryMaxOutput":"4800" ,
+	    "useBatteryBefore":"15:00"
 	}
 
     },
