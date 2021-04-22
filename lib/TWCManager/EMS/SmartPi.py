@@ -21,6 +21,7 @@ class SmartPi:
     master = None
     serverIP = None
     serverPort = 80
+    showConsumption = False
     status = False
     timeout = 2
 
@@ -31,6 +32,7 @@ class SmartPi:
         self.configSmartPi = master.config["sources"].get("SmartPi", {})
         self.serverIP = self.configSmartPi.get("serverIP", None)
         self.serverPort = self.configSmartPi.get("serverPort", 80)
+        self.showConsumption = self.configSmartPi.get("showConsumption", False)
         self.status = self.configSmartPi.get("enabled", False)
 
         # Unload if this module is disabled or misconfigured
@@ -46,7 +48,7 @@ class SmartPi:
 
         # While we don't have separate generation or consumption values, if
         # the value is a positive value we report it as consumption
-        if self.generatedW < 0:
+        if self.generatedW < 0 and self.showConsumption:
             return self.generatedW * -1
         else:
             return 0
