@@ -77,5 +77,27 @@
         </tr>
     </table>
 
+    <p>&nbsp;</p>
+    <h3>Group Management</h3>
+    <table>
+      <tr>
+        <td>
+          <select><option>Add</option><option>Remove</option></select>
+        </td>
+        <td>
+          vehicle to/from group
+        </td>
+        <td>
+          <select>
+          {% for group in master.settings["VehicleGroups"].keys() %}
+            <option>{{ group }}</option>
+          {% endfor %}
+          </select>
+        </td>
+        <td>
+          <input type="submit">
+        </td>
+      </tr>
+    </table>
   </body>
 </html>

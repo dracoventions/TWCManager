@@ -164,11 +164,18 @@ class TWCMaster:
         if self.settings.get("chargeAuthorizationMode", "1") == "1":
             # In this mode, we allow all vehicles to charge unless they
             # are explicitly banned from charging
-            return 1
+            if subTWC.currentVIN in self.settings["VehicleGroups"]["Deny Charging"]["Members"]:
+                return 0
+            else:
+                return 1
+
         elif self.settings.get("chargeAuthorizationMode", "1") == "2":
             # In this mode, vehicles may only charge if they are listed
             # in the Allowed VINs list
-            return 0
+            if subTWC.currentVIN in self.settings["VehicleGroups"]["Allow Charging"]["Members"]:
+                return 1
+            else:
+                return 0
 
     def convertAmpsToWatts(self, amps):
         (voltage, phases) = self.getVoltageMeasurement()
