@@ -122,7 +122,7 @@ class Growatt:
             gen_calc *= 1000
             gen_api = float(status['ppv'])*1000 
             inTime = self.now>datetime.time(00,00) and self.now < self.useBatteryBefore
-            if self.useBatteryAt<self.batterySOC and inTime:
+            if self.discharginTill<self.batterySOC and inTime:
                 self.discharginTill = self.useBatteryTill
                 self.generatedW = gen_api+self.batteryMaxOutput
             else:
