@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang='en'>
+  <head>
+    <title>TWCManager</title>
+    {% include 'bootstrap.html.j2' %}
+  </head>
+  <body>
+    {% include 'navbar.html.j2' %}
+    <p>&nbsp;</p>
+    <h3>Vehicles</h3>
+    <table>
+        <tr>
+          <th>Vehicle VIN</th>
+          <th>Charge Sessions</th>
+        </tr>
+      {% for vehicle in master.settings["Vehicles"].keys() %}
+        <tr>
+          <td><a href="/vehicleDetail/{{ vehicle }}">{{ vehicle }}</a></td>
+          <td>{{ master.settings["Vehicles"][vehicle]["chargeSessions"] }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+
+    <p>&nbsp;</p>
+    <h3>Vehicle Groups</h3>
+    <table>
+      <tr>
+        <th>Group Name</th>
+        <th>Members</th>
+      </tr>
+      {% for group in master.settings["VehicleGroups"].keys() %}
+        <tr>
+          <td>{{ group }}</td>
+          <td>
+            {% for vehicle in master.settings["VehicleGroups"][group]["Members"] %}
+              {{ vehicle }}<br/>
+            {% endfor %}
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  </body>
+</html>
