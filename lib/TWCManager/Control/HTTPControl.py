@@ -124,7 +124,6 @@ def CreateHTTPHandlerClass(master):
             self.templateEnv.globals.update(hoursDurationList=self.hoursDurationList)
             self.templateEnv.globals.update(navbarItem=self.navbar_item)
             self.templateEnv.globals.update(optionList=self.optionList)
-            self.templateEnv.globals.update(showTWCs=self.show_twcs)
             self.templateEnv.globals.update(timeList=self.timeList)
 
             # Set master object
@@ -537,6 +536,14 @@ def CreateHTTPHandlerClass(master):
                 self.do_API_GET()
                 return
 
+            webroutes = [
+              { "route": "/debug",    "tmpl": "debug.html.j2" },
+              { "route": "/schedule", "tmpl": "schedule.html.j2" },
+              { "route": "/settings", "tmpl": "settings.html.j2" },
+              { "rstart": "/vehicleDetail", "tmpl": "vehicleDetail.html.j2" },
+              { "route": "/vehicles", "tmpl": "vehicles.html.j2" } 
+            ]
+
             if self.url.path == "/teslaAccount/login":
                 # For security, these details should be submitted via a POST request
                 # Send a 405 Method Not Allowed in response.
@@ -566,13 +573,21 @@ def CreateHTTPHandlerClass(master):
                 self.wfile.write(page.encode("utf-8"))
                 return
 
-            if self.url.path == "/debug":
+            # Match web routes to defined webroutes routing
+            route = None
+            for webroute in webroutes:
+                if self.url.path == webroute.get("route", "INVALID"):
+                    route = webroute
+                elif self.url.path.startswith(webroute.get("rstart", "INVALID")):
+                    route = webroute
+
+            if route:
                 self.send_response(200)
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
 
                 # Load debug template and render
-                self.template = self.templateEnv.get_template("debug.html.j2")
+                self.template = self.templateEnv.get_template(route["tmpl"])
                 page = self.template.render(self.__dict__)
 
                 self.wfile.write(page.encode("utf-8"))
@@ -598,18 +613,6 @@ def CreateHTTPHandlerClass(master):
 
                 # Load template and render
                 self.template = self.templateEnv.get_template("schedule.html.j2")
-                page = self.template.render(self.__dict__)
-
-                self.wfile.write(page.encode("utf-8"))
-                return
-
-            if self.url.path == "/settings":
-                self.send_response(200)
-                self.send_header("Content-type", "text/html")
-                self.end_headers()
-
-                # Load template and render
-                self.template = self.templateEnv.get_template("settings.html.j2")
                 page = self.template.render(self.__dict__)
 
                 self.wfile.write(page.encode("utf-8"))
@@ -958,63 +961,6 @@ def CreateHTTPHandlerClass(master):
                 self.end_headers()
                 self.wfile.write("".encode("utf-8"))
                 return
-
-        def show_twcs(self):
-
-            page = """
-        <table><tr width = '100%'><td width='65%'>
-          <table class='table table-dark table-condensed table-striped'>
-          <thead class='thead-dark'><tr>
-            <th width='2%'>TWC ID</th>
-            <th width='1%'>State</th>
-            <th width='1%'>Version</th>
-            <th width='2%'>Max Amps</th>
-            <th width='2%'>Amps<br />Offered</th>
-            <th width='2%'>Amps<br />In Use</th>
-            <th width='2%'>Lifetime<br />kWh</th>
-            <th width='4%'>Voltage<br />per Phase<br />1 / 2 / 3</th>
-            <th width='2%'>Last Heartbeat</th>
-            <th width='6%'>Vehicle Connected<br />Current / Last</th>
-            <th width='2%'>Commands</th>
-          </tr></thead>
-        """
-            for slaveTWC in master.getSlaveTWCs():
-                twcid = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
-                page += "<tr>"
-                page += "<td>%s</td>" % twcid
-                page += "<td><div id='%s_state'></div></td>" % twcid
-                page += "<td><div id='%s_version'></div></td>" % twcid
-                page += "<td><div id='%s_maxAmps'></div></td>" % twcid
-                page += "<td><div id='%s_lastAmpsOffered'></div></td>" % twcid
-                page += "<td><div id='%s_reportedAmpsActual'></div></td>" % twcid
-                page += "<td><div id='%s_lifetimekWh'></div></td>" % twcid
-                page += (
-                    "<td><span id='%s_voltsPhaseA'></span> / <span id='%s_voltsPhaseB'></span> / <span id='%s_voltsPhaseC'></span></td>"
-                    % (twcid, twcid, twcid)
-                )
-                page += "<td><span id='%s_lastHeartbeat'></span> sec</td>" % twcid
-                page += (
-                    "<td>C: <span id='%s_currentVIN'></span><br />L: <span id='%s_lastVIN'></span></td>"
-                    % (twcid, twcid)
-                )
-                page += """
-            <td>
-              <div class="dropdown">
-                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Select</button>
-                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                  <a class="dropdown-item" href="#">Coming Soon</a>
-                </div>
-              </div>
-            </td>
-            """
-                page += "</tr>"
-            page += "<tr><td><b>Total</b><td>&nbsp;</td><td>&nbsp;</td>"
-            page += "<td><div id='total_maxAmps'></div></td>"
-            page += "<td><div id='total_lastAmpsOffered'></div></td>"
-            page += "<td><div id='total_reportedAmpsActual'></div></td>"
-            page += "<td><div id='total_lifetimekWh'></div></td>"
-            page += "</tr></table></td></tr></table>"
-            return page
 
         def process_save_graphs(self, initial, end):
             # Check that Graphs dict exists within settings.

@@ -626,6 +626,18 @@ class TWCMaster:
         carapi.setCarApiRefreshToken(self.settings.get("carApiRefreshToken", ""))
         carapi.setCarApiTokenExpireTime(self.settings.get("carApiTokenExpireTime", ""))
 
+        # If particular details are missing from the Settings dict, create them
+        if not self.settings.get("VehicleGroups", None):
+            self.settings["VehicleGroups"] = {}
+        if not self.settings["VehicleGroups"].get("Allow Charging", None):
+            self.settings["VehicleGroups"]["Allow Charging"] = {
+                "Members": []
+            }
+        if not self.settings["VehicleGroups"].get("Deny Charging", None):
+            self.settings["VehicleGroups"]["Deny Charging"] = {
+                "Members": []
+            }
+
     def master_id_conflict(self):
         # We're playing fake slave, and we got a message from a master with our TWCID.
         # By convention, as a slave we must change our TWCID because a master will not.
