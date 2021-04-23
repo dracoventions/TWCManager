@@ -157,6 +157,19 @@ class TWCMaster:
                     blnUseScheduledAmps = 1
         return blnUseScheduledAmps
 
+    def checkVINEntitlement(self, subTWC):
+        # When provided with the TWC that has had the VIN reported for a vehicle
+        # we check the policy for charging and determine if it is allowed or not
+
+        if self.settings.get("chargeAuthorizationMode", "1") == "1":
+            # In this mode, we allow all vehicles to charge unless they
+            # are explicitly banned from charging
+            return 1
+        elif self.settings.get("chargeAuthorizationMode", "1") == "2":
+            # In this mode, vehicles may only charge if they are listed
+            # in the Allowed VINs list
+            return 0
+
     def convertAmpsToWatts(self, amps):
         (voltage, phases) = self.getVoltageMeasurement()
         return phases * voltage * amps
@@ -1082,15 +1095,17 @@ class TWCMaster:
                 + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
             )
 
-    def sendStopCommand(self):
+    def sendStopCommand(self, subTWC = None):
         # This function will loop through each of the Slave TWCs, and send them the stop command.
+        # If the subTWC parameter is supplied, we only stop the specified TWC
         for slaveTWC in self.getSlaveTWCs():
-            self.getInterfaceModule().send(
-                bytearray(b"\xFC\xB2")
-                + self.TWCID
-                + slaveTWC.TWCID
-                + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
-            )
+            if ((not subTWC) or (subTWC == slaveTWC.TWCID)):
+                self.getInterfaceModule().send(
+                    bytearray(b"\xFC\xB2")
+                    + self.TWCID
+                    + slaveTWC.TWCID
+                    + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+                )
 
     def setAllowedFlex(self, amps):
         self.allowedFlex = amps if amps >= 0 else 0
