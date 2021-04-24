@@ -714,10 +714,18 @@ def CreateHTTPHandlerClass(master):
                 vin = self.getFieldValue("vin")
 
                 if op == "add":
-                    master.settings["VehicleGroups"][group]["Members"].append(vin)
-                elif op == "remove":
-                    master.settings["VehicleGroups"][group]["Members"].remove(vin)
+                    try:
+                        master.settings["VehicleGroups"][group]["Members"].append(vin)
+                    except ValueError:
+                        logger.error("Error adding vehicle %s to group %s" % (vin, group))
 
+                elif op == "remove":
+                    try:
+                        master.settings["VehicleGroups"][group]["Members"].remove(vin)
+                    except ValueError:
+                        logger.error("Error removing vehicle %s from group %s" % (vin, group))
+
+                master.queue_background_task({"cmd": "saveSettings"})
                 self.send_response(302)
                 self.send_header("Location", "/vehicleDetail/"+vin)
                 self.end_headers()

@@ -53,7 +53,9 @@
         <tr>
           <th>Variant</th>
           <td>
-            {% if vin[3] == "3" and vin[7] == "A" %}Standard Range Plus RWD{%endif%}
+            {% if vin[3] == "3" and vin[5:8] == "7EA" %}Standard Range Plus RWD{%endif%}
+            {% if vin[3] == "3" and vin[5:8] == "7EB" %}Long Range AWD{%endif%}
+            {% if vin[3] == "3" and vin[5:8] == "7EC" %}Performance AWD{%endif%}
             {% if vin[3] == "3" and vin[7] == "B" %}Long Range AWD{%endif%}
           </td>
         </tr>
