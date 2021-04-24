@@ -13,7 +13,7 @@
           <th>Vehicle VIN</th>
           <th>Charge Sessions</th>
         </tr>
-      {% for vehicle in master.settings["Vehicles"].keys() %}
+      {% for vehicle in master.settings["Vehicles"].keys()|sort %}
         <tr>
           <td><a href="/vehicleDetail/{{ vehicle }}">{{ vehicle }}</a></td>
           <td>{{ master.settings["Vehicles"][vehicle]["chargeSessions"] }}</td>
@@ -28,7 +28,7 @@
         <th>Group Name</th>
         <th>Members</th>
       </tr>
-      {% for group in master.settings["VehicleGroups"].keys() %}
+      {% for group in master.settings["VehicleGroups"].keys()|sort %}
         <tr>
           <td>{{ group }}</td>
           <td>

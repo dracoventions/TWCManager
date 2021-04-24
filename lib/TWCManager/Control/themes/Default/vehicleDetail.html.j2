@@ -81,23 +81,40 @@
     <h3>Group Management</h3>
     <table>
       <tr>
+        <th>Group</th>
+        <th>Membership Status</th>
+        <th>Actions</th>
+      </tr>
+      {% for group in master.settings["VehicleGroups"].keys()|sort %}
+      <tr>
+        <td><b>{{ group }}</b></td>
         <td>
-          <select><option>Add</option><option>Remove</option></select>
+          {% if vin in master.settings["VehicleGroups"][group]["Members"] %}
+            Vehicle is in this group
+          {% else %}
+            Vehicle is not in this group
+          {% endif %}
         </td>
         <td>
-          vehicle to/from group
-        </td>
-        <td>
-          <select>
-          {% for group in master.settings["VehicleGroups"].keys() %}
-            <option>{{ group }}</option>
-          {% endfor %}
-          </select>
-        </td>
-        <td>
-          <input type="submit">
+          {% if vin in master.settings["VehicleGroups"][group]["Members"] %}
+            <form method=POST action=/vehicle/groupMgmt>
+              <input type=hidden name="operation" value="remove" />
+              <input type=hidden name="vin" value="{{vin}}" />
+              <input type=hidden name="group" value="{{group}}" />
+              <input type=submit value="Remove from Group">
+            </form>
+          {% else %}
+            <form method=POST action=/vehicle/groupMgmt>
+              <input type=hidden name="operation" value="add" />
+              <input type=hidden name="vin" value="{{vin}}" />
+              <input type=hidden name="group" value="{{group}}" />
+              <input type=submit value="Add to Group">
+            </form>
+          {% endif %}
         </td>
       </tr>
+      {% endfor %}
     </table>
+    </form>
   </body>
 </html>

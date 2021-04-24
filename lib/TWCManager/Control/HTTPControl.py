@@ -707,6 +707,24 @@ def CreateHTTPHandlerClass(master):
                 self.wfile.write("".encode("utf-8"))
                 return
 
+            if self.url.path == "/vehicle/groupMgmt":
+
+                group = self.getFieldValue("group")
+                op = self.getFieldValue("operation")
+                vin = self.getFieldValue("vin")
+
+                if op == "add":
+                    master.settings["VehicleGroups"][group]["Members"].append(vin)
+                elif op == "remove":
+                    master.settings["VehicleGroups"][group]["Members"].remove(vin)
+
+                self.send_response(302)
+                self.send_header("Location", "/vehicleDetail/"+vin)
+                self.end_headers()
+                self.wfile.write("".encode("utf-8"))
+                return
+
+
             # All other routes missed, return 404
             self.send_response(404)
             self.end_headers()
