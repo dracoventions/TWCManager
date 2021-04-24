@@ -120,6 +120,7 @@ def CreateHTTPHandlerClass(master):
             self.templateEnv.globals.update(addButton=self.addButton)
             self.templateEnv.globals.update(ampsList=self.ampsList)
             self.templateEnv.globals.update(chargeScheduleDay=self.chargeScheduleDay)
+            self.templateEnv.globals.update(checkBox=self.checkBox)
             self.templateEnv.globals.update(doChargeSchedule=self.do_chargeSchedule)
             self.templateEnv.globals.update(hoursDurationList=self.hoursDurationList)
             self.templateEnv.globals.update(navbarItem=self.navbar_item)
@@ -665,6 +666,10 @@ def CreateHTTPHandlerClass(master):
 
             self.fields = urllib.parse.parse_qs(self.post_data.decode("utf-8"))
 
+            if self.url.path == "/debug/save":
+                self.process_save_settings("debug")
+                return
+
             if self.url.path == "/schedule/save":
                 # User has submitted schedule.
                 self.process_save_schedule()
@@ -889,7 +894,7 @@ def CreateHTTPHandlerClass(master):
             self.wfile.write("".encode("utf-8"))
             return
 
-        def process_save_settings(self):
+        def process_save_settings(self, page = "settings"):
 
             # This function will write the settings submitted from the settings
             # page to the settings dict, before triggering a write of the settings
@@ -916,6 +921,18 @@ def CreateHTTPHandlerClass(master):
             if int(master.settings.get("nonScheduledAction", 1)) > 1:
                 master.settings["nonScheduledAmpsMax"] = 0
             master.queue_background_task({"cmd": "saveSettings"})
+
+            # If triggered from the Debug page (not settings page), we need to
+            # set certain settings to false if they were not seen in the
+            # request data - This is because Check Boxes don't have a value
+            # if they aren't set
+            if page == "debug":
+                  checkboxes = ["enableDebugCommands", 
+                                "spikeAmpsProactively", 
+                                "spikeAmpsReactively" ]
+                  for checkbox in checkboxes:
+                      if checkbox not in self.fields:
+                          master.settings[checkbox] = 0
 
             # Redirect to the index page
             self.send_response(302)
