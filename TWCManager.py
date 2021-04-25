@@ -261,6 +261,19 @@ def background_tasks_thread(master):
                 )
             elif task["cmd"] == "checkGreenEnergy":
                 check_green_energy()
+            elif task["cmd"] == "checkVINEntitlement":
+                # The two possible arguments are task["subTWC"] which tells us
+                # which TWC to check, or task["vin"] which tells us which VIN
+                if task.get("vin", None):
+                    task["subTWC"] = master.getTWCbyVIN(task["vin"])
+
+                if task["subTWC"]:
+                    if master.checkVINEntitlement(task["subTWC"]):
+                        logger.info("Vehicle %s on TWC %02X%02X is permitted to charge." % (task["subTWC"].currentVIN, task["subTWC"].TWCID[0], task["subTWC"].TWCID[1]))
+                    else:
+                        logger.info("Vehicle %s on TWC %02X%02X is not permitted to charge. Terminating session." % (task["subTWC"].currentVIN, task["subTWC"].TWCID[0], task["subTWC"].TWCID[1]))
+                        master.sendStopCommand(task["subTWC"].TWCID)
+
             elif task["cmd"] == "getLifetimekWh":
                 master.getSlaveLifetimekWh()
             elif task["cmd"] == "getVehicleVIN":
@@ -1105,11 +1118,12 @@ while True:
 
                             # Establish if this VIN should be able to charge
                             # If not, send stop command
-                            if master.checkVINEntitlement(slaveTWC):
-                                logger.info("Vehicle %s on TWC %02X%02X is permitted to charge." % (slaveTWC.currentVIN, senderID[0], senderID[1]))
-                            else:
-                                logger.info("Vehicle %s on TWC %02X%02X is not permitted to charge. Terminating session." % (slaveTWC.currentVIN, senderID[0], senderID[1]))
-                                master.sendStopCommand(slaveTWC.TWCID)
+                            master.queue_background_task(
+                                {
+                                    "cmd": "checkVINEntitlement",
+                                    "subTWC": slaveTWC,
+                                }
+                            )
 
                             vinPart += 1
                         else:

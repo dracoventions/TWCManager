@@ -726,6 +726,14 @@ def CreateHTTPHandlerClass(master):
                         logger.error("Error removing vehicle %s from group %s" % (vin, group))
 
                 master.queue_background_task({"cmd": "saveSettings"})
+
+                master.queue_background_task(
+                    {
+                        "cmd": "checkVINEntitlement",
+                        "vin": vin,
+                    }
+                )
+
                 self.send_response(302)
                 self.send_header("Location", "/vehicleDetail/"+vin)
                 self.end_headers()

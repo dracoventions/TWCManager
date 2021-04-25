@@ -161,7 +161,11 @@ class TWCMaster:
         # When provided with the TWC that has had the VIN reported for a vehicle
         # we check the policy for charging and determine if it is allowed or not
 
-        if self.settings.get("chargeAuthorizationMode", "1") == "1":
+        if not subTWC.currentVIN:
+            # No VIN supplied. We can't make any decision other than allow
+            return 1
+
+        if str(self.settings.get("chargeAuthorizationMode", "1")) == "1":
             # In this mode, we allow all vehicles to charge unless they
             # are explicitly banned from charging
             if subTWC.currentVIN in self.settings["VehicleGroups"]["Deny Charging"]["Members"]:
@@ -169,7 +173,7 @@ class TWCMaster:
             else:
                 return 1
 
-        elif self.settings.get("chargeAuthorizationMode", "1") == "2":
+        elif str(self.settings.get("chargeAuthorizationMode", "1")) == "2":
             # In this mode, vehicles may only charge if they are listed
             # in the Allowed VINs list
             if subTWC.currentVIN in self.settings["VehicleGroups"]["Allow Charging"]["Members"]:
@@ -424,6 +428,13 @@ class TWCMaster:
 
     def getTimeLastTx(self):
         return self.getInterfaceModule().timeLastTx
+
+    def getTWCbyVIN(self, vin):
+        twc = None
+        for slaveTWC in self.getSlaveTWCs():
+            if slaveTWC.currentVIN == vin:
+                twc = slaveTWC
+        return twc
 
     def getVehicleVIN(self, slaveID, part):
         prefixByte = None
