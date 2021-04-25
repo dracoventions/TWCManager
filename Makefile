@@ -1,4 +1,4 @@
-DEPS := lighttpd screen git
+DEPS := lighttpd screen git libffi-dev
 SUDO := sudo
 VER := $(shell lsb_release -sr)
 
