@@ -928,12 +928,12 @@ class TeslaAPI:
         if (
             not checkArrival
             and not checkDeparture
-            and now - self.carApiLastChargeLimitApplyTime < self.startStopDelay
+            and now - self.carApiLastChargeLimitApplyTime < 60
         ):
             # Don't change limits more often than once a minute
             logger.log(
                 logging.DEBUG2,
-                "applyChargeLimit return because not long enough since last carApiLastChargeLimitApplyTime",
+                "applyChargeLimit return because under 60 sec since last carApiLastChargeLimitApplyTime",
             )
             return "error"
 
