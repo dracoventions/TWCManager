@@ -1,6 +1,7 @@
 import logging
 import requests
 import time
+import re
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
 
@@ -107,10 +108,10 @@ class Volkszahler:
 
         else:
 
-            msgMatch = re.search("^(.+) W$", httpResponse.text(), re.DOTALL)
+            msgMatch = re.search("^(.+) W$", httpResponse.text, re.DOTALL)
 
             if msgMatch:
-                self.generatedW = msgMatch.group(1)
+                self.generatedW = -float( msgMatch.group(1) )
             else:
                 logger.log(logging.INFO4, "Did not find expected value inside of Volkszahler API response.")
 
