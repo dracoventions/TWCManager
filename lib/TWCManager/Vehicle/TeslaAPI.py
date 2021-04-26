@@ -96,12 +96,14 @@ class TeslaAPI:
             resp = session.get(self.authURL, params=params)
 
             if resp.ok and "<title>" in resp.text:
-                logger.log(logging.INFO6,
+                logger.log(
+                    logging.INFO6,
                     "Tesla Auth form fetch success, attempt: " + str(attempt),
                 )
                 break
             else:
-                logger.log(logging.INFO6,
+                logger.log(
+                    logging.INFO6,
                     "Tesla auth form fetch failed, attempt: " + str(attempt),
                 )
 
@@ -148,7 +150,7 @@ class TeslaAPI:
             time.sleep(3)
         else:
             logger.log(
-                    logging.INFO2,
+                logging.INFO2,
                 "Wasn't able to post authentication form after "
                 + str(attempt)
                 + " attempts",
@@ -225,9 +227,7 @@ class TeslaAPI:
             pass
 
         try:
-            logger.log(
-                logging.INFO4, "Car API auth response" + str(apiResponseDict)
-            )
+            logger.log(logging.INFO4, "Car API auth response" + str(apiResponseDict))
             self.setCarApiBearerToken(apiResponseDict["access_token"])
             self.setCarApiRefreshToken(apiResponseDict["refresh_token"])
             self.setCarApiTokenExpireTime(now + apiResponseDict["expires_in"])
@@ -329,9 +329,7 @@ class TeslaAPI:
                     logger.log(logging.INFO6, "Response: " + req.text)
                     pass
                 except self.json.decoder.JSONDecodeError:
-                    logger.info(
-                        "Could not parse JSON result from " + url
-                    )
+                    logger.info("Could not parse JSON result from " + url)
                     logger.log(logging.INFO6, "Response: " + req.text)
                     pass
 
@@ -825,7 +823,7 @@ class TeslaAPI:
                                 time.sleep(5)
                                 continue
                             else:
-                                # Start or stop charge failed with an error I
+                                # Start charge failed with an error I
                                 # haven't seen before, so wait
                                 # carApiErrorRetryMins mins before trying again.
                                 logger.info(
@@ -838,6 +836,21 @@ class TeslaAPI:
                                 )
                                 result = "error"
                                 self.updateCarApiLastErrorTime(vehicle)
+                        else:
+                            # Stop charge failed with an error I
+                            # haven't seen before, so wait
+                            # carApiErrorRetryMins mins before trying again.
+                            reason = apiResponseDict["response"]["reason"]
+                            logger.info(
+                                'ERROR "'
+                                + reason
+                                + '" when trying to '
+                                + startOrStop
+                                + " car charging via Tesla car API.  Will try again later."
+                                + "\nIf this error persists, please file an issue at https://github.com/ngardiner/TWCManager/ with a copy of this error.",
+                            )
+                            result = "error"
+                            self.updateCarApiLastErrorTime(vehicle)
 
                 except (KeyError, TypeError):
                     # This catches cases like trying to access
@@ -1272,7 +1285,6 @@ class CarApiVehicle:
         else:
             self.carapi.updateCarApiLastErrorTime(self)
             return (False, None)
-
 
     def update_location(self, cacheTime=60):
 
