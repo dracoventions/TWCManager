@@ -29,6 +29,7 @@ class TeslaAPI:
     carApiVehicles = []
     config = None
     master = None
+    errorCount = 0
     maxLoginRetries = 10
     minChargeLevel = -1
     refreshURL = "https://owner-api.teslamotors.com/oauth/token"
