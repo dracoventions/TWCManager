@@ -662,10 +662,14 @@ class TWCMaster:
             self.settings["VehicleGroups"] = {}
         if not self.settings["VehicleGroups"].get("Allow Charging", None):
             self.settings["VehicleGroups"]["Allow Charging"] = {
+                "Description": "Built-in Group - Vehicles in this Group can charge on managed TWCs",
+                "Built-in": 1,
                 "Members": []
             }
         if not self.settings["VehicleGroups"].get("Deny Charging", None):
             self.settings["VehicleGroups"]["Deny Charging"] = {
+                "Description": "Built-in Group - Vehicles in this Group cannot charge on managed TWCs",
+                "Built-in": 1,
                 "Members": []
             }
 

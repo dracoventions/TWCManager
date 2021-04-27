@@ -9,6 +9,7 @@
     <p>&nbsp;</p>
     {% set vin = url.path.split("/")[2] %}
     <h3>Vehicle Details</h3>
+    {% if vin != "00000000000000000" %}
     <table>
         <tr>
           <th>Vehicle VIN</th>
@@ -78,6 +79,14 @@
           <td>{{ master.settings["Vehicles"][vin]["chargeSessions"] }}
         </tr>
     </table>
+    {% else %}
+    <table>
+      <tr>
+        <th>Vehicle Details</th>
+        <td>This VIN is assigned to non-Tesla vehicles which attempt to charge on a TWCManager managed TWC. You can use this VIN to determine if non-Tesla vehicles are able to charge.</td>
+      </tr>
+    </table>
+    {% endif %}
 
     <p>&nbsp;</p>
     <h3>Group Management</h3>

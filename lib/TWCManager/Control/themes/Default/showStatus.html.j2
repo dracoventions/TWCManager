@@ -81,35 +81,40 @@
               </thead>
     {% for twc in master.getSlaveTWCs() %}
       {% set twcid = '%0x%0x' % (twc.TWCID[0], twc.TWCID[1]) %}
-          <tr>
-            <td>{{ twcid }}</td>
-            <td><div id='{{ twcid }}_state'></div></td>
-            <td><div id='{{ twcid }}_version'></div></td>
-            <td><div id='{{ twcid }}_maxAmps'></div></td>
-            <td><div id='{{ twcid }}_lastAmpsOffered'></div></td>
-            <td><div id='{{ twcid }}_reportedAmpsActual'></div></td>
-            <td><div id='{{ twcid }}_lifetimekWh'></div></td>
-            <td><span id='{{ twcid }}_voltsPhaseA'></span> / <span id='{{ twcid }}_voltsPhaseB'></span> / <span id='{{ twcid }}_voltsPhaseC'></span></td>
-            <td><span id='{{ twcid }}_lastHeartbeat'></span> sec</td>
-            <td>C: <span id='{{ twcid }}_currentVIN' class='VINClick' onClick="loadVIN('{{ twcid }}','current');"></span>
-            <br />L: <span id='{{ twcid }}_lastVIN' class='VINClick' onClick="loadVIN('{{ twcid }}','last');"></span></td>
-            <td>
-              <div class="dropdown">
-                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Select</button>
-                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                  <a class="dropdown-item" href="#">Coming Soon</a>
-                </div>
-              </div>
-            </td>
-          </tr>
+              <tr>
+                <td>{{ twcid }}</td>
+                <td><div id='{{ twcid }}_state'></div></td>
+                <td><div id='{{ twcid }}_version'></div></td>
+                <td><div id='{{ twcid }}_maxAmps'></div></td>
+                <td><div id='{{ twcid }}_lastAmpsOffered'></div></td>
+                <td><div id='{{ twcid }}_reportedAmpsActual'></div></td>
+                <td><div id='{{ twcid }}_lifetimekWh'></div></td>
+                <td><span id='{{ twcid }}_voltsPhaseA'></span> / <span id='{{ twcid }}_voltsPhaseB'></span> / <span id='{{ twcid }}_voltsPhaseC'></span></td>
+                <td><span id='{{ twcid }}_lastHeartbeat'></span> sec</td>
+                <td>C: <span id='{{ twcid }}_currentVIN' class='VINClick' onClick="loadVIN('{{ twcid }}','current');"></span>
+                <br />L: <span id='{{ twcid }}_lastVIN' class='VINClick' onClick="loadVIN('{{ twcid }}','last');"></span></td>
+                <td>
+                  <div class="dropdown">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Select</button>
+                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                      <a class="dropdown-item" href="#">Coming Soon</a>
+                    </div>
+                  </div>
+                </td>
+              </tr>
     {% endfor %}
-        </td>
-<tr><td><b>Total</b><td>&nbsp;</td><td>&nbsp;</td>
-<td><div id='total_maxAmps'></div></td>
-<td><div id='total_lastAmpsOffered'></div></td>
-<td><div id='total_reportedAmpsActual'></div></td>
-<td><div id='total_lifetimekWh'></div></td>
-</tr></table></td></tr></table>
+            </td>
+        <tr>
+          <td><b>Total</b><td>&nbsp;</td><td>&nbsp;</td>
+          <td><div id='total_maxAmps'></div></td>
+          <td><div id='total_lastAmpsOffered'></div></td>
+          <td><div id='total_reportedAmpsActual'></div></td>
+          <td><div id='total_lifetimekWh'></div></td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 
   </tr>
   <tr>

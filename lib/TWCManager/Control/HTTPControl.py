@@ -488,7 +488,7 @@ def CreateHTTPHandlerClass(master):
                         page += " (" + str(match_result) + ")"
                     page += "</td>"
 
-                    page += "<td>" + condition + "</td>"
+                    page += "<td>" + str(condition) + "</td>"
 
                     page += "<td>" + str(value)
                     value_result = mod_policy.policyValue(value)
@@ -607,16 +607,19 @@ def CreateHTTPHandlerClass(master):
                 self.wfile.write(page.encode("utf-8"))
                 return
 
-            if self.url.path == "/schedule":
-                self.send_response(200)
-                self.send_header("Content-type", "text/html")
+            if self.url.path.startswith("/vehicles/deleteGroup"):
+                group = urllib.parse.unquote(self.url.path.rsplit("/", 1)[1])
+                if group and len(group) > 0 and group in master.settings["VehicleGroups"]:
+                    del master.settings["VehicleGroups"][group]
+                    master.queue_background_task({"cmd": "saveSettings"})
+                    self.send_response(302)
+                    self.send_header("Location", "/vehicles")
+
+                else:
+                    self.send_response(400)
+
                 self.end_headers()
-
-                # Load template and render
-                self.template = self.templateEnv.get_template("schedule.html.j2")
-                page = self.template.render(self.__dict__)
-
-                self.wfile.write(page.encode("utf-8"))
+                self.wfile.write("".encode("utf-8"))
                 return
 
             if self.url.path == "/graphs" or self.url.path == "/graphsP":
