@@ -1196,7 +1196,8 @@ class CarApiVehicle:
             # generated an error on this vehicle. Return that car is not ready.
             logger.log(
                 logging.INFO8,
-                +" not ready because of recent lastErrorTime "
+                self.name
+                + " not ready because of recent lastErrorTime "
                 + str(self.lastErrorTime),
             )
             return False
