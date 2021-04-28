@@ -109,7 +109,7 @@ class SmartPi:
             genWatts = 0
             try:
                 for phase in httpResponse.json()["datasets"][0]["phases"]:
-                    logger.log(logging.INFO8, "Logged " + phase["values"][0]["data"] + " " + phase["values"][0]["unity"] + " for phase " + phase["name"])
+                    logger.log(logging.INFO8, "Logged " + str(phase["values"][0]["data"]) + " " + str(phase["values"][0]["unity"]) + " for phase " + str(phase["name"]))
                     genWatts += float(phase["values"][0]["data"])
             except KeyError:
                 logger.log(logging.INFO4, "Expected Key datasets[0][phases] not found in response from SmartPi API.")
