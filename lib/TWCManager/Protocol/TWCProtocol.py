@@ -31,13 +31,25 @@ class TWCProtocol:
             packet["SenderID"] = bytearray(
                 str(self.master.masterTWCID).encode('utf-8')
             )
-        if not packet.get("RecieverID", None):
-            packet["RecieverID"] = bytearray(
-                str(self.master.getSlaveTWCs()[0].TWCID).encode('utf-8')
-            )
+        if packet.get("Command", "") != "SlaveLinkready":
+            if not packet.get("RecieverID", None):
+                packet["RecieverID"] = bytearray(
+                    str(self.master.getSlaveTWCs()[0].TWCID).encode('utf-8')
+                )
 
         if packet["Command"] == "Custom":
             # Send a custom command. This can be dangerous!
+
+            # Let's first check if any dangerous command is sent
+            if (packet["CustomCommand"].lower().startswith("fc19") or
+                packet["CustomCommand"].lower().startswith("fc1a")):
+               self.master.lastTWCResponseMsg = bytearray(b"Command blocked as it may cause your TWC to be permanently disabled!")
+               return
+
+            if packet["CustomCommand"].lower().startswith("fbe8"):
+                self.master.lastTWCResponseMsg = bytearray(b"Command blocked as it may cause your TWC to crash!")
+                return
+
             msg = (
                 packet["CustomCommand"]
                 + packet["SenderID"]

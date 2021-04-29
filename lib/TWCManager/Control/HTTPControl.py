@@ -213,6 +213,13 @@ def CreateHTTPHandlerClass(master):
                 json_data = re.sub(r'"apiKey": ".*?",', "", json_datas)
                 self.wfile.write(json_data.encode("utf-8"))
 
+            elif self.url.path == "/api/getLastTWCResponse":
+                self.send_response(200)
+                self.send_header("Content-type", "text/plain")
+                self.end_headers()
+
+                self.wfile.write(str(master.lastTWCResponseMsg).encode("utf-8"))
+
             elif self.url.path == "/api/getPolicy":
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
@@ -370,17 +377,20 @@ def CreateHTTPHandlerClass(master):
 
             elif self.url.path == "/api/sendDebugCommand":
                 data = json.loads(self.post_data.decode("UTF-8"))
-                print(data)
                 packet = {
                     "Command": data.get("commandName", "")
                 }
                 if data.get("commandName", "") == "Custom":
                     packet["CustomCommand"] = data.get("customCommand", "")
 
+                # Clear last TWC response, so we can grab the next response
+                master.lastTWCResponseMsg = bytearray()
+
                 # Send packet to network
                 master.getModuleByName("RS485").send(
                     master.getModuleByName("TWCProtocol").createMessage(packet)
                 )
+                print(master.getModuleByName("TWCProtocol").createMessage(packet))
                 self.send_response(204)
                 self.end_headers()
 
