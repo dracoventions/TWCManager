@@ -368,6 +368,22 @@ def CreateHTTPHandlerClass(master):
                 self.end_headers()
                 self.wfile.write("".encode("utf-8"))
 
+            elif self.url.path == "/api/sendDebugCommand":
+                data = json.loads(self.post_data.decode("UTF-8"))
+                print(data)
+                packet = {
+                    "Command": data.get("commandName", "")
+                }
+                if data.get("commandName", "") == "Custom":
+                    packet["CustomCommand"] = data.get("customCommand", "")
+
+                # Send packet to network
+                master.getModuleByName("RS485").send(
+                    master.getModuleByName("TWCProtocol").createMessage(packet)
+                )
+                self.send_response(204)
+                self.end_headers()
+
             elif self.url.path == "/api/sendStartCommand":
                 master.sendStartCommand()
                 self.send_response(204)
@@ -754,7 +770,14 @@ def CreateHTTPHandlerClass(master):
             # This is a macro which can display differing buttons based on a
             # condition. It's a useful way to switch the text on a button based
             # on current state.
-            page = "<input type='Submit' %s id='%s' value='%s'>" % (
+            params = {}
+            if len(button_def) == 3:
+                params = button_def[2]
+            buttontype = "Submit"
+            if params.get("buttonType", False):
+                buttontype = params["buttonType"]
+            page = "<input type='%s' %s id='%s' value='%s'>" % (
+                buttontype,
                 extrargs,
                 button_def[0],
                 button_def[1],

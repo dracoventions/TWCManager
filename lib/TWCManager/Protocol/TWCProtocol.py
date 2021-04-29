@@ -24,7 +24,44 @@ class TWCProtocol:
 
     def createMessage(self, packet):
 
-        if packet["Command"] == "SlaveHeartbeat":
+        # We take some steps to be as autonomous as possible. One of these
+        # steps is to automatically fill in fields where we can likely
+        # determine the correct value
+        if not packet.get("SenderID", None):
+            packet["SenderID"] = bytearray(
+                str(self.master.masterTWCID).encode('utf-8')
+            )
+        if not packet.get("RecieverID", None):
+            packet["RecieverID"] = bytearray(
+                str(self.master.getSlaveTWCs()[0].TWCID).encode('utf-8')
+            )
+
+        if packet["Command"] == "Custom":
+            # Send a custom command. This can be dangerous!
+            msg = (
+                packet["CustomCommand"]
+                + packet["SenderID"]
+                + packet["RecieverID"]
+                + bytearray(b"\x00\x00\xa0\x00\x00\x00\x00")
+            )
+            if self.master.protocolVersion == 2:
+                msg += bytearray(b"\x00\x00")
+
+            return msg
+
+        elif packet["Command"] == "GetFirmwareVersion":
+            msg = (
+                bytearray(b"\xFB\x1B")
+                + packet["SenderID"]
+                + packet["RecieverID"]
+                + bytearray(b"\x00\x00\xa0\x00\x00\x00\x00")
+            )
+            if self.master.protocolVersion == 2:
+                msg += bytearray(b"\x00\x00")
+
+            return msg
+
+        elif packet["Command"] == "SlaveHeartbeat":
             msg = (
                 bytearray(b"\xFD\xE0")
                 + packet["SenderID"]
