@@ -9,6 +9,8 @@ This document logs the changes per release of TWCManager.
   * (@ngardiner) - Added functionality to Dummy module to emulate TWC communication to the point that Policy selection occurs
   * (@MikeBishop) - Implement Policy Shortcut function to allow Charge Now to take immediate effect
   * (@GMerg) - Added OpenWeatherMap EMS interface
+  * (@ngardiner) - Added VIN Management functionality, where vehicles can be allowed or denied charging based on VIN. With this, we introduce the ability to define vehicle groups, with future functionality allowing policy settings to be applied to these groups.
+  * (@ngardiner) - Addition of a debug interface which allows tuning advanced inner workings of TWCManager, and allows sending commands to TWCs.
   * Bugfixes
     * (@ngardiner) - Better handling of permissions issues when attempting to save settings.json - alerts user to check file permissions via Web Interface
     * (@ngardiner) - Fixed issue with logging errors when a certain exception is raised in the Snapshot History function
