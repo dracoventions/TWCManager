@@ -45,6 +45,7 @@ EMS Interfaces read solar generation and/or consumption values from an external 
 | [HomeAssistant](docs/modules/EMS_HASS.md)  | Available v1.0.1 | Supports HomeAssistant sensors |
 | [Kostal (Pico/Plenticore)](docs/modules/EMS_Kostal.md) | Available v1.2.1 | Support for Kostal Inverters via ModBus |
 | [openHAB](docs/modules/EMS_OpenHab.md) | Available v1.2.0 | Supports openHAB items |
+| [OpenWeatherMap](docs/modules/EMS_OpenWeatherMap.md) | Available v1.2.2 | Supports OpenWeatherMap forecast-based tracking where inverter EMS is not available. |
 | [SmartMe](docs/modules/EMS_SmartMe.md)     | Available v1.2.1 | Support for smart-me.com API |
 | [SmartPi](docs/modules/EMS_SmartPi.md)     | Available v1.2.2 | Support for SmartPi Smart Meter |
 | [SolarEdge](docs/modules/EMS_SolarEdge.md) | Available v1.2.0 | Support for SolarEdge API |

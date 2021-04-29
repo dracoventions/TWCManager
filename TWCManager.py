@@ -93,6 +93,7 @@ modules_available = [
     "EMS.HASS",
     "EMS.Kostal",
     "EMS.OpenHab",
+    "EMS.OpenWeatherMap",
     "EMS.SmartMe",
     "EMS.SmartPi",
     "EMS.SolarEdge",
@@ -355,7 +356,10 @@ def update_statuses():
         chgwattsDisplay = f("{chgwatts:.0f}W")
 
         if config["config"]["subtractChargerLoad"]:
-            othwatts = conwatts - chgwatts
+            if conwatts > 0:
+                othwatts = conwatts - chgwatts
+            else:
+                othwatts = 0
             othwattsDisplay = f("{othwatts:.0f}W")
             logger.info(
                 "Green energy generates %s, Consumption %s (Other Load %s, Charger Load %s)",
@@ -387,8 +391,8 @@ def update_statuses():
             )
 
         nominalOffer = master.convertWattsToAmps(
-            genwatts
-            - (conwatts - (chgwatts if config["config"]["subtractChargerLoad"] else 0))
+            genwatts + (chgwatts if (config["config"]["subtractChargerLoad"] and conwatts == 0) else 0)
+            - (conwatts - (chgwatts if (config["config"]["subtractChargerLoad"] and conwatts > 0) else 0))
         )
         if abs(maxamps - nominalOffer) > 0.005:
             nominalOfferDisplay = f("{nominalOffer:.2f}A")

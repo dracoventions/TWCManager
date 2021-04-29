@@ -497,6 +497,16 @@
       # This is not yet available.
           "enabled": false
         },
+        "OpenWeatherMap": {
+            "enabled": false,
+            #your position on earth, use maps.google and copy from the URL parameters after the @ sign
+            "Latitude": 41.870978,
+            "Longitude": 11.853508,
+            #APIKey from https://openweathermap.org/
+            "APIKey": "xyz-EDIT-ME-xyz",
+            #a 12 items array with the best kW reached on a day in that month
+            "PeakKW": [2, 4, 6, 6, 6.5, 6.9, 6.5, 6.0, 5.5, 4.5, 3, 2]
+        },
       # Tesla Powerwall2
       # This module fetches both consumption and solar generation details
         "Powerwall2": {

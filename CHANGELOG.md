@@ -4,15 +4,18 @@ This document logs the changes per release of TWCManager.
 
 ## v1.2.2 - Current development branch
 
-  * Added CI pipeline for effective integration testing of changes going forward
-  * Added SmartPi EMS interface
-  * Added Volkszahler EMS interface
-  * Added functionality to Dummy module to emulate TWC communication to the point that Policy selection occurs
+  * (@ngardiner) - Added SmartPi EMS interface
+  * (@Saftwerk, @ngardiner) - Added Volkszahler EMS interface
+  * (@ngardiner) - Added functionality to Dummy module to emulate TWC communication to the point that Policy selection occurs
+  * (@MikeBishop) - Implement Policy Shortcut function to allow Charge Now to take immediate effect
+  * (@GMerg) - Added OpenWeatherMap EMS interface
   * Bugfixes
-    * Better handling of permissions issues when attempting to save settings.json - alerts user to check file permissions via Web Interface
-    * Fixed issue with logging errors when a certain exception is raised in the Snapshot History function
-    * Fixed issue with Modern web interface Charge Now setting not working
-    * Fix behaviour of Stop Responding to Slaves charge stop mode, by re-enabling slave communication after 60 seconds
+    * (@ngardiner) - Better handling of permissions issues when attempting to save settings.json - alerts user to check file permissions via Web Interface
+    * (@ngardiner) - Fixed issue with logging errors when a certain exception is raised in the Snapshot History function
+    * (@ngardiner) - Fixed issue with Modern web interface Charge Now setting not working
+    * (@ngardiner) - Fix behaviour of Stop Responding to Slaves charge stop mode, by re-enabling slave communication after 60 seconds
+    * (@ngardiner) - Fix issues with subtractChargerLoad when using one of the (few) EMS modules which only provide Generation values. Previously, we only subtracted the Charger Load from Consumption which doesn't work in Generation-only measurement environments.
+    * (@leeliu) - Fix TWC ID display for Modern theme which was truncating trailing zeros
 
 ## v1.2.1 - 2021-04-04
 

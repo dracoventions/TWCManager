@@ -193,7 +193,7 @@ wcmanager/settings.json and try saving your settings again.</b>
                             </svg>
                         </div>
                         <div class="col pt-1">
-                            {% set twcid = '%0x%0x' % (charger.TWCID[0], charger.TWCID[1]) %}
+                            {% set twcid = '%02x%02x' % (charger.TWCID[0], charger.TWCID[1]) %}
                             <div class="row">
                                 <small>{{ twcid }}</small>
                             </div>
