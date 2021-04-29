@@ -60,8 +60,62 @@
   </tr>
   <tr>
     <td width = '100%' colspan = '2'>
-      {{ showTWCs()|safe }}
+      <table>
+        <tr width = '100%'>
+          <td width='65%'>
+            <table class='table table-dark table-condensed table-striped'>
+              <thead class='thead-dark'>
+                <tr>
+                  <th width='2%'>TWC ID</th>
+                  <th width='1%'>State</th>
+                  <th width='1%'>Version</th>
+                  <th width='2%'>Max Amps</th>
+                  <th width='2%'>Amps<br />Offered</th>
+                  <th width='2%'>Amps<br />In Use</th>
+                  <th width='2%'>Lifetime<br />kWh</th>
+                  <th width='4%'>Voltage<br />per Phase<br />1 / 2 / 3</th>
+                  <th width='2%'>Last Heartbeat</th>
+                  <th width='6%'>Vehicle Connected<br />Current / Last</th>
+                  <th width='2%'>Commands</th>
+                </tr>
+              </thead>
+    {% for twc in master.getSlaveTWCs() %}
+      {% set twcid = '%0x%0x' % (twc.TWCID[0], twc.TWCID[1]) %}
+              <tr>
+                <td>{{ twcid }}</td>
+                <td><div id='{{ twcid }}_state'></div></td>
+                <td><div id='{{ twcid }}_version'></div></td>
+                <td><div id='{{ twcid }}_maxAmps'></div></td>
+                <td><div id='{{ twcid }}_lastAmpsOffered'></div></td>
+                <td><div id='{{ twcid }}_reportedAmpsActual'></div></td>
+                <td><div id='{{ twcid }}_lifetimekWh'></div></td>
+                <td><span id='{{ twcid }}_voltsPhaseA'></span> / <span id='{{ twcid }}_voltsPhaseB'></span> / <span id='{{ twcid }}_voltsPhaseC'></span></td>
+                <td><span id='{{ twcid }}_lastHeartbeat'></span> sec</td>
+                <td>C: <span id='{{ twcid }}_currentVIN' class='VINClick' onClick="loadVIN('{{ twcid }}','current');"></span>
+                <br />L: <span id='{{ twcid }}_lastVIN' class='VINClick' onClick="loadVIN('{{ twcid }}','last');"></span></td>
+                <td>
+                  <div class="dropdown">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Select</button>
+                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                      <a class="dropdown-item" href="#">Coming Soon</a>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+    {% endfor %}
+            </td>
+        <tr>
+          <td><b>Total</b><td>&nbsp;</td><td>&nbsp;</td>
+          <td><div id='total_maxAmps'></div></td>
+          <td><div id='total_lastAmpsOffered'></div></td>
+          <td><div id='total_reportedAmpsActual'></div></td>
+          <td><div id='total_lifetimekWh'></div></td>
+        </tr>
+      </table>
     </td>
+  </tr>
+</table>
+
   </tr>
   <tr>
     <td width = '100%' colspan = '2'>

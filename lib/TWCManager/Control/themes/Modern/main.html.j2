@@ -278,8 +278,8 @@ wcmanager/settings.json and try saving your settings again.</b>
                     <div class="row">
                         <div class="col-12 text-left" style="line-height: 1.37em;">
                             Vehicle:<br>
-                            Current: <span id="{{ twcid }}_currentVIN"></span><br>
-                            Last: <span id="{{ twcid }}_lastVIN"></span>
+                            Current: <span id="{{ twcid }}_currentVIN" class='VINClick' onClick="loadVIN('{{ twcid }}','current');"></span><br>
+                            Last: <span id="{{ twcid }}_lastVIN" class='VINClick' onClick="loadVIN('{{ twcid }}','last');"></span>
                         </div>
                     </div>
                 </div>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang='en'>
+  <head>
+    <title>TWCManager</title>
+    {% include 'bootstrap.html.j2' %}
+  </head>
+  <body>
+    {% include 'navbar.html.j2' %}
+    <p>&nbsp;</p>
+    <h3>Vehicles</h3>
+    <table>
+        <tr>
+          <th>Vehicle VIN</th>
+          <td>&nbsp;</td>
+          <th>Charges</th>
+          <td>&nbsp;</td>
+          <th>Total kWh</th>
+        </tr>
+      {% for vehicle in master.settings["Vehicles"].keys()|sort %}
+        <tr>
+          <td><a href="/vehicleDetail/{{ vehicle }}">{{ vehicle }}</a></td>
+          <td>&nbsp;</td>
+          <td>{{ master.settings["Vehicles"][vehicle]["chargeSessions"] }}</td>
+          <td>&nbsp;</td>
+          <td>{{ master.settings["Vehicles"][vehicle]["totalkWh"] }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+
+    <p>&nbsp;</p>
+    <h3>Vehicle Groups</h3>
+    <table>
+      <tr>
+        <th>Group Name</th>
+        <td>&nbsp;</td>
+        <th>Members</th>
+        <td>&nbsp;</td>
+        <th>Description</th>
+        <td>&nbsp;</td>
+        <th>Actions</th>
+      </tr>
+      {% for group in master.settings["VehicleGroups"].keys()|sort %}
+        <tr>
+          <td><b>{{ group }}</b></td>
+          <td>&nbsp;</td>
+          <td>
+            {% for vehicle in master.settings["VehicleGroups"][group]["Members"] %}
+              {{ vehicle }}<br/>
+            {% endfor %}
+          </td>
+          <td>&nbsp;</td>
+          <td>{{ master.settings["VehicleGroups"][group]["Description"] }}</td>
+          <td>&nbsp;</td>
+          <td>
+            {% if master.settings["VehicleGroups"][group]["Built-in"] %}
+            Delete
+            {% else %}
+            <a href="/vehicles/deleteGroup/{{group}}">Delete</a>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+
+    <p>&nbsp;</p>
+    <h5>Add Group</h5>
+    <form method=POST action="/vehicle/group">
+    <input type="hidden" name="operation" value="add" />
+    <table>
+      <tr>
+        <th>Group Name &nbsp;</th>
+        <td><input /></td>
+        <td>&nbsp;</td>
+        <th>Description &nbsp;</th>
+        <td><input /></td>
+        <td>&nbsp;</td>
+        <td><input type=submit /></td>
+      </tr>
+    </table>
+    </form>
+  </body>
+</html>

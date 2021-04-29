@@ -157,6 +157,30 @@ class TWCMaster:
                     blnUseScheduledAmps = 1
         return blnUseScheduledAmps
 
+    def checkVINEntitlement(self, subTWC):
+        # When provided with the TWC that has had the VIN reported for a vehicle
+        # we check the policy for charging and determine if it is allowed or not
+
+        if not subTWC.currentVIN:
+            # No VIN supplied. We can't make any decision other than allow
+            return 1
+
+        if str(self.settings.get("chargeAuthorizationMode", "1")) == "1":
+            # In this mode, we allow all vehicles to charge unless they
+            # are explicitly banned from charging
+            if subTWC.currentVIN in self.settings["VehicleGroups"]["Deny Charging"]["Members"]:
+                return 0
+            else:
+                return 1
+
+        elif str(self.settings.get("chargeAuthorizationMode", "1")) == "2":
+            # In this mode, vehicles may only charge if they are listed
+            # in the Allowed VINs list
+            if subTWC.currentVIN in self.settings["VehicleGroups"]["Allow Charging"]["Members"]:
+                return 1
+            else:
+                return 0
+
     def convertAmpsToWatts(self, amps):
         (voltage, phases) = self.getVoltageMeasurement()
         return phases * voltage * amps
@@ -405,6 +429,13 @@ class TWCMaster:
     def getTimeLastTx(self):
         return self.getInterfaceModule().timeLastTx
 
+    def getTWCbyVIN(self, vin):
+        twc = None
+        for slaveTWC in self.getSlaveTWCs():
+            if slaveTWC.currentVIN == vin:
+                twc = slaveTWC
+        return twc
+
     def getVehicleVIN(self, slaveID, part):
         prefixByte = None
         if int(part) == 0:
@@ -625,6 +656,22 @@ class TWCMaster:
         carapi.setCarApiBearerToken(self.settings.get("carApiBearerToken", ""))
         carapi.setCarApiRefreshToken(self.settings.get("carApiRefreshToken", ""))
         carapi.setCarApiTokenExpireTime(self.settings.get("carApiTokenExpireTime", ""))
+
+        # If particular details are missing from the Settings dict, create them
+        if not self.settings.get("VehicleGroups", None):
+            self.settings["VehicleGroups"] = {}
+        if not self.settings["VehicleGroups"].get("Allow Charging", None):
+            self.settings["VehicleGroups"]["Allow Charging"] = {
+                "Description": "Built-in Group - Vehicles in this Group can charge on managed TWCs",
+                "Built-in": 1,
+                "Members": []
+            }
+        if not self.settings["VehicleGroups"].get("Deny Charging", None):
+            self.settings["VehicleGroups"]["Deny Charging"] = {
+                "Description": "Built-in Group - Vehicles in this Group cannot charge on managed TWCs",
+                "Built-in": 1,
+                "Members": []
+            }
 
     def master_id_conflict(self):
         # We're playing fake slave, and we got a message from a master with our TWCID.
@@ -1070,15 +1117,17 @@ class TWCMaster:
                 + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
             )
 
-    def sendStopCommand(self):
+    def sendStopCommand(self, subTWC = None):
         # This function will loop through each of the Slave TWCs, and send them the stop command.
+        # If the subTWC parameter is supplied, we only stop the specified TWC
         for slaveTWC in self.getSlaveTWCs():
-            self.getInterfaceModule().send(
-                bytearray(b"\xFC\xB2")
-                + self.TWCID
-                + slaveTWC.TWCID
-                + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
-            )
+            if ((not subTWC) or (subTWC == slaveTWC.TWCID)):
+                self.getInterfaceModule().send(
+                    bytearray(b"\xFC\xB2")
+                    + self.TWCID
+                    + slaveTWC.TWCID
+                    + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+                )
 
     def setAllowedFlex(self, amps):
         self.allowedFlex = amps if amps >= 0 else 0
