@@ -11,7 +11,7 @@ The following table shows the available configuration parameters for the Volksza
 | enabled       | *required* Boolean value, ```true``` or ```false```. Determines whether we will poll the Volkszahler Server |
 | serverIP      | *required* The IP address of the Volkszahler server that we will query for the generation value |
 | serverPort    | *required* The Server Port that we will query. This is the port that the front-end UI uses, not the VZLOGGER port. |
-| uuid          | *required* The UUID of the
+| uuid          | *required* The UUID of the channel "Total Consumption" of your houshold grid meter.
 
 ## UUID Creation
 
@@ -27,3 +27,9 @@ Then the VZLOGGER service will do the rest. VZLOGGER is best for reading electri
 
 My electricity meter has 4 readings: 3 counters kWh and a Watt display. You have to try baud, parity, protocol and other stuff to find correct format.
 My electricity meter Watt display show + and - , some have two separate values both +, this depend on the meter manufacturer.
+
+Url to try out reading: http://<your volkszähler ip-address>/api/data.txt?from=now&uuid=00000000-1111-1670-ffff-0123456789ab
+Use your own UUID of the channel "Total Consumption" of your houshold grid meter. (see at blue "i")
+Reading must be negative on "Consumption < solar production". TWCManager uses negative value as "green energy".
+If you have only positive value than just create a new virtual channel fill in 'Regel'(=calulation formula): "-val(in1)"
+Example reading: "-5520.8 W" (=Watt).
