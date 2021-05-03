@@ -50,6 +50,7 @@ jobs:
         password: ${{ secrets.PYPI_API_TOKEN }}
 
   docker-latest:
+    name: Create docker-latest Docker Image from current head
     runs-on: ubuntu-latest
 
     steps:
