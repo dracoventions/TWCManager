@@ -10,7 +10,66 @@ Please see the [Installation Guide](InstallationGuide.md) for detailed informati
 
 ## Software Installation
 
-### Recommended Installation
+The following options exist for installing TWCManager:
+
+   * Docker - Docker uses containers to run applications in their own isolated environment. The benefits of docker include simple upgrading easy portability, with significantly less worries about Python versions or permissions in a Dockere environment than a Manual environment.
+
+   * Manual - A manual installation involves downloading the source code for TWCManager from GitHub, installing dependencies and then running TWCManager as a service.
+
+### Docker Image Installation
+
+#### Docker Installation
+
+Install Docker (and docker-compose) on your target machine with the following commands:
+
+```
+apt-get install docker.io
+
+pip3 install docker-compose
+```
+
+#### Configuring TWCManager in Docker
+
+You may need to perform some configuration of TWCManager in your environment.
+
+   * docker-compose.yml
+
+The default ```docker-compose.yml``` file assumes that you will be using Serial interface ```/dev/ttyUSB0``` on the host machine as the serial port to communicate with the TWCs you are managing. If this is not the case, you may need to edit the file.
+
+   * /etc/twcmanager/config.json
+
+On your first start of the TWCManager docker container, a directory on the host will be created if it does not currently exist, and the default configuration file will be copied there. The location of this volume is ```/etc/twcmanager```. If you need to edit the configuration file, run the Docker container in interactive mode, exit with Ctrl+C and then edit ```/etc/twcmanager/config.json```.
+
+Once you have configured the file to your liking, you can start up the container with the ```-d``` option to ```docker-compose``` to run TWCManager in the background.
+
+#### Starting TWCManager
+
+To start up TWCManager in interactive mode, run the following command:
+
+```
+docker-compose -f contrib/docker/docker-compose.yml up
+```
+
+To start up TWCManager in background mode, run the following command:
+
+```
+docker-compose -d -f contrib/docker/docker-compose.yml up
+```
+
+#### Upgrading TWCManager
+
+To upgrade the version of TWCManager that you are running under Docker, execute the following commands:
+
+```
+git pull
+docker-compose -f contrib/docker/docker-compose.yml down
+docker-compose -f contrib/docker/docker-compose.yml pull
+docker-compose -d -f contrib/docker/docker-compose.yml up
+```
+
+### Manual Raspbian Installation
+
+#### Operating System Installation
 
 The recommended installation for this project is on a Raspberry Pi machine using Raspbian. The Raspbian OS can be downloaded from the following location:
 
@@ -20,7 +79,7 @@ You can flash the Raspbian OS using the tools listed on the following page:
 
    * https://www.raspberrypi.org/documentation/installation/installing-images/README.md
 
-### Install Required Packages (Debian/Ubuntu/Raspbian)
+#### Install Required Packages (Debian/Ubuntu/Raspbian)
 
 The following packages are required to fetch and install the TWCManager project. These are the minimal required packages to start the installation process, during which any other required dependencies will be fetched automatically.
 
@@ -29,7 +88,7 @@ sudo apt-get update
 sudo apt-get install -y git python3 python3-setuptools python3-dev
 ```
 
-### Default to Python3
+#### Default to Python3
 
 TWCManager requires a minimum of python 3.4 to work correctly. To attempt to support Raspberry Pi OS versions going back to 2019, TWCManager is regularly tested against Python 3.5 to ensure that support is retained. As of TWCManager v1.2.2, a number of features are beginning to diverge based on minimum Python versions being higher than those required by TWCManager, so the following features may be unavailable if your Python version is below the minimum:
 
@@ -52,7 +111,7 @@ This indicates an older version of setuptools is installed. To resolve this issu
 pip3 install --upgrade setuptools
 ```
 
-### Raspberry Pi OS / Raspbian Buster
+#### Raspberry Pi OS / Raspbian Buster
 
 You may need to set python3 as your default python interpreter version on Raspberry Pi OS / Debian Buster. The following command will set python 3.7 as your default interpreter.
 
@@ -74,7 +133,7 @@ sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.5 2
 
 You can check that this command has been successful by running ```python --version``` and checking that the version is python3.
 
-### Clone GIT Repository and copy files
+#### Clone GIT Repository and copy files
 
 During this step, the source code and all related files will be cloned from the GitHub repository and installed into the appropriate location on your system.
 
