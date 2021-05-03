@@ -50,6 +50,11 @@ setup:
 ifeq ($(CI), 1)
 	$(SUDO) /home/docker/.pyenv/shims/python3 setup.py install
 else
+ifeq (,$(wildcard /usr/bin/pip3))
+	$(SUDO) pip3 install --upgrade setuptools
+else
+	$(SUDO) pip install --upgrade setuptools
+endif
 	$(SUDO) ./setup.py install
 endif
 
