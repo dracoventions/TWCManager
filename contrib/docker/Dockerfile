@@ -4,6 +4,8 @@ RUN cd /usr/src && git clone https://github.com/ngardiner/TWCManager
 RUN cd /usr/src/TWCManager && make SUDO=""
 
 VOLUME /etc/twcmanager
-WORKDIR /usr/src/TWCmanager
+WORKDIR /usr/src/TWCManager
 
-ENTRYPOINT ["/usr/bin/python3","TWCManager.py"]
+COPY entrypoint.sh ./entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]
+CMD ["/usr/bin/python3","TWCManager.py"]

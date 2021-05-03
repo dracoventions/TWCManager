@@ -3,7 +3,7 @@ name: "Create PyPi Package and Docker Image"
 on:
   push:
     branches:
-      - 'docker_test'
+      - 'main'
 
 jobs:
   pypi:
