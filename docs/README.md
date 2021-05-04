@@ -20,12 +20,15 @@ The following options exist for installing TWCManager:
 
 #### Docker Installation
 
-Install Docker (and docker-compose) on your target machine with the following commands:
+Install Docker (and docker-compose) on your target machine, and fetch the TWCManager Git repository with the following commands:
 
 ```
-apt-get install docker.io
+sudo apt-get update
+sudo apt-get install -y git docker.io
 
 pip3 install docker-compose
+git clone https://github.com/ngardiner/TWCManager
+cd TWCManager
 ```
 
 #### Configuring TWCManager in Docker
