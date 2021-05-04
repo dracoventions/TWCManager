@@ -20,7 +20,7 @@
     * Track the real-time availability of green energy sources (including PV Inverters, Battery Systems and Weather APIs) and direct the slave TWCs to use near the exact amount of energy available for the current conditions.
     * Send on-demand commands to TWC devices to charge at specified rates and times.
     * Schedule charging to occur at regular intervals.
-    * Control which vehicles can and caanot use a TWC device based on VIN (for supported vehicles and TWCs).
+    * Control which vehicles can and cannot use a TWC device based on VIN (for supported vehicles and TWCs).
 
 Would you like a full list of features available in TWCManager? Click [here](docs/Features.md)
 
