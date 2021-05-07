@@ -322,10 +322,6 @@ def check_green_energy():
     # to match those used in your environment. This is configured
     # in the config section at the top of this file.
     #
-    if master.getConsumptionOffset() >= 0:
-        master.setConsumption("Offset", master.getConsumptionOffset())
-    elif master.getConsumptionOffset() < 0:
-        master.setGeneration("Manual", -1 * master.getConsumptionOffset())
 
     # Poll all loaded EMS modules for consumption and generation values
     for module in master.getModulesByType("EMS"):
@@ -347,16 +343,15 @@ def update_statuses():
         genwatts = master.getGeneration()
         conwatts = master.getConsumption()
         conoffset = master.getConsumptionOffset()
-        if conoffset > 0:
-            conwatts -= conoffset
-        elif conoffset < 0:
-            genwatts += (-1 * conoffset)
         chgwatts = master.getChargerLoad()
         othwatts = 0
 
         if config["config"]["subtractChargerLoad"]:
             if conwatts > 0:
                 othwatts = conwatts - chgwatts
+
+            if conoffset > 0:
+                othwatts -= conoffset
 
         # Extra parameters to send with logs
         logExtra = {

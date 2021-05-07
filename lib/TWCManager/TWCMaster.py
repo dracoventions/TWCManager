@@ -493,6 +493,10 @@ class TWCMaster:
         if consumptionVal < 0:
             consumptionVal = 0
 
+        offset = self.getConsumptionOffset()
+        if offset > 0:
+            consumptionVal += offset
+
         return float(consumptionVal)
 
     def getFakeTWCID(self):
@@ -507,6 +511,10 @@ class TWCMaster:
 
         if generationVal < 0:
             generationVal = 0
+
+        offset = self.getConsumptionOffset()
+        if offset < 0:
+            generationVal += (-1 * offset)
 
         return float(generationVal)
 

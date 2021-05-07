@@ -56,7 +56,17 @@ This setting specifies that any vehicle which requests to start charging will be
 
 ### Consumption Offsets
 
-Consumption Offsets are values which are applied to the Consumption value retrieved from EMS modules. Consumption Offsets can be either positive or negative values, and are often used to control the behaviour of TWCManager by making it appear as though the consumption is higher or lower than it is, or allows specifying an average consumption value for installations where 
+Consumption Offsets are values which are applied to the Consumption value retrieved from EMS modules. Consumption Offsets can be either positive or negative values, and are often used to control the behaviour of TWCManager by making it appear as though the consumption is higher or lower than it is, or allows specifying an average consumption value for installations where it is not possible to query consumption data.
+
+This is most often given a value equal to the average amount of power consumed by everything other than car charging. 
+
+For example, if your house uses an average of 2.8A to power computers, lights, etc while you expect the car to be charging, you could add an offset of 2.8A.
+
+If you have solar panels, look at your utility meter while your car charges.
+
+If it says you're using 0.67kW, that means you should add an offset for 0.67kW * 1000 / 240V = 2.79A assuming you're on the North American 240V grid. In other words, during car charging, you want your utility meter to show a value close to 0kW meaning no energy is being sent to or from the grid.
+
+If you are able to obtain consumption details from an energy management system, don't add consumption offsets (unless you need them for other purposes), as TWCManager will query your EMS to determine the power being consumed.
 
 ### Manual Tesla API key override
 
