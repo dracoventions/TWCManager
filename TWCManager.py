@@ -350,7 +350,7 @@ def update_statuses():
         if conoffset > 0:
             conwatts -= conoffset
         elif conoffset < 0:
-            getwatts += conoffset
+            genwatts += (-1 * conoffset)
         chgwatts = master.getChargerLoad()
         othwatts = 0
 
@@ -405,7 +405,7 @@ def update_statuses():
             logger.info(
                 "Green energy Generates %s (Offset %s), Consumption %s (Charger Load %s, Other Load %s)",
                 f("{genwatts:.0f}W"),
-                f("{conoffset:.0f}W"),
+                f("{(-1 * conoffset):.0f}W"),
                 f("{conwatts:.0f}W"),
                 f("{chgwatts:.0f}W"),
                 f("{othwatts:.0f}W"),

@@ -235,7 +235,19 @@ class TWCMaster:
             return 0
 
     def getConsumptionOffset(self):
-        return 1
+        # Start by reading the offset value from config, if it exists
+        # This is a legacy value but it doesn't hurt to keep it
+        offset = self.convertAmpsToWatts(
+            self.config["config"].get("greenEnergyAmpsOffset", 0))
+
+        # Iterate through the offsets listed in settings
+        for offsetName in self.settings.get("consumptionOffset", {}).keys():
+            if self.settings["consumptionOffset"][offsetName]["unit"] == "W":
+                offset += self.settings["consumptionOffset"][offsetName]["value"]
+            else:
+                offset += self.convertAmpsToWatts(
+                    self.settings["consumptionOffset"][offsetName]["value"])
+        return offset
 
     def getHourResumeTrackGreenEnergy(self):
         return self.settings.get("hourResumeTrackGreenEnergy", -1)
