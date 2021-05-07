@@ -2,6 +2,10 @@
 
 The following settings (outside of the configuration file) are available via the inbuilt Web Interface:
 
+## Web Interface Theme
+
+Allows you to select which theme you'd like to use for the TWCManager interface.
+
 ## Stop Charging Method
 
 This option, which defaults to using the Tesla API, allows you to specify how you would like TWCManager to stop a car from charging. The following options exist, and each has some information to help you decide on which approach to use:
@@ -22,7 +26,7 @@ This option, which defaults to using the Tesla API, allows you to specify how yo
       * [This thread](https://teslamotorsclub.com/tmc/threads/new-wall-connector-load-sharing-protocol.72830/page-24) provides the observations of those who have tested this command.
       * Whilst this option is offered primarily for the benefit of non-Tesla vehicles, it's not recommended for use with Tesla vehicles.
 
-### Non-Scheduled Power Action
+### Non-Scheduled Power Action & Charge Rate
 
 This setting determines what TWCManager should do if there is no scheduled charging rate and outside of the Track Green Energy hours. The available options are:
 
@@ -37,6 +41,22 @@ The Do not Charge action states that outside of scheduled or Track Green Energy 
       * Track Green Energy
 
 This is an option that currently does not operate (and will only set Non-Scheduled Charging rate to 0). In future, this will allow continuing of Track Green Energy behaviour outside of the hard-coded daylight hours (6am - 8pm).
+
+### Charge Authorization Mode
+
+The Charge Authorization Mode determines how we determine if a vehicle that starts to charge from a TWC should be allowed to do so. There are two options available:
+
+   * Vehicles can charge unless explicitly blocked
+
+This setting is the default, and specifies that any vehicle which requests to start charging can do so, unless it is explicitly added to the Deny Charging group.
+
+   * Vehicles can only charge if explicitly allowed
+
+This setting specifies that any vehicle which requests to start charging will be blocked, unless it has been added to the Allow Charging group.
+
+### Consumption Offsets
+
+Consumption Offsets are values which are applied to the Consumption value retrieved from EMS modules. Consumption Offsets can be either positive or negative values, and are often used to control the behaviour of TWCManager by making it appear as though the consumption is higher or lower than it is, or allows specifying an average consumption value for installations where 
 
 ### Manual Tesla API key override
 

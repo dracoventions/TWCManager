@@ -322,15 +322,11 @@ def check_green_energy():
     # to match those used in your environment. This is configured
     # in the config section at the top of this file.
     #
-    greenEnergyAmpsOffset = config["config"]["greenEnergyAmpsOffset"]
-    if greenEnergyAmpsOffset >= 0:
-        master.setConsumption(
-            "Manual", master.convertAmpsToWatts(greenEnergyAmpsOffset)
-        )
-    else:
-        master.setGeneration(
-            "Manual", -1 * master.convertAmpsToWatts(greenEnergyAmpsOffset)
-        )
+    if master.getConsumptionOffset() >= 0:
+        master.setConsumption("Offset", master.getConsumptionOffset())
+    elif master.getConsumptionOffset() < 0:
+        master.setGeneration("Manual", -1 * master.getConsumptionOffset())
+
     # Poll all loaded EMS modules for consumption and generation values
     for module in master.getModulesByType("EMS"):
         master.setConsumption(module["name"], module["ref"].getConsumption())
@@ -350,44 +346,70 @@ def update_statuses():
     if master.getModuleByName("Policy").policyIsGreen():
         genwatts = master.getGeneration()
         conwatts = master.getConsumption()
+        conoffset = master.getConsumptionOffset()
+        if conoffset > 0:
+            conwatts -= conoffset
+        elif conoffset < 0:
+            getwatts += conoffset
         chgwatts = master.getChargerLoad()
-        genwattsDisplay = f("{genwatts:.0f}W")
-        conwattsDisplay = f("{conwatts:.0f}W")
-        chgwattsDisplay = f("{chgwatts:.0f}W")
+        othwatts = 0
 
         if config["config"]["subtractChargerLoad"]:
             if conwatts > 0:
                 othwatts = conwatts - chgwatts
-            else:
-                othwatts = 0
-            othwattsDisplay = f("{othwatts:.0f}W")
+
+        # Extra parameters to send with logs
+        logExtra = {
+            "logtype": "green_energy",
+            "genWatts": genwatts,
+            "conWatts": conwatts,
+            "chgWatts": chgwatts,
+            "colored": "magenta"
+        }
+
+        if ((genwatts or conwatts) and (not conoffset and not othwatts)):
+
             logger.info(
-                "Green energy generates %s, Consumption %s (Other Load %s, Charger Load %s)",
-                genwattsDisplay,
-                conwattsDisplay,
-                othwattsDisplay,
-                chgwattsDisplay,
-                extra={
-                    "logtype": "green_energy",
-                    "genWatts": genwatts,
-                    "conWatts": conwatts,
-                    "chgWatts": chgwatts,
-                    "colored": "magenta"
-                },
+                "Green energy Generates %s, Consumption %s (Charger Load %s)",
+                f("{genwatts:.0f}W"),
+                f("{conwatts:.0f}W"),
+                f("{chgwatts:.0f}W"),
+                extra=logExtra,
             )
-        else:
+
+        elif ((genwatts or conwatts) and othwatts and not conoffset):
+
             logger.info(
-                "Green energy generates %s, Consumption %s, Charger Load %s",
-                genwattsDisplay,
-                conwattsDisplay,
-                chgwattsDisplay,
-                extra={
-                    "logtype": "green_energy",
-                    "genWatts": genwatts,
-                    "conWatts": conwatts,
-                    "chgWatts": chgwatts,
-                    "colored": "magenta"
-                },
+                "Green energy Generates %s, Consumption %s (Charger Load %s, Other Load %s)",
+                f("{genwatts:.0f}W"),
+                f("{conwatts:.0f}W"),
+                f("{chgwatts:.0f}W"),
+                f("{othwatts:.0f}W"),
+                extra=logExtra,
+            )
+
+        elif ((genwatts or conwatts) and othwatts and conoffset > 0):
+
+            logger.info(
+                "Green energy Generates %s, Consumption %s (Charger Load %s, Other Load %s, Offset %s)",
+                f("{genwatts:.0f}W"),
+                f("{conwatts:.0f}W"),
+                f("{chgwatts:.0f}W"),
+                f("{othwatts:.0f}W"),
+                f("{conoffset:.0f}W"),
+                extra=logExtra,
+            )
+
+        elif ((genwatts or conwatts) and othwatts and conoffset < 0):
+
+            logger.info(
+                "Green energy Generates %s (Offset %s), Consumption %s (Charger Load %s, Other Load %s)",
+                f("{genwatts:.0f}W"),
+                f("{conoffset:.0f}W"),
+                f("{conwatts:.0f}W"),
+                f("{chgwatts:.0f}W"),
+                f("{othwatts:.0f}W"),
+                extra=logExtra,
             )
 
         nominalOffer = master.convertWattsToAmps(

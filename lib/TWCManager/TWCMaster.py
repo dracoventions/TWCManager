@@ -234,6 +234,9 @@ class TWCMaster:
         else:
             return 0
 
+    def getConsumptionOffset(self):
+        return 1
+
     def getHourResumeTrackGreenEnergy(self):
         return self.settings.get("hourResumeTrackGreenEnergy", -1)
 
