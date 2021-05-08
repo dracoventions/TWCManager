@@ -1131,7 +1131,7 @@ class TeslaAPI:
         data = {
             "transaction_id": transactionID, 
             "factor_id": mfaDevice, 
-            "passcode": mfaCode
+            "passcode": str(mfaCode).rjust(6, '0')
         }
         url = "https://auth.tesla.com/oauth2/v3/authorize/mfa/verify"
         resp = self.session.post(url, json=data)
