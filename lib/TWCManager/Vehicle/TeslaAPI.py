@@ -1,11 +1,12 @@
 import base64
 import hashlib
+import logging
 import os
 import re
 import requests
 import time
 from urllib.parse import parse_qs
-import logging
+from ww import f
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
 
@@ -32,6 +33,7 @@ class TeslaAPI:
     maxLoginRetries = 10
     minChargeLevel = -1
     refreshURL = "https://owner-api.teslamotors.com/oauth/token"
+    session = None
     verifier = ""
 
     # Transient errors are ones that usually disappear if we retry the car API
@@ -92,8 +94,8 @@ class TeslaAPI:
                 ("state", state),
             )
 
-            session = requests.Session()
-            resp = session.get(self.authURL, params=params)
+            self.session = requests.Session()
+            resp = self.session.get(self.authURL, params=params)
 
             if resp.ok and "<title>" in resp.text:
                 logger.log(logging.INFO6,
@@ -136,7 +138,7 @@ class TeslaAPI:
         }
 
         for attempt in range(self.maxLoginRetries):
-            resp = session.post(
+            resp = self.session.post(
                 self.authURL, params=params, data=data, allow_redirects=False
             )
             if resp.ok and (resp.status_code == 302 or "<title>" in resp.text):
@@ -157,7 +159,7 @@ class TeslaAPI:
 
         if resp.status_code == 200 and "/mfa/verify" in resp.text:
             # This account is using MFA, redirect to MFA code entry page
-            return "MFA"
+            return "MFA/" + str(transaction_id)
 
         try:
             code = parse_qs(resp.headers["location"])[self.callbackURL + "?code"]
@@ -172,7 +174,7 @@ class TeslaAPI:
             "redirect_uri": self.callbackURL,
         }
 
-        resp = session.post("https://auth.tesla.com/oauth2/v3/token", json=data)
+        resp = self.session.post("https://auth.tesla.com/oauth2/v3/token", json=data)
         access_token = resp.json()["access_token"]
 
         headers = {"authorization": "bearer " + access_token}
@@ -181,7 +183,7 @@ class TeslaAPI:
             "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
             "client_id": self.clientID,
         }
-        resp = session.post(
+        resp = self.session.post(
             "https://owner-api.teslamotors.com/oauth/token", headers=headers, json=data
         )
         try:
@@ -1130,6 +1132,19 @@ class TeslaAPI:
     def setCarApiTokenExpireTime(self, value):
         self.carApiTokenExpireTime = value
         return True
+
+    def getMFADevices(self, transaction_id):
+        # Requests a list of devices we can use for MFA
+        url = f("https://auth.tesla.com/oauth2/v3/authorize/mfa/factors?transaction_id={transaction_id}")
+        resp = self.session.get(url)
+        content = self.json.loads(resp.text)
+
+        if resp.status_code == 200:
+            return content["data"]
+        elif resp.status_code == 400:
+            logger.error("The following error was returned when attempting to fetch MFA devices for Tesla Login:" + str(content.get("error", "")))
+        else:
+            logger.error("An unexpected error code (" + str(resp.status) + ") was returned when attempting to fetch MFA devices for Tesla Login")
 
     def updateCarApiLastErrorTime(self):
         timestamp = time.time()

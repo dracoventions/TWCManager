@@ -122,6 +122,7 @@ def CreateHTTPHandlerClass(master):
             self.templateEnv.globals.update(chargeScheduleDay=self.chargeScheduleDay)
             self.templateEnv.globals.update(checkBox=self.checkBox)
             self.templateEnv.globals.update(doChargeSchedule=self.do_chargeSchedule)
+            self.templateEnv.globals.update(getMFADevices=master.getModuleByName("TeslaAPI").getMFADevices)
             self.templateEnv.globals.update(hoursDurationList=self.hoursDurationList)
             self.templateEnv.globals.update(navbarItem=self.navbar_item)
             self.templateEnv.globals.update(optionList=self.optionList)
@@ -571,7 +572,8 @@ def CreateHTTPHandlerClass(master):
               { "route": "/vehicles", "tmpl": "vehicles.html.j2" } 
             ]
 
-            if self.url.path == "/teslaAccount/login":
+            if (self.url.path == "/teslaAccount/login" or
+                self.url.path == "/teslaAccount/mfaCode"):
                 # For security, these details should be submitted via a POST request
                 # Send a 405 Method Not Allowed in response.
                 self.send_response(405)
@@ -714,6 +716,9 @@ def CreateHTTPHandlerClass(master):
                 # User has submitted Tesla login.
                 # Pass it to the dedicated process_teslalogin function
                 self.process_teslalogin()
+                return
+
+            if self.url.path == "/teslaAccount/mfaCode":
                 return
 
             if self.url.path == "/graphs/dates":
