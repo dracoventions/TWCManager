@@ -193,6 +193,7 @@ class TeslaAPI:
             self.setCarApiRefreshToken(resp.json()["refresh_token"])
             self.setCarApiTokenExpireTime(time.time() + resp.json()["expires_in"])
             self.master.queue_background_task({"cmd": "saveSettings"})
+            return True
 
         except KeyError:
             logger.log(
@@ -208,6 +209,7 @@ class TeslaAPI:
             self.setCarApiBearerToken("")
             self.setCarApiRefreshToken("")
             self.master.queue_background_task({"cmd": "saveSettings"})
+            return False
 
     def apiRefresh(self):
         # Refresh tokens expire in 45
@@ -1136,13 +1138,14 @@ class TeslaAPI:
 
         json = self.json.loads(resp.text)
 
-        print(str(resp) + " " + str(resp.text))
-
-        if "error" in resp.text or not resp.json()["data"]["approved"] or not resp.json()["data"]["valid"]:
-            return "MFAFail"
+        if "error" in resp.text or not json.get("data", None) or not json["data"].get("approved", None) or not json["data"].get("valid", None):
+            if json.get("error", {}).get("message", None) == "Invalid Attributes: Your passcode should be six digits.":
+                return "TokenLengthError"
+            else:
+                return "TokenFail"
         else:
             data = {"transaction_id": transactionID}
-            self.apiLoginPhaseTwo(data)
+            return self.apiLoginPhaseTwo(data)
 
     def setCarApiBearerToken(self, token=None):
         if token:
