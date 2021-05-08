@@ -1329,7 +1329,11 @@ class CarApiVehicle:
         if now - self.lastDriveStatusTime < cacheTime:
             return True
 
-        (result, response) = self.get_car_api(url)
+        try:
+            (result, response) = self.get_car_api(url)
+        except TypeError:
+            logger.log(logging.error, "Got None response from get_car_api()")
+            return False
 
         if result:
             self.lastDriveStatusTime = now
@@ -1348,7 +1352,11 @@ class CarApiVehicle:
         if now - self.lastChargeStatusTime < 60:
             return True
 
-        (result, response) = self.get_car_api(url)
+        try:
+            (result, response) = self.get_car_api(url)
+        except TypeError:
+            logger.log(logging.error, "Got None response from get_car_api()")
+            return False
 
         if result:
             self.lastChargeStatusTime = time.time()
