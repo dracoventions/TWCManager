@@ -719,7 +719,12 @@ def CreateHTTPHandlerClass(master):
                 return
 
             if self.url.path == "/teslaAccount/mfaCode":
-                return
+                transactionID = self.getFieldValue("transactionID")
+                mfaDevice = self.getFieldValue("mfaDevice")
+                mfaCode = self.getFieldValue("mfaCode")
+
+                resp = master.getModuleByName(
+                    "TeslaAPI").mfaLogin(transactionID, mfaDevice, mfaCode)
 
             if self.url.path == "/graphs/dates":
                 # User has submitted dates to graph this period.

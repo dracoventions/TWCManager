@@ -32,6 +32,7 @@ class TeslaAPI:
     master = None
     maxLoginRetries = 10
     minChargeLevel = -1
+    params = None
     refreshURL = "https://owner-api.teslamotors.com/oauth/token"
     session = None
     verifier = ""
@@ -71,9 +72,6 @@ class TeslaAPI:
 
     def apiLogin(self, email, password):
 
-        # GET parameters are used both for phase 1 and phase 2
-        params = None
-
         for attempt in range(self.maxLoginRetries):
 
             self.verifier = base64.urlsafe_b64encode(os.urandom(86)).rstrip(b"=")
@@ -84,7 +82,7 @@ class TeslaAPI:
                 base64.urlsafe_b64encode(os.urandom(16)).rstrip(b"=").decode("utf-8")
             )
 
-            params = (
+            self.params = (
                 ("client_id", "ownerapi"),
                 ("code_challenge", challenge),
                 ("code_challenge_method", "S256"),
@@ -95,7 +93,7 @@ class TeslaAPI:
             )
 
             self.session = requests.Session()
-            resp = self.session.get(self.authURL, params=params)
+            resp = self.session.get(self.authURL, params=self.params)
 
             if resp.ok and "<title>" in resp.text:
                 logger.log(logging.INFO6,
@@ -137,9 +135,13 @@ class TeslaAPI:
             "credential": password,
         }
 
+        return self.apiLoginPhaseTwo(data)
+
+    def apiLoginPhaseTwo(self, data):
+
         for attempt in range(self.maxLoginRetries):
             resp = self.session.post(
-                self.authURL, params=params, data=data, allow_redirects=False
+                self.authURL, params=self.params, data=data, allow_redirects=False
             )
             if resp.ok and (resp.status_code == 302 or "<title>" in resp.text):
                 logger.log(
@@ -159,7 +161,7 @@ class TeslaAPI:
 
         if resp.status_code == 200 and "/mfa/verify" in resp.text:
             # This account is using MFA, redirect to MFA code entry page
-            return "MFA/" + str(transaction_id)
+            return "MFA/" + str(data["transaction_id"])
 
         try:
             code = parse_qs(resp.headers["location"])[self.callbackURL + "?code"]
@@ -1110,6 +1112,38 @@ class TeslaAPI:
     def getCarApiVehicles(self):
         return self.carApiVehicles
 
+    def getMFADevices(self, transaction_id):
+        # Requests a list of devices we can use for MFA
+        url = f("https://auth.tesla.com/oauth2/v3/authorize/mfa/factors?transaction_id={transaction_id}")
+        resp = self.session.get(url)
+        content = self.json.loads(resp.text)
+
+        if resp.status_code == 200:
+            return content["data"]
+        elif resp.status_code == 400:
+            logger.error("The following error was returned when attempting to fetch MFA devices for Tesla Login:" + str(content.get("error", "")))
+        else:
+            logger.error("An unexpected error code (" + str(resp.status) + ") was returned when attempting to fetch MFA devices for Tesla Login")
+
+    def mfaLogin(self, transactionID, mfaDevice, mfaCode):
+        data = {
+            "transaction_id": transactionID, 
+            "factor_id": mfaDevice, 
+            "passcode": mfaCode
+        }
+        url = "https://auth.tesla.com/oauth2/v3/authorize/mfa/verify"
+        resp = self.session.post(url, json=data)
+
+        json = self.json.loads(resp.text)
+
+        print(str(resp) + " " + str(resp.text))
+
+        if "error" in resp.text or not resp.json()["data"]["approved"] or not resp.json()["data"]["valid"]:
+            return "MFAFail"
+        else:
+            data = {"transaction_id": transactionID}
+            self.apiLoginPhaseTwo(data)
+
     def setCarApiBearerToken(self, token=None):
         if token:
             self.carApiBearerToken = token
@@ -1132,19 +1166,6 @@ class TeslaAPI:
     def setCarApiTokenExpireTime(self, value):
         self.carApiTokenExpireTime = value
         return True
-
-    def getMFADevices(self, transaction_id):
-        # Requests a list of devices we can use for MFA
-        url = f("https://auth.tesla.com/oauth2/v3/authorize/mfa/factors?transaction_id={transaction_id}")
-        resp = self.session.get(url)
-        content = self.json.loads(resp.text)
-
-        if resp.status_code == 200:
-            return content["data"]
-        elif resp.status_code == 400:
-            logger.error("The following error was returned when attempting to fetch MFA devices for Tesla Login:" + str(content.get("error", "")))
-        else:
-            logger.error("An unexpected error code (" + str(resp.status) + ") was returned when attempting to fetch MFA devices for Tesla Login")
 
     def updateCarApiLastErrorTime(self):
         timestamp = time.time()
