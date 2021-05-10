@@ -1,4 +1,4 @@
-DEPS := lighttpd screen git
+DEPS := lighttpd screen git libffi-dev libssl-dev
 SUDO := sudo
 VER := $(shell lsb_release -sr)
 
@@ -50,6 +50,11 @@ setup:
 ifeq ($(CI), 1)
 	$(SUDO) /home/docker/.pyenv/shims/python3 setup.py install
 else
+ifneq (,$(wildcard /usr/bin/pip3))
+	$(SUDO) pip3 install --upgrade setuptools
+else
+	$(SUDO) pip install --upgrade setuptools
+endif
 	$(SUDO) ./setup.py install
 endif
 

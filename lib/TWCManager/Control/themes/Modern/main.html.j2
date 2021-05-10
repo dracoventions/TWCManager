@@ -5,23 +5,7 @@
     <table border='0' padding='0' margin='0' width='100%'>
       <tr width='100%'>
         <td valign='top' width='70%'>
-          {% if url.path == "/apiacct/False" %}
-             <font color='red'>
-               <b>Failed to log in to Tesla Account. Please check username and password and try again.</b>
-             </font>
-          {% endif %}
-
-          {% if not master.teslaLoginAskLater
-                and url.path != "/apiacct/True" %}
-                <!-- Check if we have already stored the Tesla credentials
-                     If we can access the Tesla API okay, don't prompt -->
-                {% if not apiAvailable %}
-                    {% include 'request_teslalogin.html.j2' %}
-                {% endif %}
-          {% endif %}
-          {% if url.path == "/apiacct/True" %}
-             <b>Thank you, successfully fetched Tesla API token.</b>
-          {% endif %}
+          {% include 'handle_teslalogin.html.j2' %}
           {% if master.lastSaveFailed %}
              <font color=red>
                <b>We experienced an error trying to save your settings. This mea
@@ -193,7 +177,7 @@ wcmanager/settings.json and try saving your settings again.</b>
                             </svg>
                         </div>
                         <div class="col pt-1">
-                            {% set twcid = '%0x%0x' % (charger.TWCID[0], charger.TWCID[1]) %}
+                            {% set twcid = '%02x%02x' % (charger.TWCID[0], charger.TWCID[1]) %}
                             <div class="row">
                                 <small>{{ twcid }}</small>
                             </div>
@@ -278,8 +262,8 @@ wcmanager/settings.json and try saving your settings again.</b>
                     <div class="row">
                         <div class="col-12 text-left" style="line-height: 1.37em;">
                             Vehicle:<br>
-                            Current: <span id="{{ twcid }}_currentVIN"></span><br>
-                            Last: <span id="{{ twcid }}_lastVIN"></span>
+                            Current: <span id="{{ twcid }}_currentVIN" class='VINClick' onClick="loadVIN('{{ twcid }}','current');"></span><br>
+                            Last: <span id="{{ twcid }}_lastVIN" class='VINClick' onClick="loadVIN('{{ twcid }}','last');"></span>
                         </div>
                     </div>
                 </div>

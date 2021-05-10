@@ -262,6 +262,19 @@ def background_tasks_thread(master):
                 )
             elif task["cmd"] == "checkGreenEnergy":
                 check_green_energy()
+            elif task["cmd"] == "checkVINEntitlement":
+                # The two possible arguments are task["subTWC"] which tells us
+                # which TWC to check, or task["vin"] which tells us which VIN
+                if task.get("vin", None):
+                    task["subTWC"] = master.getTWCbyVIN(task["vin"])
+
+                if task["subTWC"]:
+                    if master.checkVINEntitlement(task["subTWC"]):
+                        logger.info("Vehicle %s on TWC %02X%02X is permitted to charge." % (task["subTWC"].currentVIN, task["subTWC"].TWCID[0], task["subTWC"].TWCID[1]))
+                    else:
+                        logger.info("Vehicle %s on TWC %02X%02X is not permitted to charge. Terminating session." % (task["subTWC"].currentVIN, task["subTWC"].TWCID[0], task["subTWC"].TWCID[1]))
+                        master.sendStopCommand(task["subTWC"].TWCID)
+
             elif task["cmd"] == "getLifetimekWh":
                 master.getSlaveLifetimekWh()
             elif task["cmd"] == "getVehicleVIN":
@@ -1082,7 +1095,6 @@ while True:
                     slaveTWC.VINData[vinPart] = data.decode("utf-8").rstrip("\x00")
                     if vinPart < 2:
                         vinPart += 1
-                        master.getVehicleVIN(senderID, vinPart)
                         master.queue_background_task(
                             {
                                 "cmd": "getVehicleVIN",
@@ -1091,15 +1103,45 @@ while True:
                             }
                         )
                     else:
-                        slaveTWC.currentVIN = "".join(slaveTWC.VINData)
-                        # Clear VIN retry timer
-                        slaveTWC.lastVINQuery = 0
-                        slaveTWC.vinQueryAttempt = 0
-                        # Record this vehicle being connected
-                        master.recordVehicleVIN(slaveTWC)
-                        # Send VIN data to Status modules
-                        master.updateVINStatus()
-                        vinPart += 1
+                        potentialVIN = "".join(slaveTWC.VINData)
+
+                        # Ensure we have a valid VIN
+                        if len(potentialVIN) == 17:
+                            # Record Vehicle VIN
+                            slaveTWC.currentVIN = potentialVIN
+
+                            # Clear VIN retry timer
+                            slaveTWC.lastVINQuery = 0
+                            slaveTWC.vinQueryAttempt = 0
+
+                            # Record this vehicle being connected
+                            master.recordVehicleVIN(slaveTWC)
+
+                            # Send VIN data to Status modules
+                            master.updateVINStatus()
+
+                            # Establish if this VIN should be able to charge
+                            # If not, send stop command
+                            master.queue_background_task(
+                                {
+                                    "cmd": "checkVINEntitlement",
+                                    "subTWC": slaveTWC,
+                                }
+                            )
+
+                            vinPart += 1
+                        else:
+                            # Unfortunately the VIN was not the right length.
+                            # Re-request VIN
+                            master.queue_background_task(
+                                {
+                                    "cmd": "getVehicleVIN",
+                                    "slaveTWC": slaveTWC.TWCID,
+                                    "vinPart": 0,
+                                }
+                            )
+
+
                     logger.log(
                         logging.INFO6,
                         "Current VIN string is: %s at part %d."

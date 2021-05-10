@@ -847,6 +847,7 @@ class TWCSlave:
                     (
                         desiredAmpsOffered < self.master.getSpikeAmps()
                         and desiredAmpsOffered > self.reportedAmpsMax
+                        and self.master.settings.get("spikeAmpsProactively", 1)
                     )
                     or (
                         # ...or if we've been offering the car more amps than it's
@@ -881,6 +882,7 @@ class TWCSlave:
                         # over 10 seconds, meaning it's stuck at its current amp
                         # draw.
                         now - self.timeReportedAmpsActualChangedSignificantly > 10
+                        and self.master.settings.get("spikeAmpsReactively", 1)
                     )
                 ):
                     # We must set desiredAmpsOffered to a value that gets

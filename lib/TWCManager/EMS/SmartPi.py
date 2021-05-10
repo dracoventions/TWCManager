@@ -48,8 +48,8 @@ class SmartPi:
 
         # While we don't have separate generation or consumption values, if
         # the value is a positive value we report it as consumption
-        if self.generatedW < 0 and self.showConsumption:
-            return self.generatedW * -1
+        if self.consumedW and self.showConsumption:
+            return self.consumedW
         else:
             return 0
 
@@ -107,13 +107,19 @@ class SmartPi:
 
         if httpResponse.json():
             genWatts = 0
+            conWatts = 0
             try:
                 for phase in httpResponse.json()["datasets"][0]["phases"]:
-                    genWatts += float(phase["values"][0]["data"])
+                    logger.log(logging.INFO8, "Logged " + str(phase["values"][0]["data"]) + " " + str(phase["values"][0]["unity"]) + " for phase " + str(phase["name"]))
+                    if float(phase["values"][0]["data"]) < 0:
+                        genWatts += float(phase["values"][0]["data"])
+                    else:
+                        conWatts += float(phase["values"][0]["data"])
             except KeyError:
                 logger.log(logging.INFO4, "Expected Key datasets[0][phases] not found in response from SmartPi API.")
 
             self.generatedW = genWatts * -1
+            self.consumedW = conWatts
         else:
             logger.log(logging.INFO4, "No JSON response from SmartPi API")
 

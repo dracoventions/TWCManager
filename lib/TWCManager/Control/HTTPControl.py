@@ -120,11 +120,12 @@ def CreateHTTPHandlerClass(master):
             self.templateEnv.globals.update(addButton=self.addButton)
             self.templateEnv.globals.update(ampsList=self.ampsList)
             self.templateEnv.globals.update(chargeScheduleDay=self.chargeScheduleDay)
+            self.templateEnv.globals.update(checkBox=self.checkBox)
             self.templateEnv.globals.update(doChargeSchedule=self.do_chargeSchedule)
+            self.templateEnv.globals.update(getMFADevices=master.getModuleByName("TeslaAPI").getMFADevices)
             self.templateEnv.globals.update(hoursDurationList=self.hoursDurationList)
             self.templateEnv.globals.update(navbarItem=self.navbar_item)
             self.templateEnv.globals.update(optionList=self.optionList)
-            self.templateEnv.globals.update(showTWCs=self.show_twcs)
             self.templateEnv.globals.update(timeList=self.timeList)
 
             # Set master object
@@ -212,6 +213,13 @@ def CreateHTTPHandlerClass(master):
                 json_datas = re.sub(r'"password": ".*?",', "", json_data)
                 json_data = re.sub(r'"apiKey": ".*?",', "", json_datas)
                 self.wfile.write(json_data.encode("utf-8"))
+
+            elif self.url.path == "/api/getLastTWCResponse":
+                self.send_response(200)
+                self.send_header("Content-type", "text/plain")
+                self.end_headers()
+
+                self.wfile.write(str(master.lastTWCResponseMsg).encode("utf-8"))
 
             elif self.url.path == "/api/getPolicy":
                 self.send_response(200)
@@ -368,6 +376,25 @@ def CreateHTTPHandlerClass(master):
                 self.end_headers()
                 self.wfile.write("".encode("utf-8"))
 
+            elif self.url.path == "/api/sendDebugCommand":
+                data = json.loads(self.post_data.decode("UTF-8"))
+                packet = {
+                    "Command": data.get("commandName", "")
+                }
+                if data.get("commandName", "") == "Custom":
+                    packet["CustomCommand"] = data.get("customCommand", "")
+
+                # Clear last TWC response, so we can grab the next response
+                master.lastTWCResponseMsg = bytearray()
+
+                # Send packet to network
+                master.getModuleByName("RS485").send(
+                    master.getModuleByName("TWCProtocol").createMessage(packet)
+                )
+                print(master.getModuleByName("TWCProtocol").createMessage(packet))
+                self.send_response(204)
+                self.end_headers()
+
             elif self.url.path == "/api/sendStartCommand":
                 master.sendStartCommand()
                 self.send_response(204)
@@ -488,7 +515,7 @@ def CreateHTTPHandlerClass(master):
                         page += " (" + str(match_result) + ")"
                     page += "</td>"
 
-                    page += "<td>" + condition + "</td>"
+                    page += "<td>" + str(condition) + "</td>"
 
                     page += "<td>" + str(value)
                     value_result = mod_policy.policyValue(value)
@@ -537,7 +564,16 @@ def CreateHTTPHandlerClass(master):
                 self.do_API_GET()
                 return
 
-            if self.url.path == "/teslaAccount/login":
+            webroutes = [
+              { "route": "/debug",    "tmpl": "debug.html.j2" },
+              { "route": "/schedule", "tmpl": "schedule.html.j2" },
+              { "route": "/settings", "tmpl": "settings.html.j2" },
+              { "rstart": "/vehicleDetail", "tmpl": "vehicleDetail.html.j2" },
+              { "route": "/vehicles", "tmpl": "vehicles.html.j2" } 
+            ]
+
+            if (self.url.path == "/teslaAccount/login" or
+                self.url.path == "/teslaAccount/mfaCode"):
                 # For security, these details should be submitted via a POST request
                 # Send a 405 Method Not Allowed in response.
                 self.send_response(405)
@@ -566,13 +602,21 @@ def CreateHTTPHandlerClass(master):
                 self.wfile.write(page.encode("utf-8"))
                 return
 
-            if self.url.path == "/debug":
+            # Match web routes to defined webroutes routing
+            route = None
+            for webroute in webroutes:
+                if self.url.path == webroute.get("route", "INVALID"):
+                    route = webroute
+                elif self.url.path.startswith(webroute.get("rstart", "INVALID")):
+                    route = webroute
+
+            if route:
                 self.send_response(200)
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
 
                 # Load debug template and render
-                self.template = self.templateEnv.get_template("debug.html.j2")
+                self.template = self.templateEnv.get_template(route["tmpl"])
                 page = self.template.render(self.__dict__)
 
                 self.wfile.write(page.encode("utf-8"))
@@ -591,28 +635,19 @@ def CreateHTTPHandlerClass(master):
                 self.wfile.write(page.encode("utf-8"))
                 return
 
-            if self.url.path == "/schedule":
-                self.send_response(200)
-                self.send_header("Content-type", "text/html")
+            if self.url.path.startswith("/vehicles/deleteGroup"):
+                group = urllib.parse.unquote(self.url.path.rsplit("/", 1)[1])
+                if group and len(group) > 0 and group in master.settings["VehicleGroups"]:
+                    del master.settings["VehicleGroups"][group]
+                    master.queue_background_task({"cmd": "saveSettings"})
+                    self.send_response(302)
+                    self.send_header("Location", "/vehicles")
+
+                else:
+                    self.send_response(400)
+
                 self.end_headers()
-
-                # Load template and render
-                self.template = self.templateEnv.get_template("schedule.html.j2")
-                page = self.template.render(self.__dict__)
-
-                self.wfile.write(page.encode("utf-8"))
-                return
-
-            if self.url.path == "/settings":
-                self.send_response(200)
-                self.send_header("Content-type", "text/html")
-                self.end_headers()
-
-                # Load template and render
-                self.template = self.templateEnv.get_template("settings.html.j2")
-                page = self.template.render(self.__dict__)
-
-                self.wfile.write(page.encode("utf-8"))
+                self.wfile.write("".encode("utf-8"))
                 return
 
             if self.url.path == "/graphs" or self.url.path == "/graphsP":
@@ -662,6 +697,10 @@ def CreateHTTPHandlerClass(master):
 
             self.fields = urllib.parse.parse_qs(self.post_data.decode("utf-8"))
 
+            if self.url.path == "/debug/save":
+                self.process_save_settings("debug")
+                return
+
             if self.url.path == "/schedule/save":
                 # User has submitted schedule.
                 self.process_save_schedule()
@@ -677,6 +716,20 @@ def CreateHTTPHandlerClass(master):
                 # User has submitted Tesla login.
                 # Pass it to the dedicated process_teslalogin function
                 self.process_teslalogin()
+                return
+
+            if self.url.path == "/teslaAccount/mfaCode":
+                transactionID = self.getFieldValue("transactionID")
+                mfaDevice = self.getFieldValue("mfaDevice")
+                mfaCode = self.getFieldValue("mfaCode")
+
+                resp = master.getModuleByName(
+                    "TeslaAPI").mfaLogin(transactionID, mfaDevice, mfaCode)
+
+                self.send_response(302)
+                self.send_header("Location", "/teslaAccount/" + str(resp))
+                self.end_headers()
+                self.wfile.write("".encode("utf-8"))
                 return
 
             if self.url.path == "/graphs/dates":
@@ -699,6 +752,40 @@ def CreateHTTPHandlerClass(master):
                 self.wfile.write("".encode("utf-8"))
                 return
 
+            if self.url.path == "/vehicle/groupMgmt":
+
+                group = self.getFieldValue("group")
+                op = self.getFieldValue("operation")
+                vin = self.getFieldValue("vin")
+
+                if op == "add":
+                    try:
+                        master.settings["VehicleGroups"][group]["Members"].append(vin)
+                    except ValueError:
+                        logger.error("Error adding vehicle %s to group %s" % (vin, group))
+
+                elif op == "remove":
+                    try:
+                        master.settings["VehicleGroups"][group]["Members"].remove(vin)
+                    except ValueError:
+                        logger.error("Error removing vehicle %s from group %s" % (vin, group))
+
+                master.queue_background_task({"cmd": "saveSettings"})
+
+                master.queue_background_task(
+                    {
+                        "cmd": "checkVINEntitlement",
+                        "vin": vin,
+                    }
+                )
+
+                self.send_response(302)
+                self.send_header("Location", "/vehicleDetail/"+vin)
+                self.end_headers()
+                self.wfile.write("".encode("utf-8"))
+                return
+
+
             # All other routes missed, return 404
             self.send_response(404)
             self.end_headers()
@@ -709,7 +796,14 @@ def CreateHTTPHandlerClass(master):
             # This is a macro which can display differing buttons based on a
             # condition. It's a useful way to switch the text on a button based
             # on current state.
-            page = "<input type='Submit' %s id='%s' value='%s'>" % (
+            params = {}
+            if len(button_def) == 3:
+                params = button_def[2]
+            buttontype = "Submit"
+            if params.get("buttonType", False):
+                buttontype = params["buttonType"]
+            page = "<input type='%s' %s id='%s' value='%s'>" % (
+                buttontype,
                 extrargs,
                 button_def[0],
                 button_def[1],
@@ -886,7 +980,7 @@ def CreateHTTPHandlerClass(master):
             self.wfile.write("".encode("utf-8"))
             return
 
-        def process_save_settings(self):
+        def process_save_settings(self, page = "settings"):
 
             # This function will write the settings submitted from the settings
             # page to the settings dict, before triggering a write of the settings
@@ -913,6 +1007,18 @@ def CreateHTTPHandlerClass(master):
             if int(master.settings.get("nonScheduledAction", 1)) > 1:
                 master.settings["nonScheduledAmpsMax"] = 0
             master.queue_background_task({"cmd": "saveSettings"})
+
+            # If triggered from the Debug page (not settings page), we need to
+            # set certain settings to false if they were not seen in the
+            # request data - This is because Check Boxes don't have a value
+            # if they aren't set
+            if page == "debug":
+                  checkboxes = ["enableDebugCommands", 
+                                "spikeAmpsProactively", 
+                                "spikeAmpsReactively" ]
+                  for checkbox in checkboxes:
+                      if checkbox not in self.fields:
+                          master.settings[checkbox] = 0
 
             # Redirect to the index page
             self.send_response(302)
@@ -958,63 +1064,6 @@ def CreateHTTPHandlerClass(master):
                 self.end_headers()
                 self.wfile.write("".encode("utf-8"))
                 return
-
-        def show_twcs(self):
-
-            page = """
-        <table><tr width = '100%'><td width='65%'>
-          <table class='table table-dark table-condensed table-striped'>
-          <thead class='thead-dark'><tr>
-            <th width='2%'>TWC ID</th>
-            <th width='1%'>State</th>
-            <th width='1%'>Version</th>
-            <th width='2%'>Max Amps</th>
-            <th width='2%'>Amps<br />Offered</th>
-            <th width='2%'>Amps<br />In Use</th>
-            <th width='2%'>Lifetime<br />kWh</th>
-            <th width='4%'>Voltage<br />per Phase<br />1 / 2 / 3</th>
-            <th width='2%'>Last Heartbeat</th>
-            <th width='6%'>Vehicle Connected<br />Current / Last</th>
-            <th width='2%'>Commands</th>
-          </tr></thead>
-        """
-            for slaveTWC in master.getSlaveTWCs():
-                twcid = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
-                page += "<tr>"
-                page += "<td>%s</td>" % twcid
-                page += "<td><div id='%s_state'></div></td>" % twcid
-                page += "<td><div id='%s_version'></div></td>" % twcid
-                page += "<td><div id='%s_maxAmps'></div></td>" % twcid
-                page += "<td><div id='%s_lastAmpsOffered'></div></td>" % twcid
-                page += "<td><div id='%s_reportedAmpsActual'></div></td>" % twcid
-                page += "<td><div id='%s_lifetimekWh'></div></td>" % twcid
-                page += (
-                    "<td><span id='%s_voltsPhaseA'></span> / <span id='%s_voltsPhaseB'></span> / <span id='%s_voltsPhaseC'></span></td>"
-                    % (twcid, twcid, twcid)
-                )
-                page += "<td><span id='%s_lastHeartbeat'></span> sec</td>" % twcid
-                page += (
-                    "<td>C: <span id='%s_currentVIN'></span><br />L: <span id='%s_lastVIN'></span></td>"
-                    % (twcid, twcid)
-                )
-                page += """
-            <td>
-              <div class="dropdown">
-                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Select</button>
-                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                  <a class="dropdown-item" href="#">Coming Soon</a>
-                </div>
-              </div>
-            </td>
-            """
-                page += "</tr>"
-            page += "<tr><td><b>Total</b><td>&nbsp;</td><td>&nbsp;</td>"
-            page += "<td><div id='total_maxAmps'></div></td>"
-            page += "<td><div id='total_lastAmpsOffered'></div></td>"
-            page += "<td><div id='total_reportedAmpsActual'></div></td>"
-            page += "<td><div id='total_lifetimekWh'></div></td>"
-            page += "</tr></table></td></tr></table>"
-            return page
 
         def process_save_graphs(self, initial, end):
             # Check that Graphs dict exists within settings.
