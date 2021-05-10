@@ -53,7 +53,7 @@ class TWCSlave:
 
     lastAmpsOffered = -1
     useFlexAmpsToStartCharge = False
-    timeLastAmpsOfferedChanged = time.time()
+    timeLastAmpsOfferedChanged = 0
     lastHeartbeatDebugOutput = ""
     timeLastHeartbeatDebugOutput = 0
     wiringMaxAmps = 0

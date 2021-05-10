@@ -21,12 +21,15 @@ class TeslaAPI:
     carApiRefreshToken = ""
     carApiTokenExpireTime = time.time()
     carApiLastStartOrStopChargeTime = 0
+    carApiLastStartOrStopChargeAction = None
+    carApiLastStartOrStopFlipTime = 0
     carApiLastChargeLimitApplyTime = 0
     clientID = "81527cff06843c8634fdc09e8ac0abefb46ac849f38fe1e431c2ef2106796384"
     clientSecret = "c7257eb71a564034f9419ee651c7d0e5f7aa6bfbd18bafb5c5c033b093bb2fa3"
     lastChargeLimitApplied = 0
     lastChargeCheck = 0
     chargeUpdateInterval = 1800
+    startStopDelay = 60
     carApiVehicles = []
     config = None
     master = None
@@ -61,6 +64,7 @@ class TeslaAPI:
         try:
             self.config = master.config
             self.minChargeLevel = self.config["config"].get("minChargeLevel", -1)
+            self.startStopDelay = self.config["config"].get("startStopDelay", 60)
             self.chargeUpdateInterval = self.config["config"].get(
                 "cloudUpdateInterval", 1800
             )
@@ -661,11 +665,20 @@ class TeslaAPI:
             for vehicle in self.getCarApiVehicles():
                 vehicle.stopAskingToStartCharging = False
 
-        if now - self.getLastStartOrStopChargeTime() < 60:
+        if (now - self.getLastStartOrStopChargeTime() < 60) or (
+            now - self.carApiLastStartOrStopFlipTime < self.startStopDelay
+            and charge != self.carApiLastStartOrStopChargeAction
+        ):
+            if self.carApiLastStartOrStopChargeAction != charge:
+                # If we're repeatedly changing our minds about whether to charge or not,
+                # stay how we are until the system settles down.
+                self.carApiLastStartOrStopChargeAction = charge
+                self.carApiLastStartOrStopFlipTime = now
+
             # Don't start or stop more often than once a minute
             logger.log(
                 logging.DEBUG2,
-                "car_api_charge return because under 60 sec since last carApiLastStartOrStopChargeTime",
+                "car_api_charge return because not long enough since last carApiLastStartOrStopChargeTime",
             )
             return "error"
 
@@ -706,6 +719,10 @@ class TeslaAPI:
             # to wake cars.  Setting this prevents any command below from being sent
             # more than once per minute.
             self.updateLastStartOrStopChargeTime()
+
+            if self.carApiLastStartOrStopChargeAction != charge:
+                self.carApiLastStartOrStopChargeAction = charge
+                self.carApiLastStartOrStopFlipTime = now
 
             if (
                 self.config["config"]["onlyChargeMultiCarsAtHome"]
