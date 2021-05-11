@@ -360,7 +360,7 @@ def CreateHTTPHandlerClass(master):
                 rate = int(data.get("chargeNowRate", 0))
                 durn = int(data.get("chargeNowDuration", 0))
 
-                if rate == 0 or durn == 0:
+                if rate <= 0 or durn <= 0:
                     self.send_response(400)
                     self.end_headers()
                     self.wfile.write("".encode("utf-8"))

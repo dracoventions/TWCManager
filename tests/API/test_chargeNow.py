@@ -7,17 +7,19 @@
 # We should then be able to adjust the chargeNow policy and see that adjustment
 
 import json
+import os
 import random
 import requests
 
 # Configuration
-skipFailure = 0
+skipFailure = 1
 
 # Disable environment import to avoid proxying requests
 session = requests.Session()
 session.trust_env = False
 
 values = {}
+values["expected"] = {}
 success = 1
 response = {}
 
@@ -39,6 +41,7 @@ while (not values["targetSecond"] or values["targetFirst"] == values["targetSeco
     values["targetSecond"] = random.randint(12, 80) 
 
 # Test 1 - Call chargeNow policy with no arguments
+values["expected"]["chargeNowNoArgs"] = 400
 try:
     response["chargeNowNoArgs"] = session.post("http://127.0.0.1:8088/api/chargeNow", timeout=30)
 except requests.Timeout:
@@ -56,6 +59,7 @@ data = {
   "chargeNowRate": -10
 }
 
+values["expected"]["chargeNowNegativeRate"] = 400
 try:
     response["chargeNowNegativeRate"] = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
 except requests.Timeout:
@@ -73,6 +77,7 @@ data = {
   "chargeNowRate": 24
 }
 
+values["expected"]["chargeNowNegativeDuration"] = 400
 try:
     response["chargeNowNegativeDuration"] = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
 except requests.Timeout:
@@ -85,6 +90,7 @@ except requests.ConnectionError:
 print(str(response["chargeNowNegativeDuration"]))
 
 # Test 4 - Engage chargeNow policy for our first random value
+values["expected"]["chargeNowFirst"] = 200
 data = {
   "chargeNowDuration": 3600,
   "chargeNowRate": values["targetFirst"]
@@ -101,7 +107,22 @@ except requests.ConnectionError:
 
 print(str(response["chargeNowFirst"]))
 
+# Test 5 - Send random data as the body of the request
+data = os.urandom(20480)
+
+values["expected"]["chargeNowFirst"] = 400
+try:
+    response["chargeNowFirst"] = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
+except requests.Timeout:
+    print("Error: Connection Timed Out")
+    exit(255)
+except requests.ConnectionError:
+    print("Error: Connection Error at chargeNowFirst")
+    exit(255)
+data = None
+
 # Test X - cancelChargeNow
+values["expected"]["cancelChargeNow"] = 200
 try:
     response["cancelChargeNow"] = session.post("http://127.0.0.1:8088/api/cancelChargeNow", timeout=30)
 except requests.Timeout:
@@ -111,11 +132,11 @@ except requests.ConnectionError:
     print("Error: Connection Error at cancelChargeNow")
     exit(255)
 
-if response.status_code == 200:
-    success = 1
-else:
-    print("Error: Response code " + str(response.status_code))
-    exit(255)
+# For each request, check that the status codes match
+for reqs in values["expected"].keys():
+    if response[reqs].status_code != values["expected"][reqs]:
+        print("Error: Response code " + str(response[reqs].status_code) + " for test " + str(reqs) + " does not equal expected result " + str(values["expected"][reqs]))
+        success = 0
 
 if success:
     print("All tests successful")
