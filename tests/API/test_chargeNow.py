@@ -10,6 +10,7 @@ import json
 import os
 import random
 import requests
+import time
 
 # Configuration
 skipFailure = 1
@@ -27,7 +28,7 @@ response = {}
 try:
     response["getStatusBefore"] = session.get("http://127.0.0.1:8088/api/cancelChargeNow", timeout=30)
 except requests.Timeout:
-    print("Error: Connection Timed Out")
+    print("Error: Connection Timed Out at ")
     exit(255)
 except requests.ConnectionError:
     print("Error: Connection Error at getStatus 1")
@@ -40,18 +41,20 @@ values["targetSecond"] = 0
 while (not values["targetSecond"] or values["targetFirst"] == values["targetSecond"]):
     values["targetSecond"] = random.randint(12, 80) 
 
+print("Using values First: " + str(values["targetFirst"]) + " and Second: " + str(values["targetSecond"]) + " for chargeNow rate testing.")
+
 # Test 1 - Call chargeNow policy with no arguments
 values["expected"]["chargeNowNoArgs"] = 400
 try:
     response["chargeNowNoArgs"] = session.post("http://127.0.0.1:8088/api/chargeNow", timeout=30)
 except requests.Timeout:
-    print("Error: Connection Timed Out")
-    exit(255)
+    print("Error: Connection Timed Out at chargeNowNoArgs")
+    success = 0
 except requests.ConnectionError:
     print("Error: Connection Error at chargeNowNoArgs")
-    exit(255)
+    success = 0
 
-print(str(response["chargeNowNoArgs"]))
+time.sleep(2)
 
 # Test 2 - Engage chargeNow policy with a negative value
 data = {
@@ -63,13 +66,13 @@ values["expected"]["chargeNowNegativeRate"] = 400
 try:
     response["chargeNowNegativeRate"] = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
 except requests.Timeout:
-    print("Error: Connection Timed Out")
-    exit(255)
+    print("Error: Connection Timed Out at chargeNowNegativeRate")
+    success = 0
 except requests.ConnectionError:
     print("Error: Connection Error at chargeNowNegativeRate")
-    exit(255)
+    success = 0
 
-print(str(response["chargeNowNegativeRate"]))
+time.sleep(2)
 
 # Test 3 - Engage chargeNow policy with a negative duration
 data = {
@@ -81,45 +84,48 @@ values["expected"]["chargeNowNegativeDuration"] = 400
 try:
     response["chargeNowNegativeDuration"] = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
 except requests.Timeout:
-    print("Error: Connection Timed Out")
-    exit(255)
+    print("Error: Connection Timed Out at chargeNowNegativeDuration")
+    success = 0
 except requests.ConnectionError:
     print("Error: Connection Error at chargeNowNegativeDuration")
-    exit(255)
+    success = 0
 
-print(str(response["chargeNowNegativeDuration"]))
+time.sleep(2)
 
 # Test 4 - Engage chargeNow policy for our first random value
 values["expected"]["chargeNowFirst"] = 200
 data = {
   "chargeNowDuration": 3600,
-  "chargeNowRate": values["targetFirst"]
+  "chargeNowRate": int(values.get("targetFirst", 0))
 }
 
 try:
     response["chargeNowFirst"] = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
 except requests.Timeout:
-    print("Error: Connection Timed Out")
-    exit(255)
+    print("Error: Connection Timed Out at chargeNowFirst")
+    success = 0
 except requests.ConnectionError:
     print("Error: Connection Error at chargeNowFirst")
-    exit(255)
+    success = 0
 
+time.sleep(2)
 print(str(response["chargeNowFirst"]))
 
 # Test 5 - Send random data as the body of the request
 data = os.urandom(20480)
 
-values["expected"]["chargeNowFirst"] = 400
+values["expected"]["chargeNowRandom"] = 400
 try:
-    response["chargeNowFirst"] = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
+    response["chargeNowRandom"] = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
 except requests.Timeout:
-    print("Error: Connection Timed Out")
-    exit(255)
+    print("Error: Connection Timed Out at chargeNowRandom")
+    success = 0
 except requests.ConnectionError:
-    print("Error: Connection Error at chargeNowFirst")
-    exit(255)
+    print("Error: Connection Error at chargeNowRandom")
+    success = 0
+
 data = None
+time.sleep(2)
 
 # Test X - cancelChargeNow
 values["expected"]["cancelChargeNow"] = 200
