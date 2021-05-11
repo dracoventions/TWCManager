@@ -350,7 +350,13 @@ def CreateHTTPHandlerClass(master):
             self.debugLogAPI("Starting API POST")
 
             if self.url.path == "/api/chargeNow":
-                data = json.loads(self.post_data.decode("UTF-8"))
+                data = {}
+                try:
+                    data = json.loads(self.post_data.decode("UTF-8"))
+                except json.decoder.JSONDecodeError:
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
                 rate = int(data.get("chargeNowRate", 0))
                 durn = int(data.get("chargeNowDuration", 0))
 
