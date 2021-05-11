@@ -53,7 +53,9 @@ else
 ifneq (,$(wildcard /usr/bin/pip3))
 	$(SUDO) pip3 install --upgrade setuptools
 else
+ifneq (,$(wildcard /usr/bin/pip))
 	$(SUDO) pip install --upgrade setuptools
+endif
 endif
 	$(SUDO) ./setup.py install
 endif

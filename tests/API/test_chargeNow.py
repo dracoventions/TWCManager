@@ -140,9 +140,12 @@ except requests.ConnectionError:
 
 # For each request, check that the status codes match
 for reqs in values["expected"].keys():
-    if response[reqs].status_code != values["expected"][reqs]:
-        print("Error: Response code " + str(response[reqs].status_code) + " for test " + str(reqs) + " does not equal expected result " + str(values["expected"][reqs]))
-        success = 0
+    if response.get(reqs, None):
+        if response[reqs].status_code != values["expected"][reqs]:
+            print("Error: Response code " + str(response[reqs].status_code) + " for test " + str(reqs) + " does not equal expected result " + str(values["expected"][reqs]))
+            success = 0
+    else:
+        print("No response was found for test " + str(reqs) + ", skipping")
 
 if success:
     print("All tests successful")
