@@ -125,7 +125,7 @@ else:
 if jsonconfig:
     config = commentjson.load(jsonconfig)
 else:
-    logger.info("Unable to find a configuration file.")
+    logger.error("Unable to find a configuration file.")
     sys.exit()
 
 
