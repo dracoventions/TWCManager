@@ -2,7 +2,7 @@ DEPS := lighttpd screen git libffi-dev libssl-dev
 SUDO := sudo
 VER := $(shell lsb_release -sr)
 
-.PHONY: tests
+.PHONY: tests upload
 
 build: deps setup
 
@@ -60,6 +60,9 @@ endif
 
 tests:
 	cd tests && make
+
+upload:
+	cd tests && make upload
 
 webfiles:
 	$(SUDO) cp html/* /var/www/html/

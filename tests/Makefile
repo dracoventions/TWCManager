@@ -23,7 +23,7 @@ mysql_setup:
 	@echo "${bold}${red}(P5/6)${reset} ${yellow}Environment Preparation"
 	@sudo /home/docker/.pyenv/shims/python3 env_preparation.py
 	@echo "${bold}${red}(P6/6)${reset} ${yellow}Set up SQLite Database"
-	@python3 sqlite_setup.py
+	@python3 scripts/sqlite_setup.py
 
 run_twcmanager:
 	@echo "${bold}${red}(M1/2)${reset} ${yellow}Running TWCManager"
@@ -35,18 +35,22 @@ upload:
 	@rm -r /tmp/twcmanager-tests
 
 api:
-	@echo "${bold}${red}(A1/4)${reset} ${yellow}Test API Listener"
+	@echo "${bold}${red}(A1/6)${reset} ${yellow}Test API Listener"
 	@cd API && ./test_apilistener.sh
-	@echo "${bold}${red}(A2/4)${reset} ${yellow}Test API getConfig"
+	@echo "${bold}${red}(A2/6)${reset} ${yellow}Test API getConfig"
 	@cd API && ./test_getConfig.py
-	@echo "${bold}${red}(A3/4)${reset} ${yellow}Test API getSlaveTWCs"
+	@echo "${bold}${red}(A3/6)${reset} ${yellow}Test API getLastTWCResponse"
+	@cd API && ./test_getLastTWCResponse.py
+	@echo "${bold}${red}(A4/6)${reset} ${yellow}Test API getPolicy"
+	@cd API && ./test_getPolicy.py
+	@echo "${bold}${red}(A5/6)${reset} ${yellow}Test API getSlaveTWCs"
 	@cd API && ./test_getSlaveTWCs.py
-	@echo "${bold}${red}(A4/4)${reset} ${yellow}Test API getStatus"
-	cd API && ./test_getStatus.py
+	@echo "${bold}${red}(A6/6)${reset} ${yellow}Test API getStatus"
+	@cd API && ./test_getStatus.py
 
 ems:
 	@echo "${bold}${red}(E1/2)${reset} ${yellow}Starting EMS Test Web Server"
-	cd EMS && ./ems_emulator.py &
+	@cd EMS && ./ems_emulator.py &
 	@echo "${bold}${red}(E2/2)${reset} ${yellow}Testing SmartPi EMS Module"
 	cd EMS && ./test_SmartPi.py
 
