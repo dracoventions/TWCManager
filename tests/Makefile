@@ -8,6 +8,8 @@ yellow:=$(shell tput -T ansi setaf 3)
 general_prereqs:
 	@echo "${bold}${red}(P1/6)${reset} ${yellow}Installing Prerequisites for Test Suite"
 	@sudo apt-get install -y debconf-utils iproute2 > /dev/null 2>&1
+	@mkdir -p /tmp/twcmanager-tests
+	@chmod 777 /tmp/twcmanager-tests
 
 mqtt_setup:
 	@echo "${bold}${red}(P2/6)${reset} ${yellow}Installing MQTT Prerequisites"
@@ -17,7 +19,7 @@ mysql_setup:
 	@echo "${bold}${red}(P3/6)${reset} ${yellow}Installing MySQL Server"
 	@sudo apt-get install -y mysql-server sqlite3 > /dev/null 2>&1
 	@echo "${bold}${red}(P4/6)${reset} ${yellow}Setup MySQL Database"
-	@sudo /home/docker/.pyenv/shims/python3 mysql_setup.py
+	@sudo /home/docker/.pyenv/shims/python3 scripts/mysql_setup.py
 	@echo "${bold}${red}(P5/6)${reset} ${yellow}Environment Preparation"
 	@sudo /home/docker/.pyenv/shims/python3 env_preparation.py
 	@echo "${bold}${red}(P6/6)${reset} ${yellow}Set up SQLite Database"
@@ -26,6 +28,11 @@ mysql_setup:
 run_twcmanager:
 	@echo "${bold}${red}(M1/2)${reset} ${yellow}Running TWCManager"
 	@cd .. && python3 -m TWCManager &
+
+upload:
+	@echo Uploading debug files
+	@find /tmp/twcmanager-tests -type f | xargs scripts/upload_file.sh
+	@rm -r /tmp/twcmanager-tests
 
 api:
 	@echo "${bold}${red}(A1/4)${reset} ${yellow}Test API Listener"

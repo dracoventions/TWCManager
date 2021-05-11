@@ -24,6 +24,9 @@ jobs:
       - name: "Run Test Suite"
         run: make tests
 
+      - name: "Upload any debug files collected"
+        if: always()
+        run: make upload
 
   twcmanager-python3_5:
     runs-on: [ "self-hosted", "python3.5.3" ]
@@ -46,6 +49,10 @@ jobs:
       - name: "Run Test Suite"
         run: make tests
 
+      - name: "Upload any debug files collected"
+        if: always()
+        run: make upload
+
   twcmanager-python3_6:
     runs-on: [ "self-hosted", "python3.6.13" ]
     steps:
@@ -67,6 +74,10 @@ jobs:
       - name: "Run Test Suite"
         run: make tests
 
+      - name: "Upload any debug files collected"
+        if: always()
+        run: make upload
+
   twcmanager-python3_7:
     runs-on: [ "self-hosted", "python3.7.10" ]
     steps:
@@ -84,3 +95,8 @@ jobs:
 
       - name: "Run Test Suite"
         run: make tests
+
+      - name: "Upload any debug files collected"
+        if: always()
+        run: make upload
+

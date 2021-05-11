@@ -12,6 +12,8 @@ This document logs the changes per release of TWCManager.
   * (@ngardiner) - Added VIN Management functionality, where vehicles can be allowed or denied charging based on VIN. With this, we introduce the ability to define vehicle groups, with future functionality allowing policy settings to be applied to these groups.
   * (@ngardiner) - Addition of a debug interface which allows tuning advanced inner workings of TWCManager, and allows sending commands to TWCs.
   * (@ngardiner) - Added support for Tesla MFA authentication flows
+  * (@MikeBishop) - Improve API error handling, removing transient error delays and replacing with an exponential backoff mechanism to avoid delaying other background tasks.
+  * (@MikeBishop) - Added debounce dampening for situations where intermittent consumption spikes / loads cause TWC to start and stop charging frequently.
   * Bugfixes
     * (@ngardiner) - Better handling of permissions issues when attempting to save settings.json - alerts user to check file permissions via Web Interface
     * (@ngardiner) - Fixed issue with logging errors when a certain exception is raised in the Snapshot History function
