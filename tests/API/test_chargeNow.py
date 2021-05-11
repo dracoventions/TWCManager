@@ -28,7 +28,7 @@ except requests.Timeout:
     print("Error: Connection Timed Out")
     exit(255)
 except requests.ConnectionError:
-    print("Error: Connection Error")
+    print("Error: Connection Error at getStatus 1")
     exit(255)
 
 # Generate a random amperage value between 12 and 80 twice for two separate
@@ -45,7 +45,7 @@ except requests.Timeout:
     print("Error: Connection Timed Out")
     exit(255)
 except requests.ConnectionError:
-    print("Error: Connection Error")
+    print("Error: Connection Error at chargeNowNoArgs")
     exit(255)
 
 print(str(response["chargeNowNoArgs"]))
@@ -62,7 +62,7 @@ except requests.Timeout:
     print("Error: Connection Timed Out")
     exit(255)
 except requests.ConnectionError:
-    print("Error: Connection Error")
+    print("Error: Connection Error at chargeNowNegativeRate")
     exit(255)
 
 print(str(response["chargeNowNegativeRate"]))
@@ -79,7 +79,7 @@ except requests.Timeout:
     print("Error: Connection Timed Out")
     exit(255)
 except requests.ConnectionError:
-    print("Error: Connection Error")
+    print("Error: Connection Error at chargeNowNegativeDuration")
     exit(255)
 
 print(str(response["chargeNowNegativeDuration"]))
@@ -96,7 +96,7 @@ except requests.Timeout:
     print("Error: Connection Timed Out")
     exit(255)
 except requests.ConnectionError:
-    print("Error: Connection Error")
+    print("Error: Connection Error at chargeNowFirst")
     exit(255)
 
 print(str(response["chargeNowFirst"]))
@@ -108,7 +108,7 @@ except requests.Timeout:
     print("Error: Connection Timed Out")
     exit(255)
 except requests.ConnectionError:
-    print("Error: Connection Error")
+    print("Error: Connection Error at cancelChargeNow")
     exit(255)
 
 if response.status_code == 200:

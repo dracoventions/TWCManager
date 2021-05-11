@@ -11,9 +11,20 @@
 #
 
 FILE="$1"
+
+if [ "$FILE " == " " ]; then
+    echo "No filename specified. Exiting."
+    exit 0
+fi
+
+if [ ! -e "$FILE" ]; then
+    echo "Specified file (${FILE}) doesn't exist. Exiting."
+    exit 0
+fi
+
 HOSTNAME="`hostname -s`"
-FILEUNIQUE="`basename $FILE`.${HOSTNAME}.`date +%s`"
+FILEUNIQUE="`basename ${FILE}`.${HOSTNAME}.`date +%s`"
 SERVER=172.17.0.1
 TOKEN=0baa9000ff4ab70a6f9f89733438767a
 
-curl -X PUT -Ffile=$FILE "http://${SERVER}:25478/${FILEUNIQUE}?token=${TOKEN}"
+curl --proxy "" -X PUT -Ffile=$FILE "http://${SERVER}:25478/${FILEUNIQUE}?token=${TOKEN}"
