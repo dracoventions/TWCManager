@@ -24,9 +24,9 @@ values = {
   "elapsed":   {},
   "expected":  {},
   "response":  {},
-  "status": {}
+  "status":    {},
+  "tests":     {}
 }
-success = 1
 response = None
 
 def getStatus(tag):
@@ -42,7 +42,7 @@ def getStatus(tag):
     # Return json
     jsonOut = False
     try:
-        jsonOut = response.json
+        jsonOut = response.json()
     except json.decoder.JSONDecodeError as e:
         print("Could not parse JSON at " + tag)
     except UnboundLocalError:
@@ -63,16 +63,17 @@ print("Using values First: " + str(values["targetFirst"]) + " and Second: " + st
 
 # Test 1 - Call chargeNow policy with no arguments
 values["expected"]["chargeNowNoArgs"] = 400
+values["tests"]["chargeNowNoArgs"] = {}
 try:
     response = session.post("http://127.0.0.1:8088/api/chargeNow", timeout=30)
     values["elapsed"]["chargeNowNoArgs"] = response.elapsed
     values["response"]["chargeNowNoArgs"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out at chargeNowNoArgs")
-    success = 0
+    values["tests"]["chargeNowNoArgs"]["fail"] = 1
 except requests.ConnectionError:
     print("Error: Connection Error at chargeNowNoArgs")
-    success = 0
+    values["tests"]["chargeNowNoArgs"]["fail"] = 1
 
 time.sleep(2)
 
@@ -82,6 +83,7 @@ data = {
   "chargeNowRate": -10
 }
 
+values["tests"]["chargeNowNegativeRate"] = {}
 values["expected"]["chargeNowNegativeRate"] = 400
 try:
     response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
@@ -89,10 +91,10 @@ try:
     values["response"]["chargeNowNegativeRate"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out at chargeNowNegativeRate")
-    success = 0
+    values["tests"]["chargeNowNegativeRate"]["fail"] = 1
 except requests.ConnectionError:
     print("Error: Connection Error at chargeNowNegativeRate")
-    success = 0
+    values["tests"]["chargeNowNegativeRate"]["fail"] = 1
 
 time.sleep(2)
 
@@ -102,6 +104,7 @@ data = {
   "chargeNowRate": 24
 }
 
+values["tests"]["chargeNowNegativeDuration"] = {}
 values["expected"]["chargeNowNegativeDuration"] = 400
 try:
     response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
@@ -109,14 +112,15 @@ try:
     values["response"]["chargeNowNegativeDuration"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out at chargeNowNegativeDuration")
-    success = 0
+    values["tests"]["chargeNowNegativeDuration"]["fail"] = 1
 except requests.ConnectionError:
     print("Error: Connection Error at chargeNowNegativeDuration")
-    success = 0
+    values["tests"]["chargeNowNegativeDuration"]["fail"] = 1
 
 time.sleep(2)
 
 # Test 4 - Engage chargeNow policy for our first random value
+values["tests"]["chargeNowFirst"] = {}
 values["expected"]["chargeNowFirst"] = 200
 data = {
   "chargeNowDuration": 3600,
@@ -127,12 +131,13 @@ try:
     response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
     values["elapsed"]["chargeNowFirst"] = response.elapsed
     values["response"]["chargeNowFirst"] = response.status_code
+    values["text"]["chargeNowFirst"] = response.text
 except requests.Timeout:
     print("Error: Connection Timed Out at chargeNowFirst")
-    success = 0
+    values["tests"]["chargeNowFirst"]["fail"] = 1
 except requests.ConnectionError:
     print("Error: Connection Error at chargeNowFirst")
-    success = 0
+    values["tests"]["chargeNowFirst"]["fail"] = 1
 
 time.sleep(2)
 values["status"]["First"] = getStatus("getStatusFirst")
@@ -141,24 +146,47 @@ time.sleep(2)
 # Test 5 - Send random data as the body of the request
 data = os.urandom(20480)
 
+values["tests"]["chargeNowRandom"] = {}
 values["expected"]["chargeNowRandom"] = 400
+
 try:
     response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
     values["elapsed"]["chargeNowRandom"] = response.elapsed
     values["response"]["chargeNowRandom"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out at chargeNowRandom")
-    success = 0
+    values["tests"]["chargeNowRandom"]["fail"] = 1
 except requests.ConnectionError:
     print("Error: Connection Error at chargeNowRandom")
-    success = 0
+    values["tests"]["chargeNowRandom"]["fail"] = 1
 
 data = None
 time.sleep(2)
 
 # Test 6 - Engage chargeNow policy for our second random value
+values["tests"]["chargeNowSecond"] = {}
+values["expected"]["chargeNowSecond"] = 200
+data = {
+  "chargeNowDuration": 3600,
+  "chargeNowRate": int(values.get("targetSecond", 0))
+}
+
+try:
+    response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
+    values["elapsed"]["chargeNowSecond"] = response.elapsed
+    values["response"]["chargeNowSecond"] = response.status_code
+    values["text"]["chargeNowSecond"] = response.text
+except requests.Timeout:
+    print("Error: Connection Timed Out at chargeNowSecond")
+    values["tests"]["chargeNowSecond"]["fail"] = 1
+except requests.ConnectionError:
+    print("Error: Connection Error at chargeNowSecond")
+    values["tests"]["chargeNowSecond"]["fail"] = 1
+
+values["status"]["Second"] = getStatus("getStatusSecond")
 
 # Test 7 - Send cancelChargeNow
+values["tests"]["cancelChargeNow"] = {}
 values["expected"]["cancelChargeNow"] = 204
 try:
     response = session.post("http://127.0.0.1:8088/api/cancelChargeNow", timeout=30)
@@ -166,10 +194,10 @@ try:
     values["response"]["cancelChargeNow"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out")
-    success = 0
+    values["tests"]["cancelChargeNow"]["fail"] = 1
 except requests.ConnectionError:
     print("Error: Connection Error at cancelChargeNow")
-    success = 0
+    values["tests"]["cancelChargeNow"]["fail"] = 1
 
 values["status"]["Cancel"] = getStatus("getStatusCancel")
 
@@ -178,20 +206,23 @@ for reqs in values["expected"].keys():
     if values["response"].get(reqs, None):
         if values["response"][reqs] != values["expected"][reqs]:
             print("Error: Response code " + str(values["response"][reqs]) + " for test " + str(reqs) + " does not equal expected result " + str(values["expected"][reqs]))
-            success = 0
+            values["tests"][reqs]["fail"] = 1
     else:
         print("No response was found for test " + str(reqs) + ", skipping")
 
 # Print out values dict
-print(str(values))
+f = open("/tmp/twcmanager-tests/chargeNow.json", "a")
+f.write(str(values))
+f.close()
 
-if success:
-    print("All tests successful")
-    exit(0)
-else:
-    print("At least one test failed. Please review logs")
-    if skipFailure:
-        print("Due to skipFailure being set, we will not fail the test suite pipeline on this test.")
-        exit(0)
-    else:
-        exit(255)
+for test in values["tests"].keys():
+    if values["tests"][test].get("fail", 0):
+        print("At least one test failed. Please review logs")
+        if skipFailure:
+            print("Due to skipFailure being set, we will not fail the test suite pipeline on this test.")
+            exit(0)
+        else:
+            exit(255)
+
+print("All tests were successful")
+exit(0)
