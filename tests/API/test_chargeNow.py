@@ -20,13 +20,18 @@ session = requests.Session()
 session.trust_env = False
 
 values = {}
-values["expected"] = {}
+values = {
+  "elapsed"  = {},
+  "expected" = {},
+  "response" = {}
+}
 success = 1
-response = {}
+response = None
 
 # Query getStatus to see our current offered amperage
 try:
-    response["getStatusBefore"] = session.get("http://127.0.0.1:8088/api/cancelChargeNow", timeout=30)
+    response = session.get("http://127.0.0.1:8088/api/cancelChargeNow", timeout=30)
+    values{"response"]["getStatusBefore"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out at ")
     exit(255)
@@ -46,7 +51,9 @@ print("Using values First: " + str(values["targetFirst"]) + " and Second: " + st
 # Test 1 - Call chargeNow policy with no arguments
 values["expected"]["chargeNowNoArgs"] = 400
 try:
-    response["chargeNowNoArgs"] = session.post("http://127.0.0.1:8088/api/chargeNow", timeout=30)
+    response = session.post("http://127.0.0.1:8088/api/chargeNow", timeout=30)
+    values{"elapsed"]["chargeNowNoArgs"] = response.elapsed
+    values{"response"]["chargeNowNoArgs"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out at chargeNowNoArgs")
     success = 0
@@ -64,7 +71,9 @@ data = {
 
 values["expected"]["chargeNowNegativeRate"] = 400
 try:
-    response["chargeNowNegativeRate"] = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
+    response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
+    values{"elapsed"]["chargeNowNegativeRate"] = response.elapsed
+    values{"response"]["chargeNowNegativeRate"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out at chargeNowNegativeRate")
     success = 0
@@ -82,7 +91,9 @@ data = {
 
 values["expected"]["chargeNowNegativeDuration"] = 400
 try:
-    response["chargeNowNegativeDuration"] = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
+    response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
+    values{"elapsed"]["chargeNowNegativeDuration"] = response.elapsed
+    values{"response"]["chargeNowNegativeDuration"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out at chargeNowNegativeDuration")
     success = 0
@@ -100,7 +111,9 @@ data = {
 }
 
 try:
-    response["chargeNowFirst"] = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
+    response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
+    values{"elapsed"]["chargeNowFirst"] = response.elapsed
+    values{"response"]["chargeNowFirst"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out at chargeNowFirst")
     success = 0
@@ -109,14 +122,15 @@ except requests.ConnectionError:
     success = 0
 
 time.sleep(2)
-print(str(response["chargeNowFirst"]))
 
 # Test 5 - Send random data as the body of the request
 data = os.urandom(20480)
 
 values["expected"]["chargeNowRandom"] = 400
 try:
-    response["chargeNowRandom"] = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
+    response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
+    values{"elapsed"]["chargeNowRandom"] = response.elapsed
+    values{"response"]["chargeNowRandom"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out at chargeNowRandom")
     success = 0
@@ -128,24 +142,29 @@ data = None
 time.sleep(2)
 
 # Test X - cancelChargeNow
-values["expected"]["cancelChargeNow"] = 200
+values["expected"]["cancelChargeNow"] = 204
 try:
-    response["cancelChargeNow"] = session.post("http://127.0.0.1:8088/api/cancelChargeNow", timeout=30)
+    response = session.post("http://127.0.0.1:8088/api/cancelChargeNow", timeout=30)
+    values{"elapsed"]["cancelChargeNow"] = response.elapsed
+    values{"response"]["cancelChargeNow"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out")
-    exit(255)
+    success = 0
 except requests.ConnectionError:
     print("Error: Connection Error at cancelChargeNow")
-    exit(255)
+    success = 0
 
 # For each request, check that the status codes match
 for reqs in values["expected"].keys():
-    if response.get(reqs, None):
-        if response[reqs].status_code != values["expected"][reqs]:
-            print("Error: Response code " + str(response[reqs].status_code) + " for test " + str(reqs) + " does not equal expected result " + str(values["expected"][reqs]))
+    if values["response"].get(reqs, None):
+        if values["response"][reqs] != values["expected"][reqs]:
+            print("Error: Response code " + str(values["response"][reqs]) + " for test " + str(reqs) + " does not equal expected result " + str(values["expected"][reqs]))
             success = 0
     else:
         print("No response was found for test " + str(reqs) + ", skipping")
+
+# Print out values dict
+print(str(values))
 
 if success:
     print("All tests successful")

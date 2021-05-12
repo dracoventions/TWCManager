@@ -22,11 +22,11 @@ except requests.ConnectionError:
     print("Error: Connection Error")
     exit(255)
 
-if response.status_code == 200:
+if response.status_code == 204:
     success = 1
 else:
     print("Error: Response code " + str(response.status_code))
-    exit(255)
+    success = 0
 
 if success:
     print("All tests successful")
