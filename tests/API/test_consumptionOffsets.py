@@ -6,7 +6,9 @@
 # artificial load or generation values
 
 import json
+import random
 import requests
+import time
 
 # Configuration
 skipFailure = 1
@@ -16,11 +18,13 @@ session = requests.Session()
 session.trust_env = False
 
 values = {
+  "elapsed": {},
+  "expected": {},
   "response": {},
   "status": {},
+  "target": {},
   "tests": {}
 }
-
 
 def getOffsets(tag):
     # Query getConsumptionOffsets to see our current configured offsets
@@ -42,6 +46,30 @@ def getOffsets(tag):
         print("Request object is not valid - look for connection error previously")
 
     return jsonOut
+
+# Generate random offset values
+values["target"]["ampsFirst"]  = random.randint(2, 6)
+values["target"]["ampsSecond"] = 0
+while (not values["target"]["ampsSecond"] or values["target"]["ampsFirst"] == values["target"]["ampsSecond"]):
+    values["target"]["ampsSecond"] = random.randint(2, 6)
+
+values["target"]["wattsFirst"]  = random.randint(100, 500)
+
+# Test 1 - Call addConsumptionOffset with no arguments
+values["expected"]["addConNoArgs"] = 400
+values["tests"]["addConNoArgs"] = {}
+try:
+    response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset", timeout=30)
+    values["elapsed"]["addConNoArgs"] = response.elapsed
+    values["response"]["addConNoArgs"] = response.status_code
+except requests.Timeout:
+    print("Error: Connection Timed Out at chargeNowNoArgs")
+    values["tests"]["addConNoArgs"]["fail"] = 1
+except requests.ConnectionError:
+    print("Error: Connection Error at chargeNowNoArgs")
+    values["tests"]["addConNoArgs"]["fail"] = 1
+
+time.sleep(2)
 
 values["status"]["Before"] = getOffsets("getOffsetsBefore")
 

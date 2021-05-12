@@ -106,7 +106,7 @@
         #
         # If you are able to obtain consumption details from an energy management system,
         # this value can be set to 0 unless you wish to manually adjust what it returns.
-        "greenEnergyAmpsOffset": 0,
+        "greenEnergyAmpsOffset": 1.05,
 
         # If green energy dips below the target charge amount while already charging,
         # how much extra current should be drawn to keep charging?  This avoids frequently

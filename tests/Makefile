@@ -5,24 +5,28 @@ red:=$(shell tput -T ansi setaf 1)
 reset:=$(shell tput -T ansi sgr0)
 yellow:=$(shell tput -T ansi setaf 3)
 
+api := 10
+ems := 2
+pre := 6
+
 general_prereqs:
-	@echo "${bold}${red}(P1/6)${reset} ${yellow}Installing Prerequisites for Test Suite"
+	@echo "${bold}${red}(P1/${pre})${reset} ${yellow}Installing Prerequisites for Test Suite"
 	@sudo apt-get install -y debconf-utils iproute2 > /dev/null 2>&1
 	@mkdir -p /tmp/twcmanager-tests
 	@chmod 777 /tmp/twcmanager-tests
 
 mqtt_setup:
-	@echo "${bold}${red}(P2/6)${reset} ${yellow}Installing MQTT Prerequisites"
+	@echo "${bold}${red}(P2/${pre})${reset} ${yellow}Installing MQTT Prerequisites"
 	@sudo apt-get install -y mosquitto > /dev/null 2>&1
 
 mysql_setup:
-	@echo "${bold}${red}(P3/6)${reset} ${yellow}Installing MySQL Server"
+	@echo "${bold}${red}(P3/${pre})${reset} ${yellow}Installing MySQL Server"
 	@sudo apt-get install -y mysql-server sqlite3 > /dev/null 2>&1
-	@echo "${bold}${red}(P4/6)${reset} ${yellow}Setup MySQL Database"
+	@echo "${bold}${red}(P4/${pre})${reset} ${yellow}Setup MySQL Database"
 	@sudo /home/docker/.pyenv/shims/python3 scripts/mysql_setup.py
-	@echo "${bold}${red}(P5/6)${reset} ${yellow}Environment Preparation"
+	@echo "${bold}${red}(P5/${pre})${reset} ${yellow}Environment Preparation"
 	@sudo /home/docker/.pyenv/shims/python3 env_preparation.py
-	@echo "${bold}${red}(P6/6)${reset} ${yellow}Set up SQLite Database"
+	@echo "${bold}${red}(P6/${pre})${reset} ${yellow}Set up SQLite Database"
 	@python3 scripts/sqlite_setup.py
 
 run_twcmanager:
@@ -35,32 +39,31 @@ upload:
 	@rm -r /tmp/twcmanager-tests
 
 api:
-x := 10
-	@echo "${bold}${red}(A1/${x})${reset} ${yellow}Test API Listener"
+	@echo "${bold}${red}(A1/${api})${reset} ${yellow}Test API Listener"
 	@cd API && ./test_apilistener.sh
-	@echo "${bold}${red}(A2/${x})${reset} ${yellow}Test API getConfig"
+	@echo "${bold}${red}(A2/${api})${reset} ${yellow}Test API getConfig"
 	@cd API && ./test_getConfig.py
-	@echo "${bold}${red}(A3/${x})${reset} ${yellow}Test API getLastTWCResponse"
+	@echo "${bold}${red}(A3/${api})${reset} ${yellow}Test API getLastTWCResponse"
 	@cd API && ./test_getLastTWCResponse.py
-	@echo "${bold}${red}(A4/${x})${reset} ${yellow}Test API getPolicy"
+	@echo "${bold}${red}(A4/${api})${reset} ${yellow}Test API getPolicy"
 	@cd API && ./test_getPolicy.py
-	@echo "${bold}${red}(A5/${x})${reset} ${yellow}Test API getSlaveTWCs"
+	@echo "${bold}${red}(A5/${api})${reset} ${yellow}Test API getSlaveTWCs"
 	@cd API && ./test_getSlaveTWCs.py
-	@echo "${bold}${red}(A6/9)${reset} ${yellow}Test API getStatus"
+	@echo "${bold}${red}(A6/${api})${reset} ${yellow}Test API getStatus"
 	@cd API && ./test_getStatus.py
-	@echo "${bold}${red}(A7/9)${reset} ${yellow}Test API chargeNow functionality"
+	@echo "${bold}${red}(A7/${api})${reset} ${yellow}Test API chargeNow functionality"
 	@cd API && ./test_chargeNow.py
-	@echo "${bold}${red}(A8/9)${reset} ${yellow}Test API sendStartCommand"
+	@echo "${bold}${red}(A8/${api})${reset} ${yellow}Test API sendStartCommand"
 	@cd API && ./test_sendStartCommand.py
-	@echo "${bold}${red}(A9/${x})${reset} ${yellow}Test API sendStopCommand"
+	@echo "${bold}${red}(A9/${api})${reset} ${yellow}Test API sendStopCommand"
 	@cd API && ./test_sendStopCommand.py
-	@echo "${bold}${red}(A10/${x})${reset} ${yellow}Test API consumption offsets"
+	@echo "${bold}${red}(A10/${api})${reset} ${yellow}Test API consumption offsets"
 	@cd API && ./test_consumptionOffsets.py
 
 ems:
-	@echo "${bold}${red}(E1/2)${reset} ${yellow}Starting EMS Test Web Server"
+	@echo "${bold}${red}(E1/${ems})${reset} ${yellow}Starting EMS Test Web Server"
 	@cd EMS && ./ems_emulator.py &
-	@echo "${bold}${red}(E2/2)${reset} ${yellow}Testing SmartPi EMS Module"
+	@echo "${bold}${red}(E2/${ems})${reset} ${yellow}Testing SmartPi EMS Module"
 	cd EMS && ./test_SmartPi.py
 
 wait:
