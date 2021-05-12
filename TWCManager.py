@@ -245,7 +245,7 @@ def background_tasks_thread(master):
                 # too frequently.
                 carapi.car_api_charge(task["charge"])
             elif task["cmd"] == "carApiEmailPassword":
-                carapi.setCarApiLastErrorTime(0)
+                carapi.resetCarApiLastErrorTime()
                 carapi.car_api_available(task["email"], task["password"])
             elif task["cmd"] == "checkArrival":
                 limit = (

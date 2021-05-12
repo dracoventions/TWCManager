@@ -21,9 +21,9 @@ session.trust_env = False
 
 values = {}
 values = {
-  "elapsed"  = {},
-  "expected" = {},
-  "response" = {}
+  "elapsed":   {},
+  "expected":  {},
+  "response":  {}
 }
 success = 1
 response = None
@@ -31,7 +31,7 @@ response = None
 # Query getStatus to see our current offered amperage
 try:
     response = session.get("http://127.0.0.1:8088/api/cancelChargeNow", timeout=30)
-    values{"response"]["getStatusBefore"] = response.status_code
+    values["response"]["getStatusBefore"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out at ")
     exit(255)
@@ -52,8 +52,8 @@ print("Using values First: " + str(values["targetFirst"]) + " and Second: " + st
 values["expected"]["chargeNowNoArgs"] = 400
 try:
     response = session.post("http://127.0.0.1:8088/api/chargeNow", timeout=30)
-    values{"elapsed"]["chargeNowNoArgs"] = response.elapsed
-    values{"response"]["chargeNowNoArgs"] = response.status_code
+    values["elapsed"]["chargeNowNoArgs"] = response.elapsed
+    values["response"]["chargeNowNoArgs"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out at chargeNowNoArgs")
     success = 0
@@ -72,8 +72,8 @@ data = {
 values["expected"]["chargeNowNegativeRate"] = 400
 try:
     response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
-    values{"elapsed"]["chargeNowNegativeRate"] = response.elapsed
-    values{"response"]["chargeNowNegativeRate"] = response.status_code
+    values["elapsed"]["chargeNowNegativeRate"] = response.elapsed
+    values["response"]["chargeNowNegativeRate"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out at chargeNowNegativeRate")
     success = 0
@@ -92,8 +92,8 @@ data = {
 values["expected"]["chargeNowNegativeDuration"] = 400
 try:
     response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
-    values{"elapsed"]["chargeNowNegativeDuration"] = response.elapsed
-    values{"response"]["chargeNowNegativeDuration"] = response.status_code
+    values["elapsed"]["chargeNowNegativeDuration"] = response.elapsed
+    values["response"]["chargeNowNegativeDuration"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out at chargeNowNegativeDuration")
     success = 0
@@ -112,8 +112,8 @@ data = {
 
 try:
     response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
-    values{"elapsed"]["chargeNowFirst"] = response.elapsed
-    values{"response"]["chargeNowFirst"] = response.status_code
+    values["elapsed"]["chargeNowFirst"] = response.elapsed
+    values["response"]["chargeNowFirst"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out at chargeNowFirst")
     success = 0
@@ -129,8 +129,8 @@ data = os.urandom(20480)
 values["expected"]["chargeNowRandom"] = 400
 try:
     response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
-    values{"elapsed"]["chargeNowRandom"] = response.elapsed
-    values{"response"]["chargeNowRandom"] = response.status_code
+    values["elapsed"]["chargeNowRandom"] = response.elapsed
+    values["response"]["chargeNowRandom"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out at chargeNowRandom")
     success = 0
@@ -145,8 +145,8 @@ time.sleep(2)
 values["expected"]["cancelChargeNow"] = 204
 try:
     response = session.post("http://127.0.0.1:8088/api/cancelChargeNow", timeout=30)
-    values{"elapsed"]["cancelChargeNow"] = response.elapsed
-    values{"response"]["cancelChargeNow"] = response.status_code
+    values["elapsed"]["cancelChargeNow"] = response.elapsed
+    values["response"]["cancelChargeNow"] = response.status_code
 except requests.Timeout:
     print("Error: Connection Timed Out")
     success = 0

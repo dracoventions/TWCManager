@@ -1050,7 +1050,7 @@ def CreateHTTPHandlerClass(master):
                 # Connect to Tesla API
 
                 carapi = master.getModuleByName("TeslaAPI")
-                carapi.setCarApiLastErrorTime(0)
+                carapi.resetCarApiLastErrorTime()
                 ret = carapi.car_api_available(
                     self.fields["email"][0], self.fields["password"][0]
                 )
