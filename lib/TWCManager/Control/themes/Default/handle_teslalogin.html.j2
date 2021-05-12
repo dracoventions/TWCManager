@@ -30,6 +30,10 @@
       </tr>
     </table>
     </form>
+{% elif url.path == "/teslaAccount/NotSpecified" %}
+  <font color='red'>
+    <b>Error: You did not specify both a username and password.</b>
+  </font>
 {% elif url.path == "/teslaAccount/Phase1Error" %}
   <font color='red'>
     <b>Error encountered during Phase 1 (GET) of the Tesla Authentication process.</b>

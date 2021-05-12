@@ -63,15 +63,48 @@ try:
     values["elapsed"]["addConNoArgs"] = response.elapsed
     values["response"]["addConNoArgs"] = response.status_code
 except requests.Timeout:
-    print("Error: Connection Timed Out at chargeNowNoArgs")
+    print("Error: Connection Timed Out at addConNoArgs")
     values["tests"]["addConNoArgs"]["fail"] = 1
 except requests.ConnectionError:
-    print("Error: Connection Error at chargeNowNoArgs")
+    print("Error: Connection Error at addConNoArgs")
     values["tests"]["addConNoArgs"]["fail"] = 1
 
 time.sleep(2)
 
+# Get offsets prior to adding our random offsets
 values["status"]["Before"] = getOffsets("getOffsetsBefore")
+
+# Test X - Call addConsumptionOffset with positive first Amps offset
+values["expected"]["addConAmpsFirst"] = 400
+values["tests"]["addConAmpsFirst"] = {}
+try:
+    response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset", timeout=30)
+    values["elapsed"]["addConAmpsFirst"] = response.elapsed
+    values["response"]["addConAmpsFirst"] = response.status_code
+except requests.Timeout:
+    print("Error: Connection Timed Out at addConAmpsFirst")
+    values["tests"]["addConAmpsFirst"]["fail"] = 1
+except requests.ConnectionError:
+    print("Error: Connection Error at addConAmpsFirst")
+    values["tests"]["addConAmpsFirst"]["fail"] = 1
+
+values["status"]["AmpsFirst"] = getOffsets("getOffsetsAmpsFirst")
+
+# Test X - Call addConsumptionOffset with negative second Amps offset
+values["expected"]["addConAmpsSecond"] = 400
+values["tests"]["addConAmpsSecond"] = {}
+try:
+    response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset", timeout=30)
+    values["elapsed"]["addConAmpsSecond"] = response.elapsed
+    values["response"]["addConAmpsSecond"] = response.status_code
+except requests.Timeout:
+    print("Error: Connection Timed Out at addConAmpsSecond")
+    values["tests"]["addConAmpsSecond"]["fail"] = 1
+except requests.ConnectionError:
+    print("Error: Connection Error at addConAmpsSecond")
+    values["tests"]["addConAmpsSecond"]["fail"] = 1
+
+values["status"]["AmpsSecond"] = getOffsets("getOffsetsAmpsSecond")
 
 # Print out values dict
 f = open("/tmp/twcmanager-tests/consumptionOffsets.json", "a")

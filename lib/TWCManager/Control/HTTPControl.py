@@ -1036,10 +1036,11 @@ def CreateHTTPHandlerClass(master):
         def process_teslalogin(self):
             # Check if we are skipping Tesla Login submission
 
+            print(str(self.fields))
             if not master.teslaLoginAskLater:
                 later = False
                 try:
-                    later = len(self.fields["later"])
+                    later = len(self.fields["later"][0])
                 except KeyError:
                     later = False
 
@@ -1051,9 +1052,16 @@ def CreateHTTPHandlerClass(master):
 
                 carapi = master.getModuleByName("TeslaAPI")
                 carapi.resetCarApiLastErrorTime()
-                ret = carapi.car_api_available(
-                    self.fields["email"][0], self.fields["password"][0]
-                )
+                try:
+                    ret = carapi.car_api_available(
+                        self.fields["email"][0], self.fields["password"][0]
+                    )
+                except KeyError:
+                    self.send_response(302)
+                    self.send_header("Location", "/teslaAccount/NotSpecified")
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
+                    return
 
                 # Redirect to an index page with output based on the return state of
                 # the function

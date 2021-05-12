@@ -10,15 +10,25 @@
     <table>
       <tr>
         <td>Tesla Account E-Mail:</td>
-        <td><input type='text' name='email' value=''></td>
+        <td><input type='text' name='email' value='' class='form-control'></td>
       </tr>
       <tr>
         <td>Password:</td>
-        <td><input type='password' name='password'></td>
+        <td><input type='password' name='password' class='form-control'></td>
       </tr>
       <tr>
-        <td><input type='submit' name='submit' value='Log In'></td>
-        <td><input type='submit' name='later' value='Ask Me Later'></td>
+        <td>
+          {{ addButton(
+              ["submit", "Log In"],
+              "class='btn btn-outline-success' name='submit'",
+          )|safe }}
+        </td>
+        <td>
+          {{ addButton(
+              ["later", "Ask Me Later"],
+              "class='btn btn-outline-info' name='later'",
+          )|safe }}
+        </td>
       </tr>
     </table>
   </p>

@@ -27,4 +27,4 @@ FILEUNIQUE="`basename ${FILE}`.${HOSTNAME}.`date +%s`"
 SERVER=172.17.0.1
 TOKEN=0baa9000ff4ab70a6f9f89733438767a
 
-curl --proxy "" -X PUT -Ffile=$FILE "http://${SERVER}:25478/${FILEUNIQUE}?token=${TOKEN}"
+curl --proxy "" -X PUT -Ffile=$FILE "http://${SERVER}:25478/files/${FILEUNIQUE}?token=${TOKEN}"
