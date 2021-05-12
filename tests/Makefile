@@ -35,15 +35,16 @@ upload:
 	@rm -r /tmp/twcmanager-tests
 
 api:
-	@echo "${bold}${red}(A1/9)${reset} ${yellow}Test API Listener"
+x := 10
+	@echo "${bold}${red}(A1/${x})${reset} ${yellow}Test API Listener"
 	@cd API && ./test_apilistener.sh
-	@echo "${bold}${red}(A2/9)${reset} ${yellow}Test API getConfig"
+	@echo "${bold}${red}(A2/${x})${reset} ${yellow}Test API getConfig"
 	@cd API && ./test_getConfig.py
-	@echo "${bold}${red}(A3/9)${reset} ${yellow}Test API getLastTWCResponse"
+	@echo "${bold}${red}(A3/${x})${reset} ${yellow}Test API getLastTWCResponse"
 	@cd API && ./test_getLastTWCResponse.py
-	@echo "${bold}${red}(A4/9)${reset} ${yellow}Test API getPolicy"
+	@echo "${bold}${red}(A4/${x})${reset} ${yellow}Test API getPolicy"
 	@cd API && ./test_getPolicy.py
-	@echo "${bold}${red}(A5/9)${reset} ${yellow}Test API getSlaveTWCs"
+	@echo "${bold}${red}(A5/${x})${reset} ${yellow}Test API getSlaveTWCs"
 	@cd API && ./test_getSlaveTWCs.py
 	@echo "${bold}${red}(A6/9)${reset} ${yellow}Test API getStatus"
 	@cd API && ./test_getStatus.py
@@ -51,8 +52,10 @@ api:
 	@cd API && ./test_chargeNow.py
 	@echo "${bold}${red}(A8/9)${reset} ${yellow}Test API sendStartCommand"
 	@cd API && ./test_sendStartCommand.py
-	@echo "${bold}${red}(A9/9)${reset} ${yellow}Test API sendStopCommand"
+	@echo "${bold}${red}(A9/${x})${reset} ${yellow}Test API sendStopCommand"
 	@cd API && ./test_sendStopCommand.py
+	@echo "${bold}${red}(A10/${x})${reset} ${yellow}Test API consumption offsets"
+	@cd API && ./test_consumptionOffsets.py
 
 ems:
 	@echo "${bold}${red}(E1/2)${reset} ${yellow}Starting EMS Test Web Server"

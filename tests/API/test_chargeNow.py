@@ -19,13 +19,13 @@ skipFailure = 1
 session = requests.Session()
 session.trust_env = False
 
-values = {}
 values = {
   "elapsed":   {},
   "expected":  {},
   "response":  {},
   "status":    {},
-  "tests":     {}
+  "tests":     {},
+  "text":      {}
 }
 response = None
 
@@ -33,7 +33,7 @@ def getStatus(tag):
     # Query getStatus to see our current offered amperage
     try:
         response = session.get("http://127.0.0.1:8088/api/getStatus", timeout=30)
-        values["response"]["getStatusBefore"] = response.status_code
+        values["response"][tag] = response.status_code
     except requests.Timeout:
         print("Error: Connection Timed Out at " + tag)
     except requests.ConnectionError:
