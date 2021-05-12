@@ -23,21 +23,34 @@ values = {}
 values = {
   "elapsed":   {},
   "expected":  {},
-  "response":  {}
+  "response":  {},
+  "status": {}
 }
 success = 1
 response = None
 
-# Query getStatus to see our current offered amperage
-try:
-    response = session.get("http://127.0.0.1:8088/api/cancelChargeNow", timeout=30)
-    values["response"]["getStatusBefore"] = response.status_code
-except requests.Timeout:
-    print("Error: Connection Timed Out at ")
-    exit(255)
-except requests.ConnectionError:
-    print("Error: Connection Error at getStatus 1")
-    exit(255)
+def getStatus(tag):
+    # Query getStatus to see our current offered amperage
+    try:
+        response = session.get("http://127.0.0.1:8088/api/getStatus", timeout=30)
+        values["response"]["getStatusBefore"] = response.status_code
+    except requests.Timeout:
+        print("Error: Connection Timed Out at " + tag)
+    except requests.ConnectionError:
+        print("Error: Connection Error at " + tag)
+
+    # Return json
+    jsonOut = False
+    try:
+        jsonOut = response.json
+    except json.decoder.JSONDecodeError as e:
+        print("Could not parse JSON at " + tag)
+    except UnboundLocalError:
+        print("Request object is not valid - look for connection error previously")
+
+    return jsonOut
+
+values["status"]["Before"] = getStatus("getStatusBefore")
 
 # Generate a random amperage value between 12 and 80 twice for two separate
 # tests, make sure they are not the same
@@ -122,6 +135,8 @@ except requests.ConnectionError:
     success = 0
 
 time.sleep(2)
+values["status"]["First"] = getStatus("getStatusFirst")
+time.sleep(2)
 
 # Test 5 - Send random data as the body of the request
 data = os.urandom(20480)
@@ -141,7 +156,9 @@ except requests.ConnectionError:
 data = None
 time.sleep(2)
 
-# Test X - cancelChargeNow
+# Test 6 - Engage chargeNow policy for our second random value
+
+# Test 7 - Send cancelChargeNow
 values["expected"]["cancelChargeNow"] = 204
 try:
     response = session.post("http://127.0.0.1:8088/api/cancelChargeNow", timeout=30)
@@ -153,6 +170,8 @@ except requests.Timeout:
 except requests.ConnectionError:
     print("Error: Connection Error at cancelChargeNow")
     success = 0
+
+values["status"]["Cancel"] = getStatus("getStatusCancel")
 
 # For each request, check that the status codes match
 for reqs in values["expected"].keys():

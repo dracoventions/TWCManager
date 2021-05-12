@@ -28,6 +28,12 @@ Would you like a full list of features available in TWCManager? Click [here](doc
 
 To enable TWCManager to gather the solar generation information that it requires to adjust the charging rate, we provide Interfaces to allow information to be retrieved (EMS Interfaces) and Interfaces to allow us to provide information to external systems to inform them of current charging output and number of cars currently charging.
 
+### Communication Interfaces
+| Platform                            | Details                 |
+| ----------------------------------- | ----------------------- |
+| [RS485](docs/modules/Interface_RS485.md) | Communicate over RS485 Serial or basic TCP communications |
+| [TCP](docs/modules/Interface_TCP.md)     | Communicate over more complex TCP network channels (In Development) |
+
 ### Control Interfaces
 
 | Platform                            | Details                 |

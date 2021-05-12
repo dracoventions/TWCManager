@@ -230,21 +230,33 @@
         # oscilloscope. Don't change this unless something changes in future hardware.
         "baud": 9600,
 
-        # Most users will have only one ttyUSB adapter plugged in and the default value
-        # of '/dev/ttyUSB0' below will work. If not, run 'dmesg |grep ttyUSB' on the
-        # command line to find your rs485 adapter and put its ttyUSB# value in the
-        # parameter below.
+        # Most users will have only one ttyUSB adapter plugged in and
+        # '/dev/ttyUSB0' will work. If not, run 'dmesg |grep ttyUSB' on the
+        # command line to find your rs485 adapter
         # If you're using a non-USB adapter like an RS485 shield, the value may need to
         # be something like '/dev/serial0'.
         "port": "/dev/ttyUSB0"
 
+        # Note that the RS485 module can also handle simple raw or rfc2217
+        # TCP connections. If your requirements are simple, you could use
+        # a URL such as:
+        # "port": "rfc2217://<host>:<port>"     or
+        # "port": "socket://<host>:<port>"
+
       },
       "TCP": {
-        "enabled": false
+        "enabled": false,
 
+        # NOTE: This interface is in active development. Please use the RS485
+        # interface instead
         # The TCP module allows communications over a TCP listener or client
         # socket. This can be used to integrate with network-based RS485
         # interfaces.
+
+        # Listen determines if we open a listening socket or connect to
+        # the server address below.
+        "listen": false,
+        "server": "192.168.1.2"
       }
     },
     "control": {
