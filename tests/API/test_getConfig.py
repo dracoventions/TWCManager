@@ -37,6 +37,15 @@ if response.status_code == 200:
         getAttempts += 1
         try:
             jsonResp = response.json()
+        except ValueError as e:
+            # On Python 3.4, JSON decoding failures raise ValueError
+            print("Error: Unable to parse JSON output from getConfig()")
+
+            f = open("/tmp/twcmanager-tests/getConfig-json-"+str(getAttempts)+".txt", "w")
+            f.write("Exception: " + str(e))
+            f.write("API Response: " + str(response.text))
+            f.close()
+
         except json.decoder.JSONDecodeError as e:
             print("Error: Unable to parse JSON output from getConfig()")
 
@@ -45,6 +54,7 @@ if response.status_code == 200:
             f = open("/tmp/twcmanager-tests/getConfig-json-"+str(getAttempts)+".txt", "w")
             f.write("Exception: " + str(e))
             f.write("API Response: " + str(response.text))
+            f.close()
 
         if (getAttempts == 2):
             # Too many failures
