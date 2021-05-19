@@ -1056,7 +1056,7 @@ class TeslaAPI:
         errorCount = self.errorCount
         if vehicle:
             errorCount = max(vehicle.errorCount, errorCount)
-        return pow(2, max(errorCount - 1, 0))
+        return pow(2, min(max(errorCount - 1, 0), 6))
 
     def getCarApiLastErrorTime(self):
         return self.carApiLastErrorTime
@@ -1093,9 +1093,6 @@ class TeslaAPI:
                     + str(lastError),
                 )
                 return int(backoff - lasterrortime)
-
-    def getCarApiTransientErrors(self):
-        return self.carApiTransientErrors
 
     def getCarApiTokenExpireTime(self):
         return self.carApiTokenExpireTime
