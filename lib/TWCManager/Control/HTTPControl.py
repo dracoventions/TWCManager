@@ -397,7 +397,7 @@ def CreateHTTPHandlerClass(master):
                 master.getModuleByName("RS485").send(
                     master.getModuleByName("TWCProtocol").createMessage(packet)
                 )
-                print(master.getModuleByName("TWCProtocol").createMessage(packet))
+
                 self.send_response(204)
                 self.end_headers()
 
@@ -1036,7 +1036,6 @@ def CreateHTTPHandlerClass(master):
         def process_teslalogin(self):
             # Check if we are skipping Tesla Login submission
 
-            print(str(self.fields))
             if not master.teslaLoginAskLater:
                 later = False
                 try:

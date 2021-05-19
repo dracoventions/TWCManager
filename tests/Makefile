@@ -35,7 +35,7 @@ run_twcmanager:
 
 upload:
 	@echo Uploading debug files
-	@find /tmp/twcmanager-tests -type f | xargs scripts/upload_file.sh
+	@find /tmp/twcmanager-tests -type f | xargs -L 1 scripts/upload_file.sh
 	@rm -r /tmp/twcmanager-tests
 
 api:
