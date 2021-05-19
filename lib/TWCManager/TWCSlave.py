@@ -151,8 +151,8 @@ class TWCSlave:
                 self.timeLastHeartbeatDebugOutput = self.time.time()
 
                 logger.info(
-                    "Slave power for TWCID %s, status: %s",
-                    self.TWCID,
+                    "Slave power for TWCID %02X%02X, status: %s",
+                    self.TWCID[0], self.TWCID[1],
                     heartbeatData[0],
                     extra={
                         "logtype": "slave_power",

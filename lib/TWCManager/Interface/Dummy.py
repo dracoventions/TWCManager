@@ -1,11 +1,10 @@
 import logging
+import time
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class Dummy:
-
-    import time
 
     enabled = False
     master = None
@@ -63,7 +62,7 @@ class Dummy:
             }))
 
         logger.log(logging.INFO9, "Tx@: " + self.master.hex_str(msg))
-        self.timeLastTx = self.time.time()
+        self.timeLastTx = time.time()
         return 0
 
     def read(self, len):
