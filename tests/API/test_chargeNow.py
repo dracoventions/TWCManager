@@ -14,7 +14,7 @@ import requests
 import time
 
 # Configuration
-skipFailure = 1
+skipFailure = 0
 
 # Disable environment import to avoid proxying requests
 session = requests.Session()
@@ -190,6 +190,7 @@ except requests.ConnectionError:
     values["tests"]["chargeNowSecond"]["fail"] = 1
 
 values["status"]["Second"] = getStatus("getStatusSecond")
+time.sleep(2)
 
 # Test 7 - Send cancelChargeNow
 values["tests"]["cancelChargeNow"] = {}
@@ -216,10 +217,20 @@ for reqs in values["expected"].keys():
     else:
         print("No response was found for test " + str(reqs) + ", skipping")
 
+# Check that the two values that we selected are reflected in their status output
+if (int(values["targetFirst"]) != int(values["status"]["First"]["maxAmpsToDivideAmongSlaves"])):
+    print("Error: maxAmpsToDivideAmongSlaves doesn't match target for first chargeNow test")
+    values["tests"]["chargeNowFirst"]["fail"] = 1
+
+if (int(values["targetSecond"]) != int(values["status"]["Second"]["maxAmpsToDivideAmongSlaves"])):
+    print("Error: maxAmpsToDivideAmongSlaves doesn't match target for second chargeNow test")
+    values["tests"]["chargeNowSecond"]["fail"] = 1
+
+ 
 # Print out values dict
-f = open("/tmp/twcmanager-tests/chargeNow.json", "a")
-f.write(str(values))
-f.close()
+#f = open("/tmp/twcmanager-tests/chargeNow.json", "a")
+#f.write(str(values))
+#f.close()
 
 for test in values["tests"].keys():
     if values["tests"][test].get("fail", 0):
