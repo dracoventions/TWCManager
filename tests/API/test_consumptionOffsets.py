@@ -78,7 +78,7 @@ time.sleep(2)
 # Get offsets prior to adding our random offsets
 values["status"]["Before"] = getOffsets("getOffsetsBefore")
 
-# Test X - Call addConsumptionOffset with positive first Amps offset
+# Test 1 - Call addConsumptionOffset with positive first Amps offset
 values["expected"]["addConAmpsFirst"] = 400
 values["tests"]["addConAmpsFirst"] = {}
 
@@ -102,7 +102,7 @@ except requests.ConnectionError:
 
 values["status"]["AmpsFirst"] = getOffsets("getOffsetsAmpsFirst")
 
-# Test X - Call addConsumptionOffset with negative second Amps offset
+# Test 2 - Call addConsumptionOffset with negative second Amps offset
 values["expected"]["addConAmpsSecond"] = 400
 values["tests"]["addConAmpsSecond"] = {}
 
@@ -126,7 +126,7 @@ except requests.ConnectionError:
 
 values["status"]["AmpsSecond"] = getOffsets("getOffsetsAmpsSecond")
 
-# Test X - Call addConsumptionOffset with positive first watts offset
+# Test 3 - Call addConsumptionOffset with positive first watts offset
 values["expected"]["addConWattsFirst"] = 400
 values["tests"]["addConWattsFirst"] = {}
 
@@ -150,7 +150,7 @@ except requests.ConnectionError:
 
 values["status"]["WattsFirst"] = getOffsets("getOffsetsWattsFirst")
 
-# Test X - Call addConsumptionOffset with negative second watts offset
+# Test 4 - Call addConsumptionOffset with negative second watts offset
 values["expected"]["addConWattsSecond"] = 400
 values["tests"]["addConWattsSecond"] = {}
 
@@ -173,6 +173,84 @@ except requests.ConnectionError:
     values["tests"]["addConWattsSecond"]["fail"] = 1
 
 values["status"]["WattsSecond"] = getOffsets("getOffsetsWattsSecond")
+
+# Test 5 - Call addConsumptionOffset with float value
+values["expected"]["addConFloat"] = 400
+values["tests"]["addConFloat"] = {}
+
+data = {
+    "offsetName": "Float Value",
+    "offsetValue": 1.123456789012345678901234567890,
+    "offsetUnit": "W"
+}
+
+try:
+    response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
+        data=data, timeout=30)
+    values["elapsed"]["addConFloat"] = response.elapsed
+    values["response"]["addConFloat"] = response.status_code
+except requests.Timeout:
+    print("Error: Connection Timed Out at addConFloat")
+    values["tests"]["addConFloat"]["fail"] = 1
+except requests.ConnectionError:
+    print("Error: Connection Error at addConFloat")
+    values["tests"]["addConFloat"]["fail"] = 1
+
+values["status"]["addConFloat"] = getOffsets("getOffsetsFloat")
+
+
+# Test 6 - Call addConsumptionOffset with non-Amp or Watt value
+values["expected"]["addConInvalidUnit"] = 400
+values["tests"]["addConInvalidUnit"] = {}
+
+data = {
+    "offsetName": "Offset with Invalid Unit",
+    "offsetValue": 500,
+    "offsetUnit": "Z"
+}
+
+try:
+    response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
+        data=data, timeout=30)
+    values["elapsed"]["addConInvalidUnit"] = response.elapsed
+    values["response"]["addConInvalidUnit"] = response.status_code
+except requests.Timeout:
+    print("Error: Connection Timed Out at addConInvalidUnit")
+    values["tests"]["addConInvalidUnit"]["fail"] = 1
+except requests.ConnectionError:
+    print("Error: Connection Error at addConInvalidUnit")
+    values["tests"]["addConInvalidUnit"]["fail"] = 1
+
+values["status"]["addConInvalidUnit"] = getOffsets("getOffsetsInvalidUnit")
+
+# Test 7 - Add offset with excessively long name
+name = "Offset "
+for x in range(0, 4096):
+    name += str(x)
+
+values["expected"]["addConLongName"] = 400
+values["tests"]["addConLongName"] = {}
+
+data = {
+    "offsetName": name,
+    "offsetValue": 5,
+    "offsetUnit": "W"
+}
+
+try:
+    response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
+        data=data, timeout=30)
+    values["elapsed"]["addConLongName"] = response.elapsed
+    values["response"]["addConLongName"] = response.status_code
+except requests.Timeout:
+    print("Error: Connection Timed Out at addConLongName")
+    values["tests"]["addConLongName"]["fail"] = 1
+except requests.ConnectionError:
+    print("Error: Connection Error at addConLongName")
+    values["tests"]["addConLongName"]["fail"] = 1
+
+values["status"]["addConLongName"] = getOffsets("getOffsetsLongName")
+
 
 # Print out values dict
 f = open("/tmp/twcmanager-tests/consumptionOffsets.json", "a")

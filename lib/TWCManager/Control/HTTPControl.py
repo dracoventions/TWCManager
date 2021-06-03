@@ -361,12 +361,22 @@ def CreateHTTPHandlerClass(master):
             self.debugLogAPI("Starting API POST")
 
             if self.url.path == "/api/addConsumptionOffset":
-                data = json.loads(self.post_data.decode("UTF-8"))
+                data = {}
+                try:
+                    data = json.loads(self.post_data.decode("UTF-8"))
+                except UnicodeDecodeError:
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
+                except json.decoder.JSONDecodeError:
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
                 name = str(data.get("offsetName", None))
                 value = float(data.get("offsetValue", 0))
-                unit = str(data.get("offsetUnit", None))
+                unit = str(data.get("offsetUnit", ""))
 
-                if (name and value):
+                if (name and value and (unit == "A" or unit == "W")):
                     if not master.settings.get("consumptionOffset", None):
                         master.settings["consumptionOffset"] = {}
                     master.settings["consumptionOffset"][name] = {}

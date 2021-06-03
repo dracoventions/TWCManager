@@ -392,7 +392,7 @@
         "Sentry": {
           "enabled": true,
 	  # The DSN can be found in Sentry under SDK Setup of a project
-	  "DSN": "",
+	  "DSN": "https://927ad4bf33b6470783daa7084b772da9@o564456.ingest.sentry.io/5705201",
           # The mute parameter allows turning specific logging on or off.
           # In the example below, charge sessions are logged, but not the
           # regular charger status messages. These are valid under any of the
