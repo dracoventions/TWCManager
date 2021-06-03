@@ -6,6 +6,7 @@
 # current policy to a new policy - we can check this with getStatus
 # We should then be able to adjust the chargeNow policy and see that adjustment
 
+from base64 import b64encode
 import json
 import os
 import random
@@ -145,14 +146,18 @@ time.sleep(2)
 
 # Test 5 - Send random data as the body of the request
 data = os.urandom(20480)
+data_ascii = { "text": b64encode(data).decode('utf-8') }
 
 values["tests"]["chargeNowRandom"] = {}
 values["expected"]["chargeNowRandom"] = 400
 
 try:
-    response = session.post("http://127.0.0.1:8088/api/chargeNow", json=data, timeout=30)
+    response = session.post("http://127.0.0.1:8088/api/chargeNow", json=data_ascii, timeout=30)
     values["elapsed"]["chargeNowRandom"] = response.elapsed
     values["response"]["chargeNowRandom"] = response.status_code
+except TypeError:
+    print("Data was unable to be serialized into JSON. Error with test.")
+    values["tests"]["chargeNowRandom"]["fail"] = 1
 except requests.Timeout:
     print("Error: Connection Timed Out at chargeNowRandom")
     values["tests"]["chargeNowRandom"]["fail"] = 1
@@ -161,6 +166,7 @@ except requests.ConnectionError:
     values["tests"]["chargeNowRandom"]["fail"] = 1
 
 data = None
+data_ascii = None
 time.sleep(2)
 
 # Test 6 - Engage chargeNow policy for our second random value
