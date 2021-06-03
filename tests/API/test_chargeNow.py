@@ -122,7 +122,7 @@ time.sleep(2)
 
 # Test 4 - Engage chargeNow policy for our first random value
 values["tests"]["chargeNowFirst"] = {}
-values["expected"]["chargeNowFirst"] = 200
+values["expected"]["chargeNowFirst"] = 204
 data = {
   "chargeNowDuration": 3600,
   "chargeNowRate": int(values.get("targetFirst", 0))
@@ -171,7 +171,7 @@ time.sleep(2)
 
 # Test 6 - Engage chargeNow policy for our second random value
 values["tests"]["chargeNowSecond"] = {}
-values["expected"]["chargeNowSecond"] = 200
+values["expected"]["chargeNowSecond"] = 204
 data = {
   "chargeNowDuration": 3600,
   "chargeNowRate": int(values.get("targetSecond", 0))

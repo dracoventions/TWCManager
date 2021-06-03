@@ -29,7 +29,7 @@ values = {
 def getOffsets(tag):
     # Query getConsumptionOffsets to see our current configured offsets
     try:
-        response = session.get("http://127.0.0.1:8088/api/getStatus", timeout=30)
+        response = session.get("http://127.0.0.1:8088/api/getConsumptionOffsets", timeout=30)
         values["response"][tag] = response.status_code
     except requests.Timeout:
         print("Error: Connection Timed Out at " + tag)
