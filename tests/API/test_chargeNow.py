@@ -7,6 +7,7 @@
 # We should then be able to adjust the chargeNow policy and see that adjustment
 
 from base64 import b64encode
+import datetime
 import json
 import os
 import random
@@ -15,6 +16,7 @@ import time
 
 # Configuration
 skipFailure = 0
+maxRequest = datetime.timedelta(seconds=2)
 
 # Disable environment import to avoid proxying requests
 session = requests.Session()
@@ -217,12 +219,18 @@ for reqs in values["expected"].keys():
     else:
         print("No response was found for test " + str(reqs) + ", skipping")
 
+# Check the request times and see if any exceeded the maximum set in maxRequest
+for reqs in values["elapsed"].keys():
+    if values["elapsed"][reqs] > maxRequest:
+        print("Error: API request " + str(reqs) + " took longer than maximum duration " + str(maxRequest) + ". Failing test")
+        values["tests"][reqs]["fail"] = 1
+
 # Check that the two values that we selected are reflected in their status output
-if (int(values["targetFirst"]) != int(values["status"]["First"]["maxAmpsToDivideAmongSlaves"])):
+if (int(values["targetFirst"]) != float(values["status"]["First"]["maxAmpsToDivideAmongSlaves"])):
     print("Error: maxAmpsToDivideAmongSlaves doesn't match target for first chargeNow test")
     values["tests"]["chargeNowFirst"]["fail"] = 1
 
-if (int(values["targetSecond"]) != int(values["status"]["Second"]["maxAmpsToDivideAmongSlaves"])):
+if (int(values["targetSecond"]) != float(values["status"]["Second"]["maxAmpsToDivideAmongSlaves"])):
     print("Error: maxAmpsToDivideAmongSlaves doesn't match target for second chargeNow test")
     values["tests"]["chargeNowSecond"]["fail"] = 1
 

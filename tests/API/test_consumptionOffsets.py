@@ -5,6 +5,7 @@
 # feature which allows offsets to be defined for the purpose of controlling
 # artificial load or generation values
 
+import datetime
 import json
 import random
 import requests
@@ -12,6 +13,7 @@ import time
 
 # Configuration
 skipFailure = 1
+maxRequest = datetime.timedelta(seconds=2)
 
 # Disable environment import to avoid proxying requests
 session = requests.Session()
@@ -251,6 +253,21 @@ except requests.ConnectionError:
 
 values["status"]["addConLongName"] = getOffsets("getOffsetsLongName")
 
+# For each request, check that the status codes match
+for reqs in values["expected"].keys():
+    if values["response"].get(reqs, None):
+        if values["response"][reqs] != values["expected"][reqs]:
+            print("Error: Response code " + str(values["response"][reqs]) + " for test " + str(reqs) + " does not equal expected result " + str(values["expected"][reqs]))
+            values["tests"][reqs]["fail"] = 1
+    else:
+        print("No response was found for test " + str(reqs) + ", skipping")
+
+# Check the request times and see if any exceeded the maximum set in maxRequest
+for reqs in values["elapsed"].keys():
+    if values["elapsed"][reqs] > maxRequest:
+        print("Error: API request " + str(reqs) + " took longer than maximum duration " + str(maxRequest) + ". Failing test")
+        values["tests"][reqs]["fail"] = 1
+
 
 # Print out values dict
 f = open("/tmp/twcmanager-tests/consumptionOffsets.json", "a")
@@ -268,4 +285,3 @@ for test in values["tests"].keys():
 
 print("All tests were successful")
 exit(0)
-
