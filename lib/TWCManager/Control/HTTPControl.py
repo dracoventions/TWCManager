@@ -364,7 +364,7 @@ def CreateHTTPHandlerClass(master):
                 data = {}
                 try:
                     data = json.loads(self.post_data.decode("UTF-8"))
-                except ValueError, UnicodeDecodeError:
+                except (ValueError, UnicodeDecodeError):
                     self.send_response(400)
                     self.end_headers()
                     self.wfile.write("".encode("utf-8"))
@@ -397,7 +397,7 @@ def CreateHTTPHandlerClass(master):
                 data = {}
                 try:
                     data = json.loads(self.post_data.decode("UTF-8"))
-                except ValueError, UnicodeDecodeError:
+                except (ValueError, UnicodeDecodeError):
                     self.send_response(400)
                     self.end_headers()
                     self.wfile.write("".encode("utf-8"))
