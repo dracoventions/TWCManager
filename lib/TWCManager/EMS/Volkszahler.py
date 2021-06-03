@@ -47,6 +47,9 @@ class Volkszahler:
             logger.debug("EMS Module Disabled. Skipping getConsumption")
             return 0
 
+        # Perform updates if necessary
+        self.update()
+
         # While we don't have separate generation or consumption values, if
         # the value is a positive value we report it as consumption
         if self.generatedW < 0:
