@@ -78,8 +78,8 @@ time.sleep(2)
 # Get offsets prior to adding our random offsets
 values["status"]["Before"] = getOffsets("getOffsetsBefore")
 
-# Test 1 - Call addConsumptionOffset with positive first Amps offset
-values["expected"]["addConAmpsFirst"] = 400
+# Test 2 - Call addConsumptionOffset with positive first Amps offset
+values["expected"]["addConAmpsFirst"] = 200
 values["tests"]["addConAmpsFirst"] = {}
 
 data = {
@@ -90,7 +90,7 @@ data = {
 
 try:
     response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
-        data=data, timeout=30)
+        json=data, timeout=30)
     values["elapsed"]["addConAmpsFirst"] = response.elapsed
     values["response"]["addConAmpsFirst"] = response.status_code
 except requests.Timeout:
@@ -102,8 +102,8 @@ except requests.ConnectionError:
 
 values["status"]["AmpsFirst"] = getOffsets("getOffsetsAmpsFirst")
 
-# Test 2 - Call addConsumptionOffset with negative second Amps offset
-values["expected"]["addConAmpsSecond"] = 400
+# Test 3 - Call addConsumptionOffset with negative second Amps offset
+values["expected"]["addConAmpsSecond"] = 200
 values["tests"]["addConAmpsSecond"] = {}
 
 data = {
@@ -114,7 +114,7 @@ data = {
 
 try:
     response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
-        data=data, timeout=30)
+        json=data, timeout=30)
     values["elapsed"]["addConAmpsSecond"] = response.elapsed
     values["response"]["addConAmpsSecond"] = response.status_code
 except requests.Timeout:
@@ -126,8 +126,8 @@ except requests.ConnectionError:
 
 values["status"]["AmpsSecond"] = getOffsets("getOffsetsAmpsSecond")
 
-# Test 3 - Call addConsumptionOffset with positive first watts offset
-values["expected"]["addConWattsFirst"] = 400
+# Test 4 - Call addConsumptionOffset with positive first watts offset
+values["expected"]["addConWattsFirst"] = 200
 values["tests"]["addConWattsFirst"] = {}
 
 data = {
@@ -138,7 +138,7 @@ data = {
 
 try:
     response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
-        data=data, timeout=30)
+        json=data, timeout=30)
     values["elapsed"]["addConWattsFirst"] = response.elapsed
     values["response"]["addConWattsFirst"] = response.status_code
 except requests.Timeout:
@@ -150,8 +150,8 @@ except requests.ConnectionError:
 
 values["status"]["WattsFirst"] = getOffsets("getOffsetsWattsFirst")
 
-# Test 4 - Call addConsumptionOffset with negative second watts offset
-values["expected"]["addConWattsSecond"] = 400
+# Test 5 - Call addConsumptionOffset with negative second watts offset
+values["expected"]["addConWattsSecond"] = 200
 values["tests"]["addConWattsSecond"] = {}
 
 data = {
@@ -162,7 +162,7 @@ data = {
 
 try:
     response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
-        data=data, timeout=30)
+        json=data, timeout=30)
     values["elapsed"]["addConWattsSecond"] = response.elapsed
     values["response"]["addConWattsSecond"] = response.status_code
 except requests.Timeout:
@@ -174,8 +174,8 @@ except requests.ConnectionError:
 
 values["status"]["WattsSecond"] = getOffsets("getOffsetsWattsSecond")
 
-# Test 5 - Call addConsumptionOffset with float value
-values["expected"]["addConFloat"] = 400
+# Test 6 - Call addConsumptionOffset with float value
+values["expected"]["addConFloat"] = 200
 values["tests"]["addConFloat"] = {}
 
 data = {
@@ -186,7 +186,7 @@ data = {
 
 try:
     response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
-        data=data, timeout=30)
+        json=data, timeout=30)
     values["elapsed"]["addConFloat"] = response.elapsed
     values["response"]["addConFloat"] = response.status_code
 except requests.Timeout:
@@ -199,7 +199,7 @@ except requests.ConnectionError:
 values["status"]["addConFloat"] = getOffsets("getOffsetsFloat")
 
 
-# Test 6 - Call addConsumptionOffset with non-Amp or Watt value
+# Test 7 - Call addConsumptionOffset with non-Amp or Watt value
 values["expected"]["addConInvalidUnit"] = 400
 values["tests"]["addConInvalidUnit"] = {}
 
@@ -211,7 +211,7 @@ data = {
 
 try:
     response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
-        data=data, timeout=30)
+        json=data, timeout=30)
     values["elapsed"]["addConInvalidUnit"] = response.elapsed
     values["response"]["addConInvalidUnit"] = response.status_code
 except requests.Timeout:
@@ -223,7 +223,7 @@ except requests.ConnectionError:
 
 values["status"]["addConInvalidUnit"] = getOffsets("getOffsetsInvalidUnit")
 
-# Test 7 - Add offset with excessively long name
+# Test 8 - Add offset with excessively long name
 name = "Offset "
 for x in range(0, 4096):
     name += str(x)
@@ -239,7 +239,7 @@ data = {
 
 try:
     response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
-        data=data, timeout=30)
+        json=data, timeout=30)
     values["elapsed"]["addConLongName"] = response.elapsed
     values["response"]["addConLongName"] = response.status_code
 except requests.Timeout:

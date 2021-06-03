@@ -86,7 +86,7 @@ data = {
 values["tests"]["chargeNowNegativeRate"] = {}
 values["expected"]["chargeNowNegativeRate"] = 400
 try:
-    response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
+    response = session.post("http://127.0.0.1:8088/api/chargeNow", json=data, timeout=30)
     values["elapsed"]["chargeNowNegativeRate"] = response.elapsed
     values["response"]["chargeNowNegativeRate"] = response.status_code
 except requests.Timeout:
@@ -107,7 +107,7 @@ data = {
 values["tests"]["chargeNowNegativeDuration"] = {}
 values["expected"]["chargeNowNegativeDuration"] = 400
 try:
-    response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
+    response = session.post("http://127.0.0.1:8088/api/chargeNow", json=data, timeout=30)
     values["elapsed"]["chargeNowNegativeDuration"] = response.elapsed
     values["response"]["chargeNowNegativeDuration"] = response.status_code
 except requests.Timeout:
@@ -128,7 +128,7 @@ data = {
 }
 
 try:
-    response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
+    response = session.post("http://127.0.0.1:8088/api/chargeNow", json=data, timeout=30)
     values["elapsed"]["chargeNowFirst"] = response.elapsed
     values["response"]["chargeNowFirst"] = response.status_code
     values["text"]["chargeNowFirst"] = response.text
@@ -150,7 +150,7 @@ values["tests"]["chargeNowRandom"] = {}
 values["expected"]["chargeNowRandom"] = 400
 
 try:
-    response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
+    response = session.post("http://127.0.0.1:8088/api/chargeNow", json=data, timeout=30)
     values["elapsed"]["chargeNowRandom"] = response.elapsed
     values["response"]["chargeNowRandom"] = response.status_code
 except requests.Timeout:
@@ -172,7 +172,7 @@ data = {
 }
 
 try:
-    response = session.post("http://127.0.0.1:8088/api/chargeNow", data=data, timeout=30)
+    response = session.post("http://127.0.0.1:8088/api/chargeNow", json=data, timeout=30)
     values["elapsed"]["chargeNowSecond"] = response.elapsed
     values["response"]["chargeNowSecond"] = response.status_code
     values["text"]["chargeNowSecond"] = response.text
