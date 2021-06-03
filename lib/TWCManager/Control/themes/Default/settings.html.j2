@@ -3,6 +3,7 @@
   <head>
     <title>TWCManager</title>
     {% include 'bootstrap.html.j2' %}
+    <script type="text/javascript" src="/static/js/settings.js"></script>
   </head>
   <body>
     {% include 'navbar.html.j2' %}
@@ -78,6 +79,44 @@
                 "name": "chargeAuthorizationMode",
                 "value": master.settings.get("chargeAuthorizationMode", "1")
               })|safe }}
+          </td>
+        </tr>
+        <tr>
+          <th>Consumption Offsets</th>
+          <td>
+            <table id="consumptionOffsets">
+              <thead>
+                <tr>
+                  <th>Offset Name</th>
+                  <th>Offset</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+              <thead>
+                <tr>
+                  <td><input type="text" class='form-control' id="offsetName" size=8 value="Name"></td>
+                  <td><input type="text" class='form-control' id="offsetValue" size=3 value="0" /></td>
+                  <td>
+                    {{ optionList(
+                      [
+                        ["A", "Amps"],
+                        ["W", "Watts"],
+                      ],
+                      {
+                        "name": "offsetUnit",
+                    })|safe }}
+                    </td>
+                    <td>
+                    {{ addButton(
+                      ["addOffset", "Add / Edit", { "buttonType": "button" }],
+                      "class='btn btn-outline-success'",
+                      )|safe }}
+                  </td>
+                </tr>
+              </thead>
+            </table>
           </td>
         </tr>
         <tr>

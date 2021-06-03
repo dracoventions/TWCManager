@@ -2,6 +2,10 @@
 
 The following settings (outside of the configuration file) are available via the inbuilt Web Interface:
 
+## Web Interface Theme
+
+Allows you to select which theme you'd like to use for the TWCManager interface.
+
 ## Stop Charging Method
 
 This option, which defaults to using the Tesla API, allows you to specify how you would like TWCManager to stop a car from charging. The following options exist, and each has some information to help you decide on which approach to use:
@@ -22,7 +26,7 @@ This option, which defaults to using the Tesla API, allows you to specify how yo
       * [This thread](https://teslamotorsclub.com/tmc/threads/new-wall-connector-load-sharing-protocol.72830/page-24) provides the observations of those who have tested this command.
       * Whilst this option is offered primarily for the benefit of non-Tesla vehicles, it's not recommended for use with Tesla vehicles.
 
-### Non-Scheduled Power Action
+### Non-Scheduled Power Action & Charge Rate
 
 This setting determines what TWCManager should do if there is no scheduled charging rate and outside of the Track Green Energy hours. The available options are:
 
@@ -37,6 +41,44 @@ The Do not Charge action states that outside of scheduled or Track Green Energy 
       * Track Green Energy
 
 This is an option that currently does not operate (and will only set Non-Scheduled Charging rate to 0). In future, this will allow continuing of Track Green Energy behaviour outside of the hard-coded daylight hours (6am - 8pm).
+
+### Charge Authorization Mode
+
+The Charge Authorization Mode determines how we determine if a vehicle that starts to charge from a TWC should be allowed to do so. There are two options available:
+
+   * Vehicles can charge unless explicitly blocked
+
+This setting is the default, and specifies that any vehicle which requests to start charging can do so, unless it is explicitly added to the Deny Charging group.
+
+   * Vehicles can only charge if explicitly allowed
+
+This setting specifies that any vehicle which requests to start charging will be blocked, unless it has been added to the Allow Charging group.
+
+### Consumption Offsets
+
+Consumption Offsets are values which are applied to the Consumption value retrieved from EMS modules. Consumption Offsets can be either positive or negative values, and are often used to control the behaviour of TWCManager by making it appear as though the consumption is higher or lower than it is, or allows specifying an average consumption value for installations where it is not possible to query consumption data.
+
+The value supplied can be:
+
+   * Expressed in Amps. This is internally converted into watts by TWCManager, by multiplying with the current grid voltage, meaning the actual applied value of this offset will vary with voltage variations.
+      * You would use an offset in Amps if you wanted to express an offset in circuit capacity - for example, if you already have a 1A load on a 20A circuit which is not metered, specifying +1A of consumption offset will treat that 1A as metered consumption.
+
+   * Expressed in Watts. This allows for a specific power value to be specified. There will be no variance to offsets expressed this way.
+      * You might use an offset like this to control the way that you treat Generation and Consumption data from Solar installations. For example, if you wanted to reduce the value measured from a Solar Array by 500W, you could add 500W of consumption via an offset.
+
+This is most often given a value equal to the average amount of power consumed by everything other than car charging. 
+
+For example, if your house uses an average of 2.8A to power computers, lights, etc while you expect the car to be charging, you could add an offset of 2.8A.
+
+If you have solar panels, look at your utility meter while your car charges.
+
+If it says you're using 0.67kW, that means you could either:
+   * Add an offset for 0.67kW * 1000 / 240V = 2.79A assuming you're on the North American 240V grid. 
+   * Add an offset for 670W, which would universally treat that 0.67kW as consumption regardless of grid voltage.
+
+In other words, during car charging, you want your utility meter to show a value close to 0kW meaning no energy is being sent to or from the grid.
+
+If you are able to obtain consumption details from an energy management system, don't add consumption offsets (unless you need them for other purposes), as TWCManager will query your EMS to determine the power being consumed.
 
 ### Manual Tesla API key override
 

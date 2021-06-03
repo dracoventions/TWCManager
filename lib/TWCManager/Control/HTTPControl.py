@@ -214,6 +214,17 @@ def CreateHTTPHandlerClass(master):
                 json_data = re.sub(r'"apiKey": ".*?",', "", json_datas)
                 self.wfile.write(json_data.encode("utf-8"))
 
+            elif self.url.path == "/api/getConsumptionOffsets":
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+
+                if not master.settings.get("consumptionOffset", None):
+                    master.settings["consumptionOffset"] = {}
+
+                json_data = json.dumps(master.settings["consumptionOffset"])
+                self.wfile.write(json_data.encode("utf-8"))
+
             elif self.url.path == "/api/getLastTWCResponse":
                 self.send_response(200)
                 self.send_header("Content-type", "text/plain")
@@ -349,6 +360,29 @@ def CreateHTTPHandlerClass(master):
 
             self.debugLogAPI("Starting API POST")
 
+            if self.url.path == "/api/addConsumptionOffset":
+                data = json.loads(self.post_data.decode("UTF-8"))
+                name = str(data.get("offsetName", None))
+                value = float(data.get("offsetValue", 0))
+                unit = str(data.get("offsetUnit", None))
+
+                if (name and value):
+                    if not master.settings.get("consumptionOffset", None):
+                        master.settings["consumptionOffset"] = {}
+                    master.settings["consumptionOffset"][name] = {}
+                    master.settings["consumptionOffset"][name]["value"] = value
+                    master.settings["consumptionOffset"][name]["unit"] = unit
+                    master.queue_background_task({"cmd": "saveSettings"})
+
+                    self.send_response(204)
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
+
+                else:
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
+
             if self.url.path == "/api/chargeNow":
                 data = {}
                 try:
@@ -381,6 +415,23 @@ def CreateHTTPHandlerClass(master):
                 self.send_response(204)
                 self.end_headers()
                 self.wfile.write("".encode("utf-8"))
+
+            elif self.url.path == "/api/deleteConsumptionOffset":
+                data = json.loads(self.post_data.decode("UTF-8"))
+                name = str(data.get("offsetName", None))
+
+                if master.settings.get("consumptionOffset", None):
+                    del master.settings["consumptionOffset"][name]
+
+                    self.send_response(204)
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
+
+                else:
+
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
 
             elif self.url.path == "/api/sendDebugCommand":
                 data = json.loads(self.post_data.decode("UTF-8"))
