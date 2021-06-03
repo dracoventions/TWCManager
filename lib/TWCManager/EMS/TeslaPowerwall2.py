@@ -178,7 +178,7 @@ class TeslaPowerwall2:
             logger.debug("Powerwall2 EMS Module Disabled. Skipping getGeneration")
             return 0
 
-        if self.batteryLevel > (self.minSOE * 1.05) and self.importW < 900:
+        if self.batteryLevel > (self.minSOE * 1.05):
             self.suppressGeneration = False
         if self.batteryLevel < (self.minSOE * 0.95):
             self.suppressGeneration = True
@@ -188,10 +188,6 @@ class TeslaPowerwall2:
 
         if self.suppressGeneration:
             return 0
-
-        # Don't take effect immediately, in case it's a temporary blip.
-        if self.importW > 1000:
-            self.suppressGeneration = True
 
         # Return generation value
         return float(self.generatedW)
@@ -219,9 +215,7 @@ class TeslaPowerwall2:
                 r.raise_for_status()
             except Exception as e:
                 if hasattr(e, "response") and e.response.status_code == 403:
-                    logger.info(
-                        "Authentication required to access local Powerwall API"
-                    )
+                    logger.info("Authentication required to access local Powerwall API")
                 else:
                     logger.log(
                         logging.INFO4,
