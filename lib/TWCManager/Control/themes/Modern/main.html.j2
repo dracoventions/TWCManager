@@ -286,12 +286,12 @@ wcmanager/settings.json and try saving your settings again.</b>
             </form>
         </div>
         <div class="col-3">
-            {% set ampsMin = ampsList|first %}
+            {% set ampsMin = ampsList[1] %}
             {% set ampsMax = ampsList|last %}
             <form>
                 <div class="form-group p-2">
-                    <label for="chargeNowRate" class="text-muted mb-0">Charge with <span class="text-dark font-weight-bold" id="{{ twcid }}_ampsVal">{{ defaultChargeAmps }}</span> A</label>
-                    <input type="range" class="custom-range" id="chargeNowRate" name="chargeNowRate" min="{{ ampsMin[0]}}" max="{{ ampsMax[0] }}" step="1" value="{{ defaultChargeAmps }}" onInput="$('#{{ twcid }}_ampsVal').html($(this).val())">
+                    <label for="chargeNowRate" class="text-muted mb-0">Charge with <span class="text-dark font-weight-bold" id="{{ twcid }}_ampsVal">{{ ampsMin[0] }}</span> A</label>
+                    <input type="range" class="custom-range" id="chargeNowRate" name="chargeNowRate" min="{{ ampsMin[0]}}" max="{{ ampsMax[0] }}" step="1" value="{{ ampsMin[0] }}" onInput="$('#{{ twcid }}_ampsVal').html($(this).val())">
                 </div>
             </form>
         </div>
