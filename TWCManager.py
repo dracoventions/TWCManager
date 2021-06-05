@@ -511,6 +511,12 @@ for module in modules_available:
         modulename = str(module).split(".")
 
     try:
+        # Pre-emptively skip modules that we know are not configured
+        configlocation = master.translateModuleNameToConfig(modulename)
+        if not config.get(configlocation[0], {}).get(configlocation[1], {}).get("enabled", 1):
+            # We can see that this module is explicitly disabled in config, skip it
+            continue
+
         moduleref = importlib.import_module("lib.TWCManager." + module)
         modclassref = getattr(moduleref, modulename[1])
         modinstance = modclassref(master)

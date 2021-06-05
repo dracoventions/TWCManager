@@ -1327,6 +1327,30 @@ class TWCMaster:
             "%H:%M:%S" + (".%f" if self.config["config"]["displayMilliseconds"] else "")
         )
 
+    def translateModuleNameToConfig(self, modulename):
+        # This function takes a module name (eg. EMS.Fronius) and returns a config section (Sources.Fronius)
+        # It makes it easier for us to determine where a module's config should be
+        configloc = [ "", "" ]
+        if modulename[0] == "Control":
+            configloc[0] = "control";
+            configloc[1] = str(modulename[1]).replace('Control','')
+        elif modulename[0] == "EMS":
+            configloc[0] = "sources";
+            configloc[1] = modulename[1]
+        elif modulename[0] == "Interface":
+            configloc[0] = "interface";
+            configloc[1] = modulename[1]
+        elif modulename[0] == "Logging":
+            configloc[0] = "logging";
+            configloc[1] = str(modulename[1]).replace('Logging','')
+        elif modulename[0] == "Status":
+            configloc[0] = "status";
+            configloc[1] = str(modulename[1]).replace('Status','')
+        else:
+            return modulename
+
+        return configloc
+
     def updateSlaveLifetime(self, sender, kWh, vPA, vPB, vPC):
         for slaveTWC in self.getSlaveTWCs():
             if slaveTWC.TWCID == sender:
