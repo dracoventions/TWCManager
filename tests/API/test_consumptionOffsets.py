@@ -28,8 +28,22 @@ values = {
   "tests": {}
 }
 
+def addOffset(tag, data):
+    global values
+
+    try:
+        response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
+            json=data, timeout=30)
+        values["elapsed"][tag] = response.elapsed
+        values["response"][tag] = response.status_code
+    except requests.Timeout:
+        print("Error: Connection Timed Out at %s" % tag)
+        values["tests"][tag]["fail"] = 1
+    except requests.ConnectionError:
+        print("Error: Connection Error at %s" % tag)
+        values["tests"][tag]["fail"] = 1
+
 def getOffsets(tag):
-    # Query getConsumptionOffsets to see our current configured offsets
     try:
         response = session.get("http://127.0.0.1:8088/api/getConsumptionOffsets", timeout=30)
         values["response"][tag] = response.status_code
@@ -90,18 +104,7 @@ data = {
     "offsetUnit": "A"
 }
 
-try:
-    response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
-        json=data, timeout=30)
-    values["elapsed"]["addConAmpsFirst"] = response.elapsed
-    values["response"]["addConAmpsFirst"] = response.status_code
-except requests.Timeout:
-    print("Error: Connection Timed Out at addConAmpsFirst")
-    values["tests"]["addConAmpsFirst"]["fail"] = 1
-except requests.ConnectionError:
-    print("Error: Connection Error at addConAmpsFirst")
-    values["tests"]["addConAmpsFirst"]["fail"] = 1
-
+addOffset("addConAmpsFirst", data)
 values["status"]["AmpsFirst"] = getOffsets("getOffsetsAmpsFirst")
 
 # Test 3 - Call addConsumptionOffset with negative second Amps offset
@@ -114,18 +117,7 @@ data = {
     "offsetUnit": "A"
 }
 
-try:
-    response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
-        json=data, timeout=30)
-    values["elapsed"]["addConAmpsSecond"] = response.elapsed
-    values["response"]["addConAmpsSecond"] = response.status_code
-except requests.Timeout:
-    print("Error: Connection Timed Out at addConAmpsSecond")
-    values["tests"]["addConAmpsSecond"]["fail"] = 1
-except requests.ConnectionError:
-    print("Error: Connection Error at addConAmpsSecond")
-    values["tests"]["addConAmpsSecond"]["fail"] = 1
-
+addOffset("addConAmpsSecond", data)
 values["status"]["AmpsSecond"] = getOffsets("getOffsetsAmpsSecond")
 
 # Test 4 - Call addConsumptionOffset with positive first watts offset
@@ -138,18 +130,7 @@ data = {
     "offsetUnit": "W"
 }
 
-try:
-    response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
-        json=data, timeout=30)
-    values["elapsed"]["addConWattsFirst"] = response.elapsed
-    values["response"]["addConWattsFirst"] = response.status_code
-except requests.Timeout:
-    print("Error: Connection Timed Out at addConWattsFirst")
-    values["tests"]["addConWattsFirst"]["fail"] = 1
-except requests.ConnectionError:
-    print("Error: Connection Error at addConWattsFirst")
-    values["tests"]["addConWattsFirst"]["fail"] = 1
-
+addOffset("addConWattsFirst", data)
 values["status"]["WattsFirst"] = getOffsets("getOffsetsWattsFirst")
 
 # Test 5 - Call addConsumptionOffset with negative second watts offset
@@ -162,18 +143,7 @@ data = {
     "offsetUnit": "W"
 }
 
-try:
-    response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
-        json=data, timeout=30)
-    values["elapsed"]["addConWattsSecond"] = response.elapsed
-    values["response"]["addConWattsSecond"] = response.status_code
-except requests.Timeout:
-    print("Error: Connection Timed Out at addConWattsSecond")
-    values["tests"]["addConWattsSecond"]["fail"] = 1
-except requests.ConnectionError:
-    print("Error: Connection Error at addConWattsSecond")
-    values["tests"]["addConWattsSecond"]["fail"] = 1
-
+addOffset("addConWattsSecond", data)
 values["status"]["WattsSecond"] = getOffsets("getOffsetsWattsSecond")
 
 # Test 6 - Call addConsumptionOffset with float value
@@ -254,7 +224,6 @@ data = {
 # Test 10 - Update all existing offsets (except Tests 7 or 8) by setting them all to 5A
 for offsetName in [ "First Amp Offset Positive", "Second Amp Offset Negative", 
    "First Watt Offset Positive", "Second Watts Offset Negative" ]:
-    print(offsetName)
     runname = "Update " + offsetName
 
     values["expected"][runname] = 204
@@ -279,6 +248,25 @@ for offsetName in [ "First Amp Offset Positive", "Second Amp Offset Negative",
         values["tests"][runname]["fail"] = 1
 
     values["status"][runname] = getOffsets("getOffsets" + runname)
+
+# Test 11 - Delete all configured consumption offsets
+offsets=getOffsets("DeleteAll")
+for offset in offsets.keys():
+    data = {
+        "offsetName": offset
+    }
+
+    try:
+        response = session.post("http://127.0.0.1:8088/api/deleteConsumptionOffset",
+            json=data, timeout=30)
+    except requests.Timeout:
+        print("Error: Connection Timed Out at deleteConsumption")
+        values["tests"]["deleteConsumption"]["fail"] = 1
+    except requests.ConnectionError:
+        print("Error: Connection Error at deleteConsumption")
+        values["tests"]["deleteConsumption"]["fail"] = 1
+
+values["status"]["deleteConsumptionAfter"] = getOffsets("deleteConsumptionAfter")
 
 # For each request, check that the status codes match
 for reqs in values["expected"].keys():
