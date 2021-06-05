@@ -239,7 +239,19 @@ data = {
     "offsetUnit": "W"
 }
 
-# Test 9 - Update all existing offsets (except Tests 7 or 8) by setting them all to 5A
+# Test 9 - Add offset with characters which may potentially break settings.json file
+name = "Offset \":{},[],"
+
+values["expected"]["addConBadName"] = 400
+values["tests"]["addConBadName"] = {}
+
+data = {
+    "offsetName": name,
+    "offsetValue": 5,
+    "offsetUnit": "W"
+}
+
+# Test 10 - Update all existing offsets (except Tests 7 or 8) by setting them all to 5A
 for offsetName in [ "First Amp Offset Positive", "Second Amp Offset Negative", 
    "First Watt Offset Positive", "Second Watts Offset Negative" ]:
     print(offsetName)
@@ -285,39 +297,40 @@ for reqs in values["elapsed"].keys():
 
 # Check the getConsumptionOffsets output of each test
 #  Test 2
+
 if not values["tests"]["addConAmpsFirst"].get("fail", 0):
     values["tests"]["addConAmpsFirst"]["fail"] = 1
-    for offsets in values["status"]["AmpsFirst"]:
-        if offsets["offsetName"] == "First Amp Offset Positive":
-            if offsets["offsetValue"] == values["target"]["ampsFirst"]:
-                if offsets["offsetUnit"] == "A":
+    for offsets in values["status"]["AmpsFirst"].keys():
+        if offsets == "First Amp Offset Positive":
+            if values["status"]["AmpsFirst"][offsets]["value"] == values["target"]["ampsFirst"]:
+                if values["status"]["AmpsFirst"][offsets]["unit"] == "A":
                     values["tests"]["addConAmpsFirst"]["fail"] = 0
 
 #  Test 3
 if not values["tests"]["addConAmpsSecond"].get("fail", 0):
     values["tests"]["addConAmpsSecond"]["fail"] = 1
-    for offsets in values["status"]["AmpsSecond"]:
-        if offsets["offsetName"] == "Second Amp Offset Negative":
-            if offsets["offsetValue"] == values["target"]["ampsSecond"]:
-                if offsets["offsetUnit"] == "A":
+    for offsets in values["status"]["AmpsSecond"].keys():
+        if offsets == "Second Amp Offset Negative":
+            if values["status"]["AmpsSecond"][offsets]["value"] == values["target"]["ampsSecond"]:
+                if values["status"]["AmpsSecond"][offsets]["unit"] == "A":
                     values["tests"]["addConAmpsSecond"]["fail"] = 0
 
 #  Test 4
 if not values["tests"]["addConWattsFirst"].get("fail", 0):
     values["tests"]["addConWattsFirst"]["fail"] = 1
-    for offsets in values["status"]["WattsFirst"]:
-        if offsets["offsetName"] == "First Watt Offset Positive":
-            if offsets["offsetValue"] == values["target"]["wattsFirst"]:
-                if offsets["offsetUnit"] == "W":
+    for offsets in values["status"]["WattsFirst"].keys():
+        if offsets == "First Watt Offset Positive":
+            if values["status"]["WattsFirst"][offsets]["value"] == values["target"]["wattsFirst"]:
+                if values["status"]["WattsFirst"][offsets]["unit"] == "W":
                     values["tests"]["addConWattsFirst"]["fail"] = 0
 
 # Test 5
 if not values["tests"]["addConWattsSecond"].get("fail", 0):
     values["tests"]["addConWattsSecond"]["fail"] = 1
-    for offsets in values["status"]["WattsSecond"]:
-        if offsets["offsetName"] == "Second Watts Offset Negative":
-            if offsets["offsetValue"] == values["target"]["wattsSecond"]:
-                if offsets["offsetUnit"] == "W":
+    for offsets in values["status"]["WattsSecond"].keys():
+        if offsets == "Second Watts Offset Negative":
+            if values["status"]["WattsSecond"][offsets]["value"] == values["target"]["wattsSecond"]:
+                if values["status"]["WattsSecond"][offsets]["unit"] == "W":
                     values["tests"]["addConWattsSecond"]["fail"] = 0
 
 

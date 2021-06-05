@@ -376,7 +376,7 @@ def CreateHTTPHandlerClass(master):
                 value = float(data.get("offsetValue", 0))
                 unit = str(data.get("offsetUnit", ""))
 
-                if (name and value and (unit == "A" or unit == "W")):
+                if (name and value and (unit == "A" or unit == "W") and len(name) < 32):
                     if not master.settings.get("consumptionOffset", None):
                         master.settings["consumptionOffset"] = {}
                     master.settings["consumptionOffset"][name] = {}
