@@ -67,8 +67,9 @@ The following API endpoints exist:
 | Endpoint  | Method | Description                                       |
 | --------- | ------ | ------------------------------------------------- |
 | [addConsumptionOffset](control_HTTP_API/addConsumptionOffset.md) | POST | Add or Edit a Consumption Offset value | 
-| <a href="/docs/modules/control_HTTP_API/cancelChargeNow.md">cancelChargeNow</a> | POST | Cancels active chargeNow configuration        |
+| [cancelChargeNow](control_HTTP_API/cancelChargeNow.md) | POST | Cancels active chargeNow configuration        |
 | <a href="/docs/modules/control_HTTP_API/chargeNow.md">chargeNow</a> | POST   | Instructs charger to start charging at specified rate |
+| [deleteConsumptionOffset](control_HTTP_API/deleteConsumptionOffset.md) | POST | Delete a Consumption Offset value |
 | getConfig | GET    | Provides the current configuration                |
 | [getConsumptionOffsets](control_HTTP_API/getConsumptionOffsets.md) | GET | List configured offsets               |
 | getPolicy | GET    | Provides the policy configuration                 |

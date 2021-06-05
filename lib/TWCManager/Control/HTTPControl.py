@@ -393,7 +393,7 @@ def CreateHTTPHandlerClass(master):
                     self.end_headers()
                     self.wfile.write("".encode("utf-8"))
 
-            if self.url.path == "/api/chargeNow":
+            elif self.url.path == "/api/chargeNow":
                 data = {}
                 try:
                     data = json.loads(self.post_data.decode("UTF-8"))

@@ -6,7 +6,7 @@ The addConsumptionOffset API command requests TWCManager to add a new consumptio
 
 ## Format of request
 
-The addConsumptionOffset API command is accompanied by a payload which describes the offset that you are configuring or editing. The following example payload shows a request to add or edit a payload called WattsOffset with a positive offset expressed in watts:
+The addConsumptionOffset API command is accompanied by a payload which describes the offset that you are configuring or editing. The following example payload shows a request to add or edit an offset called WattsOffset with a positive offset expressed in watts:
 
 ```
 {
@@ -35,3 +35,7 @@ This API function can be called by external systems in order to control the char
 ## Disabling an offset
 
 Set an offset's value to 0 (zero) to disable it.
+
+## Deleting an offset
+
+See the [deleteConsumptionOffset](deleteConsumptionOffset.md) API call.
