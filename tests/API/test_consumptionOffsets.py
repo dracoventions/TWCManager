@@ -156,20 +156,8 @@ data = {
     "offsetUnit": "W"
 }
 
-try:
-    response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
-        json=data, timeout=30)
-    values["elapsed"]["addConFloat"] = response.elapsed
-    values["response"]["addConFloat"] = response.status_code
-except requests.Timeout:
-    print("Error: Connection Timed Out at addConFloat")
-    values["tests"]["addConFloat"]["fail"] = 1
-except requests.ConnectionError:
-    print("Error: Connection Error at addConFloat")
-    values["tests"]["addConFloat"]["fail"] = 1
-
+addOffset("addConFloat", data)
 values["status"]["addConFloat"] = getOffsets("getOffsetsFloat")
-
 
 # Test 7 - Call addConsumptionOffset with non-Amp or Watt value
 values["expected"]["addConInvalidUnit"] = 400
@@ -181,18 +169,7 @@ data = {
     "offsetUnit": "Z"
 }
 
-try:
-    response = session.post("http://127.0.0.1:8088/api/addConsumptionOffset",
-        json=data, timeout=30)
-    values["elapsed"]["addConInvalidUnit"] = response.elapsed
-    values["response"]["addConInvalidUnit"] = response.status_code
-except requests.Timeout:
-    print("Error: Connection Timed Out at addConInvalidUnit")
-    values["tests"]["addConInvalidUnit"]["fail"] = 1
-except requests.ConnectionError:
-    print("Error: Connection Error at addConInvalidUnit")
-    values["tests"]["addConInvalidUnit"]["fail"] = 1
-
+addOffset("addConInvalidUnit", data)
 values["status"]["addConInvalidUnit"] = getOffsets("getOffsetsInvalidUnit")
 
 # Test 8 - Add offset with excessively long name
@@ -209,6 +186,9 @@ data = {
     "offsetUnit": "W"
 }
 
+addOffset("addConLongName", data)
+values["status"]["addConLongName"] = getOffsets("getOffsetsLongName")
+
 # Test 9 - Add offset with characters which may potentially break settings.json file
 name = "Offset \":{},[],"
 
@@ -221,7 +201,37 @@ data = {
     "offsetUnit": "W"
 }
 
-# Test 10 - Update all existing offsets (except Tests 7 or 8) by setting them all to 5A
+addOffset("addConBadName", data)
+values["status"]["addConBadName"] = getOffsets("getOffsetsBadName")
+
+# Test 10 - Add offset with nul byte for name
+values["expected"]["addConNulName"] = 400
+values["tests"]["addConNulName"] = {}
+
+data = {
+    "offsetName": b'\x00',
+    "offsetValue": 5,
+    "offsetUnit": "W"
+}
+
+addOffset("addConNulName", data)
+values["status"]["addConNulName"] = getOffsets("getOffsetsNulName")
+
+
+# Test 11 - Add offset with nul byte for value
+values["expected"]["addConNulValue"] = 400
+values["tests"]["addConNulValue"] = {}
+
+data = {
+    "offsetName": "Null Value",
+    "offsetValue": b'\x00',
+    "offsetUnit": "W"
+}
+
+addOffset("addConNulValue", data)
+values["status"]["addConNulValue"] = getOffsets("getOffsetsNulValue")
+
+# Test 12 - Update all existing offsets (except Tests 7 or 8) by setting them all to 5A
 for offsetName in [ "First Amp Offset Positive", "Second Amp Offset Negative", 
    "First Watt Offset Positive", "Second Watts Offset Negative" ]:
     runname = "Update " + offsetName
