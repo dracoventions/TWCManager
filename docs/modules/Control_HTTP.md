@@ -64,17 +64,18 @@ The HTTPControl web server provides an API interface under the /api URL root. Th
 
 The following API endpoints exist:
 
-| Endpoint  | Method | Description                                       |
-| --------- | ------ | ------------------------------------------------- |
+| Endpoint                    | Method | Description                                       |
+| --------------------------- | ------ | ------------------------------------------------- |
 | [addConsumptionOffset](control_HTTP_API/addConsumptionOffset.md) | POST | Add or Edit a Consumption Offset value | 
 | [cancelChargeNow](control_HTTP_API/cancelChargeNow.md) | POST | Cancels active chargeNow configuration        |
-| <a href="/docs/modules/control_HTTP_API/chargeNow.md">chargeNow</a> | POST   | Instructs charger to start charging at specified rate |
+| [chargeNow](control_HTTP_API/chargeNow.md)             | POST  | Instructs charger to start charging at specified rate |
 | [deleteConsumptionOffset](control_HTTP_API/deleteConsumptionOffset.md) | POST | Delete a Consumption Offset value |
-| getConfig | GET    | Provides the current configuration                |
+| getConfig                | GET    | Provides the current configuration                |
 | [getConsumptionOffsets](control_HTTP_API/getConsumptionOffsets.md) | GET | List configured offsets               |
-| getPolicy | GET    | Provides the policy configuration                 |
-| getSlaveTWCs | GET | Provides a list of connected Slave TWCs and their state |
-| getStatus | GET    | Provides the current status (Charge Rate, Policy) |
-| sendStartCommand | POST | Sends the Start command to all Slave TWCs    |
-| <a href="/docs/modules/control_HTTP_API/sendStopCommand.md">sendStopCommand</a>  | POST | Sends the Stop command to all Slave TWCs     |
-| <a href="/docs/modules/control_HTTP_API/setScheduledChargingSettings.md">setScheduledChargingSettings</a>  | POST | Saves Scheduled Charging settings --> can be retrieved with getStatus |
+| getPolicy                | GET  | Provides the policy configuration                 |
+| getSlaveTWCs             | GET  | Provides a list of connected Slave TWCs and their state |
+| getStatus                | GET  | Provides the current status (Charge Rate, Policy) |
+| sendStartCommand         | POST | Sends the Start command to all Slave TWCs    |
+| setSetting               | POST | Set settings |
+| [sendStopCommand](control_HTTP_API/sendStopCommand.md) | POST | Sends the Stop command to all Slave TWCs     |
+| [setScheduledChargingSettings](control_HTTP_API/setScheduledChargingSettings.md)  | POST | Saves Scheduled Charging settings --> can be retrieved with getStatus |

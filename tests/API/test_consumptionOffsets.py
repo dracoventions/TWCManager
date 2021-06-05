@@ -14,6 +14,9 @@ import time
 # Configuration
 skipFailure = 1
 maxRequest = datetime.timedelta(seconds=2)
+dummySettings = {
+    "Voltage": 240
+}
 
 # Disable environment import to avoid proxying requests
 session = requests.Session()
@@ -63,6 +66,21 @@ def getOffsets(tag):
 
     return jsonOut
 
+def setSetting(setting, value):
+
+    data = {
+      "setting": setting,
+      "value": value
+    }
+
+    try:
+        response = session.post("http://127.0.0.1:8088/api/setSetting", json=data, timeout=30)
+        values["response"]["setSetting " + setting] = response.status_code
+    except requests.Timeout:
+        print("Error: Connection Timed Out at setSetting " + setting)
+    except requests.ConnectionError:
+        print("Error: Connection Error at setSetting " + setting)
+
 # Generate random offset values
 values["target"]["ampsFirst"]  = random.randint(2, 6)
 values["target"]["ampsSecond"] = 0
@@ -74,6 +92,8 @@ values["target"]["wattsSecond"] = 0
 while (not values["target"]["wattsSecond"] or values["target"]["wattsFirst"] == values["target"]["wattsSecond"]):
     values["target"]["wattsSecond"] = random.randint(100, 500)
 
+# Set initial Dummy module settings
+setSetting("DummyModule", dummySettings)
 
 # Test 1 - Call addConsumptionOffset with no arguments
 values["expected"]["addConNoArgs"] = 400
@@ -209,7 +229,7 @@ values["expected"]["addConNulName"] = 400
 values["tests"]["addConNulName"] = {}
 
 data = {
-    "offsetName": b'\x00',
+    "offsetName": '',
     "offsetValue": 5,
     "offsetUnit": "W"
 }
@@ -224,7 +244,7 @@ values["tests"]["addConNulValue"] = {}
 
 data = {
     "offsetName": "Null Value",
-    "offsetValue": b'\x00',
+    "offsetValue": '',
     "offsetUnit": "W"
 }
 

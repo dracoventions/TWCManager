@@ -430,6 +430,18 @@ def CreateHTTPHandlerClass(master):
                 self.end_headers()
                 self.wfile.write("".encode("utf-8"))
 
+            elif self.url.path == "/api/checkArrival":
+                master.queue_background_task({"cmd": "checkArrival"})
+                self.send_response(202)
+                self.end_headers()
+                self.wfile.write("".encode("utf-8"))
+
+            elif self.url.path == "/api/checkDeparture":
+                master.queue_background_task({"cmd": "checkDeparture"})
+                self.send_response(202)
+                self.end_headers()
+                self.wfile.write("".encode("utf-8"))
+
             elif self.url.path == "/api/deleteConsumptionOffset":
                 data = json.loads(self.post_data.decode("UTF-8"))
                 name = str(data.get("offsetName", None))
@@ -476,17 +488,14 @@ def CreateHTTPHandlerClass(master):
                 self.send_response(204)
                 self.end_headers()
 
-            elif self.url.path == "/api/checkArrival":
-                master.queue_background_task({"cmd": "checkArrival"})
-                self.send_response(202)
-                self.end_headers()
-                self.wfile.write("".encode("utf-8"))
+            elif self.url.path == "/api/setSetting":
+                data = json.loads(self.post_data.decode("UTF-8"))
+                setting = str(data.get("setting", None))
+                value = str(data.get("value", None))
 
-            elif self.url.path == "/api/checkDeparture":
-                master.queue_background_task({"cmd": "checkDeparture"})
-                self.send_response(202)
+                master.settings[setting] = value
+                self.send_response(204)
                 self.end_headers()
-                self.wfile.write("".encode("utf-8"))
 
             elif self.url.path == "/api/setScheduledChargingSettings":
                 data = json.loads(self.post_data.decode("UTF-8"))
