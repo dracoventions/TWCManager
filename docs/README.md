@@ -16,6 +16,12 @@ The following options exist for installing TWCManager:
 
    * [Manual](Software_Manual.md) - A manual installation involves downloading the source code for TWCManager from GitHub, installing dependencies and then running TWCManager as a service.
 
+### Configuration
+
+The TWCManager configuration file at ```/etc/twcmanager/config.json``` has lots of information about each of the configuration parameters and their effect on your installation. We highly recommend reading through the file carefully as you configure your installation, as this resolves the majority of issues.
+
+   * In addition, we have a set of [Configuration Examples](config_examples.md) intended to help with more complex setups such as those utilizing Flex Charging. These examples help to share information that has been discussed previously when setting up more complex charging policy.
+
 ## Developing for TWCManager
 
 Your contributions are most welcome! If you've been working on a new EMS module or you want to contribute to the project in any way, please take a look at our [Development Guide](DevelopmentGuide.md) and feel free to get involved!

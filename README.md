@@ -24,6 +24,10 @@
 
 Would you like a full list of features available in TWCManager? Click [here](docs/Features.md)
 
+## Installation and Configuration
+
+All installation and configuration documentation (Physical and Software) is contained in the documentation repository [here](docs/README.md)
+
 ## Interfaces
 
 To enable TWCManager to gather the solar generation information that it requires to adjust the charging rate, we provide Interfaces to allow information to be retrieved (EMS Interfaces) and Interfaces to allow us to provide information to external systems to inform them of current charging output and number of cars currently charging.
@@ -109,10 +113,6 @@ It is important to read and understand the following warnings before using this 
 ## Limitations
 * Due to hardware limitations, TWCManager will not work with Tesla's older High Power Wall Connectors (HPWCs) that were discontinued around April 2016.
 * We do not currently have enough information about the new 2020 Tesla Wall Connector devices with WiFi to understand if they will be compatible in any way (wired or wireless) with TWCManager.
-
-## Installation
-
-All installation documentation (Physical and Software) is contained in the documentation repository [here](docs/README.md)
 
 ## Attribution
 * Original TWCManager distribution by [cdragon](https://github.com/cdragon/TWCManager)
