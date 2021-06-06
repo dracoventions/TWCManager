@@ -560,10 +560,15 @@
           "serverPort": "8080"
         },
         "Volkszahler": {
-          "enabled": false,
-          "serverIP": "192.168.1.2",
+          "enabled": true,
+          # Yes, you can install TWCManager on same raspi as Volkszäher. (this needs to change "control" > "listenPort" to 8181)
+          "serverIP": "127.0.0.1",
+          # Port of Volkszahler frontend (not from VZLOGGER).
           "serverPort": "80",
-          "uuid": "1cbbe494-a049-11eb-bcbc-0242ac130002"
+          # Generation in Watt as positive values.
+          "uuidPhotovoltaikW": "00000006-0002-1570-ffff-0123456789ab",
+          # Consumption from grid as positive values or Push to grid as negative values.
+          "uuidTotalGridW": "1cbbe494-a049-11eb-bcbc-0242ac130002"
         }
 
     },
