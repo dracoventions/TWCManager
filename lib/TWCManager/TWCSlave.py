@@ -1,6 +1,7 @@
 from ww import f
 from datetime import datetime
 import logging
+import time
 
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
@@ -9,7 +10,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 class TWCSlave:
 
     import re
-    import time
 
     config = None
     configConfig = None
@@ -144,11 +144,11 @@ class TWCSlave:
             if (
                 debugOutputCompare != self.lastHeartbeatDebugOutput
                 or abs(ampsUsed - lastAmpsUsed) >= 1.0
-                or self.time.time() - self.timeLastHeartbeatDebugOutput > 600
+                or time.time() - self.timeLastHeartbeatDebugOutput > 600
             ):
                 logger.info(debugOutput)
                 self.lastHeartbeatDebugOutput = debugOutput
-                self.timeLastHeartbeatDebugOutput = self.time.time()
+                self.timeLastHeartbeatDebugOutput = time.time()
 
                 logger.info(
                     "Slave power for TWCID %02X%02X, status: %s",
@@ -437,7 +437,7 @@ class TWCSlave:
             # TODO: Start and stop charging using protocol 2 commands to TWC
             # instead of car api if I ever figure out how.
             if self.lastAmpsOffered == 0 and self.reportedAmpsActual > 4.0:
-                now = self.time.time()
+                now = time.time()
 
                 if (
                     now - self.timeLastAmpsOfferedChanged < 60
@@ -561,7 +561,7 @@ class TWCSlave:
 
         self.master.queue_background_task({"cmd": "getLifetimekWh"})
 
-        now = self.time.time()
+        now = time.time()
         self.timeLastRx = now
 
         self.reportedAmpsMax = ((heartbeatData[1] << 8) + heartbeatData[2]) / 100
@@ -635,7 +635,7 @@ class TWCSlave:
                     self.TWCID, "power", "power", self.reportedAmpsActual, "A"
                 )
 
-        ltNow = self.time.localtime()
+        ltNow = time.localtime()
         hourNow = ltNow.tm_hour + (ltNow.tm_min / 60)
         yesterday = ltNow.tm_wday - 1
         if yesterday < 0:
@@ -1058,7 +1058,7 @@ class TWCSlave:
                 )
 
             if self.lastAmpsOffered != oldLastAmpsOffered:
-                self.timeLastAmpsOfferedChanged = self.time.time()
+                self.timeLastAmpsOfferedChanged = time.time()
         return self.lastAmpsOffered
 
     def setLifetimekWh(self, kwh):

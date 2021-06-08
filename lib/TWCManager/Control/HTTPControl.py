@@ -44,14 +44,21 @@ class HTTPControl:
 
         # Unload if this module is disabled or misconfigured
         if (not self.status) or (int(self.httpPort) < 1):
-            self.master.releaseModule("lib.TWCManager.Control", "HTTPControl")
+            self.master.releaseModule("lib.TWCManager.Control", self.__class__.__name__)
             return None
 
         HTTPHandler = CreateHTTPHandlerClass(master)
-        httpd = ThreadingSimpleServer(("", self.httpPort), HTTPHandler)
-        logger.info("Serving at port: " + str(self.httpPort))
-        threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        httpd = None
+        try:
+            httpd = ThreadingSimpleServer(("", self.httpPort), HTTPHandler)
+        except OSError as e:
+            logger.error("Unable to start HTTP Server: " + str(e))
 
+        if httpd:
+            logger.info("Serving at port: " + str(self.httpPort))
+            threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        else:
+            self.master.releaseModule("lib.TWCManager.Control", self.__class__.__name__)
 
 def CreateHTTPHandlerClass(master):
     class HTTPControlHandler(BaseHTTPRequestHandler):
@@ -376,7 +383,8 @@ def CreateHTTPHandlerClass(master):
                 value = float(data.get("offsetValue", 0))
                 unit = str(data.get("offsetUnit", ""))
 
-                if (name and value and (unit == "A" or unit == "W") and len(name) < 32):
+                if (name and value and (unit == "A" or unit == "W")
+                    and len(name) < 32 and not self.checkForUnsafeCharactters(name)):
                     if not master.settings.get("consumptionOffset", None):
                         master.settings["consumptionOffset"] = {}
                     master.settings["consumptionOffset"][name] = {}
@@ -493,7 +501,10 @@ def CreateHTTPHandlerClass(master):
                 setting = str(data.get("setting", None))
                 value = str(data.get("value", None))
 
-                master.settings[setting] = value
+                if (setting and value and
+                    not self.checkForUnsafeCharactters(setting) and
+                    not self.checkForUnsafeCharactters(value)):
+                    master.settings[setting] = value
                 self.send_response(204)
                 self.end_headers()
 
@@ -649,7 +660,7 @@ def CreateHTTPHandlerClass(master):
               { "route": "/schedule", "tmpl": "schedule.html.j2" },
               { "route": "/settings", "tmpl": "settings.html.j2" },
               { "rstart": "/vehicleDetail", "tmpl": "vehicleDetail.html.j2" },
-              { "route": "/vehicles", "tmpl": "vehicles.html.j2" } 
+              { "route": "/vehicles", "tmpl": "vehicles.html.j2" }
             ]
 
             if (self.url.path == "/teslaAccount/login" or
@@ -929,6 +940,16 @@ def CreateHTTPHandlerClass(master):
             page += "</tr>"
             return page
 
+        def checkForUnsafeCharactters(self, text):
+            # Detect some unsafe characters in user input
+            # The intention is to minimize the risk of either user input going into the settings file
+            # or a database without pre-sanitization. We'll reject strings with these characters in them.
+            unsafe_characters = '@#$%^&*"+<>;/'
+            if any(c in unsafe_characters for c in s):
+                return True
+            else:
+                return False
+
         def getFieldValue(self, key):
             # Parse the form value represented by key, and return the
             # value either as an integer or string
@@ -1093,8 +1114,8 @@ def CreateHTTPHandlerClass(master):
             # request data - This is because Check Boxes don't have a value
             # if they aren't set
             if page == "debug":
-                  checkboxes = ["enableDebugCommands", 
-                                "spikeAmpsProactively", 
+                  checkboxes = ["enableDebugCommands",
+                                "spikeAmpsProactively",
                                 "spikeAmpsReactively" ]
                   for checkbox in checkboxes:
                       if checkbox not in self.fields:
