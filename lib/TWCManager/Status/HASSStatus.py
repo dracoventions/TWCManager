@@ -2,6 +2,7 @@
 # Publishes the provided sensor key and value pair to a HomeAssistant instance
 
 import logging
+import time
 from ww import f
 
 
@@ -10,7 +11,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 class HASSStatus:
 
-    import time
     import threading
     import requests
 
@@ -75,11 +75,11 @@ class HASSStatus:
 
     def background_task_thread(self):
         while True:
-            self.time.sleep(self.msgRateInSeconds)
+            time.sleep(self.msgRateInSeconds)
             self.backgroundTasksLock.acquire()
             for msgKey in self.msgQueue:
                 msg = self.msgQueue[msgKey]
-                if msg.elapsingTime < self.time.time():
+                if msg.elapsingTime < time.time():
                     self.sendingStatusToHASS(msg)
             self.backgroundTasksLock.release()
 
@@ -91,7 +91,7 @@ class HASSStatus:
         sensor = self.getSensorName(twcid, key_underscore)
         if (sensor not in self.msgQueue) or (self.msgQueue[sensor].value != value):
             self.msgQueue[sensor] = HASSMessage(
-                self.time.time(),
+                time.time(),
                 sensor,
                 twcid,
                 key_underscore,
@@ -155,7 +155,7 @@ class HASSStatus:
                 )
             # Setting elapsing time to now + resendRateInSeconds
             self.msgQueue[msg.sensor].elapsingTime = (
-                self.time.time() + self.resendRateInSeconds
+                time.time() + self.resendRateInSeconds
             )
         except self.requests.exceptions.ConnectionError as e:
             logger.log(
@@ -184,7 +184,7 @@ class HASSStatus:
     def settingRetryRate(self, msg):
         # Setting elapsing time to now + retryRateInSeconds
         self.msgQueue[msg.sensor].elapsingTime = (
-            self.time.time() + self.retryRateInSeconds
+            time.time() + self.retryRateInSeconds
         )
 
 

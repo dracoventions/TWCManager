@@ -1,5 +1,6 @@
 # SolarEdge Monitoring Portal Integration
 import logging
+import time
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
 
@@ -7,7 +8,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 class SolarEdge:
 
     import requests
-    import time
 
     apiKey = None
     # cacheTime is a bit higher than local EMS modules
@@ -137,7 +137,7 @@ class SolarEdge:
 
     def update(self):
 
-        if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
+        if (int(time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from Portal.
 
             # Query for Generation Data, if pollMode is set to 1
@@ -238,7 +238,7 @@ class SolarEdge:
 
             # Update last fetch time
             if self.fetchFailed is not True:
-                self.lastFetch = int(self.time.time())
+                self.lastFetch = int(time.time())
             else:
                 if self.debugMode:
                     with open(self.debugFile, "a+") as file:

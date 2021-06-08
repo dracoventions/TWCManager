@@ -2,6 +2,7 @@
 # Publishes the provided key and value pair to the provided topic prefix
 
 import logging
+import time
 from ww import f
 
 
@@ -10,7 +11,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 class MQTTStatus:
 
-    import time
     import paho.mqtt.client as mqtt
 
     brokerIP = None
@@ -69,12 +69,12 @@ class MQTTStatus:
             # when we last sent a message. If it was less than msgRatePerTopic
             # seconds ago, we dampen it.
             if topic in self.msgRate:
-                if (self.time.time() - self.msgRate[topic]) < self.msgRatePerTopic:
+                if (time.time() - self.msgRate[topic]) < self.msgRatePerTopic:
                     return True
                 else:
-                    self.msgRate[topic] = self.time.time()
+                    self.msgRate[topic] = time.time()
             else:
-                self.msgRate[topic] = self.time.time()
+                self.msgRate[topic] = time.time()
 
             # Now, we push the message that we'd like to send into the
             # list of messages to be published once a connection is established

@@ -1,6 +1,7 @@
 from ww import f
 from datetime import datetime
 import logging
+import re
 import time
 
 
@@ -8,8 +9,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class TWCSlave:
-
-    import re
 
     config = None
     configConfig = None
@@ -127,12 +126,12 @@ class TWCSlave:
             lastAmpsUsed = 0
             ampsUsed = 1
             debugOutputCompare = debugOutput
-            m1 = self.re.search(
+            m1 = re.search(
                 r"SHB ....: .. (..\...)/", self.lastHeartbeatDebugOutput
             )
             if m1:
                 lastAmpsUsed = float(m1.group(1))
-            m2 = self.re.search(r"SHB ....: .. (..\...)/", debugOutput)
+            m2 = re.search(r"SHB ....: .. (..\...)/", debugOutput)
             if m2:
                 ampsUsed = float(m2.group(1))
                 if m1:

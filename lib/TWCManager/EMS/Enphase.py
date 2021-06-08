@@ -1,5 +1,6 @@
 # Enphase Monitoring Portal Integration
 import logging
+import time
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
 
@@ -7,7 +8,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 class Enphase:
 
     import requests
-    import time
 
     apiKey = None
     # cacheTime is a bit higher than local EMS modules
@@ -127,7 +127,7 @@ class Enphase:
 
     def update(self):
 
-        if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
+        if (int(time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from Portal.
 
             portalData = self.getPortalData()
@@ -154,7 +154,7 @@ class Enphase:
 
             # Update last fetch time
             if self.fetchFailed is not True:
-                self.lastFetch = int(self.time.time())
+                self.lastFetch = int(time.time())
 
             return True
         else:

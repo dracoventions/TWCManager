@@ -1,10 +1,9 @@
 # Efergy
-
+import time
 
 class Efergy:
 
     import requests
-    import time
 
     cacheTime = 10
     config = None
@@ -96,7 +95,7 @@ class Efergy:
 
     def update(self):
 
-        if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
+        if (int(time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from Efergy.
 
             meterData = self.getMeterData()
@@ -112,7 +111,7 @@ class Efergy:
 
             # Update last fetch time
             if self.fetchFailed is not True:
-                self.lastFetch = int(self.time.time())
+                self.lastFetch = int(time.time())
 
             return True
         else:

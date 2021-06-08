@@ -22,6 +22,7 @@ This document logs the changes per release of TWCManager.
     * (@ngardiner) - Fix behaviour of Stop Responding to Slaves charge stop mode, by re-enabling slave communication after 60 seconds
     * (@ngardiner) - Fix issues with subtractChargerLoad when using one of the (few) EMS modules which only provide Generation values. Previously, we only subtracted the Charger Load from Consumption which doesn't work in Generation-only measurement environments.
     * (@leeliu) - Fix TWC ID display for Modern theme which was truncating trailing zeros
+    * (@ngardiner) - Fix bug in Stop Responding to Slaves routine caused by incorrect reference to time function
 
 ## v1.2.1 - 2021-04-04
 

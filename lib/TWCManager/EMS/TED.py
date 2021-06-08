@@ -1,5 +1,8 @@
 # The Energy Detective (TED)
 import logging
+import re
+import requests
+import time
 
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
@@ -10,10 +13,6 @@ class TED:
     # I check solar panel generation using an API exposed by The
     # Energy Detective (TED). It's a piece of hardware available
     # at http://www.theenergydetective.com
-
-    import re
-    import requests
-    import time
 
     cacheTime = 10
     config = None
@@ -82,8 +81,8 @@ class TED:
         self.fetchFailed = False
 
         try:
-            r = self.requests.get(url, timeout=self.timeout)
-        except self.requests.exceptions.ConnectionError as e:
+            r = requests.get(url, timeout=self.timeout)
+        except requests.exceptions.ConnectionError as e:
             logger.log(logging.INFO4, "Error connecting to TED to fetch solar data")
             logger.debug(str(e))
             self.fetchFailed = True
@@ -94,7 +93,7 @@ class TED:
 
     def update(self):
 
-        if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
+        if (int(time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from HomeAssistant sensor.
 
             url = "http://" + self.serverIP + ":" + self.serverPort
@@ -103,8 +102,8 @@ class TED:
             value = self.getTEDValue(url)
             m = None
             if value:
-                m = self.re.search(
-                    b"^Solar,[^,]+,-?([^, ]+),", value, self.re.MULTILINE
+                m = re.search(
+                    b"^Solar,[^,]+,-?([^, ]+),", value, re.MULTILINE
                 )
             else:
                 logger.log(logging.INFO5, "Failed to find value in response from TED")
@@ -115,7 +114,7 @@ class TED:
 
             # Update last fetch time
             if self.fetchFailed is not True:
-                self.lastFetch = int(self.time.time())
+                self.lastFetch = int(time.time())
 
             return True
         else:

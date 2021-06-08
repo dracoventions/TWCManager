@@ -1,5 +1,6 @@
 # Tesla Powerwall 2 EMS Module
 import logging
+import time
 
 from ww import f
 
@@ -10,7 +11,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 class TeslaPowerwall2:
 
     import requests
-    import time
     import urllib3
     import json as json
 
@@ -122,7 +122,7 @@ class TeslaPowerwall2:
         # the login details to the Powerwall API, and get an authentication token.
         # If we already have an authentication token, we just use that.
         if self.password is not None:
-            if self.tokenTimeout < self.time.time():
+            if self.tokenTimeout < time.time():
                 logger.log(logging.INFO6, "Logging in to Powerwall API")
                 headers = {"Content-Type": "application/json"}
                 data = {
@@ -149,7 +149,7 @@ class TeslaPowerwall2:
                     return False
 
                 # Time out token after one hour
-                self.tokenTimeout = self.time.time() + (60 * 60)
+                self.tokenTimeout = time.time() + (60 * 60)
 
                 # After authentication, start Powerwall
                 # If we don't do this, the Powerwall will stop working after login
@@ -159,7 +159,7 @@ class TeslaPowerwall2:
                 logger.log(
                     logging.INFO6,
                     "Powerwall2 API token still valid for "
-                    + str(self.tokenTimeout - self.time.time())
+                    + str(self.tokenTimeout - time.time())
                     + " seconds.",
                 )
 
@@ -198,7 +198,7 @@ class TeslaPowerwall2:
             self.lastFetch[path] if path in self.lastFetch else (0, dict())
         )
 
-        if (int(self.time.time()) - lastTime) > self.cacheTime:
+        if (int(time.time()) - lastTime) > self.cacheTime:
 
             # Fetch the specified URL from Powerwall and return the data
 
@@ -225,7 +225,7 @@ class TeslaPowerwall2:
                 return lastData
 
             lastData = r.json()
-            self.lastFetch[path] = (self.time.time(), r.json())
+            self.lastFetch[path] = (time.time(), r.json())
 
         return lastData
 
@@ -245,14 +245,14 @@ class TeslaPowerwall2:
         carapi = self.master.getModuleByName("TeslaAPI")
         token = carapi.getCarApiBearerToken()
         expiry = carapi.getCarApiTokenExpireTime()
-        now = self.time.time()
+        now = time.time()
         key = "CLOUD/live_status"
 
         (lastTime, lastData) = (
             self.lastFetch[key] if key in self.lastFetch else (0, dict())
         )
 
-        if (int(self.time.time()) - lastTime) > self.cloudCacheTime:
+        if (int(time.time()) - lastTime) > self.cloudCacheTime:
 
             if token and now < expiry:
                 headers = {
