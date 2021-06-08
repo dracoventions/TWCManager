@@ -945,7 +945,7 @@ def CreateHTTPHandlerClass(master):
             # The intention is to minimize the risk of either user input going into the settings file
             # or a database without pre-sanitization. We'll reject strings with these characters in them.
             unsafe_characters = '@#$%^&*"+<>;/'
-            if any(c in unsafe_characters for c in s):
+            if any(c in unsafe_characters for c in text):
                 return True
             else:
                 return False
