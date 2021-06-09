@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import json
 import logging
 import os
 import re
@@ -12,7 +13,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class TeslaAPI:
-    import json
 
     authURL = "https://auth.tesla.com/oauth2/v3/authorize"
     callbackURL = "https://auth.tesla.com/void/callback"
@@ -233,8 +233,12 @@ class TeslaAPI:
         try:
             req = requests.post(self.refreshURL, headers=headers, json=data)
             logger.log(logging.INFO2, "Car API request" + str(req))
-            apiResponseDict = self.json.loads(req.text)
+            apiResponseDict = json.loads(req.text)
         except requests.exceptions.RequestException:
+            pass
+        except ValueError:
+            pass
+        except json.decoder.JSONDecodeError:
             pass
 
         try:
@@ -334,12 +338,12 @@ class TeslaAPI:
                 try:
                     req = requests.get(url, headers=headers)
                     logger.log(logging.INFO8, "Car API cmd vehicles " + str(req))
-                    apiResponseDict = self.json.loads(req.text)
+                    apiResponseDict = json.loads(req.text)
                 except requests.exceptions.RequestException:
                     logger.info("Failed to make API call " + url)
                     logger.log(logging.INFO6, "Response: " + req.text)
                     pass
-                except self.json.decoder.JSONDecodeError:
+                except json.decoder.JSONDecodeError:
                     logger.info("Could not parse JSON result from " + url)
                     logger.log(logging.INFO6, "Response: " + req.text)
                     pass
@@ -426,8 +430,10 @@ class TeslaAPI:
                     try:
                         req = requests.post(url, headers=headers)
                         logger.log(logging.INFO8, "Car API cmd wake_up" + str(req))
-                        apiResponseDict = self.json.loads(req.text)
+                        apiResponseDict = json.loads(req.text)
                     except requests.exceptions.RequestException:
+                        pass
+                    except json.decoder.JSONDecodeError:
                         pass
 
                     state = "error"
@@ -770,8 +776,10 @@ class TeslaAPI:
                         logging.INFO8,
                         "Car API cmd charge_" + startOrStop + " " + str(req),
                     )
-                    apiResponseDict = self.json.loads(req.text)
+                    apiResponseDict = json.loads(req.text)
                 except requests.exceptions.RequestException:
+                    pass
+                except json.decoder.JSONDecodeError:
                     pass
 
                 try:
@@ -1111,7 +1119,12 @@ class TeslaAPI:
         # Requests a list of devices we can use for MFA
         url = f("https://auth.tesla.com/oauth2/v3/authorize/mfa/factors?transaction_id={transaction_id}")
         resp = self.session.get(url)
-        content = self.json.loads(resp.text)
+        try:
+            content = json.loads(resp.text)
+        except ValueError:
+            return False
+        except json.decoder.JSONDecodeError:
+            return False
 
         if resp.status_code == 200:
             return content["data"]
@@ -1129,10 +1142,15 @@ class TeslaAPI:
         url = "https://auth.tesla.com/oauth2/v3/authorize/mfa/verify"
         resp = self.session.post(url, json=data)
 
-        json = self.json.loads(resp.text)
+        try:
+            jsonData = json.loads(resp.text)
+        except ValueError:
+            return False
+        except json.decoder.JSONDecodeError:
+            return False
 
-        if "error" in resp.text or not json.get("data", None) or not json["data"].get("approved", None) or not json["data"].get("valid", None):
-            if json.get("error", {}).get("message", None) == "Invalid Attributes: Your passcode should be six digits.":
+        if "error" in resp.text or not jsonData.get("data", None) or not jsonData["data"].get("approved", None) or not jsonData["data"].get("valid", None):
+            if jsonData.get("error", {}).get("message", None) == "Invalid Attributes: Your passcode should be six digits.":
                 return "TokenLengthError"
             else:
                 return "TokenFail"
@@ -1298,12 +1316,14 @@ class CarApiVehicle:
             try:
                 req = requests.get(url, headers=headers)
                 logger.log(logging.INFO8, "Car API cmd " + url + " " + str(req))
-                apiResponseDict = self.json.loads(req.text)
+                apiResponseDict = json.loads(req.text)
                 # This error can happen here as well:
                 #   {'response': {'reason': 'could_not_wake_buses', 'result': False}}
                 # This one is somewhat common:
                 #   {'response': None, 'error': 'vehicle unavailable: {:error=>"vehicle unavailable:"}', 'error_description': ''}
             except requests.exceptions.RequestException:
+                pass
+            except json.decoder.JSONDecodeError:
                 pass
 
             try:
@@ -1419,8 +1439,10 @@ class CarApiVehicle:
                 req = requests.post(url, headers=headers, json=body)
                 logger.log(logging.INFO8, "Car API cmd set_charge_limit " + str(req))
 
-                apiResponseDict = self.json.loads(req.text)
+                apiResponseDict = json.loads(req.text)
             except requests.exceptions.RequestException:
+                pass
+            except json.decoder.JSONDecodeError:
                 pass
 
             result = False

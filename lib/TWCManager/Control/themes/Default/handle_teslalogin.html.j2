@@ -1,6 +1,6 @@
 {% if url.path == "/teslaAccount/False" %}
    <font color='red'>
-     <b>Failed to log in to Tesla Account. Please check username and psssword and try again.</b>
+     <b>Failed to log in to Tesla Account. Please check username and password and try again.</b>
    </font>
 {% elif url.path.startswith("/teslaAccount/MFA") %}
   {% set transaction_id = url.path.split("/")|last %}

@@ -1147,7 +1147,7 @@ def CreateHTTPHandlerClass(master):
                 carapi = master.getModuleByName("TeslaAPI")
                 carapi.resetCarApiLastErrorTime()
                 try:
-                    ret = carapi.car_api_available(
+                    ret = carapi.apiLogin(
                         self.fields["email"][0], self.fields["password"][0]
                     )
                 except KeyError:
