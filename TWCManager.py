@@ -676,6 +676,7 @@ while True:
         # See if there's an incoming message on the input interface.
 
         timeMsgRxStart = time.time()
+        actualDataLen = 0
         while True:
             now = time.time()
             dataLen = master.getInterfaceModule().getBufferLen()
@@ -704,6 +705,7 @@ while True:
                     time.sleep(0.025)
                     continue
             else:
+                actualDataLen = dataLen
                 dataLen = 1
                 data = master.getInterfaceModule().read(dataLen)
 
@@ -714,7 +716,7 @@ while True:
 
             timeMsgRxStart = now
             timeLastRx = now
-            if msgLen == 0 and data[0] != 0xC0:
+            if msgLen == 0 and len(data) > 0 and data[0] != 0xC0:
                 # We expect to find these non-c0 bytes between messages, so
                 # we don't print any warning at standard debug levels.
                 logger.log(
@@ -722,7 +724,7 @@ while True:
                 )
                 ignoredData += data
                 continue
-            elif msgLen > 0 and msgLen < 15 and data[0] == 0xC0:
+            elif msgLen > 0 and msgLen < 15 and len(data) > 0 and data[0] == 0xC0:
                 # If you see this when the program is first started, it
                 # means we started listening in the middle of the TWC
                 # sending a message so we didn't see the whole message and
@@ -740,6 +742,10 @@ while True:
                 msg = data
                 msgLen = 1
                 continue
+            elif dataLen and len(data) == 0:
+                logger.error(
+                    "We recieved a buffer length of %s from the RS485 module, but data buffer length is %s. This should not occur." % (str(actualDataLen), str(len(data)))
+                )
 
             if msgLen == 0:
                 msg = bytearray()
