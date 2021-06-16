@@ -744,7 +744,7 @@ while True:
                 continue
             elif dataLen and len(data) == 0:
                 logger.error(
-                    "We recieved a buffer length of %s from the RS485 module, but data buffer length is %s. This should not occur." % (str(actualDataLen), str(len(data)))
+                    "We received a buffer length of %s from the RS485 module, but data buffer length is %s. This should not occur." % (str(actualDataLen), str(len(data)))
                 )
 
             if msgLen == 0:
