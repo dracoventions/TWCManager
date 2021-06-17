@@ -13,7 +13,7 @@ jobs:
         run: pip3 install --upgrade setuptools
 
       - name: "Build Project"
-        run: CI=1 make build
+        run: CI=1 make webbuild
 
       - name: "Install Legacy Web Files"
         run: make webfiles
@@ -38,7 +38,7 @@ jobs:
         run: pip3 install --upgrade setuptools
 
       - name: "Build Project"
-        run: CI=1 make build
+        run: CI=1 make webbuild
 
       - name: "Install Legacy Web Files"
         run: make webfiles
@@ -63,7 +63,7 @@ jobs:
         run: pip3 install --upgrade setuptools
 
       - name: "Build Project"
-        run: CI=1 make build
+        run: CI=1 make webbuild
 
       - name: "Install Legacy Web Files"
         run: make webfiles
@@ -85,7 +85,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: "Build Project"
-        run: CI=1 make build
+        run: CI=1 make webbuild
 
       - name: "Install Legacy Web Files"
         run: make webfiles

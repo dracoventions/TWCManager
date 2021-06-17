@@ -6,6 +6,7 @@ VER := $(shell lsb_release -sr)
 .PHONY: tests upload
 
 build: deps setup
+webbuild: webdeps setup
 
 config:
 	# Create configuration directory
