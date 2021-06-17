@@ -45,8 +45,8 @@ endif
 	$(SUDO) lighty-enable-mod fastcgi-php ; exit 0
 	$(SUDO) service lighttpd force-reload ; exit 0
 
-install: deps setup webfiles config
-webinstall: webdeps setup webfiles config
+install: deps setup config
+webinstall: webdeps setup config webfiles
 
 testconfig:
 	# Create configuration directory
