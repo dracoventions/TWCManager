@@ -49,13 +49,16 @@ install: deps setup config
 webinstall: webdeps setup config webfiles
 
 testconfig:
+	# Create twcmanager user and group
+	id -u $(USER) &>/dev/null || $(SUDO) useradd -U -M $(USER)
+
 	# Create configuration directory
 	$(SUDO) mkdir -p /etc/twcmanager
 ifeq (,$(wildcard /etc/twcmanager/config.json))
 	$(SUDO) cp etc/twcmanager/.testconfig.json /etc/twcmanager/config.json
 endif
 	$(SUDO) chown 1000:1000 /etc/twcmanager -R
-	$(SUDO) chmod 775 /etc/twcmanager
+	$(SUDO) chmod 755 /etc/twcmanager
 
 setup:
 	# Install TWCManager packages
