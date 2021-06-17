@@ -1,6 +1,8 @@
 DEPS := screen git libffi-dev libssl-dev
 WEBDEPS := $(DEPS) lighttpd
 SUDO := sudo
+USER := twcmanager
+GROUP := twcmanager
 VER := $(shell lsb_release -sr)
 
 .PHONY: tests upload
@@ -9,13 +11,16 @@ build: deps setup
 webbuild: webdeps setup
 
 config:
+	# Create twcmanager user and group
+	id -u $(USER) &>/dev/null || $(SUDO) useradd -U -M $(USER)
+
 	# Create configuration directory
 	$(SUDO) mkdir -p /etc/twcmanager
 ifeq (,$(wildcard /etc/twcmanager/config.json))
 	$(SUDO) cp etc/twcmanager/config.json /etc/twcmanager/
 endif
-	$(SUDO) chown root:pi /etc/twcmanager -R
-	$(SUDO) chmod 775 /etc/twcmanager
+	$(SUDO) chown $(USER):$(GROUP) /etc/twcmanager -R
+	$(SUDO) chmod 755 /etc/twcmanager
 
 deps:
 	$(SUDO) apt-get update
@@ -77,4 +82,4 @@ webfiles:
 	$(SUDO) cp html/* /var/www/html/
 	$(SUDO) chown -R www-data:www-data /var/www/html
 	$(SUDO) chmod -R 755 /var/www/html
-	$(SUDO) usermod -a -G www-data pi
+	$(SUDO) usermod -a -G www-data $(USER)

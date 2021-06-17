@@ -1,4 +1,4 @@
-all: general_prereqs mqtt_setup mysql_setup run_twcmanager wait api ems
+all: general_prereqs mqtt_setup mysql_setup run_twcmanager wait preflight api ems
 
 bold:=$(shell tput -T ansi bold)
 red:=$(shell tput -T ansi setaf 1)
@@ -7,7 +7,7 @@ yellow:=$(shell tput -T ansi setaf 3)
 
 api := 10
 ems := 2
-pre := 6
+pre := 7
 
 general_prereqs:
 	@echo "${bold}${red}(P1/${pre})${reset} ${yellow}Installing Prerequisites for Test Suite"
@@ -65,6 +65,11 @@ ems:
 	@cd EMS && ./ems_emulator.py &
 	@echo "${bold}${red}(E2/${ems})${reset} ${yellow}Testing SmartPi EMS Module"
 	cd EMS && ./test_SmartPi.py
+
+preflight:
+	@echo "${bold}${red}(P7/${pre})${reset} ${yellow}Testing file existence and permissions"
+	@cd pre-flight && ./check_environment.py
+	ls -l /etc/twcmanager
 
 wait:
 	@echo "${bold}${red}(M2/2)${reset} ${yellow}Wait for TWCManager to start"
