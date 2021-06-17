@@ -6,18 +6,18 @@ Install Docker (and docker-compose) on your target machine, and fetch the TWCMan
 
 ```
 sudo apt-get update
-sudo apt-get install -y git docker.io
+sudo apt-get install -y docker.io
 
 pip3 install docker-compose
-git clone https://github.com/ngardiner/TWCManager
-cd TWCManager
+
+curl https://raw.githubusercontent.com/ngardiner/TWCManager/main/contrib/docker/docker-compose.yml -o docker-compose.yml
 ```
 
 ### Note
 
 The instructions below will result in the **latest** version of the TWCManager code being run. This is development code and may not be stable, but will provide access to the newer features. The **latest** image is automatically updated every time that new features or fixes are added to TWCManager, and will change regularly.
 
-If you would like to opt for a more stable version, edit the ```contrib/docker/docker-compose.yml``` file and modify the following line:
+If you would like to opt for a more stable version, edit the ```docker-compose.yml``` file and modify the following line:
 
 ```
 image: twcmanager/twcmanager:latest

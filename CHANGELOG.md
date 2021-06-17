@@ -2,7 +2,14 @@
 
 This document logs the changes per release of TWCManager.
 
-## v1.2.2 - Current development branch
+## v1.2.3 - Current development version
+
+  * **NOTE**: v1.2.3 contains a potentially breaking change for users of OpenWB or the Legacy Web Interface
+     * As of v1.2.3, the Legacy Web Interface and its dependencies such as lighttpd and php are no longer installed by default.
+     * Please see the documentation for instructions on how to install it, if required. Most users will not need this.
+  * (@Saftwerk) - Add both Generation and Consumption support to Volkszahler EMS module
+
+## v1.2.2 - 2021-06-09
 
   * (@ngardiner) - Added SmartPi EMS interface
   * (@Saftwerk, @ngardiner) - Added Volkszahler EMS interface

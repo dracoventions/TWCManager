@@ -1,4 +1,5 @@
-DEPS := lighttpd screen git libffi-dev libssl-dev
+DEPS := screen git libffi-dev libssl-dev
+WEBDEPS := $(DEPS) lighttpd
 SUDO := sudo
 VER := $(shell lsb_release -sr)
 
@@ -17,24 +18,29 @@ endif
 
 deps:
 	$(SUDO) apt-get update
+	$(SUDO) apt-get install -y $(DEPS)
+
+webdeps:
+	$(SUDO) apt-get update
 
 ifeq ($(VER), 9.11)
-	$(SUDO) apt-get install -y $(DEPS) php7.0-cgi
+	$(SUDO) apt-get install -y $(WEBDEPS) php7.0-cgi
 else ifeq ($(VER), stretch)
-	$(SUDO) apt-get install -y $(DEPS) php7.0-cgi
+	$(SUDO) apt-get install -y $(WEBDEPS) php7.0-cgi
 else ifeq ($(VER), 16.04)
-	$(SUDO) apt-get install -y $(DEPS) php7.0-cgi
+	$(SUDO) apt-get install -y $(WEBDEPS) php7.0-cgi
 else ifeq ($(VER), 16.10)
-	$(SUDO) apt-get install -y $(DEPS) php7.0-cgi
+	$(SUDO) apt-get install -y $(WEBDEPS) php7.0-cgi
 else ifeq ($(VER), 20.04)
-	$(SUDO) apt-get install -y $(DEPS) php7.4-cgi
+	$(SUDO) apt-get install -y $(WEBDEPS) php7.4-cgi
 else
-	$(SUDO) apt-get install -y $(DEPS) php7.3-cgi
+	$(SUDO) apt-get install -y $(WEBDEPS) php7.3-cgi
 endif
 	$(SUDO) lighty-enable-mod fastcgi-php ; exit 0
 	$(SUDO) service lighttpd force-reload ; exit 0
 
 install: deps setup webfiles config
+webinstall: webdeps setup webfiles config
 
 testconfig:
 	# Create configuration directory
