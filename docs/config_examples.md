@@ -28,3 +28,87 @@ This will have the following effect:
 The below shows an illustration of how this configuration improves the effeciency of this setup, by starting charging after the orange band (which is 5kW of generation) and stopping it at the same point at the end of the day. This results in avoiding the loss of exports between the orange (5kW) and green (5kW + 6A minAmpsPerTWC) bands.
 
 [Illustration of Charge Curve](charge_curve.png)
+
+## Multiple USB Serial Devices
+
+The following advice was contributed by @Saftwerk, and explains how to map a particular USB to Serial Device to a given device name to avoid issues with re-enumeration of devices:
+
+List all USB devices:
+`ls -l /dev/*USB*`
+```
+crw-rw---- 1 root dialout 188, 0 Jun 16 17:34 /dev/ttyUSB0
+crw-rw---- 1 root dialout 188, 1 Jun 16 17:34 /dev/ttyUSB1
+crw-rw---- 1 root dialout 188, 2 Jun 16 17:34 /dev/ttyUSB2
+```
+If you have only one entry, then you don't need this fix, but you can be prepared for future.
+
+List infos about a device:
+`/sbin/udevadm info --query=all --name=/dev/ttyUSB2`
+```
+P: /devices/platform/soc/3f980000.usb/usb1/1-1/1-1.4/1-1.4:1.0/ttyUSB2/tty/ttyUSB2
+N: ttyUSB2
+L: 0
+S: serial/by-path/platform-3f980000.usb-usb-0:1.4:1.0-port0
+S: serial/by-id/usb-1a86_USB2.0-Ser_-if00-port0
+E: DEVPATH=/devices/platform/soc/3f980000.usb/usb1/1-1/1-1.4/1-1.4:1.0/ttyUSB2/tty/ttyUSB2
+E: DEVNAME=/dev/ttyUSB2
+E: MAJOR=188
+E: MINOR=2
+E: SUBSYSTEM=tty
+E: USEC_INITIALIZED=5776874
+E: ID_VENDOR=1a86
+E: ID_VENDOR_ENC=1a86
+E: ID_VENDOR_ID=1a86
+E: ID_MODEL=USB2.0-Ser_
+E: ID_MODEL_ENC=USB2.0-Ser\x21
+E: ID_MODEL_ID=7523
+E: ID_REVISION=0254
+E: ID_SERIAL=1a86_USB2.0-Ser_
+E: ID_TYPE=generic
+E: ID_BUS=usb
+E: ID_USB_INTERFACES=:ff0102:
+E: ID_USB_INTERFACE_NUM=00
+E: ID_USB_DRIVER=ch341
+E: ID_USB_CLASS_FROM_DATABASE=Vendor Specific Class
+E: ID_VENDOR_FROM_DATABASE=QinHeng Electronics
+E: ID_MODEL_FROM_DATABASE=HL-340 USB-Serial adapter
+E: ID_PATH=platform-3f980000.usb-usb-0:1.4:1.0
+E: ID_PATH_TAG=platform-3f980000_usb-usb-0_1_4_1_0
+E: DEVLINKS=/dev/serial/by-path/platform-3f980000.usb-usb-0:1.4:1.0-port0 /dev/serial/by-id/usb-1a86_USB2.0-Ser_-if00-port0
+E: TAGS=:systemd:
+```
+From the list choose a name like `ID_SERIAL` , wich would have a unique value from other USB devices.
+
+Edit a rules file:
+`sudo nano /etc/udev/rules.d/99-com.rules`
+and append a new SUBSYSTEM line with your ID_SERIAL like my template which has now 3 lines:
+```
+....<truncared>....
+	elif cmp -s $ALIASES/uart1 $ALIASES/serial1; then \
+		echo 1; \
+	else \
+		exit 1; \
+	fi \
+'", SYMLINK+="serial%c"
+
+SUBSYSTEM=="tty", ENV{ID_SERIAL_SHORT}=="00F31F50", SYMLINK+="lesekopf0" 
+SUBSYSTEM=="tty", ENV{ID_SERIAL_SHORT}=="00F32228", SYMLINK+="lesekopf1"
+SUBSYSTEM=="tty", ENV{ID_SERIAL}=="1a86_USB2.0-Ser_", SYMLINK+="USB_TWC"
+
+```
+Notes:
+Keep an empty line at the very end.
+If you replace the RS485 converter, then you have to edit this file again.
+
+Now apply the changed rule:
+`sudo udevadm trigger`
+
+and verify the new entry:
+`ls -l /dev/*USB*`
+```
+crw-rw---- 1 root dialout 188, 0 Jun 16 17:34 /dev/ttyUSB0
+crw-rw---- 1 root dialout 188, 1 Jun 16 17:34 /dev/ttyUSB1
+crw-rw---- 1 root dialout 188, 2 Jun 16 17:34 /dev/ttyUSB2
+lrwxrwxrwx 1 root root         7 Jun 16 17:34 /dev/USBTWC -> ttyUSB2
+```
+Now you can use in `config.json` the new name `"port": "/dev/USBTWC"`
