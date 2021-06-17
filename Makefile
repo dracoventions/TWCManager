@@ -12,7 +12,7 @@ webbuild: webdeps setup
 
 config:
 	# Create twcmanager user and group
-	id -u $(USER) &>/dev/null || $(SUDO) useradd -U -M $(USER)
+	$(SUDO) useradd -U -M $(USER) 2>/dev/null
 
 	# Create configuration directory
 	$(SUDO) mkdir -p /etc/twcmanager
@@ -50,7 +50,7 @@ webinstall: webdeps setup config webfiles
 
 testconfig:
 	# Create twcmanager user and group
-	id -u $(USER) &>/dev/null || $(SUDO) useradd -U -M $(USER)
+	$(SUDO) useradd -U -M $(USER) 2>/dev/null
 
 	# Create configuration directory
 	$(SUDO) mkdir -p /etc/twcmanager

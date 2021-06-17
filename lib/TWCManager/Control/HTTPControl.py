@@ -467,6 +467,11 @@ def CreateHTTPHandlerClass(master):
                     self.end_headers()
                     self.wfile.write("".encode("utf-8"))
 
+            elif self.url.path == "/api/saveSettings":
+                master.queue_background_task({"cmd": "saveSettings"})
+                self.send_response(204)
+                self.end_headers()
+
             elif self.url.path == "/api/sendDebugCommand":
                 data = json.loads(self.post_data.decode("UTF-8"))
                 packet = {
