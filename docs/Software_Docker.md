@@ -2,7 +2,9 @@
 
 ## Docker Installation
 
-Install Docker (and docker-compose) on your target machine, and fetch the TWCManager Git repository with the following commands:
+### Using the Latest Image (development version)
+
+These instructions will result in the **latest** version of the TWCManager code being run. This is development code and may not be stable, but will provide access to the newer features. The **latest** image is automatically updated every time that new features or fixes are added to TWCManager, and will change regularly.
 
 ```
 sudo apt-get update
@@ -13,23 +15,20 @@ pip3 install docker-compose
 curl https://raw.githubusercontent.com/ngardiner/TWCManager/main/contrib/docker/docker-compose.yml -o docker-compose.yml
 ```
 
-### Note
+### Using Stable Versions (Recommended)
 
-The instructions below will result in the **latest** version of the TWCManager code being run. This is development code and may not be stable, but will provide access to the newer features. The **latest** image is automatically updated every time that new features or fixes are added to TWCManager, and will change regularly.
-
-If you would like to opt for a more stable version, edit the ```docker-compose.yml``` file and modify the following line:
+If you would like to opt for a more stable version, specify the version of TWCmanager that you would like to use. For example, to use the latest Stable version **v1.2.2**, use the following commands:
 
 ```
-image: twcmanager/twcmanager:latest
+sudo apt-get update
+sudo apt-get install -y docker.io
+
+pip3 install docker-compose
+
+curl https://raw.githubusercontent.com/ngardiner/TWCManager/main/contrib/docker/docker-compose-v1.2.2.yml -o docker-compose.yml
 ```
 
-to reference the specific version of TWCManager that you would like to run, for example:
-
-```
-image: twcmanager/twcmanager:v1.2.1
-```
-
-## Configuring TWCManager in Docker
+## Configuring TWCManager for Docker
 
 You may need to perform some configuration of TWCManager in your environment.
 
@@ -78,14 +77,34 @@ twcmanager_1  |          Charge when above <b>6A</b> (minAmpsPerTWC).
 
 ## Upgrading TWCManager
 
-To upgrade the version of TWCManager that you are running under Docker, execute
-the following commands:
+### Using the Latest Image
+
+The latest image gives you up to the minute access to TWCManager features and changes. This includes changes that may not be fully tested or could break functions that were previously working. We try to keep these to a minimum by testing prior to merging these changes, but if stability is important to you we recommend a stable version instead.
+
+If you are using the ```latest``` Docker image instead of the current Stable version, you can fetch the latest TWCManager updates by executing the following commands:
 
 ```
-git pull
-docker-compose -f contrib/docker/docker-compose.yml down
-docker-compose -f contrib/docker/docker-compose.yml pull
-docker-compose -d -f contrib/docker/docker-compose.yml up
+docker-compose -f docker-compose.yml down
+docker-compose -f docker-compose.yml pull
+docker-compose -d -f docker-compose.yml up
+```
+
+You can tell if you are running the latest image vs a stable release with the following command:
+
+```
+grep -q :latest docker-compose.yml; [[ $? -eq 1 ]] && echo "Stable Version" || echo "Latest Image"
+```
+
+### Using a Stable version
+
+If you are running a stable version of the Docker Image, you can upgrade to the latest stable version **v1.2.2** with the following commands:
+
+```
+docker-compose -f docker-compose.yml down
+
+curl https://raw.githubusercontent.com/ngardiner/TWCManager/main/contrib/docker/docker-compose-v1.2.2.yml -o docker-compose.yml
+docker-compose -f docker-compose.yml pull
+docker-compose -d -f docker-compose.yml up
 ```
 
 ## Stopping TWCManager
