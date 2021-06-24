@@ -80,18 +80,13 @@
                         var twc = '#' + slvtwc['TWCID']
                         Object.keys(slvtwc).forEach(function(key) {
                           $(twc+'_'+key).html(slvtwc[key]);
-                          if (key === 'currentVIN' && slvtwc[key] === '') {
-                            $(twc+'_'+socState).hide();
-                            if (key === 'lastVIN' && slvtwc[key] !== '') {
-                                $(twc+'_'+lastSocState).html($(twc+'_'+socState).html());
-                                $(twc+'_'+lastSocState).show();
-                            }
-                          } else {
-                                $(twc+'_'+socState).show();
-                                $(twc+'_'+lastSocState).hide();
+                          if (key === 'lastBatterySOC' && slvtwc[key] === '') {
+                              //no SOC data
+                              $(twc+'__socState').hide();
                           }
                         });
                     });
+                    
 		            var chargerAvailAmps = 0;
 		            var tot = json['total'];
 		            chargerAvailAmps = parseFloat(tot['lastAmpsOffered']);
