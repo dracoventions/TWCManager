@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from grp import getgrname
+from grp import getgrnam
 from pwd import getpwnam
 import os
 import subprocess
