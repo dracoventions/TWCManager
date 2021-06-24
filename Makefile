@@ -57,7 +57,7 @@ testconfig:
 ifeq (,$(wildcard /etc/twcmanager/config.json))
 	$(SUDO) cp etc/twcmanager/.testconfig.json /etc/twcmanager/config.json
 endif
-	$(SUDO) chown 1000:1000 /etc/twcmanager -R
+	$(SUDO) chown $(USER):$(GROUP) /etc/twcmanager -R
 	$(SUDO) chmod 755 /etc/twcmanager
 
 setup:

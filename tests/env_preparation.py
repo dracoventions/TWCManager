@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
+from grp import getgrname
+from pwd import getpwnam
 import os
 import subprocess
 
 #print("Create files")
-gid = 1000
-uid = 1000
+gid = getgrnam('twcmanager').gr_gid
+uid = getpwnam('twcmanager').pw_uid
 os.makedirs("/etc/twcmanager/csv", exist_ok=True)
 os.chown("/etc/twcmanager/csv", uid, gid)
 
