@@ -198,13 +198,13 @@ def CreateHTTPHandlerClass(master):
 
             return page
 
-        def navbar_item(self, url, name):
+        def navbar_item(self, url, name, target="_self"):
             active = ""
             urlp = urllib.parse.urlparse(self.path)
             if urlp.path == url:
                 active = "active"
             page = "<li class='nav-item %s'>" % active
-            page += "<a class='nav-link' href='%s'>%s</a>" % (url, name)
+            page += "<a class='nav-link' target='%s' href='%s'>%s</a>" % (target, url, name)
             page += "</li>"
             return page
 
