@@ -368,10 +368,11 @@ class TWCMaster:
         return self.slaveSign
 
     def getStatus(self):
-
+        chargerLoad = float(self.getChargerLoad())
         data = {
             "carsCharging": self.num_cars_charging_now(),
-            "chargerLoadWatts": "%.2f" % float(self.getChargerLoad()),
+            "chargerLoadWatts": "%.2f" % chargerLoad,
+            "chargerLoadAmps:": ("%.2f" % self.convertWattsToAmps(chargerLoad),),
             "currentPolicy": str(self.getModuleByName("Policy").active_policy),
             "maxAmpsToDivideAmongSlaves": "%.2f"
             % float(self.getMaxAmpsToDivideAmongSlaves()),
