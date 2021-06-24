@@ -66,8 +66,33 @@ Below is an analysis of Firmware 21.18.1, looking for details around connectivit
   * /access
   * /alerts
   * /api/1/lifetime
+  * /api/1/version
   * /api/1/vitals
+
+```
+{
+  "contactor_closed":false,
+  "vehicle_connected":false,
+  "session_s":0,
+  "grid_v":232.0,
+  "grid_hz":50.020,"vehicle_current_a":0.4,"currentA_a":0.2,"currentB_a":0.4,"currentC_a":0.2,"currentN_a":0.3,"voltageA_v":0.0,"voltageB_v":4.9,"voltageC_v":0.0,"relay_coil_v":12.0,"pcba_temp_c":29.0,"handle_temp_c":22.1,"mcu_temp_c":34.9,"uptime_s":190,"input_thermopile_uv":-204,"prox_v":0.0,"pilot_high_v":11.9,"pilot_low_v":11.9,"session_energy_wh":0.000,"config_status":5,"evse_state":1,"current_alerts":[]}
+```
+
   * /api/1/wifi_status
+
+```
+{
+  "wifi_ssid":"redacted",
+  "wifi_signal_strength":36,
+  "wifi_rssi":-72,
+  "wifi_snr":22,
+  "wifi_connected":true,
+  "wifi_infra_ip":"192.168.xxx.xx",
+  "internet":true,
+  "wifi_mac":"xx:xx:xx:xx:xx:xx"
+}
+```
+
   * /error/public
   * /error/unauthenticated
   * /fwupdate
@@ -79,3 +104,9 @@ Below is an analysis of Firmware 21.18.1, looking for details around connectivit
   * /update (triggers firmware update)
   * /wifi
 
+## Useful References
+
+   * https://teslamotorsclub.com/tmc/threads/new-wall-connector-load-sharing-protocol.72830/page-26#post-4502118
+   * https://www.tesla.com/support/gen-3-wall-connector-power-sharing
+   * https://github.com/ngardiner/TWCManager/issues/292
+   * https://teslamotorsclub.com/tmc/threads/gen3-wall-connector-api.228034/
