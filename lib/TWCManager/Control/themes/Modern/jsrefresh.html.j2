@@ -25,9 +25,6 @@
                         }
                         $('#'+key).html(json[key]);
                     });
-		    var chargingAmps = 0;
-		    chargingAmps = parseFloat(json['chargerLoadAmps']);
-		    $('#chargerLoadAmps').html(chargingAmps.toFixed(2));
 
                     // calculate power surplus
                     var surplusAmps = 0.0;
