@@ -8,6 +8,7 @@ This document logs the changes per release of TWCManager.
      * As of v1.2.3, the Legacy Web Interface and its dependencies such as lighttpd and php are no longer installed by default.
      * Please see the documentation for instructions on how to install it, if required. Most users will not need this.
   * (@Saftwerk) - Add both Generation and Consumption support to Volkszahler EMS module
+  * (@VIDGuide) - Improvements to the Modern UI - Show charger load and offered amps, and open GitHub link in a new window.
 
 ## v1.2.2 - 2021-06-09
 

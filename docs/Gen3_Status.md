@@ -27,7 +27,7 @@ Unfortunately, the TWC Gen 3 is not currently compatible with TWCManager. In its
    * The Gen 3 TWC physically possesses a single (vs the pair in the TWC Gen 2) RX/TX terminal for RS485
       * It does not appear to be activated. Owners of Gen3 units have connected RS485 adapters to their Gen3 RS485 terminals and 
 
-   * The Gen 3 TWC **can** be configured via WiFi, including the maximum amps for the unit, but this is a First Time configuration wizard and becomes unavailable after a period of time, it also resets the TWC each time the maximum amps are configured, so it does not appear to be useful for this purpose
+   * The Gen 3 TWC **can** be configured via WiFi, including the maximum amps for the unit, but this is a First Time installation wizard and becomes unavailable after a period of time (~ 5 minutes reportedly), so it does not appear to be useful for this purpose
 
 ### It has WiFi, so it can receive over the air (OTA) updates
 
