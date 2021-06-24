@@ -372,7 +372,7 @@ class TWCMaster:
         data = {
             "carsCharging": self.num_cars_charging_now(),
             "chargerLoadWatts": "%.2f" % chargerLoad,
-            "chargerLoadAmps:": ("%.2f" % self.convertWattsToAmps(chargerLoad),),
+            "chargerLoadAmps": ("%.2f" % self.convertWattsToAmps(chargerLoad),),
             "currentPolicy": str(self.getModuleByName("Policy").active_policy),
             "maxAmpsToDivideAmongSlaves": "%.2f"
             % float(self.getMaxAmpsToDivideAmongSlaves()),
