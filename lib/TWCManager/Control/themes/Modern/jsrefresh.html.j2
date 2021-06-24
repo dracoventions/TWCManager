@@ -25,6 +25,9 @@
                         }
                         $('#'+key).html(json[key]);
                     });
+		    var chargingAmps = 0;
+		    chargingAmps = parseFloat(json['chargerLoadAmps']);
+		    $('#chargerLoadAmps').html(chargingAmps.toFixed(2));
 
                     // calculate power surplus
                     var surplusAmps = 0.0;
@@ -82,6 +85,10 @@
                           $(twc+'_'+key).html(slvtwc[key]);
                         });
                     });
+		    var chargerAvailAmps = 0;
+		    var tot = json['total'];
+		    chargerAvailAmps = parseFloat(tot['lastAmpsOffered']);
+		    $('#chargerAvailAmps').html(chargerAvailAmps.toFixed(2));
                 }
             });
             setTimeout(requestSlaves, 3000);
