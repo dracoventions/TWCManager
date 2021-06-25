@@ -20,7 +20,7 @@ ifeq (,$(wildcard /etc/twcmanager/config.json))
 	$(SUDO) cp etc/twcmanager/config.json /etc/twcmanager/
 endif
 	$(SUDO) chown $(USER):$(GROUP) /etc/twcmanager -R
-	$(SUDO) chmod 755 /etc/twcmanager
+	$(SUDO) chmod 755 /etc/twcmanager -R
 
 deps:
 	$(SUDO) apt-get update
@@ -58,7 +58,7 @@ ifeq (,$(wildcard /etc/twcmanager/config.json))
 	$(SUDO) cp etc/twcmanager/.testconfig.json /etc/twcmanager/config.json
 endif
 	$(SUDO) chown $(USER):$(GROUP) /etc/twcmanager -R
-	$(SUDO) chmod 755 /etc/twcmanager
+	$(SUDO) chmod 755 /etc/twcmanager -R
 
 setup:
 	# Install TWCManager packages

@@ -9,6 +9,7 @@ This document logs the changes per release of TWCManager.
      * Please see the documentation for instructions on how to install it, if required. Most users will not need this.
   * (@Saftwerk) - Add both Generation and Consumption support to Volkszahler EMS module
   * (@VIDGuide) - Improvements to the Modern UI - Show charger load and offered amps, and open GitHub link in a new window.
+  * (@VIDGuide) - Add SoC % to Modern UI interface, and display charge time indicator per TWC
 
 ## v1.2.2 - 2021-06-09
 
