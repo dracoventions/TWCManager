@@ -52,20 +52,21 @@ To enable TWCManager to gather the solar generation information that it requires
 
 EMS Interfaces read solar generation and/or consumption values from an external system. Current EMS interfaces are:
 
-| Platform         | Status        | Details                 |
-| ---------------- | ------------- | ----------------------- |
+| Platform                      | Status        | Details                 |
+| ----------------------------- | ------------- | ----------------------- |
 | Dutch SmartMeter | In Development | Supports DSMR Serial Protocol |
-| [Efergy](docs/modules/EMS_Efergy.md)       | Available | Supports Efergy Pro Sensors |
-| [Enphase](docs/modules/EMS_Enphase.md)     | Available | Supports Enphase Enlighten API |
+| [Efergy](docs/modules/EMS_Efergy.md)            | Available | Supports Efergy Pro Sensors |
+| [Enphase](docs/modules/EMS_Enphase.md)          | Available | Supports Enphase Enlighten API |
 | [Fronius Inverter](docs/modules/EMS_Fronius.md) | Available | Supports Fronius Inverter API |
-| [HomeAssistant](docs/modules/EMS_HASS.md)  | Available | Supports HomeAssistant sensors |
+| Growatt         | Available  | Support for Growatt Inverters |
+| [HomeAssistant](docs/modules/EMS_HASS.md)       | Available | Supports HomeAssistant sensors |
 | [Kostal (Pico/Plenticore)](docs/modules/EMS_Kostal.md) | Available | Support for Kostal Inverters via ModBus |
-| [openHAB](docs/modules/EMS_OpenHab.md) | Available | Supports openHAB items |
+| [openHAB](docs/modules/EMS_OpenHab.md)          | Available | Supports openHAB items |
 | [OpenWeatherMap](docs/modules/EMS_OpenWeatherMap.md) | Available | Supports OpenWeatherMap forecast-based tracking where inverter EMS is not available. |
-| [SmartMe](docs/modules/EMS_SmartMe.md)     | Available | Support for smart-me.com API |
-| [SmartPi](docs/modules/EMS_SmartPi.md)     | Available | Support for SmartPi Smart Meter |
-| [SolarEdge](docs/modules/EMS_SolarEdge.md) | Available | Support for SolarEdge API |
-| [SolarLog](docs/modules/EMS_SolarLog.md)   | Available | Supports SolarLog Base API |
+| [SmartMe](docs/modules/EMS_SmartMe.md)          | Available | Support for smart-me.com API |
+| [SmartPi](docs/modules/EMS_SmartPi.md)          | Available | Support for SmartPi Smart Meter |
+| [SolarEdge](docs/modules/EMS_SolarEdge.md)      | Available | Support for SolarEdge API |
+| [SolarLog](docs/modules/EMS_SolarLog.md)        | Available | Supports SolarLog Base API |
 | [Tesla Powerwall2](docs/modules/EMS_Powerwall2.md) | Available | Support for Tesla Powerwall 2 |
 | [The Energy Detective](docs/modules/EMS_TED.md) | Available | Support for TED (The Energy Detective) |
 | [Volkszähler](docs/modules/EMS_Volkszahler.md)  | Available | Support for Volkszahler |
@@ -76,28 +77,28 @@ Logging interfaces allow recording of statistics and values such as Green Energy
 
 This can be useful if you would like to track charger activity and use it for graphing or statistics purposes.
 
-| Module                            | Details  |
-| --------------------------------- | -------- |
-| [Console](docs/modules/Logging_Console.md) | Print output to console |
-| [CSV](docs/modules/Logging_CSV.md)         | Log data to CSV files |
-| [Files](docs/modules/Logging_Files.md)   | Log data to a log files |
-| [MySQL](docs/modules/Logging_MySQL.md)     | Log data to a MySQL Database |
-| [Sentry](docs/modules/Logging_Sentry.md)   | Log data to a Sentry project |
+| Module                                     | Details                       |
+| ------------------------------------------ | --------------------------    |
+| [Console](docs/modules/Logging_Console.md) | Print output to console       |
+| [CSV](docs/modules/Logging_CSV.md)         | Log data to CSV files         |
+| [Files](docs/modules/Logging_Files.md)     | Log data to a log files       |
+| [MySQL](docs/modules/Logging_MySQL.md)     | Log data to a MySQL Database  |
+| [Sentry](docs/modules/Logging_Sentry.md)   | Log data to a Sentry project  |
 | [SQLite](docs/modules/Logging_SQLite.md)   | Log data to a SQLite Database |
 
 ### Status Interfaces
 
 Status interfaces publish TWCManager status information to external systems. Current Status interfaces are:
 
-| Platform                      | Details                 |
-| ----------------------------- | ----------------------- |
+| Platform                                     | Details                 |
+| -------------------------------------------- | ----------------------- |
 | [HomeAssistant](docs/modules/Status_HASS.md) | Provides HASS sensors to monitor TWCManager State |
-| [MQTT](docs/modules/Status_MQTT.md) | Publishes MQTT topics to monitor TWCManager State |
+| [MQTT](docs/modules/Status_MQTT.md)          | Publishes MQTT topics to monitor TWCManager State |
 
 ### Vehicle Interfaces
 
-| Platform    | Details                 |
-| ----------- | ----------------------- |
+| Platform    | Details                                  |
+| ----------- | ---------------------------------------- |
 | TeslaAPI    | Allows start/stop charging via Tesla API |
 
 ## Warnings
