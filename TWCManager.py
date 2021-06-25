@@ -90,6 +90,7 @@ modules_available = [
     "EMS.Efergy",
     "EMS.Enphase",
     "EMS.Fronius",
+    "EMS.Growatt",
     "EMS.HASS",
     "EMS.Kostal",
     "EMS.OpenHab",

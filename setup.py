@@ -13,6 +13,7 @@ setup(
         "commentjson < 0.9.0; python_version < '3.6'",
         "commentjson >= 0.8.3; python_version >= '3.6'",
         "cryptography==2.1.4",
+        "growattServer>=1.0.0",
         "jinja2==2.11.2",
         "MarkupSafe < 2.0.0; python_version < '3.6'",
         "ocpp",

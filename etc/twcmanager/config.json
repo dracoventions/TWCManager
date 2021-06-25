@@ -470,6 +470,18 @@
             "enabled": false,
             "serverIP": "192.168.1.2"
         },
+        # Growatt: Uses a Growatt pypi package to very easily pull the data
+        # useBatteyAt describes at whihc SOC the system will add the battery's maxOutput to the pool of available power
+        # batteryMaxOutput is the maximum watt that the battery will output calculated by dividing battery Wh in two,
+        # in my case that's 9600wh and half of that is 4800
+        "Growatt": {
+            "enabled": false,
+            "username":"username",
+      	    "password":"password",
+	          "useBatteryAt":"80", 
+	          "batteryMaxOutput":"4800",
+	          "useBatteryBefore":"15:00"
+        },
         "HASS": {
       # The HASS module allows fetching of consumption and generation statistics from HomeAssistant sensors.
             "enabled": false,
@@ -570,7 +582,6 @@
           # Consumption from grid as positive values or Push to grid as negative values.
           "uuidTotalGridW": "1cbbe494-a049-11eb-bcbc-0242ac130002"
         }
-
     },
 
     # Status plugins allow us to export status detail out of TWCManager.
