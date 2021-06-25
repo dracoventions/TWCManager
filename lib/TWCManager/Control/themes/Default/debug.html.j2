@@ -3,9 +3,79 @@
   <head>
     <title>TWCManager</title>
     {% include 'bootstrap.html.j2' %}
+    <script type="text/javascript" src="/static/js/debug.js"></script>
   </head>
   <body>
     {% include 'navbar.html.j2' %}
-    Debug Interface - Coming soon
+    <form method=POST action='/debug/save'>
+    <h3>Send Command</h3>
+    <b>Warning:</b> The Send Command function is potentially dangerous and, if used to send the wrong command, could render your TWC permanently inoperable. For that reason, you must enable use of the function before it will be available. If you don't require the function, we recommend leaving it disabled.
+    <table>
+      <tr>
+        <td>{{ checkBox("enableDebugCommands", master.settings.get("enableDebugCommands", 0))| safe }}</td>
+        <th colspan = 2>Enable Advanced Debug Settings</th>
+      </tr>
+      {% if master.settings.get("enableDebugCommands", 0) %}
+      <tr>
+        <td>&nbsp;</td>
+        <th>Send Known Command:</th>
+        <td>
+          <select id="cmdDropdown">
+            <option value="Custom">Custom Command</option>
+            <option value="GetFirmwareVersion">Get firmware version</option>
+            <option value="FB19">Get (S)TSN (serial number)</option>
+            <option value="FB1A">Get model Identifier</option>
+            <option value="FCE1777766">Send Master Linkready1</option>
+            <option value="FBE2777766">Send Master Linkready2</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <td>&nbsp;</td>
+        <th>Send Custom Command:</th>
+        <td>
+          This will send a hex encoded message (eg FB1B) to a TWC.
+          <br /><input id="cmdCustom" />
+          <br />The message is padded such that it is always the standard message length for your TWC's protocol version.  
+          <br />Message start, CRC, and end bytes are added automatically.
+        </td>
+      </tr>
+      <tr>
+        <td>&nbsp;</td>
+        <th>Last Command Response:</th>
+        <td><input id="lastTWCResponse" size=80></td>
+      </tr>
+      <tr>
+        <td>&nbsp;</td>
+        <td>
+          {{ addButton(
+            ["sendDebugCommand", "Send Debug Command", { "buttonType": "button" }],
+            "class='btn btn-outline-danger' data-toggle='tooltip' data-placement='top' title='Please ensure you've read the disclaimer before sending TWC commands.'",
+            )|safe }}
+        </td>
+      </tr>
+
+      {% endif %}
+    </table>
+
+    <p>&nbsp;</p>
+    <h2>Advanced Settings</h2>
+    These advanced settings can alter the way that the TWCManager operates, potentially causing the behaviour to change. Modifying these settings will be the most likely reason that something will work abnormally in your setup.
+    <table>
+      <tr>
+        <th>Setting</th>
+        <th colspan = 2>Options</th>
+        <th>More Detail</th>
+      </tr>
+      <tr>
+        <th>Spike Amps</th>
+        <td>{{ checkBox("spikeAmpsProactively", master.settings.get("spikeAmpsProactively", 1))|safe }} Proactively</td>
+        <td>{{ checkBox("spikeAmpsReactively", master.settings.get("spikeAmpsReactively", 1))|safe }} Reactively</td>
+        <td><a href="https://github.com/ngardiner/TWCManager/tree/main/docs/Debug.md#Spike_Amps" target='_blank'>More Info</a></td>
+      </tr>
+    </table>
+
+    <p>&nbsp;</p>
+    <input class='btn btn-outline-success' type=submit value='Save Settings' />
   </body>
 </html>

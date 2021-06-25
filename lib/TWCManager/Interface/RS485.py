@@ -1,4 +1,5 @@
 import logging
+import time
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
 
@@ -6,7 +7,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 class RS485:
 
     import serial
-    import time
 
     baud = 9600
     enabled = True
@@ -101,4 +101,4 @@ class RS485:
 
         self.ser.write(msg)
 
-        self.timeLastTx = self.time.time()
+        self.timeLastTx = time.time()

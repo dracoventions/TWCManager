@@ -1,8 +1,4 @@
 <script>
-    // enable tooltips
-    $(function () {
-        $('[data-toggle="tooltip"]').tooltip();
-    });
 
     // AJAJ refresh for getStatus API call
     $(document).ready(function() {
@@ -84,10 +80,20 @@
                         var twc = '#' + slvtwc['TWCID']
                         Object.keys(slvtwc).forEach(function(key) {
                           $(twc+'_'+key).html(slvtwc[key]);
+                          if (key === 'lastBatterySOC' && slvtwc[key] === '') {
+                              //no SOC data
+                              $(twc+'__socState').hide();
+                          }
                         });
                     });
+                    
+		            var chargerAvailAmps = 0;
+		            var tot = json['total'];
+		            chargerAvailAmps = parseFloat(tot['lastAmpsOffered']);
+		            $('#chargerAvailAmps').html(chargerAvailAmps.toFixed(2));
                 }
             });
+
             setTimeout(requestSlaves, 3000);
         }
         requestSlaves();
@@ -102,7 +108,7 @@
                 url: "/api/chargeNow",
                 data: JSON.stringify({
                     chargeNowRate: $("#chargeNowRate").val(),
-                    chargeNowDuration: $("#chargeNowDuration").val()
+                    chargeNowDuration: ($("#chargeNowDuration").val()*60*60)
                 }),
                 dataType: "json"
             }).done( function(data) {
@@ -112,36 +118,4 @@
         });
     });
 
-    $(document).ready(function() {
-        $("#cancel_chargenow").click(function(e) {
-            e.preventDefault();
-            $.ajax({
-                type: "POST",
-                url: "/api/cancelChargeNow",
-                data: {}
-            });
-        });
-    });
-
-    $(document).ready(function() {
-        $("#send_start_command").click(function(e) {
-            e.preventDefault();
-            $.ajax({
-                type: "POST",
-                url: "/api/sendStartCommand",
-                data: {}
-            });
-        });
-    });
-
-    $(document).ready(function() {
-        $("#send_stop_command").click(function(e) {
-            e.preventDefault();
-            $.ajax({
-                type: "POST",
-                url: "/api/sendStopCommand",
-                data: {}
-            });
-        });
-    });
 </script>

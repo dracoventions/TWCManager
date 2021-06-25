@@ -41,7 +41,7 @@ class SmartMe:
         if (not self.status) or (
             not self.serialNumber or not self.username or not self.password
         ):
-            self.master.releaseModule("lib.TWCManager.EMS", "SmartMe")
+            self.master.releaseModule("lib.TWCManager.EMS", self.__class__.__name__)
             return None
 
     def getConsumption(self):

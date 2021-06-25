@@ -1,0 +1,102 @@
+name: "Deploy TWCManager"
+on:
+  push:
+
+jobs:
+  twcmanager-python3_4:
+    runs-on: [ "self-hosted", "python3.4.10" ]
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v2
+
+      - name: "Upgrade setuptools"
+        run: pip3 install --upgrade setuptools
+
+      - name: "Build Project"
+        run: CI=1 make webbuild
+
+      - name: "Deploy Test Configuration"
+        run: make testconfig
+
+      - name: "Install Legacy Web Files"
+        run: make webfiles
+
+      - name: "Run Test Suite"
+        run: make tests
+
+      - name: "Upload any debug files collected"
+        if: always()
+        run: make upload
+
+  twcmanager-python3_5:
+    runs-on: [ "self-hosted", "python3.5.3" ]
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v2
+
+      - name: "Upgrade setuptools"
+        run: pip3 install --upgrade setuptools
+
+      - name: "Build Project"
+        run: CI=1 make webbuild
+
+      - name: "Deploy Test Configuration"
+        run: make testconfig
+
+      - name: "Install Legacy Web Files"
+        run: make webfiles
+
+      - name: "Run Test Suite"
+        run: make tests
+
+      - name: "Upload any debug files collected"
+        if: always()
+        run: make upload
+
+  twcmanager-python3_6:
+    runs-on: [ "self-hosted", "python3.6.13" ]
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v2
+
+      - name: "Upgrade setuptools"
+        run: pip3 install --upgrade setuptools
+
+      - name: "Build Project"
+        run: CI=1 make webbuild
+
+      - name: "Deploy Test Configuration"
+        run: make testconfig
+
+      - name: "Install Legacy Web Files"
+        run: make webfiles
+
+      - name: "Run Test Suite"
+        run: make tests
+
+      - name: "Upload any debug files collected"
+        if: always()
+        run: make upload
+
+  twcmanager-python3_7:
+    runs-on: [ "self-hosted", "python3.7.10" ]
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v2
+
+      - name: "Build Project"
+        run: CI=1 make webbuild
+
+      - name: "Deploy Test Configuration"
+        run: make testconfig
+
+      - name: "Install Legacy Web Files"
+        run: make webfiles
+
+      - name: "Run Test Suite"
+        run: make tests
+
+      - name: "Upload any debug files collected"
+        if: always()
+        run: make upload
+

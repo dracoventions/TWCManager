@@ -1,4 +1,5 @@
 import logging
+import time
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
 
@@ -9,7 +10,6 @@ class SolarLog:
     # Fetches Consumption and Generation details from SolarLog
 
     import requests
-    import time
 
     cacheTime = 10
     config = None
@@ -194,7 +194,7 @@ class SolarLog:
     def update(self):
         # Update function - determine if an update is required
 
-        if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
+        if (int(time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from SolarLog.
             self.getConsumptionAndGenerationValues()
 
@@ -203,7 +203,7 @@ class SolarLog:
 
             # Update last fetch time
             if self.fetchFailed is not True:
-                self.lastFetch = int(self.time.time())
+                self.lastFetch = int(time.time())
 
             return True
         else:

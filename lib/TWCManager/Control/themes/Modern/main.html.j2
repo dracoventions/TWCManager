@@ -5,22 +5,14 @@
     <table border='0' padding='0' margin='0' width='100%'>
       <tr width='100%'>
         <td valign='top' width='70%'>
-          {% if url.path == "/apiacct/False" %}
-             <font color='red'>
-               <b>Failed to log in to Tesla Account. Please check username and password and try again.</b>
+          {% include 'handle_teslalogin.html.j2' %}
+          {% if master.lastSaveFailed %}
+             <font color=red>
+               <b>We experienced an error trying to save your settings. This mea
+ns that while your current settings will be retained for the current session, th
+ey will not be saved if TWCManager exits. Please check the permissions on /etc/t
+wcmanager/settings.json and try saving your settings again.</b>
              </font>
-          {% endif %}
-
-          {% if not master.teslaLoginAskLater
-                and url.path != "/apiacct/True" %}
-                <!-- Check if we have already stored the Tesla credentials
-                     If we can access the Tesla API okay, don't prompt -->
-                {% if not apiAvailable %}
-                    {% include 'request_teslalogin.html.j2' %}
-                {% endif %}
-          {% endif %}
-          {% if url.path == "/apiacct/True" %}
-             <b>Thank you, successfully fetched Tesla API token.</b>
           {% endif %}
         </td>
       </tr>
@@ -112,7 +104,7 @@
                 <h1 class="meter"><span id="chargerLoadWatts">0.0</span></h1>
             </div>
             <div class="row justify-content-center display-watt text-muted">
-                <span id="chargerLoadAmps">0.0</span>&nbsp;A&nbsp;|&nbsp;0&nbsp;A&nbsp;<small class="mt-1">avail.</small>
+                <span id="chargerLoadAmps">0.0</span>&nbsp;A&nbsp;|&nbsp;<span id="chargerAvailAmps">0</span>&nbsp;A&nbsp;<small class="mt-1">offered.</small>
             </div>
         </div>
 
@@ -185,7 +177,7 @@
                             </svg>
                         </div>
                         <div class="col pt-1">
-                            {% set twcid = '%0x%0x' % (charger.TWCID[0], charger.TWCID[1]) %}
+                            {% set twcid = '%02x%02x' % (charger.TWCID[0], charger.TWCID[1]) %}
                             <div class="row">
                                 <small>{{ twcid }}</small>
                             </div>
@@ -269,9 +261,10 @@
                 <div class="col"><!-- Vehicle -->
                     <div class="row">
                         <div class="col-12 text-left" style="line-height: 1.37em;">
-                            Vehicle:<br>
-                            Current: <span id="{{ twcid }}_currentVIN"></span><br>
-                            Last: <span id="{{ twcid }}_lastVIN"></span>
+                            <strong>Vehicle</strong>:<br>
+                            Current: <span id="{{ twcid }}_currentVIN" class='VINClick' onClick="loadVIN('{{ twcid }}','current');"></span><br>
+                            Last: <span id="{{ twcid }}_lastVIN" class='VINClick' onClick="loadVIN('{{ twcid }}','last');"></span><br>
+                            SoC: <span id="{{ twcid }}_socState"><span id="{{ twcid }}_lastBatterySOC"></span>/<span id="{{ twcid }}_lastChargeLimit"></span>%</span>
                         </div>
                     </div>
                 </div>
@@ -294,12 +287,12 @@
             </form>
         </div>
         <div class="col-3">
-            {% set ampsMin = ampsList|first %}
+            {% set ampsMin = ampsList[1] %}
             {% set ampsMax = ampsList|last %}
             <form>
                 <div class="form-group p-2">
-                    <label for="chargeNowRate" class="text-muted mb-0">Charge with <span class="text-dark font-weight-bold" id="{{ twcid }}_ampsVal">{{ defaultChargeAmps }}</span> A</label>
-                    <input type="range" class="custom-range" id="chargeNowRate" name="chargeNowRate" min="{{ ampsMin[0]}}" max="{{ ampsMax[0] }}" step="1" value="{{ defaultChargeAmps }}" onInput="$('#{{ twcid }}_ampsVal').html($(this).val())">
+                    <label for="chargeNowRate" class="text-muted mb-0">Charge with <span class="text-dark font-weight-bold" id="{{ twcid }}_ampsVal">{{ ampsMin[0] }}</span> A</label>
+                    <input type="range" class="custom-range" id="chargeNowRate" name="chargeNowRate" min="{{ ampsMin[0]}}" max="{{ ampsMax[0] }}" step="1" value="{{ ampsMin[0] }}" onInput="$('#{{ twcid }}_ampsVal').html($(this).val())">
                 </div>
             </form>
         </div>

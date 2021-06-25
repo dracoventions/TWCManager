@@ -30,6 +30,7 @@ class TWCMaster:
     generationValues = {}
     lastkWhMessage = time.time()
     lastkWhPoll = 0
+    lastSaveFailed = 0
     lastTWCResponseMsg = None
     masterTWCID = ""
     maxAmpsToDivideAmongSlaves = 0
@@ -63,7 +64,7 @@ class TWCMaster:
     subtractChargerLoad = False
     teslaLoginAskLater = False
     TWCID = None
-    version = "1.2.1"
+    version = "1.2.3"
 
     # TWCs send a seemingly-random byte after their 2-byte TWC id in a number of
     # messages. I call this byte their "Sign" for lack of a better term. The byte
@@ -156,6 +157,30 @@ class TWCMaster:
                     blnUseScheduledAmps = 1
         return blnUseScheduledAmps
 
+    def checkVINEntitlement(self, subTWC):
+        # When provided with the TWC that has had the VIN reported for a vehicle
+        # we check the policy for charging and determine if it is allowed or not
+
+        if not subTWC.currentVIN:
+            # No VIN supplied. We can't make any decision other than allow
+            return 1
+
+        if str(self.settings.get("chargeAuthorizationMode", "1")) == "1":
+            # In this mode, we allow all vehicles to charge unless they
+            # are explicitly banned from charging
+            if subTWC.currentVIN in self.settings["VehicleGroups"]["Deny Charging"]["Members"]:
+                return 0
+            else:
+                return 1
+
+        elif str(self.settings.get("chargeAuthorizationMode", "1")) == "2":
+            # In this mode, vehicles may only charge if they are listed
+            # in the Allowed VINs list
+            if subTWC.currentVIN in self.settings["VehicleGroups"]["Allow Charging"]["Members"]:
+                return 1
+            else:
+                return 0
+
     def convertAmpsToWatts(self, amps):
         (voltage, phases) = self.getVoltageMeasurement()
         return phases * voltage * amps
@@ -208,6 +233,21 @@ class TWCMaster:
             return chargenow
         else:
             return 0
+
+    def getConsumptionOffset(self):
+        # Start by reading the offset value from config, if it exists
+        # This is a legacy value but it doesn't hurt to keep it
+        offset = self.convertAmpsToWatts(
+            self.config["config"].get("greenEnergyAmpsOffset", 0))
+
+        # Iterate through the offsets listed in settings
+        for offsetName in self.settings.get("consumptionOffset", {}).keys():
+            if self.settings["consumptionOffset"][offsetName]["unit"] == "W":
+                offset += self.settings["consumptionOffset"][offsetName]["value"]
+            else:
+                offset += self.convertAmpsToWatts(
+                    self.settings["consumptionOffset"][offsetName]["value"])
+        return offset
 
     def getHourResumeTrackGreenEnergy(self):
         return self.settings.get("hourResumeTrackGreenEnergy", -1)
@@ -328,10 +368,11 @@ class TWCMaster:
         return self.slaveSign
 
     def getStatus(self):
-
+        chargerLoad = float(self.getChargerLoad())
         data = {
             "carsCharging": self.num_cars_charging_now(),
-            "chargerLoadWatts": "%.2f" % float(self.getChargerLoad()),
+            "chargerLoadWatts": "%.2f" % chargerLoad,
+            "chargerLoadAmps": ("%.2f" % self.convertWattsToAmps(chargerLoad),),
             "currentPolicy": str(self.getModuleByName("Policy").active_policy),
             "maxAmpsToDivideAmongSlaves": "%.2f"
             % float(self.getMaxAmpsToDivideAmongSlaves()),
@@ -404,6 +445,13 @@ class TWCMaster:
     def getTimeLastTx(self):
         return self.getInterfaceModule().timeLastTx
 
+    def getTWCbyVIN(self, vin):
+        twc = None
+        for slaveTWC in self.getSlaveTWCs():
+            if slaveTWC.currentVIN == vin:
+                twc = slaveTWC
+        return twc
+
     def getVehicleVIN(self, slaveID, part):
         prefixByte = None
         if int(part) == 0:
@@ -446,6 +494,10 @@ class TWCMaster:
         if consumptionVal < 0:
             consumptionVal = 0
 
+        offset = self.getConsumptionOffset()
+        if offset > 0:
+            consumptionVal += offset
+
         return float(consumptionVal)
 
     def getFakeTWCID(self):
@@ -460,6 +512,10 @@ class TWCMaster:
 
         if generationVal < 0:
             generationVal = 0
+
+        offset = self.getConsumptionOffset()
+        if offset < 0:
+            generationVal += (-1 * offset)
 
         return float(generationVal)
 
@@ -510,8 +566,7 @@ class TWCMaster:
         solarAmps = self.convertWattsToAmps(solarW)
 
         # Offer the smaller of the two, but not less than zero.
-        amps = max(min(newOffer, solarAmps), 0)
-        amps = amps / self.getRealPowerFactor(amps)
+        amps = max(min(newOffer, solarAmps / self.getRealPowerFactor(solarAmps)), 0)
         return round(amps, 2)
 
     def getNormalChargeLimit(self, ID):
@@ -625,6 +680,22 @@ class TWCMaster:
         carapi.setCarApiRefreshToken(self.settings.get("carApiRefreshToken", ""))
         carapi.setCarApiTokenExpireTime(self.settings.get("carApiTokenExpireTime", ""))
 
+        # If particular details are missing from the Settings dict, create them
+        if not self.settings.get("VehicleGroups", None):
+            self.settings["VehicleGroups"] = {}
+        if not self.settings["VehicleGroups"].get("Allow Charging", None):
+            self.settings["VehicleGroups"]["Allow Charging"] = {
+                "Description": "Built-in Group - Vehicles in this Group can charge on managed TWCs",
+                "Built-in": 1,
+                "Members": []
+            }
+        if not self.settings["VehicleGroups"].get("Deny Charging", None):
+            self.settings["VehicleGroups"]["Deny Charging"] = {
+                "Description": "Built-in Group - Vehicles in this Group cannot charge on managed TWCs",
+                "Built-in": 1,
+                "Members": []
+            }
+
     def master_id_conflict(self):
         # We're playing fake slave, and we got a message from a master with our TWCID.
         # By convention, as a slave we must change our TWCID because a master will not.
@@ -672,6 +743,7 @@ class TWCMaster:
                     # We have detected that a vehicle has started charging on this Slave TWC
                     # Attempt to request the vehicle's VIN
                     slaveTWC.isCharging = 1
+                    slaveTWC.lastChargingStart = time.time()
                     self.queue_background_task(
                         {
                             "cmd": "getVehicleVIN",
@@ -704,6 +776,7 @@ class TWCMaster:
                     # Close off the current charging session
                     self.recordVehicleSessionEnd(slaveTWC)
                 slaveTWC.isCharging = 0
+                slaveTWC.lastChargingStart = 0
             carsCharging += slaveTWC.isCharging
             for module in self.getModulesByType("Status"):
                 module["ref"].setStatus(
@@ -943,12 +1016,17 @@ class TWCMaster:
         self.settings["carApiTokenExpireTime"] = carapi.getCarApiTokenExpireTime()
 
         # Step 2 - Write the settings dict to a JSON file
-        with open(fileName, "w") as outconfig:
-            try:
+        try:
+            with open(fileName, "w") as outconfig:
                 json.dump(self.settings, outconfig)
-            except TypeError as e:
-                logger.info("Exception raised while attempting to save settings file:")
-                logger.info(str(e))
+            self.lastSaveFailed = 0
+        except PermissionError as e:
+            logger.info("Permission Denied trying to save to settings.json. Please check the permissions of the file and try again.")
+            self.lastSaveFailed = 1
+        except TypeError as e:
+            logger.info("Exception raised while attempting to save settings file:")
+            logger.info(str(e))
+            self.lastSaveFailed = 1
 
     def send_master_linkready1(self):
 
@@ -1064,15 +1142,17 @@ class TWCMaster:
                 + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
             )
 
-    def sendStopCommand(self):
+    def sendStopCommand(self, subTWC = None):
         # This function will loop through each of the Slave TWCs, and send them the stop command.
+        # If the subTWC parameter is supplied, we only stop the specified TWC
         for slaveTWC in self.getSlaveTWCs():
-            self.getInterfaceModule().send(
-                bytearray(b"\xFC\xB2")
-                + self.TWCID
-                + slaveTWC.TWCID
-                + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
-            )
+            if ((not subTWC) or (subTWC == slaveTWC.TWCID)):
+                self.getInterfaceModule().send(
+                    bytearray(b"\xFC\xB2")
+                    + self.TWCID
+                    + slaveTWC.TWCID
+                    + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+                )
 
     def setAllowedFlex(self, amps):
         self.allowedFlex = amps if amps >= 0 else 0
@@ -1181,7 +1261,7 @@ class TWCMaster:
             if now < snaptime:
                 return
         except ValueError as e:
-            logger.debug(logging.DEBUG2, str(e))
+            logger.debug(str(e))
             return
 
         for slave in self.getSlaveTWCs():
@@ -1241,6 +1321,7 @@ class TWCMaster:
                 self.getModuleByName("Policy").overrideLimit()
         if stopMode == 2:
             self.settings["respondToSlaves"] = 0
+            self.settings["respondToSlavesExpiry"] = time.time() + 60
         if stopMode == 3:
             self.sendStopCommand()
 
@@ -1248,6 +1329,30 @@ class TWCMaster:
         return datetime.now().strftime(
             "%H:%M:%S" + (".%f" if self.config["config"]["displayMilliseconds"] else "")
         )
+
+    def translateModuleNameToConfig(self, modulename):
+        # This function takes a module name (eg. EMS.Fronius) and returns a config section (Sources.Fronius)
+        # It makes it easier for us to determine where a module's config should be
+        configloc = [ "", "" ]
+        if modulename[0] == "Control":
+            configloc[0] = "control";
+            configloc[1] = str(modulename[1]).replace('Control','')
+        elif modulename[0] == "EMS":
+            configloc[0] = "sources";
+            configloc[1] = modulename[1]
+        elif modulename[0] == "Interface":
+            configloc[0] = "interface";
+            configloc[1] = modulename[1]
+        elif modulename[0] == "Logging":
+            configloc[0] = "logging";
+            configloc[1] = str(modulename[1]).replace('Logging','')
+        elif modulename[0] == "Status":
+            configloc[0] = "status";
+            configloc[1] = str(modulename[1]).replace('Status','')
+        else:
+            return modulename
+
+        return configloc
 
     def updateSlaveLifetime(self, sender, kWh, vPA, vPB, vPC):
         for slaveTWC in self.getSlaveTWCs():

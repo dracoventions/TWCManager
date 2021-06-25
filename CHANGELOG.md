@@ -2,7 +2,36 @@
 
 This document logs the changes per release of TWCManager.
 
-## v1.2.2 - Current development branch
+## v1.2.3 - Current development version
+
+  * **NOTE**: v1.2.3 contains a potentially breaking change for users of OpenWB or the Legacy Web Interface
+     * As of v1.2.3, the Legacy Web Interface and its dependencies such as lighttpd and php are no longer installed by default.
+     * Please see the documentation for instructions on how to install it, if required. Most users will not need this.
+  * (@Saftwerk) - Add both Generation and Consumption support to Volkszahler EMS module
+  * (@VIDGuide) - Improvements to the Modern UI - Show charger load and offered amps, and open GitHub link in a new window.
+  * (@VIDGuide) - Add SoC % to Modern UI interface, and display charge time indicator per TWC
+
+## v1.2.2 - 2021-06-09
+
+  * (@ngardiner) - Added SmartPi EMS interface
+  * (@Saftwerk, @ngardiner) - Added Volkszahler EMS interface
+  * (@ngardiner) - Added functionality to Dummy module to emulate TWC communication to the point that Policy selection occurs
+  * (@MikeBishop) - Implement Policy Shortcut function to allow Charge Now to take immediate effect
+  * (@GMerg) - Added OpenWeatherMap EMS interface
+  * (@ngardiner) - Added VIN Management functionality, where vehicles can be allowed or denied charging based on VIN. With this, we introduce the ability to define vehicle groups, with future functionality allowing policy settings to be applied to these groups.
+  * (@ngardiner) - Addition of a debug interface which allows tuning advanced inner workings of TWCManager, and allows sending commands to TWCs.
+  * (@ngardiner) - Added support for Tesla MFA authentication flows
+  * (@MikeBishop) - Improve API error handling, removing transient error delays and replacing with an exponential backoff mechanism to avoid delaying other background tasks.
+  * (@MikeBishop) - Added debounce dampening for situations where intermittent consumption spikes / loads cause TWC to start and stop charging frequently.
+  * (@ngardiner) - Add new consumption offset handling which allows for dynamic configuration of offsets in Watts and Amps via web and API
+  * Bugfixes
+    * (@ngardiner) - Better handling of permissions issues when attempting to save settings.json - alerts user to check file permissions via Web Interface
+    * (@ngardiner) - Fixed issue with logging errors when a certain exception is raised in the Snapshot History function
+    * (@ngardiner) - Fixed issue with Modern web interface Charge Now setting not working
+    * (@ngardiner) - Fix behaviour of Stop Responding to Slaves charge stop mode, by re-enabling slave communication after 60 seconds
+    * (@ngardiner) - Fix issues with subtractChargerLoad when using one of the (few) EMS modules which only provide Generation values. Previously, we only subtracted the Charger Load from Consumption which doesn't work in Generation-only measurement environments.
+    * (@leeliu) - Fix TWC ID display for Modern theme which was truncating trailing zeros
+    * (@ngardiner) - Fix bug in Stop Responding to Slaves routine caused by incorrect reference to time function
 
 ## v1.2.1 - 2021-04-04
 

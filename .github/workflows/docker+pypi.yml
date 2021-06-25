@@ -1,0 +1,119 @@
+name: "Create PyPi Package and Docker Image"
+
+on:
+  push:
+    branches:
+      - 'main'
+    tags:
+      - 'v*'
+
+jobs:
+  pypi:
+    name: Build a PyPi Package if this is a tagged release commit
+    runs-on: ubuntu-latest
+
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+
+    steps:
+    - name: Check out Repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+
+    - name: Install pypa/build
+      run: >-
+        python -m
+        pip install
+        build
+        --user
+
+    - name: Build a binary wheel and a source tarball
+      run: >-
+        python -m
+        build
+        --sdist
+        --wheel
+        --outdir dist/
+        .
+
+    - name: Publish distribution package to Test PyPI
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        skip_existing: true
+        repository_url: https://test.pypi.org/legacy/
+
+    - name: Publish distribution package to Production PyPI
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+
+  docker-latest:
+    name: Create docker-latest Docker Image from current head
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out Repository
+      uses: actions/checkout@v2
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push
+      uses: docker/build-push-action@v2
+      with:
+        context: contrib/docker
+        platforms: linux/amd64,linux/arm64,linux/arm/v7
+        push: true
+        tags: twcmanager/twcmanager:latest
+
+  docker-release:
+    name: Create docker-release Docker Image for release version
+    runs-on: ubuntu-latest
+
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+
+    steps:
+
+    - name: Branch name
+      id: branch_name
+      run: |
+        echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
+        echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
+        echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+
+    - name: Check out Repository
+      uses: actions/checkout@v2
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push
+      uses: docker/build-push-action@v2
+      with:
+        context: contrib/docker
+        platforms: linux/amd64,linux/arm64,linux/arm/v7
+        push: true
+        tags: twcmanager/twcmanager:${{ steps.branch_name.outputs.SOURCE_TAG }}
+

@@ -43,11 +43,20 @@ class SQLiteHandler(logging.Handler):
             primary key (slaveTWC, time)
           );
         """
-        conn = sqlite3.connect(self.db, uri=True)
-        conn.execute(query_charge_sessions)
-        conn.execute(query_green_energy)
-        conn.execute(query_slave_status)
-        conn.commit()
+
+        conn = None
+        try:
+            conn = sqlite3.connect(self.db, uri=True)
+        except sqlite3.OperationalError:
+            logger.exception("Error Opening SQLite3 Databaase: %s", e)
+
+        if conn:
+            conn.execute(query_charge_sessions)
+            conn.execute(query_green_energy)
+            conn.execute(query_slave_status)
+            conn.commit()
+        else:
+            logger.error("SQLite connection is null")
 
 
     def emit(self, record):

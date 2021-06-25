@@ -4,44 +4,18 @@
     <title>TWCManager</title>
     {% include 'bootstrap.html.j2' %}
     {% include 'jsrefresh.html.j2' %}
+    <script type="text/javascript" src="/static/js/status.js"></script>
   </head>
   <body>
     {% include 'navbar.html.j2' %}
     <table border='0' padding='0' margin='0' width='100%'>
       <tr width='100%'>
         <td valign='top' width='70%'>
-          {% if url.path == "/teslaAccount/False" %}
-             <font color='red'>
-               <b>Failed to log in to Tesla Account. Please check username and password and try again.</b>
+          {% include 'handle_teslalogin.html.j2' %}
+          {% if master.lastSaveFailed %}
+             <font color=red>
+               <b>We experienced an error trying to save your settings. This means that while your current settings will be retained for the current session, they will not be saved if TWCManager exits. Please check the permissions on /etc/twcmanager/settings.json and try saving your settings again.</b>
              </font>
-          {% elif url.path == "/teslaAccount/MFA" %}
-             <font color='red'>
-               <b>Tesla MFA account login is not yet available, sorry! Check back shortly.</b>
-             </font>
-          {% elif url.path == "/teslaAccount/Phase1Error" %}
-             <font color='red'>
-               <b>Error encountered during Phase 1 (GET) of the Tesla Authentication process.</b>
-             </font>
-          {% elif url.path == "/teslaAccount/Phase2Error" or url.path == "/teslaAccount/Phase2ErrorTip" %}
-             <font color='red'>
-               <b>Error encountered during Phase 2 (POST) of the Tesla Authentication process.</b>
-               {% if url.path == "/teslaAccount/Phase2ErrorTip" %}
-                 <p><b>TIP: If login fails at this point, it <i>could</i> be due to a locked Tesla account from too many login attempts, even if the last attempt was the correct password. Try logging out and then into your Tesla account to verify</b></p>
-               {% endif %}
-             </font>
-          {% endif %}
-
-          {% if not master.teslaLoginAskLater
-                and url.path != "/teslaAccount/True"
-                and url.path != "/teslaAccount/MFA" %}
-                <!-- Check if we have already stored the Tesla credentials
-                     If we can access the Tesla API okay, don't prompt -->
-                {% if not apiAvailable %}
-                    {% include 'request_teslalogin.html.j2' %}
-                {% endif %}
-          {% endif %}
-          {% if url.path == "/teslaAccount/True" %}
-             <b>Thank you, successfully fetched Tesla API token.</b>
           {% endif %}
 
           {% include 'showStatus.html.j2' %}

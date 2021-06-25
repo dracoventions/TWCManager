@@ -44,14 +44,21 @@ class HTTPControl:
 
         # Unload if this module is disabled or misconfigured
         if (not self.status) or (int(self.httpPort) < 1):
-            self.master.releaseModule("lib.TWCManager.Control", "HTTPControl")
+            self.master.releaseModule("lib.TWCManager.Control", self.__class__.__name__)
             return None
 
         HTTPHandler = CreateHTTPHandlerClass(master)
-        httpd = ThreadingSimpleServer(("", self.httpPort), HTTPHandler)
-        logger.info("Serving at port: " + str(self.httpPort))
-        threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        httpd = None
+        try:
+            httpd = ThreadingSimpleServer(("", self.httpPort), HTTPHandler)
+        except OSError as e:
+            logger.error("Unable to start HTTP Server: " + str(e))
 
+        if httpd:
+            logger.info("Serving at port: " + str(self.httpPort))
+            threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        else:
+            self.master.releaseModule("lib.TWCManager.Control", self.__class__.__name__)
 
 def CreateHTTPHandlerClass(master):
     class HTTPControlHandler(BaseHTTPRequestHandler):
@@ -104,7 +111,7 @@ def CreateHTTPHandlerClass(master):
                 searchpath=[
                     pathlib.Path(__file__).resolve().parent.as_posix()
                     + "/themes/"
-                    + master.settings.get("webControlTheme", "Default")
+                    + master.settings.get("webControlTheme", "Modern")
                     + "/",
                     pathlib.Path(__file__).resolve().parent.as_posix()
                     + "/themes/Default/",
@@ -120,11 +127,12 @@ def CreateHTTPHandlerClass(master):
             self.templateEnv.globals.update(addButton=self.addButton)
             self.templateEnv.globals.update(ampsList=self.ampsList)
             self.templateEnv.globals.update(chargeScheduleDay=self.chargeScheduleDay)
+            self.templateEnv.globals.update(checkBox=self.checkBox)
             self.templateEnv.globals.update(doChargeSchedule=self.do_chargeSchedule)
+            self.templateEnv.globals.update(getMFADevices=master.getModuleByName("TeslaAPI").getMFADevices)
             self.templateEnv.globals.update(hoursDurationList=self.hoursDurationList)
             self.templateEnv.globals.update(navbarItem=self.navbar_item)
             self.templateEnv.globals.update(optionList=self.optionList)
-            self.templateEnv.globals.update(showTWCs=self.show_twcs)
             self.templateEnv.globals.update(timeList=self.timeList)
 
             # Set master object
@@ -190,13 +198,13 @@ def CreateHTTPHandlerClass(master):
 
             return page
 
-        def navbar_item(self, url, name):
+        def navbar_item(self, url, name, target="_self"):
             active = ""
             urlp = urllib.parse.urlparse(self.path)
             if urlp.path == url:
                 active = "active"
             page = "<li class='nav-item %s'>" % active
-            page += "<a class='nav-link' href='%s'>%s</a>" % (url, name)
+            page += "<a class='nav-link' target='%s' href='%s'>%s</a>" % (target, url, name)
             page += "</li>"
             return page
 
@@ -212,6 +220,24 @@ def CreateHTTPHandlerClass(master):
                 json_datas = re.sub(r'"password": ".*?",', "", json_data)
                 json_data = re.sub(r'"apiKey": ".*?",', "", json_datas)
                 self.wfile.write(json_data.encode("utf-8"))
+
+            elif self.url.path == "/api/getConsumptionOffsets":
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+
+                if not master.settings.get("consumptionOffset", None):
+                    master.settings["consumptionOffset"] = {}
+
+                json_data = json.dumps(master.settings["consumptionOffset"])
+                self.wfile.write(json_data.encode("utf-8"))
+
+            elif self.url.path == "/api/getLastTWCResponse":
+                self.send_response(200)
+                self.send_header("Content-type", "text/plain")
+                self.end_headers()
+
+                self.wfile.write(str(master.lastTWCResponseMsg).encode("utf-8"))
 
             elif self.url.path == "/api/getPolicy":
                 self.send_response(200)
@@ -246,6 +272,12 @@ def CreateHTTPHandlerClass(master):
                         "voltsPhaseC": slaveTWC.voltsPhaseC,
                         "TWCID": "%s" % TWCID,
                     }
+
+                    if slaveTWC.lastChargingStart > 0:
+                        data[TWCID]["chargeTime"] = str(timedelta(seconds=(time.time() - slaveTWC.lastChargingStart)))
+                    else:
+                        data[TWCID]["chargeTime"] = "--:--:--"
+
                     # Adding some vehicle data
                     vehicle = slaveTWC.getLastVehicle()
                     if vehicle != None:
@@ -341,12 +373,56 @@ def CreateHTTPHandlerClass(master):
 
             self.debugLogAPI("Starting API POST")
 
-            if self.url.path == "/api/chargeNow":
-                data = json.loads(self.post_data.decode("UTF-8"))
+            if self.url.path == "/api/addConsumptionOffset":
+                data = {}
+                try:
+                    data = json.loads(self.post_data.decode("UTF-8"))
+                except (ValueError, UnicodeDecodeError):
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
+                except json.decoder.JSONDecodeError:
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
+                name = str(data.get("offsetName", None))
+                value = float(data.get("offsetValue", 0))
+                unit = str(data.get("offsetUnit", ""))
+
+                if (name and value and (unit == "A" or unit == "W")
+                    and len(name) < 32 and not self.checkForUnsafeCharactters(name)):
+                    if not master.settings.get("consumptionOffset", None):
+                        master.settings["consumptionOffset"] = {}
+                    master.settings["consumptionOffset"][name] = {}
+                    master.settings["consumptionOffset"][name]["value"] = value
+                    master.settings["consumptionOffset"][name]["unit"] = unit
+                    master.queue_background_task({"cmd": "saveSettings"})
+
+                    self.send_response(204)
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
+
+                else:
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
+
+            elif self.url.path == "/api/chargeNow":
+                data = {}
+                try:
+                    data = json.loads(self.post_data.decode("UTF-8"))
+                except (ValueError, UnicodeDecodeError):
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
+                except json.decoder.JSONDecodeError:
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
                 rate = int(data.get("chargeNowRate", 0))
                 durn = int(data.get("chargeNowDuration", 0))
 
-                if rate == 0 or durn == 0:
+                if rate <= 0 or durn <= 0:
                     self.send_response(400)
                     self.end_headers()
                     self.wfile.write("".encode("utf-8"))
@@ -355,26 +431,18 @@ def CreateHTTPHandlerClass(master):
                     master.setChargeNowAmps(rate)
                     master.setChargeNowTimeEnd(durn)
                     master.queue_background_task({"cmd": "saveSettings"})
-                    self.send_response(202)
+                    master.getModuleByName("Policy").applyPolicyImmediately()
+                    self.send_response(204)
                     self.end_headers()
                     self.wfile.write("".encode("utf-8"))
 
             elif self.url.path == "/api/cancelChargeNow":
                 master.resetChargeNowAmps()
                 master.queue_background_task({"cmd": "saveSettings"})
-                self.send_response(202)
+                master.getModuleByName("Policy").applyPolicyImmediately()
+                self.send_response(204)
                 self.end_headers()
                 self.wfile.write("".encode("utf-8"))
-
-            elif self.url.path == "/api/sendStartCommand":
-                master.sendStartCommand()
-                self.send_response(204)
-                self.end_headers()
-
-            elif self.url.path == "/api/sendStopCommand":
-                master.sendStopCommand()
-                self.send_response(204)
-                self.end_headers()
 
             elif self.url.path == "/api/checkArrival":
                 master.queue_background_task({"cmd": "checkArrival"})
@@ -387,6 +455,69 @@ def CreateHTTPHandlerClass(master):
                 self.send_response(202)
                 self.end_headers()
                 self.wfile.write("".encode("utf-8"))
+
+            elif self.url.path == "/api/deleteConsumptionOffset":
+                data = json.loads(self.post_data.decode("UTF-8"))
+                name = str(data.get("offsetName", None))
+
+                if master.settings.get("consumptionOffset", None):
+                    del master.settings["consumptionOffset"][name]
+
+                    self.send_response(204)
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
+
+                else:
+
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
+
+            elif self.url.path == "/api/saveSettings":
+                master.queue_background_task({"cmd": "saveSettings"})
+                self.send_response(204)
+                self.end_headers()
+
+            elif self.url.path == "/api/sendDebugCommand":
+                data = json.loads(self.post_data.decode("UTF-8"))
+                packet = {
+                    "Command": data.get("commandName", "")
+                }
+                if data.get("commandName", "") == "Custom":
+                    packet["CustomCommand"] = data.get("customCommand", "")
+
+                # Clear last TWC response, so we can grab the next response
+                master.lastTWCResponseMsg = bytearray()
+
+                # Send packet to network
+                master.getModuleByName("RS485").send(
+                    master.getModuleByName("TWCProtocol").createMessage(packet)
+                )
+
+                self.send_response(204)
+                self.end_headers()
+
+            elif self.url.path == "/api/sendStartCommand":
+                master.sendStartCommand()
+                self.send_response(204)
+                self.end_headers()
+
+            elif self.url.path == "/api/sendStopCommand":
+                master.sendStopCommand()
+                self.send_response(204)
+                self.end_headers()
+
+            elif self.url.path == "/api/setSetting":
+                data = json.loads(self.post_data.decode("UTF-8"))
+                setting = str(data.get("setting", None))
+                value = str(data.get("value", None))
+
+                if (setting and value and
+                    not self.checkForUnsafeCharactters(setting) and
+                    not self.checkForUnsafeCharactters(value)):
+                    master.settings[setting] = value
+                self.send_response(204)
+                self.end_headers()
 
             elif self.url.path == "/api/setScheduledChargingSettings":
                 data = json.loads(self.post_data.decode("UTF-8"))
@@ -486,7 +617,7 @@ def CreateHTTPHandlerClass(master):
                         page += " (" + str(match_result) + ")"
                     page += "</td>"
 
-                    page += "<td>" + condition + "</td>"
+                    page += "<td>" + str(condition) + "</td>"
 
                     page += "<td>" + str(value)
                     value_result = mod_policy.policyValue(value)
@@ -535,7 +666,16 @@ def CreateHTTPHandlerClass(master):
                 self.do_API_GET()
                 return
 
-            if self.url.path == "/teslaAccount/login":
+            webroutes = [
+              { "route": "/debug",    "tmpl": "debug.html.j2" },
+              { "route": "/schedule", "tmpl": "schedule.html.j2" },
+              { "route": "/settings", "tmpl": "settings.html.j2" },
+              { "rstart": "/vehicleDetail", "tmpl": "vehicleDetail.html.j2" },
+              { "route": "/vehicles", "tmpl": "vehicles.html.j2" }
+            ]
+
+            if (self.url.path == "/teslaAccount/login" or
+                self.url.path == "/teslaAccount/mfaCode"):
                 # For security, these details should be submitted via a POST request
                 # Send a 405 Method Not Allowed in response.
                 self.send_response(405)
@@ -564,13 +704,21 @@ def CreateHTTPHandlerClass(master):
                 self.wfile.write(page.encode("utf-8"))
                 return
 
-            if self.url.path == "/debug":
+            # Match web routes to defined webroutes routing
+            route = None
+            for webroute in webroutes:
+                if self.url.path == webroute.get("route", "INVALID"):
+                    route = webroute
+                elif self.url.path.startswith(webroute.get("rstart", "INVALID")):
+                    route = webroute
+
+            if route:
                 self.send_response(200)
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
 
                 # Load debug template and render
-                self.template = self.templateEnv.get_template("debug.html.j2")
+                self.template = self.templateEnv.get_template(route["tmpl"])
                 page = self.template.render(self.__dict__)
 
                 self.wfile.write(page.encode("utf-8"))
@@ -589,28 +737,19 @@ def CreateHTTPHandlerClass(master):
                 self.wfile.write(page.encode("utf-8"))
                 return
 
-            if self.url.path == "/schedule":
-                self.send_response(200)
-                self.send_header("Content-type", "text/html")
+            if self.url.path.startswith("/vehicles/deleteGroup"):
+                group = urllib.parse.unquote(self.url.path.rsplit("/", 1)[1])
+                if group and len(group) > 0 and group in master.settings["VehicleGroups"]:
+                    del master.settings["VehicleGroups"][group]
+                    master.queue_background_task({"cmd": "saveSettings"})
+                    self.send_response(302)
+                    self.send_header("Location", "/vehicles")
+
+                else:
+                    self.send_response(400)
+
                 self.end_headers()
-
-                # Load template and render
-                self.template = self.templateEnv.get_template("schedule.html.j2")
-                page = self.template.render(self.__dict__)
-
-                self.wfile.write(page.encode("utf-8"))
-                return
-
-            if self.url.path == "/settings":
-                self.send_response(200)
-                self.send_header("Content-type", "text/html")
-                self.end_headers()
-
-                # Load template and render
-                self.template = self.templateEnv.get_template("settings.html.j2")
-                page = self.template.render(self.__dict__)
-
-                self.wfile.write(page.encode("utf-8"))
+                self.wfile.write("".encode("utf-8"))
                 return
 
             if self.url.path == "/graphs" or self.url.path == "/graphsP":
@@ -660,6 +799,10 @@ def CreateHTTPHandlerClass(master):
 
             self.fields = urllib.parse.parse_qs(self.post_data.decode("utf-8"))
 
+            if self.url.path == "/debug/save":
+                self.process_save_settings("debug")
+                return
+
             if self.url.path == "/schedule/save":
                 # User has submitted schedule.
                 self.process_save_schedule()
@@ -675,6 +818,20 @@ def CreateHTTPHandlerClass(master):
                 # User has submitted Tesla login.
                 # Pass it to the dedicated process_teslalogin function
                 self.process_teslalogin()
+                return
+
+            if self.url.path == "/teslaAccount/mfaCode":
+                transactionID = self.getFieldValue("transactionID")
+                mfaDevice = self.getFieldValue("mfaDevice")
+                mfaCode = self.getFieldValue("mfaCode")
+
+                resp = master.getModuleByName(
+                    "TeslaAPI").mfaLogin(transactionID, mfaDevice, mfaCode)
+
+                self.send_response(302)
+                self.send_header("Location", "/teslaAccount/" + str(resp))
+                self.end_headers()
+                self.wfile.write("".encode("utf-8"))
                 return
 
             if self.url.path == "/graphs/dates":
@@ -697,6 +854,40 @@ def CreateHTTPHandlerClass(master):
                 self.wfile.write("".encode("utf-8"))
                 return
 
+            if self.url.path == "/vehicle/groupMgmt":
+
+                group = self.getFieldValue("group")
+                op = self.getFieldValue("operation")
+                vin = self.getFieldValue("vin")
+
+                if op == "add":
+                    try:
+                        master.settings["VehicleGroups"][group]["Members"].append(vin)
+                    except ValueError:
+                        logger.error("Error adding vehicle %s to group %s" % (vin, group))
+
+                elif op == "remove":
+                    try:
+                        master.settings["VehicleGroups"][group]["Members"].remove(vin)
+                    except ValueError:
+                        logger.error("Error removing vehicle %s from group %s" % (vin, group))
+
+                master.queue_background_task({"cmd": "saveSettings"})
+
+                master.queue_background_task(
+                    {
+                        "cmd": "checkVINEntitlement",
+                        "vin": vin,
+                    }
+                )
+
+                self.send_response(302)
+                self.send_header("Location", "/vehicleDetail/"+vin)
+                self.end_headers()
+                self.wfile.write("".encode("utf-8"))
+                return
+
+
             # All other routes missed, return 404
             self.send_response(404)
             self.end_headers()
@@ -707,7 +898,14 @@ def CreateHTTPHandlerClass(master):
             # This is a macro which can display differing buttons based on a
             # condition. It's a useful way to switch the text on a button based
             # on current state.
-            page = "<input type='Submit' %s id='%s' value='%s'>" % (
+            params = {}
+            if len(button_def) == 3:
+                params = button_def[2]
+            buttontype = "Submit"
+            if params.get("buttonType", False):
+                buttontype = params["buttonType"]
+            page = "<input type='%s' %s id='%s' value='%s'>" % (
+                buttontype,
                 extrargs,
                 button_def[0],
                 button_def[1],
@@ -752,6 +950,16 @@ def CreateHTTPHandlerClass(master):
             page += "<td>Flex Charge</td>"
             page += "</tr>"
             return page
+
+        def checkForUnsafeCharactters(self, text):
+            # Detect some unsafe characters in user input
+            # The intention is to minimize the risk of either user input going into the settings file
+            # or a database without pre-sanitization. We'll reject strings with these characters in them.
+            unsafe_characters = '@#$%^&*"+<>;/'
+            if any(c in unsafe_characters for c in text):
+                return True
+            else:
+                return False
 
         def getFieldValue(self, key):
             # Parse the form value represented by key, and return the
@@ -884,7 +1092,7 @@ def CreateHTTPHandlerClass(master):
             self.wfile.write("".encode("utf-8"))
             return
 
-        def process_save_settings(self):
+        def process_save_settings(self, page = "settings"):
 
             # This function will write the settings submitted from the settings
             # page to the settings dict, before triggering a write of the settings
@@ -912,6 +1120,18 @@ def CreateHTTPHandlerClass(master):
                 master.settings["nonScheduledAmpsMax"] = 0
             master.queue_background_task({"cmd": "saveSettings"})
 
+            # If triggered from the Debug page (not settings page), we need to
+            # set certain settings to false if they were not seen in the
+            # request data - This is because Check Boxes don't have a value
+            # if they aren't set
+            if page == "debug":
+                  checkboxes = ["enableDebugCommands",
+                                "spikeAmpsProactively",
+                                "spikeAmpsReactively" ]
+                  for checkbox in checkboxes:
+                      if checkbox not in self.fields:
+                          master.settings[checkbox] = 0
+
             # Redirect to the index page
             self.send_response(302)
             self.send_header("Location", "/")
@@ -925,7 +1145,7 @@ def CreateHTTPHandlerClass(master):
             if not master.teslaLoginAskLater:
                 later = False
                 try:
-                    later = len(self.fields["later"])
+                    later = len(self.fields["later"][0])
                 except KeyError:
                     later = False
 
@@ -936,10 +1156,17 @@ def CreateHTTPHandlerClass(master):
                 # Connect to Tesla API
 
                 carapi = master.getModuleByName("TeslaAPI")
-                carapi.setCarApiLastErrorTime(0)
-                ret = carapi.car_api_available(
-                    self.fields["email"][0], self.fields["password"][0]
-                )
+                carapi.resetCarApiLastErrorTime()
+                try:
+                    ret = carapi.apiLogin(
+                        self.fields["email"][0], self.fields["password"][0]
+                    )
+                except KeyError:
+                    self.send_response(302)
+                    self.send_header("Location", "/teslaAccount/NotSpecified")
+                    self.end_headers()
+                    self.wfile.write("".encode("utf-8"))
+                    return
 
                 # Redirect to an index page with output based on the return state of
                 # the function
@@ -956,63 +1183,6 @@ def CreateHTTPHandlerClass(master):
                 self.end_headers()
                 self.wfile.write("".encode("utf-8"))
                 return
-
-        def show_twcs(self):
-
-            page = """
-        <table><tr width = '100%'><td width='65%'>
-          <table class='table table-dark table-condensed table-striped'>
-          <thead class='thead-dark'><tr>
-            <th width='2%'>TWC ID</th>
-            <th width='1%'>State</th>
-            <th width='1%'>Version</th>
-            <th width='2%'>Max Amps</th>
-            <th width='2%'>Amps<br />Offered</th>
-            <th width='2%'>Amps<br />In Use</th>
-            <th width='2%'>Lifetime<br />kWh</th>
-            <th width='4%'>Voltage<br />per Phase<br />1 / 2 / 3</th>
-            <th width='2%'>Last Heartbeat</th>
-            <th width='6%'>Vehicle Connected<br />Current / Last</th>
-            <th width='2%'>Commands</th>
-          </tr></thead>
-        """
-            for slaveTWC in master.getSlaveTWCs():
-                twcid = "%02X%02X" % (slaveTWC.TWCID[0], slaveTWC.TWCID[1])
-                page += "<tr>"
-                page += "<td>%s</td>" % twcid
-                page += "<td><div id='%s_state'></div></td>" % twcid
-                page += "<td><div id='%s_version'></div></td>" % twcid
-                page += "<td><div id='%s_maxAmps'></div></td>" % twcid
-                page += "<td><div id='%s_lastAmpsOffered'></div></td>" % twcid
-                page += "<td><div id='%s_reportedAmpsActual'></div></td>" % twcid
-                page += "<td><div id='%s_lifetimekWh'></div></td>" % twcid
-                page += (
-                    "<td><span id='%s_voltsPhaseA'></span> / <span id='%s_voltsPhaseB'></span> / <span id='%s_voltsPhaseC'></span></td>"
-                    % (twcid, twcid, twcid)
-                )
-                page += "<td><span id='%s_lastHeartbeat'></span> sec</td>" % twcid
-                page += (
-                    "<td>C: <span id='%s_currentVIN'></span><br />L: <span id='%s_lastVIN'></span></td>"
-                    % (twcid, twcid)
-                )
-                page += """
-            <td>
-              <div class="dropdown">
-                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Select</button>
-                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                  <a class="dropdown-item" href="#">Coming Soon</a>
-                </div>
-              </div>
-            </td>
-            """
-                page += "</tr>"
-            page += "<tr><td><b>Total</b><td>&nbsp;</td><td>&nbsp;</td>"
-            page += "<td><div id='total_maxAmps'></div></td>"
-            page += "<td><div id='total_lastAmpsOffered'></div></td>"
-            page += "<td><div id='total_reportedAmpsActual'></div></td>"
-            page += "<td><div id='total_lifetimekWh'></div></td>"
-            page += "</tr></table></td></tr></table>"
-            return page
 
         def process_save_graphs(self, initial, end):
             # Check that Graphs dict exists within settings.

@@ -1,13 +1,12 @@
 # Fronius Datamanager Solar.API Integration (Inverter Web Interface)
 import logging
+import requests
+import time
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class Fronius:
-
-    import requests
-    import time
 
     cacheTime = 10
     config = None
@@ -87,8 +86,8 @@ class Fronius:
         self.fetchFailed = False
 
         try:
-            r = self.requests.get(url, timeout=self.timeout)
-        except self.requests.exceptions.ConnectionError as e:
+            r = requests.get(url, timeout=self.timeout)
+        except requests.exceptions.ConnectionError as e:
             logger.log(
                 logging.INFO4,
                 "Error connecting to Fronius Inverter to fetch sensor value",
@@ -109,7 +108,7 @@ class Fronius:
 
     def update(self):
 
-        if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
+        if (int(time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from Fronius inverter.
 
             inverterData = self.getInverterData()
@@ -146,7 +145,7 @@ class Fronius:
 
             # Update last fetch time
             if self.fetchFailed is not True:
-                self.lastFetch = int(self.time.time())
+                self.lastFetch = int(time.time())
 
             return True
         else:

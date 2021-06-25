@@ -10,122 +10,17 @@ Please see the [Installation Guide](InstallationGuide.md) for detailed informati
 
 ## Software Installation
 
-### Recommended Installation
+The following options exist for installing TWCManager:
 
-The recommended installation for this project is on a Raspberry Pi machine using Raspbian. The Raspbian OS can be downloaded from the following location:
+   * [Docker](Software_Docker.md) - Docker uses containers to run applications in their own isolated environment. The benefits of docker include simple upgrading easy portability, with significantly less worries about Python versions or permissions in a Dockere environment than a Manual environment.
 
-   * https://www.raspberrypi.org/downloads/raspbian/
+   * [Manual](Software_Manual.md) - A manual installation involves downloading the source code for TWCManager from GitHub, installing dependencies and then running TWCManager as a service.
 
-You can flash the Raspbian OS using the tools listed on the following page:
+### Configuration
 
-   * https://www.raspberrypi.org/documentation/installation/installing-images/README.md
+The TWCManager configuration file at ```/etc/twcmanager/config.json``` has lots of information about each of the configuration parameters and their effect on your installation. We highly recommend reading through the file carefully as you configure your installation, as this resolves the majority of issues.
 
-### Install Required Packages (Debian/Ubuntu/Raspbian)
-
-The following packages are required to fetch and install the TWCManager project. These are the minimal required packages to start the installation process, during which any other required dependencies will be fetched automatically.
-
-```
-sudo apt-get update
-sudo apt-get install -y git python3 python3-setuptools python3-dev
-```
-
-### Default to Python3
-
-TWCManager requires a minimum of python 3.3 to work correctly.
-
-### Raspberry Pi OS / Raspbian Buster
-
-You may need to set python3 as your default python interpreter version on Raspberry Pi OS / Debian Buster. The following command will set python 3.7 as your default interpreter.
-
-```
-sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
-sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.7 2
-```
-
-You can check that this command has been successful by running ```python --version``` and checking that the version is python3.
-
-### Raspbian Stretch
-
-You may need to set python3 as your default python interpreter version on Debian/Ubuntu. The following command will set python 3.5 as your default interpreter. 
-
-```
-sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
-sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.5 2
-```
-
-You can check that this command has been successful by running ```python --version``` and checking that the version is python3.
-
-### Clone GIT Repository and copy files
-
-During this step, the source code and all related files will be cloned from the GitHub repository and installed into the appropriate location on your system.
-
-We have two versions of the codebase that you may want to check out. The stable version is **v1.2.0**, which will only change for stability or urgent fixes. To check out **v1.2.0**, follow these steps:
-
-```
-git clone https://github.com/ngardiner/TWCManager
-cd TWCManager
-git checkout v1.2.0
-sudo make install
-```
-
-Alternatively, the **v1.2.1** branch is the development branch, where all of the new ideas and features are tested prior to becoming the stable branch. This version has more features, but we can't guarantee stability.
-
-```
-git clone https://github.com/ngardiner/TWCManager
-cd TWCManager
-git checkout v1.2.1
-make install
-```
-
-### Configure TWCManager
-After performing the installation tasks above, edit the /etc/twcmanager/config.json file and customize to suit your environment.
-
-The following documents provide detail on specific areas of configuration:
-
-   * [Policy Customization](PolicyCustomization.md)
-
-### Running the script
-Once the above steps are complete, start the TWCManager script with the following command:
-
-```
-python -m TWCManager
-```
-
-## Monitoring the script operation
-
-After starting TWCManager, the script will run in the foreground and will regularly update with the current status. An example output is as follows:
-
-<pre>
-11:57:49: <b>SHA 1234</b>: 00 <b>00.00/00.00A</b> 0000 0000  <b>M</b>: 09 <b>00.00/17.00A</b> 0000 0000
-11:57:49: Green energy generates <b>4956W</b>, Consumption <b>726W</b>, Charger Load <b>0W</b>
-          Limiting car charging to 20.65A - 3.03A = <b>17.62A</b>.
-          Charge when above <b>6A</b> (minAmpsPerTWC).
-</pre>
-
-   * SHA 1234 is the reported TWC code for each of the Slave TWCs that the Master is connected to.
-   * The 00.00/00.00A next to the Slave TWC code is the current number of amps being utilised and the total number of amps available to that slave. The master divides the total amperage available for use between the connected slaves.
-   * M is the same values for the Master device (our script). It shows current utilization and total available amps (in this case, 17A) available for all connected slaves.
-   * The second line shows the green energy values detected. In this case, the attached green energy device (solar inverter) is reporting 4956W being generated from solar, 726W being used by other household appliances, and no load being generated by the charger. As we charge a vehicle, that value will increase and may be subtracted from the consumption value if configured to do so.
-   * The line below this reports the same values but in amps instead of watts.
-   * The final line shows the minAmpsPerTWC value, which is the minimum number of amps that the master must offer each slave before we tell the attached vehicle to charge (via the Tesla API).
-
-## Running TWCManager as a Service
-
-The following commands make TWCManager run automatically (as a service) when the Raspberry Pi boots up.
-
-Enable the service. The --now flag also makes it start immediately. This will persist after rebooting.
-```
-sudo cp twcmanager.service /etc/systemd/system/twcmanager.service
-sudo systemctl enable twcmanager.service --now
-```
-To check the output of the TWCManager service
-```
-journalctl -f
-```
-To disable the TWCManager service permanently use the following command.  This will persist after rebooting.
-```
-sudo systemctl disable twcmanager
-```
+   * In addition, we have a set of [Configuration Examples](config_examples.md) intended to help with more complex setups such as those utilizing Flex Charging. These examples help to share information that has been discussed previously when setting up more complex charging policy.
 
 ## Developing for TWCManager
 

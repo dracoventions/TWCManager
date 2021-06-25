@@ -1,0 +1,592 @@
+{
+    "config": {
+        # The settings path will store the dynamic settings which are defined via the web
+        # interface
+        "settingsPath": "/etc/twcmanager",
+
+        # Set wiringMaxAmpsAllTWCs to the maximum number of amps your charger wiring
+        # can handle. I default this to a low 6A which should be safe with the minimum
+        # standard of wiring in the areas of the world that I'm aware of.
+        # Most U.S. chargers will be wired to handle at least 40A and sometimes 80A,
+        # whereas EU chargers will handle at most 32A (using 3 AC lines instead of 2 so
+        # the total power they deliver is similar).
+        # Setting wiringMaxAmpsAllTWCs too high will trip the circuit breaker on your
+        # charger at best or START A FIRE if the circuit breaker malfunctions.
+        # Keep in mind that circuit breakers are designed to handle only 80% of their
+        # max power rating continuously, so if your charger has a 50A circuit breaker,
+        # put 50 * 0.8 = 40 here.
+        # 40 amp breaker * 0.8 = 32 here.
+        # 30 amp breaker * 0.8 = 24 here.
+        # 100 amp breaker * 0.8 = 80 here.
+        # IF YOU'RE NOT SURE WHAT TO PUT HERE, ASK THE ELECTRICIAN WHO INSTALLED YOUR
+        # CHARGER.
+        "wiringMaxAmpsAllTWCs": 80,
+
+        # If all your chargers share a single circuit breaker, set wiringMaxAmpsPerTWC
+        # to the same value as wiringMaxAmpsAllTWCs.
+        # Rarely, each TWC will be wired to its own circuit breaker. If you're
+        # absolutely sure your chargers each have a separate breaker, put the value of
+        # that breaker * 0.8 here, and put the sum of all breakers * 0.8 as the value of
+        # wiringMaxAmpsAllTWCs.
+        # For example, if you have two TWCs each with a 50A breaker, set
+        # wiringMaxAmpsPerTWC = 50 * 0.8 = 40 and wiringMaxAmpsAllTWCs = 40 + 40 = 80.
+        "wiringMaxAmpsPerTWC": 80,
+
+        # https://teslamotorsclub.com/tmc/threads/model-s-gen2-charger-efficiency-testing.78740/#post-1844789
+        # says you're using 10.85% more power (91.75/82.77=1.1085) charging at 5A vs 40A,
+        # 2.48% more power at 10A vs 40A, and 1.9% more power at 20A vs 40A.  This is
+        # using a car with 2nd generation onboard AC/DC converter (VINs ending in 20000
+        # and higher).
+        # https://teslamotorsclub.com/tmc/threads/higher-amp-charging-is-more-efficient.24972/
+        # says that cars using a 1st generation charger may use up to 30% more power
+        # at 6A vs 40A!  However, the data refers to 120V 12A charging vs 240V 40A
+        # charging. 120V 12A is technically the same power as 240V 6A, but the car
+        # batteries need 400V DC to charge and a lot more power is wasted converting
+        # 120V AC to 400V DC than 240V AC to 400V DC.
+        #
+        # The main point is 6A charging wastes a lot of power, so we default to charging
+        # at a minimum of 12A by setting minAmpsPerTWC to 12. I picked 12A instead of 10A
+        # because there is a theory that multiples of 3A are most efficient, though I
+        # couldn't find any data showing that had been tested.
+        #
+        # Most EU chargers are connected to 230V, single-phase power which means 12A is
+        # about the same power as in US chargers. If you have three-phase power, you can
+        # lower minAmpsPerTWC to 6 and still be charging with more power than 12A on
+        # single-phase.  For example, 12A * 230V * 1 = 2760W for single-phase power, while
+        # 6A * 230V * 3 = 4140W for three-phase power. Consult an electrician if this
+        # doesn't make sense.
+        #
+        # https://forums.tesla.com/forum/forums/charging-lowest-amperage-purposely
+        # says another reason to charge at higher power is to preserve battery life.
+        # The best charge rate is the capacity of the battery pack / 2.  Home chargers
+        # can't reach that rate, so charging as fast as your wiring supports is best
+        # from that standpoint.  It's not clear how much damage charging at slower
+        # rates really does.
+        "minAmpsPerTWC": 12,
+
+        # When you have more than one vehicle associated with the Tesla car API and
+        # onlyChargeMultiCarsAtHome = True, cars will only be controlled by the API when
+        # parked at home. For example, when one vehicle is plugged in at home and
+        # another is plugged in at a remote location and you've set TWCManager to stop
+        # charging at the current time, only the one plugged in at home will be stopped
+        # from charging using the car API.
+        # Unfortunately, bugs in the car GPS system may cause a car to not be reported
+        # as at home even if it is, in which case the car might not be charged when you
+        # expect it to be. If you encounter that problem with multiple vehicles, you can
+        # set onlyChargeMultiCarsAtHome = False, but you may encounter the problem of
+        # a car not at home being stopped from charging by the API.
+        "onlyChargeMultiCarsAtHome": true,
+
+        # Newer TWCs can report actual voltages.  For older TWCs, you can specify
+        # what voltage should be assumed and whether the power is single (1) or
+        # 3-phase.
+        "defaultVoltage": 240,
+        "numberOfPhases": 1,
+
+        # As I observed different reactive power changing with the the amps used,
+        # I introduce a real power variable for minAmps and maxAmps
+        # For my installation there was 0.90 at 6 amps and 0.93 at 20 amps. 
+        # You can comment that in, if you want to try this.        
+        # "realPowerFactorMinAmps": 0.9,
+        # "realPowerFactorMaxAmps": 0.93,
+
+        # When determining how much green energy is available for charging, we count
+        # greenEnergyAmpsOffset as consumption. This is most often given a value
+        # equal to the average amount of power consumed by everything other than car
+        # charging. For example, if your house uses an average of 2.8A to power
+        # computers, lights, etc while you expect the car to be charging, set
+        # greenEnergyAmpsOffset = 2.8.
+        #
+        # If you have solar panels, look at your utility meter while your car charges.
+        # If it says you're using 0.67kW, that means you should set
+        # greenEnergyAmpsOffset = 0.67kW * 1000 / 240V = 2.79A assuming you're on the
+        # North American 240V grid. In other words, during car charging, you want your
+        # utility meter to show a value close to 0kW meaning no energy is being sent to
+        # or from the grid.
+        #
+        # If you are able to obtain consumption details from an energy management system,
+        # this value can be set to 0 unless you wish to manually adjust what it returns.
+        "greenEnergyAmpsOffset": 1.05,
+
+        # If green energy dips below the target charge amount while already charging,
+        # how much extra current should be drawn to keep charging?  This avoids frequently
+        # stopping and starting charging on a day with variable solar output, at the cost
+        # of drawing energy from sources other than solar.
+        "greenEnergyFlexAmps": 0,
+
+        # If you want to use start charging with greenEnergyFlexAmps as it delays stopping
+        # you have to set this config to true
+        "useFlexAmpsToStartCharge": false,
+
+        # If the conditions for green energy briefly fail to match, how long should the
+        # Track Green Energy policy continue to run?  (Mainly useful if you're adding
+        # non-time-based restrictions below.)
+        #"greenEnergyLatch": 15,
+
+        # In some environments, the consumption meter value that we obtain will
+        # include the charger's consumption, whilst others will not.
+        # This switch, if set to true, will subtract the charger's load from the
+        # consumption value, ensuring that the charger itself doesn't register
+        # in your solar consumption value.
+
+        # If your solar consumption value does include the charger and you don't
+        # set this option, you'll see charging consistently stop after a short
+        # time interval, due to the available amps being set below minimum charge.
+        "subtractChargerLoad": false,
+
+        # The minChargeLevel parameter determines the minimum acceptable SOC
+        # state for any monitored vehicle. If the SOC is below this value,
+        # the car will not be stopped from charging (even if we are not
+        # generating sufficient energy). This value is disabled by default;
+        # you will need to un-comment it to have it take effect.
+        #"minChargeLevel": 10,
+
+        # The cloudUpdateInterval determines how often to poll certain
+        # data retrieved from the Tesla API to evaluate policy.
+        "cloudUpdateInterval": 1800,
+
+        # These parameters enable you to specify different charge limits
+        # for different charging policies.  The car's 'outside' limit
+        # will be restored whenever GPS indicates the car has left home.
+        #
+        # Valid settings are integers 50-100, or use -1
+        # to keep the car's 'outside' limit.  -1 is the default.
+        #"chargeNowLimit": 100,
+        #"greenEnergyLimit": 90,
+        #"scheduledLimit": 50,
+        #"nonScheduledLimit": -1,
+
+        # Deprecated, use logLevel instead
+        # Choose how much debugging info to output.
+        # 0 is no output other than errors.
+        # 1 is just the most useful info.
+        # 2-8 add debugging info
+        # 9 includes raw RS-485 messages transmitted and received (2-3 per sec)
+        # 10 is all info.
+        # 11 is more than all info.  ;)
+        # "debugLevel": 1,
+
+        # Level     Numeric  debugLevel_equiv
+        #
+        # CRITICAL  50
+        # ERROR     40        0     no output other than errors.
+        # WARNING   30
+        # INFO      20        1     just the most useful info.
+        # INFO2     19        2     add debugging info
+        # INFO3     18        3     add debugging info
+        # INFO4     17        4     add debugging info
+        # INFO5     16        5     add debugging info
+        # INFO6     15        6     add debugging info
+        # INFO7     14        7     add debugging info
+        # INFO8     13        8     add debugging info
+        # INFO9     12        9     includes raw RS-485 msgs tx and rx (2-3 per sec)
+        # DEBUG     10       10     all info.
+        # DEBUG2     9       11     more than all info.  ;)
+
+        "logLevel": 20,
+
+        # Choose whether to display milliseconds after time on each line of debug info.
+        "displayMilliseconds": false,
+
+        # Webhooks can be triggered using either GET or POST methods.
+        # By default, they receive a POST of the current status; uncomment for GET.
+        #"webhookMethod": "GET",
+
+        # Normally we fake being a TWC Master using fakeMaster = 1.
+        # Two other settings are available, but are only useful for debugging and
+        # experimenting:
+        #   Set fakeMaster = 0 to fake being a TWC Slave instead of Master.
+        #   Set fakeMaster = 2 to display received RS-485 messages but not send any
+        #                      unless you use the debugging web interface
+        #                      (index.php?debugTWC=1) to send messages.
+        "fakeMaster": 1
+    },
+
+    # The interface section of the configuration is where we configure the
+    # way in which we talk to the TWC Slaves. This is usually going to be
+    # RS485, which is enabled by default.
+    #
+    # Note that only one interface can be enabled for a valid configuration.
+    # If you enable more than one, only the first enabled interface will be used
+    "interface": {
+      "Dummy": {
+        "enabled": true,
+
+        # The dummy module is used for testing. It will simulate an actual
+        # slave TWC for the purpose of offline testing of TWCManager.
+        # Most people would not enable this module.
+        # This should be a two-byte ID
+        "twcID": "AB"
+      },
+      "RS485": {
+        "enabled": false,
+
+        # TWC's rs485 port runs at 9600 baud which has been verified with an
+        # oscilloscope. Don't change this unless something changes in future hardware.
+        "baud": 9600,
+
+        # Most users will have only one ttyUSB adapter plugged in and the default value
+        # of '/dev/ttyUSB0' below will work. If not, run 'dmesg |grep ttyUSB' on the
+        # command line to find your rs485 adapter and put its ttyUSB# value in the
+        # parameter below.
+        # If you're using a non-USB adapter like an RS485 shield, the value may need to
+        # be something like '/dev/serial0'.
+        "port": "/dev/ttyUSB0"
+
+      },
+      "TCP": {
+        "enabled": false
+
+        # The TCP module allows communications over a TCP listener or client
+        # socket. This can be used to integrate with network-based RS485
+        # interfaces.
+      }
+    },
+    "control": {
+      "HTTP": {
+        "enabled": true,
+        "listenPort": 8088
+      },
+      "MQTT": {
+        "enabled": true,
+        "brokerIP": "127.0.0.1",
+        "topicPrefix": "TWC",
+        "username": "twcmanager",
+        "password": "twcmanager"
+      },
+      "OCPP": {
+          "enabled": false,
+          "serverPort": 9000
+      }
+
+    },
+
+    # In the below policy segment of the configuration, we can tune the behaviour
+    # of the policy engine. By default, the policy engine will:
+    # - Evaluate any user defined extensions in the emergency section below
+    # - Check for the configuration of a "Charge Now" option, if so, start charging
+    #   at the specified rate for the specified time.
+    # - Evaluate any user defined extensions in the before section below
+    # - During Scheduled Charging hours, charge at the scheduled rate.
+    # - Poll Green Energy Sources to see if they are supplying enough energy to charge
+    #   (and within schedule), and if so, adjust charge rate to generated energy value
+    # - Evaluate any user defined extensions in the after section below
+    # - Outside Scheduled Charging, charge at unscheduled charge rate
+    "policy":{
+      "engine":{
+        "policyCheckInterval": 30
+      },
+      # NOTE: Override and Extend are mutually exclusive options. Once you override, you
+      # can no longer extend the inbuilt policy.
+      # Using the extend feature below, you can add extra rules into the charging policy.
+      "extend":{
+        # Rules in the emergency section are evaluated before the Charge Now rule
+        #
+        # They should primarily be used to abort charging when necessary.
+        "emergency":[
+        ],
+        # Rules in the before section here are evaluated after the Charge Now rule
+        "before":[
+        ],
+        # Rules in the after section here are evaluated before the Unscheduled Charging
+        # rule at the end of the policy.
+        "after":[
+        ],
+
+        # Rather than defining additional policies, these values place additional constraints
+        # on the built-in policies.
+        "restrictions":{
+          #"Track Green Energy":{
+          #  "match":[],
+          #  "condition":[],
+          #  "value":[]
+          #},
+          #"Charge Now":{
+            #  "match":[],
+            #  "condition":[],
+            #  "value":[]
+            #},
+        },
+
+        # This permits defining webhooks for the built-in policies
+        "webhooks": {
+          #"Scheduled Charging": {
+          #  "enter": "http://ift.tt/your_url_here",
+          #  "start": "http://ift.tt/your_url_here",
+          #  "stop": "http://ift.tt/your_url_here",
+          #  "exit": "http://ift.tt/your_url_here"
+          #}
+          #"Track Green Energy": etc.
+          #"Charge Now": etc.
+          #"Non Scheduled Charging": etc.
+        }
+      },
+      # NOTE: Override and Extend are mutually exclusive options. Once you override, you
+      # can no longer extend the inbuilt policy.
+      # If you are planning on using this feature, please consider first using the
+      # extend option above, which probably lets you do what you need to do, but avoids
+      # totally replacing the charge policy which may get improved over time in the
+      # codebase. If you do override this, you may need to keep it in sync with the code
+      # in future.
+      "override": [
+      # { "name": "Charge Now",
+      #   "match": [ "settings.chargeNowAmps", "settings.chargeNowTimeEnd", "settings.chargeNowTimeEnd" ],
+      #   "condition": [ "gt", "gt", "gt" ],
+      #   "value": [ 0, 0, "now" ],
+      #   "charge_amps": "settings.chargeNowAmps",
+      #   "charge_limit": "config.chargeNowLimit" },
+
+      # { "name": "Scheduled Charging",
+      #   "match": [ "checkScheduledCharging()" ],
+      #   "condition": [ "eq" ],
+      #   "value": [ 1 ],
+      #   "charge_amps": "settings.scheduledAmpsMax",
+      #   "charge_limit": "config.scheduledLimit" },
+  
+      # { "name": "Track Green Energy",
+      #   "match": [ "tm_hour", "tm_hour", "settings.hourResumeTrackGreenEnergy" ],
+      #   "condition": [ "gte", "lt", "lte" ],
+      #   "value": [ 6, 20, "tm_hour" ],
+      #   "charge_amps": "getMaxAmpsToDivideGreenEnergy()",
+      #   "background_task": "checkGreenEnergy",
+      #   "charge_limit": "config.greenEnergyLimit" },
+
+      # { "name": "Non Scheduled Charging",
+      #   "match": [ "settings.nonScheduledAction" ],
+      #   "condition": [ "lt" ],
+      #   "value": [3],
+      #   "charge_amps": "settings.nonScheduledAmpsMax",
+      #   "charge_limit": "config.nonScheduledLimit" },
+
+      ]
+    },
+    "logging":{
+        # Logging configuration controls where status messages about the TWC
+        # and charging sessions are logged. By default, we log to console and
+        # not to file. Consider what logging to file may mean if you're using
+        # a pi, it may mean considering alternatives such as a remote database
+        # to reduce write cycles.
+        "Console": {
+            "enabled": true
+        },
+        "FileLogger": {
+          "enabled": true,
+          # The path under which the various log files will be stored.
+          # Make sure the user which runs the TWCManager process can write to
+          # this directory.
+          "path": "/etc/twcmanager/log",
+          # The mute parameter allows turning specific logging on or off.
+          # In the example below, charge sessions are logged, but not the
+          # regular charger status messages. These are valid under any of the
+          # logging modules
+          # For the debug output, you can mute Log Levels greater than the 
+          # value specified here.
+          "mute":{
+              "ChargeSessions": false,
+              "GreenEnergy": false,
+              "SlavePower": false,
+              "SlaveStatus": false,
+              "DebugLogLevelGreaterThan": 1
+          }
+        },
+        "Sentry": {
+          "enabled": true,
+	  # The DSN can be found in Sentry under SDK Setup of a project
+	  "DSN": "https://927ad4bf33b6470783daa7084b772da9@o564456.ingest.sentry.io/5705201",
+          # The mute parameter allows turning specific logging on or off.
+          # In the example below, charge sessions are logged, but not the
+          # regular charger status messages. These are valid under any of the
+          # logging modules
+          # For the debug output, you can mute Log Levels greater than the 
+          # value specified here.
+          "mute":{
+              "ChargeSessions": false,
+              "GreenEnergy": false,
+              "SlavePower": false,
+              "SlaveStatus": false,
+              "DebugLogLevelGreaterThan": 1
+          }                 
+        },
+        "CSV": {
+            "enabled": true,
+            # The path under which the various csv files will be stored.
+            # Make sure the user which runs the TWCManager process can write to
+            # this directory.
+            "path": "/etc/twcmanager/csv",
+            # The mute parameter allows turning specific logging on or off.
+            # In the example below, charge sessions are logged, but not the
+            # regular charger status messages. These are valid under any of the
+            # logging modules
+            "mute":{
+                "ChargeSessions": false,
+                "GreenEnergy": false,
+                "SlavePower": false,
+                "SlaveStatus": false
+            }
+        },
+        "MySQL": {
+            "enabled": true,
+            "host": "127.0.0.1",
+            "database": "twcmanager",
+            "username": "twcmanager",
+            "password": "twcmanager"
+        },
+        # SQLite is only in prototype phase at this point. More work required
+        # before this will be a working logging target
+        "SQLite": {
+            "enabled": true,
+            "path": "/etc/twcmanager/twcmanager.sqlite"
+        }
+    },
+    "sources":{
+        # This section is where we configure the various sources that we retrieve our generation and consumption
+        # values for our solar system from.
+        # To use a particular interface, set the enabled flag to true (or it will be ignored) and fill in the
+        # relevant fields to allow the interface to connect to the system. Whilst you can have multiple interfaces
+        # configured simultaneously, currently we will only add together the values recieved from each. This might be
+        # useful if you have one interface that provides generation detail and another that provides consumption
+        # detail, but if both systems provided both values, it would be duplicated.
+        "Enphase": {
+            "enabled": true,
+
+            # Note that Enphase is an either/or, either Cloud or Local
+            # Enabling both of these sections will not give you the intended
+            # outcome.
+            #
+            # Cloud API:
+            #"apiKey": "ABC123",
+            #"systemID": "12345",
+            #"userID": "4d6a51330a"
+            # Local API:
+            "serverIP": "127.0.0.1",
+            "serverPort": 1080
+
+        },
+        "Fronius": {
+            "enabled": false,
+            "serverIP": "192.168.1.2"
+        },
+        "HASS": {
+      # The HASS module allows fetching of consumption and generation statistics from HomeAssistant sensors.
+            "enabled": false,
+
+      # The IP address and port of the HomeAssistant front-end
+            "serverIP": "192.168.1.1",
+            "serverPort": "8123",
+            "useHttps": false,            
+
+      # To obtain a HASS API key, via browser, click on your user profile, and
+      # add a Long-Lived Access Token. Place it in the following variable:
+            "apiKey": "ABC123",
+
+      # For HomeAssistant, the two settings below must be customized to point to the specific sensor
+      # names you use within HomeAssistant. There is no default or common value for this, so it will
+      # require customization to work correctly.
+      # If you do not track one of these values (generation or consumption) via HASS, leave the parameter
+      # blank, and it will not be retrieved.
+            "hassEntityConsumption": "sensor.meter_power_live",
+            "hassEntityGeneration":  "sensor.inverter_power_live"
+        },
+        "MQTT": {
+      # MQTT Sensor support for reading generation or consumption data.
+      # This is not yet available.
+          "enabled": false
+        },
+      # Tesla Powerwall2
+      # This module fetches both consumption and solar generation details
+        "Powerwall2": {
+          "enabled": false,
+          "serverIP": "192.168.1.2",
+      # Password is required starting in firmware 20.49.0
+          "password": "test123",
+      # The following value specifies the minimum battery level of the 
+      # Powerwall2 before the car will be able to charge. This avoids a
+      # situation where the battery level is low due to low generation, and the
+      # battery is then further depleted by the vehicle charging.
+          "minBatteryLevel": 90
+        },
+        "SmartMe": {
+          "enabled": false,
+          "username": "username",
+          "password": "password",
+          "serialNumber": "ABC1234"
+        },
+        "SmartPi": {
+          "enabled": true,
+          "serverIP": "127.0.0.1",
+          "serverPort": "1080"
+        },
+      # SolarEdge API, consumed from the internet-based SolarEdge Potal
+        "SolarEdge": {
+          "enabled": false,
+      # API Key must be specified in order to monitor a SolarEdge site
+          "apiKey": "",
+      # Site ID defines which system to monitor
+          "siteID": ""
+        },
+      # SolarLog Inverters
+        "SolarLog": {
+          "enabled": false,
+          "serverIP": "192.168.1.2",
+          "excludeConsumptionInverters": [ 2 ] #Array of indices of reading devices - to exclude consumption from. Needed if e.g. a boiler only heats with solar overhead - and you want to override this one.
+        },        
+      # The energy detective
+        "TED": {
+          "enabled": false,
+          "serverIP": "192.168.1.1",
+          "serverPort": "80"
+        },
+      # The openHAB module allows fetching of consumption and generation data from openHAB items.
+      # If you do not track one of these values (generation or consumption) via openHAB, leave the parameter blank, and it will not be retrieved.
+        "openHAB": {
+          "enabled": false,
+          "consumptionItem": "Consumption item name",
+          "generationItem": "Generation item name",
+          "serverIP": "192.168.1.2",
+          "serverPort": "8080"
+        },
+      # The Efergy server allows fetching of consumption from https://engage.efergy.com/ token is needed
+        "Efergy": {
+            "enabled": false,
+            "token": "xx"
+        }
+
+    },
+
+    # Status plugins allow us to export status detail out of TWCManager.
+    # This will use interfaces such as MQTT or HomeAssistant API to update status for charging, power draw, etc.
+    "status": {
+        "HASS": {
+      # Enabling the HASS status plugin will push TWCManager sensor values to a HomeAssistant server.
+            "enabled": false,
+            "serverIP": "192.168.1.1",
+            "serverPort": "8123",
+            "useHttps": false,
+      
+      # Perform rate limiting first (as there are some very chatty topics).
+      # For each message that comes through, we take the sensor name and check
+      # when we last updated it. If it was less than msgRateInSeconds
+      # seconds ago, we send it later.
+            "msgRateInSeconds": 60,
+      
+      # Resends the last sensor value at least once every resendRateInSeconds, 
+      # so HASS does not forget the value ;-)
+            "resendRateInSeconds": 3600,
+      
+      # In case of errors, after how many seconds it the logic should try to resend
+      # the status
+            "retryRateInSeconds": 60,
+
+      # To obtain a HASS API key, via browser, click on your user profile, and
+      # add a Long-Lived Access Token. Place it in the following variable:
+            "apiKey": "ABC123"
+        },
+        "MQTT": {
+            "enabled": true,
+            "brokerIP": "127.0.0.1",
+            "topicPrefix": "TWC",
+            "username": "twcmanager",
+            "password": "twcmanager"
+        }
+    }
+}

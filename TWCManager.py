@@ -77,6 +77,7 @@ modules_available = [
     "Logging.CSVLogging",
     "Logging.MySQLLogging",
     "Logging.SQLiteLogging",
+    "Protocol.TWCProtocol",
     "Interface.Dummy",
     "Interface.RS485",
     "Interface.TCP",
@@ -85,18 +86,22 @@ modules_available = [
     "Control.WebIPCControl",
     "Control.HTTPControl",
     "Control.MQTTControl",
+#    "Control.OCPPControl",
+    "EMS.Efergy",
     "EMS.Enphase",
     "EMS.Fronius",
+    "EMS.Growatt",
     "EMS.HASS",
     "EMS.Kostal",
     "EMS.OpenHab",
+    "EMS.OpenWeatherMap",
     "EMS.SmartMe",
+    "EMS.SmartPi",
     "EMS.SolarEdge",
     "EMS.SolarLog",
     "EMS.TeslaPowerwall2",
     "EMS.TED",
-    "EMS.Efergy",
-    "EMS.Growatt",
+    "EMS.Volkszahler",
     "Status.HASSStatus",
     "Status.MQTTStatus",
 ]
@@ -121,7 +126,7 @@ else:
 if jsonconfig:
     config = commentjson.load(jsonconfig)
 else:
-    logger.info("Unable to find a configuration file.")
+    logger.error("Unable to find a configuration file.")
     sys.exit()
 
 
@@ -241,7 +246,7 @@ def background_tasks_thread(master):
                 # too frequently.
                 carapi.car_api_charge(task["charge"])
             elif task["cmd"] == "carApiEmailPassword":
-                carapi.setCarApiLastErrorTime(0)
+                carapi.resetCarApiLastErrorTime()
                 carapi.car_api_available(task["email"], task["password"])
             elif task["cmd"] == "checkArrival":
                 limit = (
@@ -258,6 +263,19 @@ def background_tasks_thread(master):
                 )
             elif task["cmd"] == "checkGreenEnergy":
                 check_green_energy()
+            elif task["cmd"] == "checkVINEntitlement":
+                # The two possible arguments are task["subTWC"] which tells us
+                # which TWC to check, or task["vin"] which tells us which VIN
+                if task.get("vin", None):
+                    task["subTWC"] = master.getTWCbyVIN(task["vin"])
+
+                if task["subTWC"]:
+                    if master.checkVINEntitlement(task["subTWC"]):
+                        logger.info("Vehicle %s on TWC %02X%02X is permitted to charge." % (task["subTWC"].currentVIN, task["subTWC"].TWCID[0], task["subTWC"].TWCID[1]))
+                    else:
+                        logger.info("Vehicle %s on TWC %02X%02X is not permitted to charge. Terminating session." % (task["subTWC"].currentVIN, task["subTWC"].TWCID[0], task["subTWC"].TWCID[1]))
+                        master.sendStopCommand(task["subTWC"].TWCID)
+
             elif task["cmd"] == "getLifetimekWh":
                 master.getSlaveLifetimekWh()
             elif task["cmd"] == "getVehicleVIN":
@@ -305,15 +323,7 @@ def check_green_energy():
     # to match those used in your environment. This is configured
     # in the config section at the top of this file.
     #
-    greenEnergyAmpsOffset = config["config"]["greenEnergyAmpsOffset"]
-    if greenEnergyAmpsOffset >= 0:
-        master.setConsumption(
-            "Manual", master.convertAmpsToWatts(greenEnergyAmpsOffset)
-        )
-    else:
-        master.setGeneration(
-            "Manual", -1 * master.convertAmpsToWatts(greenEnergyAmpsOffset)
-        )
+
     # Poll all loaded EMS modules for consumption and generation values
     for module in master.getModulesByType("EMS"):
         master.setConsumption(module["name"], module["ref"].getConsumption())
@@ -333,46 +343,74 @@ def update_statuses():
     if master.getModuleByName("Policy").policyIsGreen():
         genwatts = master.getGeneration()
         conwatts = master.getConsumption()
+        conoffset = master.getConsumptionOffset()
         chgwatts = master.getChargerLoad()
-        genwattsDisplay = f("{genwatts:.0f}W")
-        conwattsDisplay = f("{conwatts:.0f}W")
-        chgwattsDisplay = f("{chgwatts:.0f}W")
+        othwatts = 0
 
         if config["config"]["subtractChargerLoad"]:
-            othwatts = conwatts - chgwatts
-            othwattsDisplay = f("{othwatts:.0f}W")
+            if conwatts > 0:
+                othwatts = conwatts - chgwatts
+
+            if conoffset > 0:
+                othwatts -= conoffset
+
+        # Extra parameters to send with logs
+        logExtra = {
+            "logtype": "green_energy",
+            "genWatts": genwatts,
+            "conWatts": conwatts,
+            "chgWatts": chgwatts,
+            "colored": "magenta"
+        }
+
+        if ((genwatts or conwatts) and (not conoffset and not othwatts)):
+
             logger.info(
-                "Green energy generates %s, Consumption %s (Other Load %s, Charger Load %s)",
-                genwattsDisplay,
-                conwattsDisplay,
-                othwattsDisplay,
-                chgwattsDisplay,
-                extra={
-                    "logtype": "green_energy",
-                    "genWatts": genwatts,
-                    "conWatts": conwatts,
-                    "chgWatts": chgwatts,
-                    "colored": "magenta"
-                },
+                "Green energy Generates %s, Consumption %s (Charger Load %s)",
+                f("{genwatts:.0f}W"),
+                f("{conwatts:.0f}W"),
+                f("{chgwatts:.0f}W"),
+                extra=logExtra,
             )
-        else:
+
+        elif ((genwatts or conwatts) and othwatts and not conoffset):
+
             logger.info(
-                "Green energy generates %s, Consumption %s, Charger Load %s",
-                genwattsDisplay,
-                conwattsDisplay,
-                chgwattsDisplay,
-                extra={
-                    "logtype": "green_energy",
-                    "genWatts": genwatts,
-                    "conWatts": conwatts,
-                    "chgWatts": chgwatts,
-                    "colored": "magenta"
-                },
+                "Green energy Generates %s, Consumption %s (Charger Load %s, Other Load %s)",
+                f("{genwatts:.0f}W"),
+                f("{conwatts:.0f}W"),
+                f("{chgwatts:.0f}W"),
+                f("{othwatts:.0f}W"),
+                extra=logExtra,
+            )
+
+        elif ((genwatts or conwatts) and othwatts and conoffset > 0):
+
+            logger.info(
+                "Green energy Generates %s, Consumption %s (Charger Load %s, Other Load %s, Offset %s)",
+                f("{genwatts:.0f}W"),
+                f("{conwatts:.0f}W"),
+                f("{chgwatts:.0f}W"),
+                f("{othwatts:.0f}W"),
+                f("{conoffset:.0f}W"),
+                extra=logExtra,
+            )
+
+        elif ((genwatts or conwatts) and othwatts and conoffset < 0):
+
+            logger.info(
+                "Green energy Generates %s (Offset %s), Consumption %s (Charger Load %s, Other Load %s)",
+                f("{genwatts:.0f}W"),
+                f("{(-1 * conoffset):.0f}W"),
+                f("{conwatts:.0f}W"),
+                f("{chgwatts:.0f}W"),
+                f("{othwatts:.0f}W"),
+                extra=logExtra,
             )
 
         nominalOffer = master.convertWattsToAmps(
-            genwatts
-            - (conwatts - (chgwatts if config["config"]["subtractChargerLoad"] else 0))
+            genwatts + (chgwatts if (config["config"]["subtractChargerLoad"] and conwatts == 0) else 0)
+            - (conwatts - (chgwatts if (config["config"]["subtractChargerLoad"] and conwatts > 0) else 0))
         )
         if abs(maxamps - nominalOffer) > 0.005:
             nominalOfferDisplay = f("{nominalOffer:.2f}A")
@@ -474,6 +512,12 @@ for module in modules_available:
         modulename = str(module).split(".")
 
     try:
+        # Pre-emptively skip modules that we know are not configured
+        configlocation = master.translateModuleNameToConfig(modulename)
+        if not config.get(configlocation[0], {}).get(configlocation[1], {}).get("enabled", 1):
+            # We can see that this module is explicitly disabled in config, skip it
+            continue
+
         moduleref = importlib.import_module("lib.TWCManager." + module)
         modclassref = getattr(moduleref, modulename[1])
         modinstance = modclassref(master)
@@ -633,6 +677,7 @@ while True:
         # See if there's an incoming message on the input interface.
 
         timeMsgRxStart = time.time()
+        actualDataLen = 0
         while True:
             now = time.time()
             dataLen = master.getInterfaceModule().getBufferLen()
@@ -661,6 +706,7 @@ while True:
                     time.sleep(0.025)
                     continue
             else:
+                actualDataLen = dataLen
                 dataLen = 1
                 data = master.getInterfaceModule().read(dataLen)
 
@@ -671,7 +717,7 @@ while True:
 
             timeMsgRxStart = now
             timeLastRx = now
-            if msgLen == 0 and data[0] != 0xC0:
+            if msgLen == 0 and len(data) > 0 and data[0] != 0xC0:
                 # We expect to find these non-c0 bytes between messages, so
                 # we don't print any warning at standard debug levels.
                 logger.log(
@@ -679,7 +725,7 @@ while True:
                 )
                 ignoredData += data
                 continue
-            elif msgLen > 0 and msgLen < 15 and data[0] == 0xC0:
+            elif msgLen > 0 and msgLen < 15 and len(data) > 0 and data[0] == 0xC0:
                 # If you see this when the program is first started, it
                 # means we started listening in the middle of the TWC
                 # sending a message so we didn't see the whole message and
@@ -697,6 +743,10 @@ while True:
                 msg = data
                 msgLen = 1
                 continue
+            elif dataLen and len(data) == 0:
+                logger.error(
+                    "We received a buffer length of %s from the RS485 module, but data buffer length is %s. This should not occur." % (str(actualDataLen), str(len(data)))
+                )
 
             if msgLen == 0:
                 msg = bytearray()
@@ -812,6 +862,7 @@ while True:
 
                 msgMatch = re.search(
                     b"^\xfd\xe2(..)(.)(..)\x00\x00\x00\x00\x00\x00.+\Z", msg, re.DOTALL
+
                 )
                 if msgMatch and foundMsgMatch == False:
                     # Handle linkready message from slave.
@@ -1074,7 +1125,6 @@ while True:
                     slaveTWC.VINData[vinPart] = data.decode("utf-8").rstrip("\x00")
                     if vinPart < 2:
                         vinPart += 1
-                        master.getVehicleVIN(senderID, vinPart)
                         master.queue_background_task(
                             {
                                 "cmd": "getVehicleVIN",
@@ -1083,15 +1133,45 @@ while True:
                             }
                         )
                     else:
-                        slaveTWC.currentVIN = "".join(slaveTWC.VINData)
-                        # Clear VIN retry timer
-                        slaveTWC.lastVINQuery = 0
-                        slaveTWC.vinQueryAttempt = 0
-                        # Record this vehicle being connected
-                        master.recordVehicleVIN(slaveTWC)
-                        # Send VIN data to Status modules
-                        master.updateVINStatus()
-                        vinPart += 1
+                        potentialVIN = "".join(slaveTWC.VINData)
+
+                        # Ensure we have a valid VIN
+                        if len(potentialVIN) == 17:
+                            # Record Vehicle VIN
+                            slaveTWC.currentVIN = potentialVIN
+
+                            # Clear VIN retry timer
+                            slaveTWC.lastVINQuery = 0
+                            slaveTWC.vinQueryAttempt = 0
+
+                            # Record this vehicle being connected
+                            master.recordVehicleVIN(slaveTWC)
+
+                            # Send VIN data to Status modules
+                            master.updateVINStatus()
+
+                            # Establish if this VIN should be able to charge
+                            # If not, send stop command
+                            master.queue_background_task(
+                                {
+                                    "cmd": "checkVINEntitlement",
+                                    "subTWC": slaveTWC,
+                                }
+                            )
+
+                            vinPart += 1
+                        else:
+                            # Unfortunately the VIN was not the right length.
+                            # Re-request VIN
+                            master.queue_background_task(
+                                {
+                                    "cmd": "getVehicleVIN",
+                                    "slaveTWC": slaveTWC.TWCID,
+                                    "vinPart": 0,
+                                }
+                            )
+
+
                     logger.log(
                         logging.INFO6,
                         "Current VIN string is: %s at part %d."

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang='en'>
+  <head>
+    <title>TWCManager</title>
+    {% include 'bootstrap.html.j2' %}
+  </head>
+  <body>
+    {% include 'navbar.html.j2' %}
+    <p>&nbsp;</p>
+    {% set vin = url.path.split("/")[2] %}
+    <h3>Vehicle Details</h3>
+    {% if vin != "00000000000000000" %}
+    <table>
+        <tr>
+          <th>Vehicle VIN</th>
+          <td>{{ vin }}</td>
+        </tr>
+        <tr>
+          <th>Manufacturer</th>
+          <td>
+            {% if vin[0:3] == "5YJ" or vin[0:3] == "LRW" %}
+              Tesla Motors
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <th>Manufacture Location</th>
+          <td>
+             {% if vin[10] == "F" %}Fremont, California, USA{%endif%}
+             {% if vin[10] == "P" %}Palo Alto, California, USA{%endif%}
+             {% if vin[10] == "C" %}Shanghai, China{%endif%}
+          </td>
+        </tr>
+        <tr>
+          <th>Model</th>
+          <td>
+            {% if vin[3] == "3" %}Model 3{%endif%}
+            {% if vin[3] == "S" %}Model S{%endif%}
+            {% if vin[3] == "X" %}Model X{%endif%}
+            {% if vin[3] == "Y" %}Model Y{%endif%}
+          </td>
+        </tr>
+        <tr>
+          <th>Body Type</th>
+          <td>
+            {% if vin[3:5] == "SA" %}Left-Hand Drive{%endif%}
+            {% if vin[3:5] == "SB" %}Right-Hand Drive{%endif%}
+            {% if vin[3:5] == "XC" %}Left-Hand Drive{%endif%}
+            {% if vin[3:5] == "XD" %}Right-Hand Drive{%endif%}
+            {% if vin[3:5] == "3E" %}Left-Hand Drive{%endif%}
+            {% if vin[3:5] == "3F" %}Right-Hand Drive{%endif%}
+          </td>
+        </tr>
+        <tr>
+          <th>Variant</th>
+          <td>
+            {% if vin[3] == "3" and vin[5:8] == "7EA" %}Standard Range Plus RWD{%endif%}
+            {% if vin[3] == "3" and vin[5:8] == "7EB" %}Long Range AWD{%endif%}
+            {% if vin[3] == "3" and vin[5:8] == "7EC" %}Performance AWD{%endif%}
+            {% if vin[3] == "3" and vin[7] == "B" %}Long Range AWD{%endif%}
+          </td>
+        </tr>
+        <tr>
+          <th>Manufacture Year</th>
+          <td>
+            {% if vin[9] == "D" %}2013{%endif%}
+            {% if vin[9] == "E" %}2014{%endif%}
+            {% if vin[9] == "F" %}2015{%endif%}
+            {% if vin[9] == "G" %}2016{%endif%}
+            {% if vin[9] == "H" %}2017{%endif%}
+            {% if vin[9] == "J" %}2018{%endif%}
+            {% if vin[9] == "K" %}2019{%endif%}
+            {% if vin[9] == "L" %}2020{%endif%}
+            {% if vin[9] == "M" %}2021{%endif%}
+          </td>
+        </tr>
+        <tr>
+          <th>Charge Sessions</th>
+          <td>{{ master.settings["Vehicles"][vin]["chargeSessions"] }}
+        </tr>
+    </table>
+    {% else %}
+    <table>
+      <tr>
+        <th>Vehicle Details</th>
+        <td>This VIN is assigned to non-Tesla vehicles which attempt to charge on a TWCManager managed TWC. You can use this VIN to determine if non-Tesla vehicles are able to charge.</td>
+      </tr>
+    </table>
+    {% endif %}
+
+    <p>&nbsp;</p>
+    <h3>Group Management</h3>
+    <table>
+      <tr>
+        <th>Group</th>
+        <th>Membership Status</th>
+        <th>Actions</th>
+      </tr>
+      {% for group in master.settings["VehicleGroups"].keys()|sort %}
+      <tr>
+        <td><b>{{ group }}</b></td>
+        <td>
+          {% if vin in master.settings["VehicleGroups"][group]["Members"] %}
+            Vehicle is in this group
+          {% else %}
+            Vehicle is not in this group
+          {% endif %}
+        </td>
+        <td>
+          {% if vin in master.settings["VehicleGroups"][group]["Members"] %}
+            <form method=POST action=/vehicle/groupMgmt>
+              <input type=hidden name="operation" value="remove" />
+              <input type=hidden name="vin" value="{{vin}}" />
+              <input type=hidden name="group" value="{{group}}" />
+              <input type=submit value="Remove from Group">
+            </form>
+          {% else %}
+            <form method=POST action=/vehicle/groupMgmt>
+              <input type=hidden name="operation" value="add" />
+              <input type=hidden name="vin" value="{{vin}}" />
+              <input type=hidden name="group" value="{{group}}" />
+              <input type=submit value="Add to Group">
+            </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    </form>
+  </body>
+</html>

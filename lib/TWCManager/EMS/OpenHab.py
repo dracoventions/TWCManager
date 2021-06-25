@@ -1,4 +1,6 @@
 import logging
+import requests
+import time
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
 
@@ -7,9 +9,6 @@ class OpenHab:
 
     # OpenHab EMS Module
     # Fetches Consumption and Generation details from OpenHab
-
-    import requests
-    import time
 
     apiKey = None
     cacheTime = 10  # in seconds
@@ -91,15 +90,15 @@ class OpenHab:
 
         try:
             logger.debug("Fetching OpenHab EMS item value " + str(item))
-            httpResponse = self.requests.get(url, timeout=self.timeout)
-        except self.requests.exceptions.ConnectionError as e:
+            httpResponse = requests.get(url, timeout=self.timeout)
+        except requests.exceptions.ConnectionError as e:
             logger.log(
                 logging.INFO4, "Error connecting to OpenHab to fetch item values"
             )
             logger.debug(str(e))
             self.fetchFailed = True
             return False
-        except self.requests.exceptions.ReadTimeout as e:
+        except requests.exceptions.ReadTimeout as e:
             logger.log(
                 logging.INFO4, "Read Timeout occurred fetching OpenHab item value"
             )
@@ -132,7 +131,7 @@ class OpenHab:
     def update(self):
         # Update function - determine if an update is required
 
-        if (int(self.time.time()) - self.lastFetch) > self.cacheTime:
+        if (int(time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from OpenHab item.
 
             if self.consumptionItem:
@@ -161,7 +160,7 @@ class OpenHab:
 
             # Update last fetch time
             if self.fetchFailed is not True:
-                self.lastFetch = int(self.time.time())
+                self.lastFetch = int(time.time())
 
             return True
         else:
