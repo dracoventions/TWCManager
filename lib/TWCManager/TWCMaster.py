@@ -743,6 +743,7 @@ class TWCMaster:
                     # We have detected that a vehicle has started charging on this Slave TWC
                     # Attempt to request the vehicle's VIN
                     slaveTWC.isCharging = 1
+                    slaveTWC.lastChargingStart = time.time()
                     self.queue_background_task(
                         {
                             "cmd": "getVehicleVIN",
@@ -775,6 +776,7 @@ class TWCMaster:
                     # Close off the current charging session
                     self.recordVehicleSessionEnd(slaveTWC)
                 slaveTWC.isCharging = 0
+                slaveTWC.lastChargingStart = 0
             carsCharging += slaveTWC.isCharging
             for module in self.getModulesByType("Status"):
                 module["ref"].setStatus(

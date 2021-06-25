@@ -61,6 +61,7 @@ class TWCSlave:
     voltsPhaseB = 0
     voltsPhaseC = 0
     isCharging = 0
+    lastChargingStart = 0
     VINData = ["", "", ""]
     currentVIN = ""
     lastVIN = ""

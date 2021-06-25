@@ -272,6 +272,12 @@ def CreateHTTPHandlerClass(master):
                         "voltsPhaseC": slaveTWC.voltsPhaseC,
                         "TWCID": "%s" % TWCID,
                     }
+
+                    if slaveTWC.lastChargingStart > 0:
+                        data[TWCID]["chargeTime"] = str(timedelta(seconds=(time.time() - slaveTWC.lastChargingStart)))
+                    elif
+                        data[TWCID]["chargeTime"] = "--:--:--"
+
                     # Adding some vehicle data
                     vehicle = slaveTWC.getLastVehicle()
                     if vehicle != None:
