@@ -25,9 +25,6 @@
                         }
                         $('#'+key).html(json[key]);
                     });
-		    var chargingAmps = 0;
-		    chargingAmps = parseFloat(json['chargerLoadAmps']);
-		    $('#chargerLoadAmps').html(chargingAmps.toFixed(2));
 
                     // calculate power surplus
                     var surplusAmps = 0.0;
@@ -83,14 +80,20 @@
                         var twc = '#' + slvtwc['TWCID']
                         Object.keys(slvtwc).forEach(function(key) {
                           $(twc+'_'+key).html(slvtwc[key]);
+                          if (key === 'lastBatterySOC' && slvtwc[key] === '') {
+                              //no SOC data
+                              $(twc+'__socState').hide();
+                          }
                         });
                     });
-		    var chargerAvailAmps = 0;
-		    var tot = json['total'];
-		    chargerAvailAmps = parseFloat(tot['lastAmpsOffered']);
-		    $('#chargerAvailAmps').html(chargerAvailAmps.toFixed(2));
+                    
+		            var chargerAvailAmps = 0;
+		            var tot = json['total'];
+		            chargerAvailAmps = parseFloat(tot['lastAmpsOffered']);
+		            $('#chargerAvailAmps').html(chargerAvailAmps.toFixed(2));
                 }
             });
+
             setTimeout(requestSlaves, 3000);
         }
         requestSlaves();
