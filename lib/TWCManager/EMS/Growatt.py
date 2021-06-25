@@ -47,7 +47,7 @@ class Growatt:
         self.useBatteryAt = float(self.configGrowatt.get("useBatteryAt", 0))
         self.useBatteryTill = float(self.configGrowatt.get("useBatteryTill", 0))
         self.batteryMaxOutput = float(self.configGrowatt.get("batteryMaxOutput", 0))
-        timestring = self.configGrowatt.get("useBatteryBefore", "")
+        timestring = self.configGrowatt.get("useBatteryBefore", "00:00")
         timelist =timestring.split(":")
         self.useBatteryBefore = datetime.time(int(timelist[0]),int(timelist[1]))
         self.discharginTill = self.useBatteryAt

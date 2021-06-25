@@ -58,7 +58,7 @@ EMS Interfaces read solar generation and/or consumption values from an external 
 | [Efergy](docs/modules/EMS_Efergy.md)            | Available | Supports Efergy Pro Sensors |
 | [Enphase](docs/modules/EMS_Enphase.md)          | Available | Supports Enphase Enlighten API |
 | [Fronius Inverter](docs/modules/EMS_Fronius.md) | Available | Supports Fronius Inverter API |
-| Growatt         | Available  | Support for Growatt Inverters |
+| [Growatt](docs/modules/EMS_Growatt.md)          | Available | Support for Growatt Battery systems |
 | [HomeAssistant](docs/modules/EMS_HASS.md)       | Available | Supports HomeAssistant sensors |
 | [Kostal (Pico/Plenticore)](docs/modules/EMS_Kostal.md) | Available | Support for Kostal Inverters via ModBus |
 | [openHAB](docs/modules/EMS_OpenHab.md)          | Available | Supports openHAB items |
