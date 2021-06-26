@@ -85,6 +85,8 @@
                         if ($(twc+'_lastBatterySOC').html() === '') {
                             //no SOC data
                             $(twc+'_socState').hide();
+                        } else {
+                            $(twc+'_socState').show();
                         }
                     });
                     
