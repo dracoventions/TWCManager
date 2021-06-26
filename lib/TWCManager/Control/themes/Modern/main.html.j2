@@ -278,7 +278,7 @@ wcmanager/settings.json and try saving your settings again.</b>
 <!--  Global Actions -->
 <div class="container-fluid pt-4">
     <div class="row justify-content-center">
-        <div class="col-3">
+        <div class="col-lg-3 col-sm-12">
             <form>
                 <div class="form-group p-2">
                     <label for="chargeNowDuration" class="text-muted mb-0">Charge duration <span class="text-dark font-weight-bold" id="{{ twcid }}_durationVal">1</span> hours</label>
@@ -286,7 +286,7 @@ wcmanager/settings.json and try saving your settings again.</b>
                 </div>
             </form>
         </div>
-        <div class="col-3">
+        <div class="col-lg-3 col-sm-12">
             {% set ampsMin = ampsList[1] %}
             {% set ampsMax = ampsList|last %}
             <form>
@@ -296,7 +296,7 @@ wcmanager/settings.json and try saving your settings again.</b>
                 </div>
             </form>
         </div>
-            <div class="col-2">
+            <div class="col-lg-2 col-sm-12 text-center">
                 <div class="form-group p-3 m-1">
                     <button type="submit" class="btn btn-light btn-small border" id="start_chargenow" value="Charge now"></button>
                 </div>
