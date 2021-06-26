@@ -18,8 +18,6 @@
     margin-bottom: 0;
 }
 
-
-
 .amps::after {
     margin-left: 0.3rem;
     content: "A";
