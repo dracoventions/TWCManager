@@ -80,11 +80,12 @@
                         var twc = '#' + slvtwc['TWCID']
                         Object.keys(slvtwc).forEach(function(key) {
                           $(twc+'_'+key).html(slvtwc[key]);
-                          if (key === 'lastBatterySOC' && slvtwc[key] === '') {
-                              //no SOC data
-                              $(twc+'__socState').hide();
-                          }
                         });
+
+                        if ($(twc+'_lastBatterySOC').html() === '') {
+                            //no SOC data
+                            $(twc+'_socState').hide();
+                        }
                     });
                     
 		            var chargerAvailAmps = 0;
