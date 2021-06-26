@@ -370,7 +370,7 @@ class TWCMaster:
     def getStatus(self):
         chargerLoad = float(self.getChargerLoad())
         data = {
-            "currentServerTime": datetime.now().strftime("%Y-%m-%d, %H:%M:%S"),
+            "currentServerTime": datetime.now().strftime("%Y-%m-%d, %H:%M"),
             "carsCharging": self.num_cars_charging_now(),
             "chargerLoadWatts": "%.2f" % chargerLoad,
             "chargerLoadAmps": ("%.2f" % self.convertWattsToAmps(chargerLoad),),
