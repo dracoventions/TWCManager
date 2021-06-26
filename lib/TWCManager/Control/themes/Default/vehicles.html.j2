@@ -16,15 +16,17 @@
           <td>&nbsp;</td>
           <th>Total kWh</th>
         </tr>
-      {% for vehicle in master.settings["Vehicles"].keys()|sort %}
-        <tr>
-          <td><a href="/vehicleDetail/{{ vehicle }}">{{ vehicle }}</a></td>
-          <td>&nbsp;</td>
-          <td>{{ master.settings["Vehicles"][vehicle]["chargeSessions"] }}</td>
-          <td>&nbsp;</td>
-          <td>{{ master.settings["Vehicles"][vehicle]["totalkWh"] }}</td>
-        </tr>
-      {% endfor %}
+      {% if master.settings["Vehicles"] %}
+        {% for vehicle in master.settings["Vehicles"].keys()|sort %}
+            <tr>
+              <td><a href="/vehicleDetail/{{ vehicle }}">{{ vehicle }}</a></td>
+              <td>&nbsp;</td>
+              <td>{{ master.settings["Vehicles"][vehicle]["chargeSessions"] }}</td>
+              <td>&nbsp;</td>
+              <td>{{ master.settings["Vehicles"][vehicle]["totalkWh"] }}</td>
+            </tr>
+        {% endfor %}
+      {% endif %}
     </table>
 
     <p>&nbsp;</p>
