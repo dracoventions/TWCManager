@@ -94,11 +94,19 @@ The following documents provide detail on specific areas of configuration:
 
    * [Policy Customization](PolicyCustomization.md)
 
-## Running the script
+## Running TWCManager
 Once the above steps are complete, start the TWCManager script with the following command:
+
+Prior to v1.2.3:
 
 ```
 python -m TWCManager
+```
+
+From v1.2.3 onwards:
+
+```
+sudo -u twcmanager python -m TWCManager
 ```
 
 ### Monitoring the script operation
