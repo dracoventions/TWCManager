@@ -51,12 +51,14 @@
                     if (json["currentPolicy"] == "Charge Now") {
                         if ($("#start_chargenow").length) {
                             $("#start_chargenow").html("Update Charge Now");
-                            $("#cancel_chargenow").prop( "disabled", false);
+                            $("#cancel_chargenow").prop("disabled", false);
+                            $("#cancel_chargenow").removeClass("disabled");
                         }
                     } else {
                         if ($("#start_chargenow").length) {
                             $("#start_chargenow").html("Charge Now");
-                            $("cancel_chargenow").prop( "disabled", true );
+                            $("#cancel_chargenow").prop("disabled", true);
+                            $("#cancel_chargenow").addClass("disabled");
                         }
                     }
                 }
