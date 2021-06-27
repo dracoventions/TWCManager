@@ -53,6 +53,7 @@ class TWCMaster:
         "scheduledAmpsEndHour": -1,
         "scheduledAmpsMax": 0,
         "scheduledAmpsStartHour": -1,
+        "SendServerTime": 0
     }
     slaveHeartbeatData = bytearray(
         [0x01, 0x0F, 0xA0, 0x0F, 0xA0, 0x00, 0x00, 0x00, 0x00]
@@ -370,7 +371,6 @@ class TWCMaster:
     def getStatus(self):
         chargerLoad = float(self.getChargerLoad())
         data = {
-            "currentServerTime": datetime.now().strftime("%Y-%m-%d, %H:%M&nbsp;|&nbsp;"),
             "carsCharging": self.num_cars_charging_now(),
             "chargerLoadWatts": "%.2f" % chargerLoad,
             "chargerLoadAmps": ("%.2f" % self.convertWattsToAmps(chargerLoad),),
@@ -378,6 +378,8 @@ class TWCMaster:
             "maxAmpsToDivideAmongSlaves": "%.2f"
             % float(self.getMaxAmpsToDivideAmongSlaves()),
         }
+        if self.settings.get("SendServerTime", "0") == 1:
+            data["currentServerTime"] = datetime.now().strftime("%Y-%m-%d, %H:%M&nbsp;|&nbsp;" + self.settings.get("SendServerTime", "0"))
         consumption = float(self.getConsumption())
         if consumption:
             data["consumptionAmps"] = ("%.2f" % self.convertWattsToAmps(consumption),)
