@@ -38,6 +38,8 @@ The default ```docker-compose.yml``` file assumes that you will be using Serial 
 
    * /etc/twcmanager/config.json
 
+The default  ```docker-compose.yml``` file also contains a default timezone Environment variable, commented out. Some systems will not require this to be set, however if you find the graphs and schedules are operating in a different timezone to your location (such as UTC/GMT), then you can specify the TZ attribute here with the linux value for timezone definitions. Uncomment this line to have it take effect.
+
 On your first start of the TWCManager docker container, a directory on the host will be created if it does not currently exist, and the default configuration file will be copied there. The location of this volume is ```/etc/twcmanager```. If you need to edit the configuration file, run the Docker container in interactive mode (instructions below), exit with Ctrl+C and then edit the ```/etc/twcmanager/config.json``` file that was created.
 
 ## Starting TWCManager
