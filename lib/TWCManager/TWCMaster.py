@@ -53,7 +53,7 @@ class TWCMaster:
         "scheduledAmpsEndHour": -1,
         "scheduledAmpsMax": 0,
         "scheduledAmpsStartHour": -1,
-        "SendServerTime": 0
+        "sendServerTime": 0
     }
     slaveHeartbeatData = bytearray(
         [0x01, 0x0F, 0xA0, 0x0F, 0xA0, 0x00, 0x00, 0x00, 0x00]
@@ -378,8 +378,8 @@ class TWCMaster:
             "maxAmpsToDivideAmongSlaves": "%.2f"
             % float(self.getMaxAmpsToDivideAmongSlaves()),
         }
-        if self.settings.get("SendServerTime", "0") == 1:
-            data["currentServerTime"] = datetime.now().strftime("%Y-%m-%d, %H:%M&nbsp;|&nbsp;" + self.settings.get("SendServerTime", "0"))
+        if self.settings.get("sendServerTime", "0") == 1:
+            data["currentServerTime"] = datetime.now().strftime("%Y-%m-%d, %H:%M&nbsp;|&nbsp;")
         consumption = float(self.getConsumption())
         if consumption:
             data["consumptionAmps"] = ("%.2f" % self.convertWattsToAmps(consumption),)
