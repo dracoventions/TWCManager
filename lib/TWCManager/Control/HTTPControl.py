@@ -274,7 +274,7 @@ def CreateHTTPHandlerClass(master):
                     }
 
                     if slaveTWC.lastChargingStart > 0:
-                        data[TWCID]["chargeTime"] = str(timedelta(seconds=(time.time() - slaveTWC.lastChargingStart)))
+                        data[TWCID]["chargeTime"] = str(timedelta(seconds=(time.time() - slaveTWC.lastChargingStart))).split(".")[0]
                     else:
                         data[TWCID]["chargeTime"] = "--:--:--"
 
