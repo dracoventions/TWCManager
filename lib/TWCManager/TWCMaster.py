@@ -298,6 +298,13 @@ class TWCMaster:
         else:
             return 0
 
+    def getSendServerTime(self):
+        sendservertime = int(self.settings.get("sendServerTime", 0))
+        if sendservertime > 0:
+            return 1
+        else:
+            return 0
+
     def getScheduledAmpsMax(self):
         schedamps = int(self.settings.get("scheduledAmpsMax", 0))
         if schedamps > 0:
@@ -1231,6 +1238,9 @@ class TWCMaster:
 
     def setNonScheduledAmpsMax(self, amps):
         self.settings["nonScheduledAmpsMax"] = amps
+
+    def setSendServerTime(self, val):
+        self.settings["sendServerTime"] = val
 
     def setScheduledAmpsDaysBitmap(self, bitmap):
         self.settings["scheduledAmpsDaysBitmap"] = bitmap
