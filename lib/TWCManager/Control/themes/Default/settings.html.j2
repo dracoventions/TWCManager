@@ -67,6 +67,21 @@
           </td>
         </tr>
         <tr>
+          <th>Include ServerTime in Main UI:</th>
+          <td>
+            {{ optionList(
+              [
+                [0, "Do not include Server Time"],
+                [1, "Include Server Time"],
+              ],
+              {
+                "name": "sendServerTime",
+                "value": master.settings.get("sendServerTime", 0),
+              },
+            )|safe }}
+          </td>
+        </tr>
+        <tr>
           <th>Charge Authorization Mode:</th>
           <td>
             {{ optionList(

@@ -51,12 +51,14 @@
                     if (json["currentPolicy"] == "Charge Now") {
                         if ($("#start_chargenow").length) {
                             $("#start_chargenow").html("Update Charge Now");
-                            $("#cancel_chargenow").prop( "disabled", false);
+                            $("#cancel_chargenow").prop("disabled", false);
+                            $("#cancel_chargenow").removeClass("disabled");
                         }
                     } else {
                         if ($("#start_chargenow").length) {
                             $("#start_chargenow").html("Charge Now");
-                            $("cancel_chargenow").prop( "disabled", true );
+                            $("#cancel_chargenow").prop("disabled", true);
+                            $("#cancel_chargenow").addClass("disabled");
                         }
                     }
                 }
@@ -80,11 +82,14 @@
                         var twc = '#' + slvtwc['TWCID']
                         Object.keys(slvtwc).forEach(function(key) {
                           $(twc+'_'+key).html(slvtwc[key]);
-                          if (key === 'lastBatterySOC' && slvtwc[key] === '') {
-                              //no SOC data
-                              $(twc+'__socState').hide();
-                          }
                         });
+
+                        if ($(twc+'_lastBatterySOC').html() === '') {
+                            //no SOC data
+                            $(twc+'_socState').hide();
+                        } else {
+                            $(twc+'_socState').show();
+                        }
                     });
                     
 		            var chargerAvailAmps = 0;

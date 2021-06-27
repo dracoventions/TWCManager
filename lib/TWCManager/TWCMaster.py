@@ -53,6 +53,7 @@ class TWCMaster:
         "scheduledAmpsEndHour": -1,
         "scheduledAmpsMax": 0,
         "scheduledAmpsStartHour": -1,
+        "sendServerTime": 0
     }
     slaveHeartbeatData = bytearray(
         [0x01, 0x0F, 0xA0, 0x0F, 0xA0, 0x00, 0x00, 0x00, 0x00]
@@ -297,6 +298,13 @@ class TWCMaster:
         else:
             return 0
 
+    def getSendServerTime(self):
+        sendservertime = int(self.settings.get("sendServerTime", 0))
+        if sendservertime > 0:
+            return 1
+        else:
+            return 0
+
     def getScheduledAmpsMax(self):
         schedamps = int(self.settings.get("scheduledAmpsMax", 0))
         if schedamps > 0:
@@ -377,6 +385,8 @@ class TWCMaster:
             "maxAmpsToDivideAmongSlaves": "%.2f"
             % float(self.getMaxAmpsToDivideAmongSlaves()),
         }
+        if self.settings.get("sendServerTime", "0") == 1:
+            data["currentServerTime"] = datetime.now().strftime("%Y-%m-%d, %H:%M&nbsp;|&nbsp;")
         consumption = float(self.getConsumption())
         if consumption:
             data["consumptionAmps"] = ("%.2f" % self.convertWattsToAmps(consumption),)
@@ -1228,6 +1238,9 @@ class TWCMaster:
 
     def setNonScheduledAmpsMax(self, amps):
         self.settings["nonScheduledAmpsMax"] = amps
+
+    def setSendServerTime(self, val):
+        self.settings["sendServerTime"] = val
 
     def setScheduledAmpsDaysBitmap(self, bitmap):
         self.settings["scheduledAmpsDaysBitmap"] = bitmap

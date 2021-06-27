@@ -114,13 +114,13 @@ wcmanager/settings.json and try saving your settings again.</b>
                 <div class="jumbotron px-5 py-4 rounded-xl" style="background-color: #f0f0f0; pointer-events:none;">
                     <div class="form-group row" style="margin-bottom: -1em!important;">
                         {% set active = master.settings.get("nonScheduledAction", 1) %}
-                        <label for="colBtns" class="col-2 col-form-label display-5">Charge Policy</label>
-                        <div class="col-10 btn-group" id="colBtns" role="group">
+                        <label for="colBtns" class="col-lg-2 col-sm-12 col-form-label display-5">Charge Policy</label>
+                        <div class="col-lg-10 col-sm-12 btn-group" id="colBtns" role="group" style="flex-wrap: wrap;">
                             <button type="button" class="btn btn-{% if active != 3 %}outline-{% endif %}primary" role="button" aria-describedby="helpText">Solar Surplus</button>
                             <button type="button" class="btn btn-{% if active != 1 %}outline-{% endif %}primary" role="button" aria-describedby="helpText">Fixed Rate/Amps</button>
                             <button type="button" class="btn btn-{% if active != 2 %}outline-{% endif %}primary" role="button" aria-describedby="helpText">Don't charge</button>
                         </div>
-                        <div class="col-10 offset-2">
+                        <div class="col-lg-10 col-sm-12 offset-lg-2 offset-sm-0">
                             <small id="helpText" class="form-text text-muted">
                                 {% if active == 1 %}
                                     Charges a vehicle at a fixed rate of x Amps whenever it is plugged in
@@ -263,8 +263,8 @@ wcmanager/settings.json and try saving your settings again.</b>
                         <div class="col-12 text-left" style="line-height: 1.37em;">
                             <strong>Vehicle</strong>:<br>
                             Current: <span id="{{ twcid }}_currentVIN" class='VINClick' onClick="loadVIN('{{ twcid }}','current');"></span><br>
-                            Last: <span id="{{ twcid }}_lastVIN" class='VINClick' onClick="loadVIN('{{ twcid }}','last');"></span><br>
-                            SoC: <span id="{{ twcid }}_socState"><span id="{{ twcid }}_lastBatterySOC"></span>/<span id="{{ twcid }}_lastChargeLimit"></span>%</span>
+                            Last: <span id="{{ twcid }}_lastVIN" class='VINClick' onClick="loadVIN('{{ twcid }}','last');"></span>
+                            <span id="{{ twcid }}_socState"><br>SoC: <span id="{{ twcid }}_lastBatterySOC"></span>/<span id="{{ twcid }}_lastChargeLimit"></span>%</span>
                         </div>
                     </div>
                 </div>
@@ -278,7 +278,7 @@ wcmanager/settings.json and try saving your settings again.</b>
 <!--  Global Actions -->
 <div class="container-fluid pt-4">
     <div class="row justify-content-center">
-        <div class="col-3">
+        <div class="col-lg-3 col-sm-12">
             <form>
                 <div class="form-group p-2">
                     <label for="chargeNowDuration" class="text-muted mb-0">Charge duration <span class="text-dark font-weight-bold" id="{{ twcid }}_durationVal">1</span> hours</label>
@@ -286,7 +286,7 @@ wcmanager/settings.json and try saving your settings again.</b>
                 </div>
             </form>
         </div>
-        <div class="col-3">
+        <div class="col-lg-3 col-sm-12">
             {% set ampsMin = ampsList[1] %}
             {% set ampsMax = ampsList|last %}
             <form>
@@ -296,9 +296,14 @@ wcmanager/settings.json and try saving your settings again.</b>
                 </div>
             </form>
         </div>
-            <div class="col-2">
+            <div class="col-lg-2 col-sm-12 text-center">
                 <div class="form-group p-3 m-1">
                     <button type="submit" class="btn btn-light btn-small border" id="start_chargenow" value="Charge now"></button>
+                </div>
+            </div>
+            <div class="col-lg-2 col-sm-12 text-center">
+                <div class="form-group p-3 m-1">
+                    <button type="submit" class="btn btn-light btn-small border" id="cancel_chargenow" value="Cancel Charge now">Cancel Charge Now</button>
                 </div>
             </div>
         </div>
