@@ -90,8 +90,8 @@
 
         # As I observed different reactive power changing with the the amps used,
         # I introduce a real power variable for minAmps and maxAmps
-        # For my installation there was 0.90 at 6 amps and 0.93 at 20 amps. 
-        # You can comment that in, if you want to try this.        
+        # For my installation there was 0.90 at 6 amps and 0.93 at 20 amps.
+        # You can comment that in, if you want to try this.
         # "realPowerFactorMinAmps": 0.9,
         # "realPowerFactorMaxAmps": 0.93,
 
@@ -341,7 +341,7 @@
       #   "value": [ 1 ],
       #   "charge_amps": "settings.scheduledAmpsMax",
       #   "charge_limit": "config.scheduledLimit" },
-  
+
       # { "name": "Track Green Energy",
       #   "match": [ "tm_hour", "tm_hour", "settings.hourResumeTrackGreenEnergy" ],
       #   "condition": [ "gte", "lt", "lte" ],
@@ -378,7 +378,7 @@
           # In the example below, charge sessions are logged, but not the
           # regular charger status messages. These are valid under any of the
           # logging modules
-          # For the debug output, you can mute Log Levels greater than the 
+          # For the debug output, you can mute Log Levels greater than the
           # value specified here.
           "mute":{
               "ChargeSessions": false,
@@ -396,7 +396,7 @@
           # In the example below, charge sessions are logged, but not the
           # regular charger status messages. These are valid under any of the
           # logging modules
-          # For the debug output, you can mute Log Levels greater than the 
+          # For the debug output, you can mute Log Levels greater than the
           # value specified here.
           "mute":{
               "ChargeSessions": false,
@@ -404,7 +404,7 @@
               "SlavePower": false,
               "SlaveStatus": false,
               "DebugLogLevelGreaterThan": 1
-          }                 
+          }
         },
         "CSV": {
             "enabled": false,
@@ -426,6 +426,7 @@
         "MySQL": {
             "enabled": false,
             "host": "1.2.3.4",
+            "port": 3306,
             "database": "twcmanager",
             "username": "twcmanager",
             "password": "twcmanager"
@@ -478,7 +479,7 @@
             "enabled": false,
             "username":"username",
       	    "password":"password",
-	          "useBatteryAt":"80", 
+	          "useBatteryAt":"80",
 	          "batteryMaxOutput":"4800",
 	          "useBatteryBefore":"15:00"
         },
@@ -489,7 +490,7 @@
       # The IP address and port of the HomeAssistant front-end
             "serverIP": "192.168.1.1",
             "serverPort": "8123",
-            "useHttps": false,            
+            "useHttps": false,
 
       # To obtain a HASS API key, via browser, click on your user profile, and
       # add a Long-Lived Access Token. Place it in the following variable:
@@ -525,7 +526,7 @@
           "serverIP": "192.168.1.2",
       # Password is required starting in firmware 20.49.0
           "password": "test123",
-      # The following value specifies the minimum battery level of the 
+      # The following value specifies the minimum battery level of the
       # Powerwall2 before the car will be able to charge. This avoids a
       # situation where the battery level is low due to low generation, and the
       # battery is then further depleted by the vehicle charging.
@@ -555,7 +556,7 @@
           "enabled": false,
           "serverIP": "192.168.1.2",
           "excludeConsumptionInverters": [ 2 ] #Array of indices of reading devices - to exclude consumption from. Needed if e.g. a boiler only heats with solar overhead - and you want to override this one.
-        },        
+        },
       # The energy detective
         "TED": {
           "enabled": false,
@@ -593,17 +594,17 @@
             "serverIP": "192.168.1.1",
             "serverPort": "8123",
             "useHttps": false,
-      
+
       # Perform rate limiting first (as there are some very chatty topics).
       # For each message that comes through, we take the sensor name and check
       # when we last updated it. If it was less than msgRateInSeconds
       # seconds ago, we send it later.
             "msgRateInSeconds": 60,
-      
-      # Resends the last sensor value at least once every resendRateInSeconds, 
+
+      # Resends the last sensor value at least once every resendRateInSeconds,
       # so HASS does not forget the value ;-)
             "resendRateInSeconds": 3600,
-      
+
       # In case of errors, after how many seconds it the logic should try to resend
       # the status
             "retryRateInSeconds": 60,
