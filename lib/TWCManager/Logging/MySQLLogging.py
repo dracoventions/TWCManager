@@ -193,6 +193,7 @@ class MySQLLogging:
         try:
             self.db = pymysql.connect(
                 host=self.configLogging.get("host", ""),
+                port=self.configLogging.get("port", 3306),
                 user=self.configLogging.get("username", ""),
                 password=self.configLogging.get("password", ""),
                 database=self.configLogging.get("database", ""),

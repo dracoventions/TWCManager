@@ -21,6 +21,7 @@ The following configuration parameters exist for this logging module:
 | database | *twcmanager* | *required* The name of the database that you would like to log to on the MySQL host. |
 | enabled  | *false* | *required* Boolean value determining if the console logging module should be activated. The default is *false*. |
 | host     | *10.10.10.5* | *required* The hostname or IP address of the MySQL server that you would like to log to. |
+| port     | 3306 | *optional* The port of the MySQL server that you would like to log to. |
 | password | *abc123* | *required* The password to use. |
 | username | *twcmanager* | *required* The username to use. |
 
@@ -46,6 +47,7 @@ Setting a topic to true will cause that topic's output to be muted.
     "MySQL": {
         "enabled": false,
         "host": "1.2.3.4",
+        "port": 3306,
         "database": "twcmanager",
         "username": "twcmanager",
         "password": "twcmanager"
@@ -56,7 +58,7 @@ Setting a topic to true will cause that topic's output to be muted.
 
 Unlike the SQLite database, the MySQL database logging module currently requires that you create the database schema manually from the SQL below on the target database server.
 
-The following is the database schema for **v1.2.0** of TWCManager 
+The following is the database schema for **v1.2.0** of TWCManager
 
 ```
 CREATE TABLE charge_sessions (
@@ -79,11 +81,11 @@ CREATE TABLE green_energy (
 );
 
 CREATE TABLE slave_status (
-  slaveTWC varchar(4), 
-  time datetime, 
-  kWh int, 
-  voltsPhaseA int, 
-  voltsPhaseB int, 
-  voltsPhaseC int, 
+  slaveTWC varchar(4),
+  time datetime,
+  kWh int,
+  voltsPhaseA int,
+  voltsPhaseB int,
+  voltsPhaseC int,
   primary key (slaveTWC, time));
 ```
