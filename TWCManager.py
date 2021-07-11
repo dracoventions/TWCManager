@@ -1,31 +1,11 @@
 #! /usr/bin/python3
 
-################################################################################
-# Code and TWC protocol reverse engineering by Chris Dragon.
-#
-# Additional logs and hints provided by Teslamotorsclub.com users:
-#   TheNoOne, IanAmber, and twc.
-# Thank you!
-#
-# For support and information, please read through this thread:
-# https://teslamotorsclub.com/tmc/threads/new-wall-connector-load-sharing-protocol.72830
-#
-# Report bugs at https://github.com/ngardiner/TWCManager/issues
-#
-# This software is released under the "Unlicense" model: http://unlicense.org
-# This means source code and TWC protocol knowledge are released to the general
-# public free for personal or commercial use. I hope the knowledge will be used
-# to increase the use of green energy sources by controlling the time and power
-# level of car charging.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
-# For more information, please visit http://unlicense.org
+##################################################################################
+# IMPORTANT! PLEASE NOTE
+# This file is moving - it will be moved to lib/TWCManager/TWCManager.py very soon
+# all changes should be made to that file instead. This file will be replaced by
+# TWCManager-new.py. Any PRs referencing changes to this file will be rejected.
+# Please see https://github.com/ngardiner/TWCManager/issues/331 for more details
 
 import commentjson
 import importlib
