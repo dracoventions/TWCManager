@@ -16,6 +16,7 @@ The following sensors and their values are published to HomeAsssitant via the Ho
 | sensor.twcmanager_*charger*_amps_in_use  | Float: Amps in use for given Slave TWC | 8.52 |
 | sensor.twcmanager_*charger*_amps_max     | Integer: Reported maximum amperage per Slave TWC | 32 |
 | sensor.twcmanager_*charger*_cars_charging | Boolean: Will be 0 if Slave TWC does not have a connected charging vehicle, or 1 if it does. |
+| sensor.twcmanager_*charger*_charger_load_w | Integer: Actual power being consumed as reported by the Slave TWC. | 2977 |
 | sensor.twcmanager_*charger*_current_vehicle_vin | String: The VIN of a vehicle currently charging from this Slave TWC. |
 | sensor.twcmanager_*charger*_last_vehicle_vin | String: The VIN of the vehicle previously charging from this Slave TWC. |
 | sensor.twcmanager_*charger*_lifetime_kwh  | Integer: Lifetime kWh output by specified charger. | 159 |
