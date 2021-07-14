@@ -95,6 +95,7 @@ modules_available = [
     "EMS.Kostal",
     "EMS.OpenHab",
     "EMS.OpenWeatherMap",
+    "EMS.P1Monitor",
     "EMS.SmartMe",
     "EMS.SmartPi",
     "EMS.SolarEdge",
