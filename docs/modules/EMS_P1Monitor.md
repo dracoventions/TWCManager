@@ -19,7 +19,7 @@ For the Production values we take a sum of all average values on each phase. Thi
 | **Module Name** | P1Monitor                      |
 | **Module Type** | Energy Management System (EMS) |
 | **Features**    | Consumption, Production        |
-| **Status**      | Development                    |
+| **Status**      | In Development                 |
 
 ## Configuration
 
@@ -28,7 +28,7 @@ The following table shows the available configuration parameters for the P1 Moni
 | Parameter   | Value         |
 | ----------- | ------------- |
 | serverIP    | *required* The IP address of the P1 Monitor instance. |
-| samples  | *optional* The amount of samples to calculate with (default 1, min 1, max 10). |
+| samples     | *optional* The amount of samples to calculate with (default 1, min 1, max 10). |
 
 ### JSON Configuration Example
 
