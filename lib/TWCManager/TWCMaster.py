@@ -102,6 +102,9 @@ class TWCMaster:
         except ValueError as e:
             logger.debug("Exception in advanceHistorySnap: " + str(e))
 
+    def cancelStopCarsCharging(self):
+        self.delete_background_task({"cmd": "charge", "charge": False})
+
     def checkModuleCapability(self, type, capability):
         # For modules which advertise capabilities, scan all loaded modules of a certain type and
         # report on if any of those modules advertise the reported capability
