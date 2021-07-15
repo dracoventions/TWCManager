@@ -511,12 +511,11 @@
         },
         "P1Monitor":{
           # Support for P1 Monitor API (https://www.ztatz.nl/)
+          # Reads /api/v1/phase
           "enabled": true,
           "serverIP":"10.15.1.33",
-          # Set to LoadBalancing or TrackGreenEnergy. Default = TrackGreenEnergy
-          "mode": "LoadBalancing",
-          # Default = 10 Amps
-          "maxAmpsPerPhase": 16
+          # Amount of samples to take average from (min 1, max 10, default 1)
+          "samples": 1
 
         },
         "OpenWeatherMap": {
