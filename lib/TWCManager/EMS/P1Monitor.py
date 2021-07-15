@@ -22,9 +22,9 @@ class P1Monitor:
         try:
             self.configP1Mon = master.config["sources"]["P1Monitor"]
             self.serverIP = self.configP1Mon.get("serverIP", None)
-            logger.log(logging.DEBUG2,"P1Monitor: serverIP: " + str(self.serverIP))
+            logger.log(logging.INFO2,"P1Monitor: serverIP: " + str(self.serverIP))
             self.samples = self.configP1Mon.get("samples", 1)
-            logger.log(logging.DEBUG2,"P1Monitor: samples: " + str(self.samples))
+            logger.log(logging.INFO2,"P1Monitor: samples: " + str(self.samples))
 
         except (KeyError) as e:
             logger.error("Cannot get configuration for P1Monitor in config.json", e)
@@ -47,7 +47,7 @@ class P1Monitor:
         self.update()
 
         # Return current consumed value
-        logger.log(logging.DEBUG2,"P1Monitor: consumedW (raw): " + str(self.consumedW))
+        logger.log(logging.INFO2,"P1Monitor: consumedW (raw): " + str(self.consumedW))
         if self.consumedW > 0:
             return float(self.consumedW)
         else:
@@ -59,7 +59,7 @@ class P1Monitor:
         self.update()
 
         # Return generation value
-        logger.log(logging.DEBUG2,"P1Monitor: generatedW (raw): " + str(self.generatedW))
+        logger.log(logging.INFO2,"P1Monitor: generatedW (raw): " + str(self.generatedW))
         if self.generatedW > 0:
             return float(self.generatedW)
         else:
@@ -72,10 +72,10 @@ class P1Monitor:
         self.fetchFailed = False
 
         url = "http://" + self.serverIP + "/api/v1/phase?limit=" + str(self.samples) + "&json=object&round=on"
-        logger.log(logging.DEBUG2,"P1Monitor: url: " + str(url))
+        logger.log(logging.INFO2,"P1Monitor: url: " + str(url))
 
         try:
-            logger.log(logging.DEBUG2,"P1Monitor: timeout: " + str(self.timeout))
+            logger.log(logging.INFO2,"P1Monitor: timeout: " + str(self.timeout))
             r = self.requests.get(url, timeout=self.timeout)
         except self.requests.exceptions.ConnectionError as e:
             logger.error("P1Monitor: Error connecting to P1Monitor API to fetch sensor value")
@@ -94,21 +94,21 @@ class P1Monitor:
         if p1monData:
             try:
 
-                    logger.log(logging.DEBUG2,"P1Monitor: API Json Output: " + json.dumps(p1monData))
+                    logger.log(logging.INFO2,"P1Monitor: API Json Output: " + json.dumps(p1monData))
 
                     # Calculate the avarage trimming 10% of the highest and lowest values https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.trim_mean.html
                     CONSUMPTION_L1_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(p1monData[i]['CONSUMPTION_L1_W'])) for i in range(0,self.samples))),0.1)
-                    logger.log(logging.DEBUG2,"P1Monitor: CONSUMPTION_L1_W_Avg: " + str(CONSUMPTION_L1_W_Avg))
+                    logger.log(logging.INFO2,"P1Monitor: CONSUMPTION_L1_W_Avg: " + str(CONSUMPTION_L1_W_Avg))
                     CONSUMPTION_L2_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(p1monData[i]['CONSUMPTION_L2_W'])) for i in range(0,self.samples))),0.1)
-                    logger.log(logging.DEBUG2,"P1Monitor: CONSUMPTION_L2_W_Avg: " + str(CONSUMPTION_L2_W_Avg))
+                    logger.log(logging.INFO2,"P1Monitor: CONSUMPTION_L2_W_Avg: " + str(CONSUMPTION_L2_W_Avg))
                     CONSUMPTION_L3_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(p1monData[i]['CONSUMPTION_L3_W'])) for i in range(0,self.samples))),0.1)
-                    logger.log(logging.DEBUG2,"P1Monitor: CONSUMPTION_L3_W_Avg: " + str(CONSUMPTION_L3_W_Avg))
+                    logger.log(logging.INFO2,"P1Monitor: CONSUMPTION_L3_W_Avg: " + str(CONSUMPTION_L3_W_Avg))
                     PRODUCTION_L1_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(p1monData[i]['PRODUCTION_L1_W'])) for i in range(0,self.samples))),0.1)
-                    logger.log(logging.DEBUG2,"P1Monitor: PRODUCTION_L1_W_Avg: " + str(PRODUCTION_L1_W_Avg))
+                    logger.log(logging.INFO2,"P1Monitor: PRODUCTION_L1_W_Avg: " + str(PRODUCTION_L1_W_Avg))
                     PRODUCTION_L2_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(p1monData[i]['PRODUCTION_L2_W'])) for i in range(0,self.samples))),0.1)
-                    logger.log(logging.DEBUG2,"P1Monitor: PRODUCTION_L2_W_Avg: " + str(PRODUCTION_L2_W_Avg))
+                    logger.log(logging.INFO2,"P1Monitor: PRODUCTION_L2_W_Avg: " + str(PRODUCTION_L2_W_Avg))
                     PRODUCTION_L3_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(p1monData[i]['PRODUCTION_L3_W'])) for i in range(0,self.samples))),0.1)
-                    logger.log(logging.DEBUG2,"P1Monitor: PRODUCTION_L3_W_Avg: " + str(PRODUCTION_L3_W_Avg))
+                    logger.log(logging.INFO2,"P1Monitor: PRODUCTION_L3_W_Avg: " + str(PRODUCTION_L3_W_Avg))
 
                     #Get the max value of consumption, because we don't want to overload the fuse.
                     self.consumedW = int(
