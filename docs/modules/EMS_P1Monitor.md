@@ -6,7 +6,7 @@ The P1 Monitor (https://www.ztatz.nl/) EMS module allows fetching of Consumption
 
 ## How it works
 
-On each policy request this EMS module request data from the /api/v1/phase endpoint of your P1 Monitor taking a configurable amount of samples. It receives both Consumption and Production data of each phase and will calculate a trimmed average (cutting of 10% of the minimum and maximum values) to get a value that is not influenced by any spikes on the net (e.g. a Quooker periodically heating up for a couple of seconds). By default the P1 Monitor API reports new values each 10 seconds, so when taking 6 samples it will give you an average Consumption/Production over 60 seconds.
+On each policy request this EMS module request data from the /api/v1/phase endpoint of your P1 Monitor taking a configurable number of samples. It receives both Consumption and Production data of each phase and will calculate a trimmed average (cutting of 10% of the minimum and maximum values) to get a value that is not influenced by any spikes on the net (e.g. a Quooker periodically heating up for a couple of seconds). By default the P1 Monitor API reports new values each 10 seconds, so when taking 6 samples it will give you an average Consumption/Production over 60 seconds.
 
 Because we want to avoid overloading the net, we report the maximum average value of the phase that has the highest load for Consumption.
 
@@ -33,8 +33,12 @@ The following table shows the available configuration parameters for the P1 Moni
 ### JSON Configuration Example
 
 ```
-"P1Monitor": {
-  "serverIP": "192.168.1.2",
-  "samples": 1
+{
+    "sources":{
+        "P1Monitor": {
+            "serverIP": "192.168.1.2",
+            "samples": 1
+        }
+    }
 }
 ```
