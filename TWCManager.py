@@ -10,7 +10,7 @@ except ValueError:
     # Current directory is not in path. Show current path
     print("It appears you may have a different setup - if you get an error that TWCManager is not a package, please paste this output into a GitHub issue:")
     print("Current Path:" + os.path.realpath(__file__))
-    print("Python Path:" + sys.path)
+    print("Python Path:" + str(sys.path))
     #pass
 
 import TWCManager.TWCManager

@@ -53,7 +53,7 @@ jobs:
 
   docker-latest:
     name: Create docker-latest Docker Image from current head
-    runs-on: ubuntu-18.04
+    runs-on: [ "self-hosted", "build_host" ]
 
     steps:
     - name: Check out Repository
