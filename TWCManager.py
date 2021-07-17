@@ -8,6 +8,6 @@ try:
    sys.path.remove(os.path.dirname(os.path.realpath(__file__)))
 except ValueError:
     # Current directory is not in path - ignore
-    continue
+    pass
 
 import TWCManager.TWCManager
