@@ -214,7 +214,8 @@ class TWCMaster:
 
         # Delete task['cmd'] from backgroundTasksCmds such that
         # queue_background_task() can queue another task['cmd'] in the future.
-        del self.backgroundTasksCmds[task["cmd"]]
+        if "cmd" in task:
+            del self.backgroundTasksCmds[task["cmd"]]
 
         # task_done() must be called to let the queue know the task is finished.
         # backgroundTasksQueue.join() can then be used to block until all tasks
