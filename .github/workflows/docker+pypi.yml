@@ -38,7 +38,6 @@ jobs:
         echo "::set-output name=commit::$(git rev-parse --short HEAD)"
 
     - name: Set dummy version number in setup.py for publishing unique version
-      id: vars
       shell: bash
       run: |
         sed -i -E s/'version="(.+)",'/'version="0.0.1-'${{ steps.vars.outputs.commit }}'"',/g setup.py
