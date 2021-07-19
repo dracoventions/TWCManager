@@ -67,8 +67,8 @@ jobs:
       id: buildx
       with:
         driver-opts: |
-          env.http_proxy="http://192.0.2.1:3128"
-          env.https_proxy="http://192.0.2.1:3128"
+          env.http_proxy=http://192.0.2.1:3128
+          env.https_proxy=http://192.0.2.1:3128
 
     - name: Login to DockerHub
       uses: docker/login-action@v1
