@@ -10,7 +10,7 @@ on:
 jobs:
   pypi:
     name: Build a PyPi Package if this is a tagged release commit
-    runs-on: ubuntu-18.04
+    runs-on: [ "self-hosted", "build_host" ]
 
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
 
@@ -81,7 +81,7 @@ jobs:
 
   docker-release:
     name: Create docker-release Docker Image for release version
-    runs-on: ubuntu-18.04
+    runs-on: [ "self-hosted", "build_host" ]
 
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
 
