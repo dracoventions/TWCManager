@@ -15,11 +15,6 @@ if '.' in sys.path:
     sys.path.remove('.')
 
 if os.path.dirname(os.path.realpath(__file__)) in sys.path:
-    print("Fully-qualified path is present")
     sys.path.remove(os.path.dirname(os.path.realpath(__file__)))
-else:
-    print("Fully-qualified path is not present")
-    print("Current Path:" + os.path.realpath(__file__))
-    print("Python Path:" + str(sys.path))
 
 import TWCManager.TWCManager
