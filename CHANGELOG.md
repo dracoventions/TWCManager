@@ -15,6 +15,9 @@ This document logs the changes per release of TWCManager.
   * (@VIDGuide) - Fixed Modern UI layout on mobile, added Stop Charge Now button and fixed Charge Now control spacing.
   * (@VIDGuide) - Add Timezone parameter to docker-compose files to allow specifying container timezone
   * (@the-dbp) - Added Growatt EMS module
+  * (@jherby2k) - Align API and HASS Status module values
+  * (@mvaneijken) - Add MySQL logging module Port parameter
+  * (@ngardiner) - Refactor TWCManager structure to allow for entire project to be packaged into pypi packaging for easy install/upgrades
 
 ## v1.2.2 - 2021-06-09
 

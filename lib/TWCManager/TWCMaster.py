@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-from lib.TWCManager.TWCSlave import TWCSlave
+from TWCManager.TWCSlave import TWCSlave
 from datetime import datetime, timedelta
 import json
 import logging

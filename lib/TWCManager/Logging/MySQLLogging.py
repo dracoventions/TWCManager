@@ -66,7 +66,7 @@ class MySQLHandler(logging.Handler):
                 chgid = self.slaveSession.get(twcid, 0)
                 if getattr(record, "vehicleVIN", None):
                     query = """
-                        UPDATE charge_sessions SET vehicleVIN = %s
+                        UPDATE charge_sessions SET vehicleVIN = '%s'
                         WHERE chargeid = %s AND slaveTWC = %s"
                     """
 
@@ -76,7 +76,7 @@ class MySQLHandler(logging.Handler):
                     cur = self.db.cursor()
                     rows = 0
                     try:
-                        rows = cur.execute(query, (getattr(record, "vehicleVIN", ""), chgid, twcid))
+                        rows = cur.execute(query % (getattr(record, "vehicleVIN", ""), chgid, twcid))
                     except Exception as e:
                         logger.error("Error updating MySQL database: %s", e)
                     if rows:
