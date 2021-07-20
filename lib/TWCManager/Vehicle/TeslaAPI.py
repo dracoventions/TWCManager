@@ -14,8 +14,10 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 class TeslaAPI:
 
+    __apiCaptcha = None
     authURL = "https://auth.tesla.com/oauth2/v3/authorize"
     callbackURL = "https://auth.tesla.com/void/callback"
+    captchaURL = "https://auth.tesla.com/captcha"
     carApiLastErrorTime = 0
     carApiBearerToken = ""
     carApiRefreshToken = ""
@@ -33,11 +35,14 @@ class TeslaAPI:
     carApiVehicles = []
     config = None
     master = None
+    __email = None
     errorCount = 0
     maxLoginRetries = 10
     minChargeLevel = -1
     params = None
+    __password = None
     refreshURL = "https://owner-api.teslamotors.com/oauth/token"
+    __resp = None
     session = None
     verifier = ""
 
@@ -77,6 +82,10 @@ class TeslaAPI:
 
     def apiLogin(self, email, password):
 
+        # Populate auth details for Phase 1
+        self.__email = email
+        self.__password = password
+
         for attempt in range(self.maxLoginRetries):
 
             self.verifier = base64.urlsafe_b64encode(os.urandom(86)).rstrip(b"=")
@@ -98,14 +107,22 @@ class TeslaAPI:
             )
 
             self.session = requests.Session()
-            resp = self.session.get(self.authURL, params=self.params)
+            self.__resp = self.session.get(self.authURL, params=self.params)
 
-            if resp.ok and "<title>" in resp.text:
+            if self.__resp.ok and "<title>" in self.__resp.text:
                 logger.log(
                     logging.INFO6,
                     "Tesla Auth form fetch success, attempt: " + str(attempt),
                 )
-                break
+
+                if 'img data-id="captcha"' in self.__resp.text:
+                    logger.log(
+                        logging.INFO6,
+                        "Tesla Auth form challenged us for Captcha. Redirecting.")
+                    self.getApiCaptcha()
+                    return "Phase1Captcha"
+                else:
+                    return self.apiLoginPhaseOne()
             else:
                 logger.log(
                     logging.INFO6,
@@ -122,9 +139,15 @@ class TeslaAPI:
             )
             return "Phase1Error"
 
-        csrf = re.search(r'name="_csrf".+value="([^"]+)"', resp.text).group(1)
+    def apiLoginPhaseOne(self):
+
+        # Picks up on the first phase of authentication, after redirecting to
+        # handle Captcha if this was requested, or directly if we were lucky
+        # enough not to be challenged.
+
+        csrf = re.search(r'name="_csrf".+value="([^"]+)"', self.__resp.text).group(1)
         transaction_id = re.search(
-            r'name="transaction_id".+value="([^"]+)"', resp.text
+            r'name="transaction_id".+value="([^"]+)"', self.__resp.text
         ).group(1)
 
         if not csrf or not transaction_id:
@@ -138,10 +161,15 @@ class TeslaAPI:
             "_process": "1",
             "transaction_id": transaction_id,
             "cancel": "",
-            "identity": email,
-            "credential": password,
+            "identity": self.__email,
+            "credential": self.__password,
         }
 
+        # Clear stored credentials
+        self.__email = None
+        self.__password = None
+
+        # Call login Phase 2
         return self.apiLoginPhaseTwo(data)
 
     def apiLoginPhaseTwo(self, data):
@@ -1056,6 +1084,24 @@ class TeslaAPI:
 
         if checkArrival:
             self.updateChargeAtHome()
+
+    def getApiCaptcha(self):
+        # This will fetch the current Captcha image displayed by Tesla's auth
+        # website, and store it in memory
+
+        self.__apiCaptcha = self.session.get(self.captchaURL)
+
+    def getCaptchaImage(self):
+        # This will serve the Tesla Captcha image
+
+        if self.__apiCaptcha:
+            return(self.__apiCaptcha.content)
+        else:
+            logger.log(
+                logging.INFO2,
+                "ERROR: Captcha image requested, but we have none buffered. This is likely due to a stale login session, but if you see it regularly, please report it."
+            )
+            return ""
 
     def getCarApiBearerToken(self):
         return self.carApiBearerToken

@@ -685,6 +685,15 @@ def CreateHTTPHandlerClass(master):
                 self.wfile.write(page.encode("utf-8"))
                 return
 
+            if self.url.path == "/teslaAccount/getCaptchaImage":
+                self.send_response(200)
+                self.send_header("Content-type", "image/svg+xml")
+                self.end_headers()
+                self.wfile.write(master.getModuleByName(
+                    "TeslaAPI"
+                ).getCaptchaImage())
+                return
+
             if self.url.path == "/" or self.url.path.startswith("/teslaAccount"):
                 self.send_response(200)
                 self.send_header("Content-type", "text/html")
