@@ -669,21 +669,16 @@ def CreateHTTPHandlerClass(master):
                 return
 
             webroutes = [
-              { "route": "/debug",    "tmpl": "debug.html.j2" },
-              { "route": "/schedule", "tmpl": "schedule.html.j2" },
-              { "route": "/settings", "tmpl": "settings.html.j2" },
-              { "rstart": "/vehicleDetail", "tmpl": "vehicleDetail.html.j2" },
-              { "route": "/vehicles", "tmpl": "vehicles.html.j2" }
+              { "route": "/debug",                      "tmpl": "debug.html.j2" },
+              { "route": "/schedule",                   "tmpl": "schedule.html.j2" },
+              { "route": "/settings",                   "tmpl": "settings.html.j2" },
+              { "route": "/teslaAccount/login",         "error": "insecure" },
+              { "route": "/teslaAccount/mfaCode",       "error": "insecure" },
+              { "route": "/teslaAccount/submitCaptcha", "error": "insecure" },
+              { "rstart": "/teslaAccount",              "tmpl": "main.html.j2" },
+              { "rstart": "/vehicleDetail",             "tmpl": "vehicleDetail.html.j2" },
+              { "route": "/vehicles",                   "tmpl": "vehicles.html.j2" }
             ]
-
-            if (self.url.path == "/teslaAccount/login" or
-                self.url.path == "/teslaAccount/mfaCode"):
-                # For security, these details should be submitted via a POST request
-                # Send a 405 Method Not Allowed in response.
-                self.send_response(405)
-                page = "This function may only be requested via the POST HTTP method."
-                self.wfile.write(page.encode("utf-8"))
-                return
 
             if self.url.path == "/teslaAccount/getCaptchaImage":
                 self.send_response(200)
@@ -694,7 +689,7 @@ def CreateHTTPHandlerClass(master):
                 ).getCaptchaImage())
                 return
 
-            if self.url.path == "/" or self.url.path.startswith("/teslaAccount"):
+            if self.url.path == "/":
                 self.send_response(200)
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
@@ -720,10 +715,27 @@ def CreateHTTPHandlerClass(master):
             for webroute in webroutes:
                 if self.url.path == webroute.get("route", "INVALID"):
                     route = webroute
+                    break
                 elif self.url.path.startswith(webroute.get("rstart", "INVALID")):
                     route = webroute
+                    break
 
-            if route:
+            if route and route.get("error", None):
+
+                if route["error"] == "insecure":
+                    # For security, these details should be submitted via a POST request
+                    # Send a 405 Method Not Allowed in response.
+                    self.send_response(405)
+                    page = "This function may only be requested via the POST HTTP method."
+                    self.wfile.write(page.encode("utf-8"))
+                    return
+
+                else:
+                    self.send_response(500)
+                    self.wfile.write("".encode("utf-8"))
+                    return
+
+            elif route:
                 self.send_response(200)
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
@@ -838,6 +850,19 @@ def CreateHTTPHandlerClass(master):
 
                 resp = master.getModuleByName(
                     "TeslaAPI").mfaLogin(transactionID, mfaDevice, mfaCode)
+
+                self.send_response(302)
+                self.send_header("Location", "/teslaAccount/" + str(resp))
+                self.end_headers()
+                self.wfile.write("".encode("utf-8"))
+                return
+
+            if self.url.path == "/teslaAccount/submitCaptcha":
+                captchaCode = self.getFieldValue("captchaCode")
+
+                resp = master.getModuleByName(
+                    "TeslaAPI"
+                ).submitCaptchaCode(captchaCode)
 
                 self.send_response(302)
                 self.send_header("Location", "/teslaAccount/" + str(resp))

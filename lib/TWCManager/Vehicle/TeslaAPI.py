@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 class TeslaAPI:
 
     __apiCaptcha = None
+    __apiCaptchaCode = None
     authURL = "https://auth.tesla.com/oauth2/v3/authorize"
     callbackURL = "https://auth.tesla.com/void/callback"
     captchaURL = "https://auth.tesla.com/captcha"
@@ -164,6 +165,13 @@ class TeslaAPI:
             "identity": self.__email,
             "credential": self.__password,
         }
+
+        # If a captcha code is stored, inject it into the data parameter
+        if self.__apiCaptchaCode:
+            data["captcha"] = self.__apiCaptchaCode
+
+            # Clear captcha data
+            self.__apiCaptcha = None
 
         # Clear stored credentials
         self.__email = None
@@ -1226,6 +1234,10 @@ class TeslaAPI:
     def setCarApiTokenExpireTime(self, value):
         self.carApiTokenExpireTime = value
         return True
+
+    def submitCaptchaCode(self, code):
+        self.__apiCaptchaCode = code
+        return self.apiLoginPhaseOne()
 
     def updateCarApiLastErrorTime(self, vehicle=None):
         timestamp = time.time()
