@@ -38,6 +38,18 @@
   <font color='red'>
     <b>Error encountered during Phase 1 (GET) of the Tesla Authentication process.</b>
   </font>
+{% elif url.path == "/teslaAccount/Phase1Captcha" %}
+  <font color='black'>
+    <b>Tesla Login has requested a Captcha code for this login session. Please type the characters shown on the Captcha image into the textbox below.</b>
+
+    <br><img src="/teslaAccount/getCaptchaImage" style="width:400px;height:200px;" />
+
+    <form action="/teslaAccount/submitCaptcha" method=POST>
+      Enter Captcha Code:
+      <input type=text size=6 name=captchaCode />
+      <input type=submit value="Send Captcha" />
+    </form>
+  </font>
 {% elif url.path == "/teslaAccount/Phase2Error" or url.path == "/teslaAccount/Phase2ErrorTip" %}
   <font color='red'>
     <b>Error encountered during Phase 2 (POST) of the Tesla Authentication process.</b>
@@ -58,7 +70,8 @@
 
 {% if not master.teslaLoginAskLater
       and url.path != "/teslaAccount/True" 
-      and not url.path.startswith("/teslaAccount/MFA") %}
+      and not url.path.startswith("/teslaAccount/MFA")
+      and not url.path == "/teslaAccount/Phase1Captcha" %}
       <!-- Check if we have already stored the Tesla credentials
            If we can access the Tesla API okay, don't prompt -->
       {% if not apiAvailable %}
