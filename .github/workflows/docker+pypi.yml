@@ -3,14 +3,64 @@ name: "Create PyPi Package and Docker Image"
 on:
   push:
     branches:
+      - 'ci_dev'
       - 'main'
     tags:
       - 'v*'
 
 jobs:
+  pypi-dev:
+    name: Build a PyPi Package if this is a commit to the ci_dev branch
+    runs-on: [ "self-hosted", "build_host" ]
+
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/ci_dev')
+
+    steps:
+    - name: Check out Repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+
+    - name: Install pypa/build
+      run: >-
+        python -m
+        pip install
+        build
+        --user
+
+    - name: Obtain current commit hash
+      id: vars
+      shell: bash
+      run: |
+        echo "::set-output name=commit::$(git rev-parse --short HEAD)"
+
+    - name: Set dummy version number in setup.py for publishing unique version
+      shell: bash
+      run: |
+        sed -i -E s/'version="(.+)",'/'version="0.0.1-'${{ steps.vars.outputs.commit }}'"',/g setup.py
+
+    - name: Build a binary wheel and a source tarball
+      run: >-
+        python -m
+        build
+        --sdist
+        --wheel
+        --outdir dist/
+        .
+
+    - name: Publish distribution package to Test PyPI
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        skip_existing: true
+        repository_url: https://test.pypi.org/legacy/
+
   pypi:
     name: Build a PyPi Package if this is a tagged release commit
-    runs-on: ubuntu-18.04
+    runs-on: [ "self-hosted", "build_host" ]
 
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
 
@@ -53,7 +103,7 @@ jobs:
 
   docker-latest:
     name: Create docker-latest Docker Image from current head
-    runs-on: ubuntu-18.04
+    runs-on: [ "self-hosted", "build_host" ]
 
     steps:
     - name: Check out Repository
@@ -64,6 +114,11 @@ jobs:
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
+      id: buildx
+      with:
+        driver-opts: |
+          env.http_proxy=http://192.0.2.1:3128
+          env.https_proxy=http://192.0.2.1:3128
 
     - name: Login to DockerHub
       uses: docker/login-action@v1
@@ -75,13 +130,16 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         context: contrib/docker
-        platforms: linux/amd64,linux/arm64,linux/arm/v7
+        platforms: linux/amd64,linux/arm64
         push: true
         tags: twcmanager/twcmanager:latest
+        build-args: |
+          http_proxy=http://192.0.2.1:3128
+          https_proxy=http://192.0.2.1:3128
 
   docker-release:
     name: Create docker-release Docker Image for release version
-    runs-on: ubuntu-18.04
+    runs-on: [ "self-hosted", "build_host" ]
 
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
 
@@ -102,6 +160,11 @@ jobs:
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
+      id: buildx
+      with:
+        driver-opts: |
+          env.http_proxy=http://192.0.2.1:3128
+          env.https_proxy=http://192.0.2.1:3128
 
     - name: Login to DockerHub
       uses: docker/login-action@v1
@@ -113,7 +176,9 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         context: contrib/docker
-        platforms: linux/amd64,linux/arm64,linux/arm/v7
+        platforms: linux/amd64,linux/arm64
         push: true
         tags: twcmanager/twcmanager:${{ steps.branch_name.outputs.SOURCE_TAG }}
-
+        build-args: |
+          http_proxy=http://192.0.2.1:3128
+          https_proxy=http://192.0.2.1:3128
