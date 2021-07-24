@@ -51,9 +51,12 @@ class TWCSlave:
     timeReportedAmpsActualChangedSignificantly = time.time()
 
     lastAmpsOffered = -1
+    lastAmpsDesired = -1
     useFlexAmpsToStartCharge = False
     timeLastAmpsOfferedChanged = 0
+    timeLastAmpsOfferedFlipped = 0
     lastHeartbeatDebugOutput = ""
+    startStopDelay = 0
     timeLastHeartbeatDebugOutput = 0
     wiringMaxAmps = 0
     lifetimekWh = 0
@@ -77,6 +80,8 @@ class TWCSlave:
         self.useFlexAmpsToStartCharge = self.configConfig.get(
             "useFlexAmpsToStartCharge", False
         )
+        self.startStopDelay = self.configConfig.get("startStopDelay", 60)
+
 
     def print_status(self, heartbeatData):
 
@@ -794,22 +799,30 @@ class TWCSlave:
             # stick with whole amps.
             desiredAmpsOffered = int(desiredAmpsOffered)
 
-            if self.lastAmpsOffered == 0 and now - self.timeLastAmpsOfferedChanged < 60:
-                # Keep charger off for at least 60 seconds before turning back
-                # on. See reasoning above where I don't turn the charger off
+            dampenChanges = True if now - self.timeLastAmpsOfferedFlipped < self.startStopDelay else False
+
+            if (self.lastAmpsDesired == 0 and desiredAmpsOffered > 0) or (self.lastAmpsDesired > 0 and desiredAmpsOffered == 0):
+                self.lastAmpsDesired = desiredAmpsOffered
+                self.timeLastAmpsOfferedFlipped = now
+                logger.info("lastAmpsDesired flipped - now " + desiredAmpsOffered)
+
+            if self.lastAmpsOffered > 0 and desiredAmpsOffered == 0 and dampenChanges:
+                # Keep charger on or off for at least startStopDelay before
+                # toggling. See reasoning above where I don't turn the charger off
                 # till it's been on at least 60 seconds.
-                logger.debug(
-                    "Don't start charging TWC: "
+                logger.info(
+                    "Don't stop charging TWC "
                     + self.master.hex_str(self.TWCID)
-                    + " yet because: "
-                    + "self.lastAmpsOffered "
-                    + str(self.lastAmpsOffered)
-                    + " == 0 "
-                    + "and time - self.timeLastAmpsOfferedChanged "
-                    + str(int(now - self.timeLastAmpsOfferedChanged))
-                    + " < 60"
+                    + " yet."
                 )
-                desiredAmpsOffered = self.lastAmpsOffered
+                desiredAmpsOffered = self.minAmpsTWCSupports
+            elif self.lastAmpsOffered == 0 and desiredAmpsOffered > 0 and dampenChanges:
+                logger.info(
+                    "Don't start charging TWC "
+                    + self.master.hex_str(self.TWCID)
+                    + " yet."
+                )
+                desiredAmpsOffered = 0
             else:
                 # Mid Oct 2017, Tesla pushed a firmware update to their cars
                 # that seems to create the following bug:
@@ -937,6 +950,30 @@ class TWCSlave:
                     )
                     if now - self.timeLastAmpsOfferedChanged < 5:
                         desiredAmpsOffered = self.lastAmpsOffered
+
+        if (self.lastAmpsDesired <= 0 and desiredAmpsOffered > 0) or (
+            self.lastAmpsDesired > 0 and desiredAmpsOffered == 0
+        ):
+            self.lastAmpsDesired = desiredAmpsOffered
+            self.timeLastAmpsOfferedFlipped = now
+            logger.debug("lastAmpsDesired flipped - now " + str(desiredAmpsOffered))
+
+        # Keep charger on or off if dampening changes. See reasoning above where
+        # I don't turn the charger off till it's been on for a bit.
+        if self.reportedAmpsActual > 0 and desiredAmpsOffered == 0 and dampenChanges:
+            logger.debug(
+                "Don't stop TWC "
+                + self.master.hex_str(self.TWCID)
+                + " yet."
+            )
+            desiredAmpsOffered = self.minAmpsTWCSupports
+        elif self.lastAmpsOffered == 0 and desiredAmpsOffered > 0 and dampenChanges:
+            logger.debug(
+                "Don't start charging TWC "
+                + self.master.hex_str(self.TWCID)
+                + " yet."
+            )
+            desiredAmpsOffered = 0
 
         # set_last_amps_offered does some final checks to see if the new
         # desiredAmpsOffered is safe. It should be called after we've picked a
