@@ -82,7 +82,6 @@ class TWCSlave:
         )
         self.startStopDelay = self.configConfig.get("startStopDelay", 60)
 
-
     def print_status(self, heartbeatData):
 
         try:
@@ -799,12 +798,18 @@ class TWCSlave:
             # stick with whole amps.
             desiredAmpsOffered = int(desiredAmpsOffered)
 
-            dampenChanges = True if now - self.timeLastAmpsOfferedFlipped < self.startStopDelay else False
+            dampenChanges = (
+                True
+                if now - self.timeLastAmpsOfferedFlipped < self.startStopDelay
+                else False
+            )
 
-            if (self.lastAmpsDesired == 0 and desiredAmpsOffered > 0) or (self.lastAmpsDesired > 0 and desiredAmpsOffered == 0):
+            if (self.lastAmpsDesired <= 0 and desiredAmpsOffered > 0) or (
+                self.lastAmpsDesired > 0 and desiredAmpsOffered == 0
+            ):
                 self.lastAmpsDesired = desiredAmpsOffered
                 self.timeLastAmpsOfferedFlipped = now
-                logger.info("lastAmpsDesired flipped - now " + desiredAmpsOffered)
+                logger.info("lastAmpsDesired flipped - now " + str(desiredAmpsOffered))
 
             if self.lastAmpsOffered > 0 and desiredAmpsOffered == 0 and dampenChanges:
                 # Keep charger on or off for at least startStopDelay before
