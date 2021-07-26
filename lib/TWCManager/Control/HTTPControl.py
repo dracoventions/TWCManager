@@ -11,6 +11,7 @@ import re
 import threading
 import time
 import urllib.parse
+import uuid
 import math
 from ww import f
 
@@ -362,6 +363,13 @@ def CreateHTTPHandlerClass(master):
 
                 json_data = json.dumps(output)
                 self.wfile.write(json_data.encode("utf-8"))
+            
+            elif self.url.path == "/api/getUUID":
+                self.send_response(200)
+                self.send_header("Content-type", "text/plain")
+                self.end_headers()
+
+                self.wfile.write(str(uuid.getnode()).encode("utf-8"))
 
             else:
                 # All other routes missed, return 404
