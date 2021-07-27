@@ -94,7 +94,7 @@ class P1Monitor:
         if p1monData:
             try:
 
-                    logger.log(logging.INFO2,"P1Monitor: API Json Output: " + json.dumps(p1monData))
+                    logger.log(logging.INFO3,"P1Monitor: API Json Output: " + json.dumps(p1monData))
 
                     # Calculate the avarage trimming 10% of the highest and lowest values https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.trim_mean.html
                     CONSUMPTION_L1_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(p1monData[i]['CONSUMPTION_L1_W'])) for i in range(0,self.samples))),0.1)
