@@ -92,6 +92,7 @@ modules_available = [
     "EMS.Fronius",
     "EMS.Growatt",
     "EMS.HASS",
+    "EMS.IotaWatt",
     "EMS.Kostal",
     "EMS.OpenHab",
     "EMS.OpenWeatherMap",

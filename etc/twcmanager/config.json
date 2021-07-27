@@ -504,6 +504,20 @@
             "hassEntityConsumption": "sensor.meter_power_live",
             "hassEntityGeneration":  "sensor.inverter_power_live"
         },
+        "IotaWatt": {
+      # The IotaWatt module allows fetching of consumption and generation statistics from IotaWatt outputs.
+            "enabled": false,
+
+      # The IP address of the IotaWatt front-end
+            "serverIP": "192.168.1.1",
+
+      # For IotaWatt, the two settings below must be customized to point to the specific outputs
+      # you have created. There is no default or common value for this, so it will require customization to
+      # work correctly. If you do not track one of these values (generation or consumption) via IotaWatt,
+      # leave the parameter blank, and it will not be retrieved.
+            "outputConsumption": "Total_Consumption",
+            "outputGeneration":  "Solar"
+        },
         "MQTT": {
       # MQTT Sensor support for reading generation or consumption data.
       # This is not yet available.
