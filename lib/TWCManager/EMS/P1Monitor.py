@@ -20,6 +20,7 @@ class P1Monitor:
     def __init__(self, master):
 
         try:
+            self.p1monData = {}
             self.configP1Mon = master.config["sources"]["P1Monitor"]
             self.serverIP = self.configP1Mon.get("serverIP", None)
             logger.log(logging.INFO2,"P1Monitor: serverIP: " + str(self.serverIP))
@@ -44,6 +45,7 @@ class P1Monitor:
     def getConsumption(self):
 
         # Perform updates if necessary
+        self.caller = "getConsumption"
         self.update()
 
         # Return current consumed value
@@ -56,6 +58,7 @@ class P1Monitor:
     def getGeneration(self):
 
         # Perform updates if necessary
+        self.caller = "getGeneration"
         self.update()
 
         # Return generation value
@@ -90,31 +93,36 @@ class P1Monitor:
 
     def update(self):
 
-        p1monData = self.getP1MonAPIData()
-        if p1monData:
+        if not self.p1monData or self.caller == "getConsumption":
+            logger.log(logging.INFO2,"P1Monitor: Refreshing data. Caller: "+ self.caller)
+            self.p1monData = self.getP1MonAPIData()
+        else:
+            logger.log(logging.INFO2,"P1Monitor: Using existing data. Caller: "+ self.caller)
+
+        if self.p1monData:
             try:
 
-                    logger.log(logging.INFO3,"P1Monitor: API Json Output: " + json.dumps(p1monData))
+                    logger.log(logging.INFO3,"P1Monitor: API Json Output: " + json.dumps(self.p1monData))
 
                     # Calculate the avarage trimming 10% of the highest and lowest values https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.trim_mean.html
-                    CONSUMPTION_L1_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(p1monData[i]['CONSUMPTION_L1_W'])) for i in range(0,self.samples))),0.1)
+                    CONSUMPTION_L1_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(self.p1monData[i]['CONSUMPTION_L1_W'])) for i in range(0,self.samples))),0.1)
                     logger.log(logging.INFO2,"P1Monitor: CONSUMPTION_L1_W_Avg: " + str(CONSUMPTION_L1_W_Avg))
-                    CONSUMPTION_L2_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(p1monData[i]['CONSUMPTION_L2_W'])) for i in range(0,self.samples))),0.1)
+                    CONSUMPTION_L2_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(self.p1monData[i]['CONSUMPTION_L2_W'])) for i in range(0,self.samples))),0.1)
                     logger.log(logging.INFO2,"P1Monitor: CONSUMPTION_L2_W_Avg: " + str(CONSUMPTION_L2_W_Avg))
-                    CONSUMPTION_L3_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(p1monData[i]['CONSUMPTION_L3_W'])) for i in range(0,self.samples))),0.1)
+                    CONSUMPTION_L3_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(self.p1monData[i]['CONSUMPTION_L3_W'])) for i in range(0,self.samples))),0.1)
                     logger.log(logging.INFO2,"P1Monitor: CONSUMPTION_L3_W_Avg: " + str(CONSUMPTION_L3_W_Avg))
-                    PRODUCTION_L1_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(p1monData[i]['PRODUCTION_L1_W'])) for i in range(0,self.samples))),0.1)
+                    PRODUCTION_L1_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(self.p1monData[i]['PRODUCTION_L1_W'])) for i in range(0,self.samples))),0.1)
                     logger.log(logging.INFO2,"P1Monitor: PRODUCTION_L1_W_Avg: " + str(PRODUCTION_L1_W_Avg))
-                    PRODUCTION_L2_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(p1monData[i]['PRODUCTION_L2_W'])) for i in range(0,self.samples))),0.1)
+                    PRODUCTION_L2_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(self.p1monData[i]['PRODUCTION_L2_W'])) for i in range(0,self.samples))),0.1)
                     logger.log(logging.INFO2,"P1Monitor: PRODUCTION_L2_W_Avg: " + str(PRODUCTION_L2_W_Avg))
-                    PRODUCTION_L3_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(p1monData[i]['PRODUCTION_L3_W'])) for i in range(0,self.samples))),0.1)
+                    PRODUCTION_L3_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(self.p1monData[i]['PRODUCTION_L3_W'])) for i in range(0,self.samples))),0.1)
                     logger.log(logging.INFO2,"P1Monitor: PRODUCTION_L3_W_Avg: " + str(PRODUCTION_L3_W_Avg))
 
-                    L1_V = int(float(p1monData[1]['L1_V']))
+                    L1_V = int(float(self.p1monData[1]['L1_V']))
                     logger.log(logging.INFO2,"P1Monitor: L1_V: " + str(L1_V) + "V")
-                    L2_V = int(float(p1monData[1]['L2_V']))
+                    L2_V = int(float(self.p1monData[1]['L2_V']))
                     logger.log(logging.INFO2,"P1Monitor: L2_V: " + str(L2_V)+ "V")
-                    L3_V = int(float(p1monData[1]['L3_V']))
+                    L3_V = int(float(self.p1monData[1]['L3_V']))
                     logger.log(logging.INFO2,"P1Monitor: L3_V: " + str(L3_V)+ "V")
 
                     phases = 1
@@ -157,11 +165,10 @@ class P1Monitor:
                     )
                     logger.log(logging.INFO2,"P1Monitor: Phase with highest load consumes: " + str(consumedW) + "W")
 
-                    # Report the load to TWCManager
+                    # Report the consumption
                     self.consumedW = consumedW * int(phases)
-                    logger.log(logging.INFO2,"P1Monitor: Reporting " + str(self.consumedW) + "W to TWCManager")
 
-                    # Report the generation to TWCManager
+                    # Report the generation
                     self.generatedW = int(
                         sum([
                             PRODUCTION_L1_W_Avg,
