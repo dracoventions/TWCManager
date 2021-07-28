@@ -60,6 +60,7 @@ EMS Interfaces read solar generation and/or consumption values from an external 
 | [Fronius Inverter](docs/modules/EMS_Fronius.md) | Available | Supports Fronius Inverter API |
 | [Growatt](docs/modules/EMS_Growatt.md)          | Available | Support for Growatt Battery systems |
 | [HomeAssistant](docs/modules/EMS_HASS.md)       | Available | Supports HomeAssistant sensors |
+| [Iotawatt](docs/modules/EMS_Iotawatt.md)       | Pre-release | Supports Iotawatt outputs |
 | [Kostal (Pico/Plenticore)](docs/modules/EMS_Kostal.md) | Available | Support for Kostal Inverters via ModBus |
 | [openHAB](docs/modules/EMS_OpenHab.md)          | Available | Supports openHAB items |
 | [OpenWeatherMap](docs/modules/EMS_OpenWeatherMap.md) | Available | Supports OpenWeatherMap forecast-based tracking where inverter EMS is not available. |
