@@ -698,6 +698,12 @@ class TWCSlave:
         ):
             desiredAmpsOffered = minAmpsToOffer
 
+        dampenChanges = (
+            True
+            if now - self.timeLastAmpsOfferedFlipped < self.startStopDelay
+            else False
+        )
+
         if desiredAmpsOffered < minAmpsToOffer:
             logger.debug(
                 "desiredAmpsOffered: "
@@ -798,163 +804,156 @@ class TWCSlave:
             # stick with whole amps.
             desiredAmpsOffered = int(desiredAmpsOffered)
 
-            dampenChanges = (
-                True
-                if now - self.timeLastAmpsOfferedFlipped < self.startStopDelay
-                else False
+            # Mid Oct 2017, Tesla pushed a firmware update to their cars
+            # that seems to create the following bug:
+            # If you raise desiredAmpsOffered AT ALL from the car's current
+            # max amp limit, the car will drop its max amp limit to the 6A
+            # setting (5.14-5.23A actual use as reported in
+            # heartbeatData[2-3]). The odd fix to this problem is to tell
+            # the car to raise to at least spikeAmpsToCancel6ALimit for 5 or
+            # more seconds, then tell it to lower the limit to
+            # desiredAmpsOffered. Even 0.01A less than
+            # spikeAmpsToCancel6ALimit is not enough to cancel the 6A limit.
+            #
+            # I'm not sure how long we have to hold spikeAmpsToCancel6ALimit
+            # but 3 seconds is definitely not enough but 5 seconds seems to
+            # work. It doesn't seem to matter if the car actually hits
+            # spikeAmpsToCancel6ALimit of power draw. In fact, the car is
+            # slow enough to respond that even with 10s at 21A the most I've
+            # seen it actually draw starting at 6A is 13A.
+            logger.debug(
+                "TWCID="
+                + self.master.hex_str(self.TWCID)
+                + " desiredAmpsOffered="
+                + str(desiredAmpsOffered)
+                + " spikeAmpsToCancel6ALimit="
+                + str(self.master.getSpikeAmps())
+                + " self.lastAmpsOffered="
+                + str(self.lastAmpsOffered)
+                + " self.reportedAmpsActual="
+                + str(self.reportedAmpsActual)
+                + " now - self.timeReportedAmpsActualChangedSignificantly="
+                + str(int(now - self.timeReportedAmpsActualChangedSignificantly))
             )
 
-            if (self.lastAmpsDesired <= 0 and desiredAmpsOffered > 0) or (
-                self.lastAmpsDesired > 0 and desiredAmpsOffered == 0
+            if (
+                # If we just moved from a lower amp limit to
+                # a higher one less than spikeAmpsToCancel6ALimit.
+                (
+                    desiredAmpsOffered < self.master.getSpikeAmps()
+                    and desiredAmpsOffered > self.reportedAmpsMax
+                    and self.master.settings.get("spikeAmpsProactively", 1)
+                )
+                or (
+                    # ...or if we've been offering the car more amps than it's
+                    # been using for at least 10 seconds, then we'll change the
+                    # amps we're offering it. For some reason, the change in
+                    # amps offered will get the car to up its amp draw.
+                    #
+                    # First, check that the car is drawing enough amps to be
+                    # charging...
+                    self.reportedAmpsActual > 2.0
+                    and
+                    # ...and car is charging at under spikeAmpsToCancel6ALimit.
+                    # I think I've seen cars get stuck between spikeAmpsToCancel6ALimit
+                    # and lastAmpsOffered, but more often a car will be limited
+                    # to under lastAmpsOffered by its UI setting or by the
+                    # charger hardware it has on board, and we don't want to
+                    # keep reducing it to spikeAmpsToCancel6ALimit.
+                    # If cars really are getting stuck above
+                    # spikeAmpsToCancel6ALimit, I may need to implement a
+                    # counter that tries spikeAmpsToCancel6ALimit only a
+                    # certain number of times per hour.
+                    (self.reportedAmpsActual <= self.master.getSpikeAmps())
+                    and
+                    # ...and car is charging at over two amps under what we
+                    # want it to charge at. I have to use 2 amps because when
+                    # offered, say 40A, the car charges at ~38.76A actual.
+                    # Using a percentage instead of 2.0A doesn't work because
+                    # 38.58/40 = 95.4% but 5.14/6 = 85.6%
+                    (self.lastAmpsOffered - self.reportedAmpsActual) > 2.0
+                    and
+                    # ...and car hasn't changed its amp draw significantly in
+                    # over 10 seconds, meaning it's stuck at its current amp
+                    # draw.
+                    now - self.timeReportedAmpsActualChangedSignificantly > 10
+                    and self.master.settings.get("spikeAmpsReactively", 1)
+                )
             ):
-                self.lastAmpsDesired = desiredAmpsOffered
-                self.timeLastAmpsOfferedFlipped = now
-                logger.info("lastAmpsDesired flipped - now " + str(desiredAmpsOffered))
-
-            if self.lastAmpsOffered > 0 and desiredAmpsOffered == 0 and dampenChanges:
-                # Keep charger on or off for at least startStopDelay before
-                # toggling. See reasoning above where I don't turn the charger off
-                # till it's been on at least 60 seconds.
-                logger.info(
-                    "Don't stop charging TWC "
-                    + self.master.hex_str(self.TWCID)
-                    + " yet."
-                )
-                desiredAmpsOffered = self.minAmpsTWCSupports
-            elif self.lastAmpsOffered == 0 and desiredAmpsOffered > 0 and dampenChanges:
-                logger.info(
-                    "Don't start charging TWC "
-                    + self.master.hex_str(self.TWCID)
-                    + " yet."
-                )
-                desiredAmpsOffered = 0
-            else:
-                # Mid Oct 2017, Tesla pushed a firmware update to their cars
-                # that seems to create the following bug:
-                # If you raise desiredAmpsOffered AT ALL from the car's current
-                # max amp limit, the car will drop its max amp limit to the 6A
-                # setting (5.14-5.23A actual use as reported in
-                # heartbeatData[2-3]). The odd fix to this problem is to tell
-                # the car to raise to at least spikeAmpsToCancel6ALimit for 5 or
-                # more seconds, then tell it to lower the limit to
-                # desiredAmpsOffered. Even 0.01A less than
-                # spikeAmpsToCancel6ALimit is not enough to cancel the 6A limit.
-                #
-                # I'm not sure how long we have to hold spikeAmpsToCancel6ALimit
-                # but 3 seconds is definitely not enough but 5 seconds seems to
-                # work. It doesn't seem to matter if the car actually hits
-                # spikeAmpsToCancel6ALimit of power draw. In fact, the car is
-                # slow enough to respond that even with 10s at 21A the most I've
-                # seen it actually draw starting at 6A is 13A.
-                logger.debug(
-                    "TWCID="
-                    + self.master.hex_str(self.TWCID)
-                    + " desiredAmpsOffered="
-                    + str(desiredAmpsOffered)
-                    + " spikeAmpsToCancel6ALimit="
-                    + str(self.master.getSpikeAmps())
-                    + " self.lastAmpsOffered="
-                    + str(self.lastAmpsOffered)
-                    + " self.reportedAmpsActual="
-                    + str(self.reportedAmpsActual)
-                    + " now - self.timeReportedAmpsActualChangedSignificantly="
-                    + str(int(now - self.timeReportedAmpsActualChangedSignificantly))
-                )
-
+                # We must set desiredAmpsOffered to a value that gets
+                # reportedAmpsActual (amps the car is actually using) up to
+                # a value near lastAmpsOffered. At the end of all these
+                # checks, we'll set lastAmpsOffered = desiredAmpsOffered and
+                # timeLastAmpsOfferedChanged if the value of lastAmpsOffered was
+                # actually changed.
                 if (
-                    # If we just moved from a lower amp limit to
-                    # a higher one less than spikeAmpsToCancel6ALimit.
-                    (
-                        desiredAmpsOffered < self.master.getSpikeAmps()
-                        and desiredAmpsOffered > self.reportedAmpsMax
-                        and self.master.settings.get("spikeAmpsProactively", 1)
-                    )
-                    or (
-                        # ...or if we've been offering the car more amps than it's
-                        # been using for at least 10 seconds, then we'll change the
-                        # amps we're offering it. For some reason, the change in
-                        # amps offered will get the car to up its amp draw.
-                        #
-                        # First, check that the car is drawing enough amps to be
-                        # charging...
-                        self.reportedAmpsActual > 2.0
-                        and
-                        # ...and car is charging at under spikeAmpsToCancel6ALimit.
-                        # I think I've seen cars get stuck between spikeAmpsToCancel6ALimit
-                        # and lastAmpsOffered, but more often a car will be limited
-                        # to under lastAmpsOffered by its UI setting or by the
-                        # charger hardware it has on board, and we don't want to
-                        # keep reducing it to spikeAmpsToCancel6ALimit.
-                        # If cars really are getting stuck above
-                        # spikeAmpsToCancel6ALimit, I may need to implement a
-                        # counter that tries spikeAmpsToCancel6ALimit only a
-                        # certain number of times per hour.
-                        (self.reportedAmpsActual <= self.master.getSpikeAmps())
-                        and
-                        # ...and car is charging at over two amps under what we
-                        # want it to charge at. I have to use 2 amps because when
-                        # offered, say 40A, the car charges at ~38.76A actual.
-                        # Using a percentage instead of 2.0A doesn't work because
-                        # 38.58/40 = 95.4% but 5.14/6 = 85.6%
-                        (self.lastAmpsOffered - self.reportedAmpsActual) > 2.0
-                        and
-                        # ...and car hasn't changed its amp draw significantly in
-                        # over 10 seconds, meaning it's stuck at its current amp
-                        # draw.
-                        now - self.timeReportedAmpsActualChangedSignificantly > 10
-                        and self.master.settings.get("spikeAmpsReactively", 1)
-                    )
+                    self.lastAmpsOffered == self.master.getSpikeAmps()
+                    and now - self.timeLastAmpsOfferedChanged > 10
                 ):
-                    # We must set desiredAmpsOffered to a value that gets
-                    # reportedAmpsActual (amps the car is actually using) up to
-                    # a value near lastAmpsOffered. At the end of all these
-                    # checks, we'll set lastAmpsOffered = desiredAmpsOffered and
-                    # timeLastAmpsOfferedChanged if the value of lastAmpsOffered was
-                    # actually changed.
-                    if (
-                        self.lastAmpsOffered == self.master.getSpikeAmps()
-                        and now - self.timeLastAmpsOfferedChanged > 10
-                    ):
-                        # We've been offering the car spikeAmpsToCancel6ALimit
-                        # for over 10 seconds but it's still drawing at least
-                        # 2A less than spikeAmpsToCancel6ALimit.  I saw this
-                        # happen once when an error stopped the car from
-                        # charging and when the error cleared, it was offered
-                        # spikeAmpsToCancel6ALimit as the first value it saw.
-                        # The car limited itself to 6A indefinitely. In this
-                        # case, the fix is to offer it lower amps.
-                        logger.info(
-                            "Car stuck when offered spikeAmpsToCancel6ALimit.  Offering 2 less."
-                        )
-                        desiredAmpsOffered = self.master.getSpikeAmps() - 2.0
-                    elif now - self.timeLastAmpsOfferedChanged > 5:
-                        # self.lastAmpsOffered hasn't gotten the car to draw
-                        # enough amps for over 5 seconds, so try
-                        # spikeAmpsToCancel6ALimit
-                        desiredAmpsOffered = self.master.getSpikeAmps()
-                    else:
-                        # Otherwise, don't change the value of lastAmpsOffered.
-                        desiredAmpsOffered = self.lastAmpsOffered
-
-                    # Note that the car should have no problem increasing max
-                    # amps to any whole value over spikeAmpsToCancel6ALimit as
-                    # long as it's below any upper limit manually set in the
-                    # car's UI. One time when I couldn't get TWC to push the car
-                    # over 21A, I found the car's UI had set itself to 21A
-                    # despite setting it to 40A the day before. I have been
-                    # unable to reproduce whatever caused that problem.
-                elif desiredAmpsOffered < self.lastAmpsOffered:
-                    # Tesla doesn't mind if we set a lower amp limit than the
-                    # one we're currently using, but make sure we don't change
-                    # limits more often than every 5 seconds. This has the side
-                    # effect of holding spikeAmpsToCancel6ALimit set earlier for
-                    # 5 seconds to make sure the car sees it.
-                    logger.debug(
-                        "Reduce amps: time - self.timeLastAmpsOfferedChanged "
-                        + str(int(now - self.timeLastAmpsOfferedChanged))
+                    # We've been offering the car spikeAmpsToCancel6ALimit
+                    # for over 10 seconds but it's still drawing at least
+                    # 2A less than spikeAmpsToCancel6ALimit.  I saw this
+                    # happen once when an error stopped the car from
+                    # charging and when the error cleared, it was offered
+                    # spikeAmpsToCancel6ALimit as the first value it saw.
+                    # The car limited itself to 6A indefinitely. In this
+                    # case, the fix is to offer it lower amps.
+                    logger.info(
+                        "Car stuck when offered spikeAmpsToCancel6ALimit.  Offering 2 less."
                     )
-                    if now - self.timeLastAmpsOfferedChanged < 5:
-                        desiredAmpsOffered = self.lastAmpsOffered
+                    desiredAmpsOffered = self.master.getSpikeAmps() - 2.0
+                elif now - self.timeLastAmpsOfferedChanged > 5:
+                    # self.lastAmpsOffered hasn't gotten the car to draw
+                    # enough amps for over 5 seconds, so try
+                    # spikeAmpsToCancel6ALimit
+                    desiredAmpsOffered = self.master.getSpikeAmps()
+                else:
+                    # Otherwise, don't change the value of lastAmpsOffered.
+                    desiredAmpsOffered = self.lastAmpsOffered
+
+                # Note that the car should have no problem increasing max
+                # amps to any whole value over spikeAmpsToCancel6ALimit as
+                # long as it's below any upper limit manually set in the
+                # car's UI. One time when I couldn't get TWC to push the car
+                # over 21A, I found the car's UI had set itself to 21A
+                # despite setting it to 40A the day before. I have been
+                # unable to reproduce whatever caused that problem.
+            elif desiredAmpsOffered < self.lastAmpsOffered:
+                # Tesla doesn't mind if we set a lower amp limit than the
+                # one we're currently using, but make sure we don't change
+                # limits more often than every 5 seconds. This has the side
+                # effect of holding spikeAmpsToCancel6ALimit set earlier for
+                # 5 seconds to make sure the car sees it.
+                logger.debug(
+                    "Reduce amps: time - self.timeLastAmpsOfferedChanged "
+                    + str(int(now - self.timeLastAmpsOfferedChanged))
+                )
+                if now - self.timeLastAmpsOfferedChanged < 5:
+                    desiredAmpsOffered = self.lastAmpsOffered
+
+        if (self.lastAmpsDesired <= 0 and desiredAmpsOffered > 0) or (
+            self.lastAmpsDesired > 0 and desiredAmpsOffered == 0
+        ):
+            self.lastAmpsDesired = desiredAmpsOffered
+            self.timeLastAmpsOfferedFlipped = now
+            logger.info("lastAmpsDesired flipped - now " + str(desiredAmpsOffered))
+
+        # Keep charger on or off if dampening changes. See reasoning above where
+        # I don't turn the charger off till it's been on for a bit.
+        if self.lastAmpsOffered > 0 and desiredAmpsOffered == 0 and dampenChanges:
+            logger.info(
+                "Don't stop charging TWC "
+                + self.master.hex_str(self.TWCID)
+                + " yet."
+            )
+            desiredAmpsOffered = self.minAmpsTWCSupports
+        elif self.lastAmpsOffered == 0 and desiredAmpsOffered > 0 and dampenChanges:
+            logger.info(
+                "Don't start charging TWC "
+                + self.master.hex_str(self.TWCID)
+                + " yet."
+            )
+            desiredAmpsOffered = 0
 
         if (self.lastAmpsDesired <= 0 and desiredAmpsOffered > 0) or (
             self.lastAmpsDesired > 0 and desiredAmpsOffered == 0
