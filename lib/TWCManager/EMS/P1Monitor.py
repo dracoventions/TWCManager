@@ -110,16 +110,58 @@ class P1Monitor:
                     PRODUCTION_L3_W_Avg = scipy.stats.trim_mean(array.array('i',(int(float(p1monData[i]['PRODUCTION_L3_W'])) for i in range(0,self.samples))),0.1)
                     logger.log(logging.INFO2,"P1Monitor: PRODUCTION_L3_W_Avg: " + str(PRODUCTION_L3_W_Avg))
 
-                    #Get the max value of consumption, because we don't want to overload the fuse.
-                    self.consumedW = int(
+                    L1_V = int(float(p1monData[1]['L1_V']))
+                    logger.log(logging.INFO2,"P1Monitor: L1_V: " + str(L1_V) + "V")
+                    L2_V = int(float(p1monData[1]['L2_V']))
+                    logger.log(logging.INFO2,"P1Monitor: L2_V: " + str(L2_V)+ "V")
+                    L3_V = int(float(p1monData[1]['L3_V']))
+                    logger.log(logging.INFO2,"P1Monitor: L3_V: " + str(L3_V)+ "V")
+
+                    phases = 1
+                    # Find out how many phases there are, because P1 Monitor does not report it.
+                    totalVolt = int(sum([
+                            L1_V,
+                            L2_V,
+                            L3_V
+                            ]))
+                    maxVolt = int(max([
+                            L1_V,
+                            L2_V,
+                            L3_V
+                            ]))
+                    minVolt = int(min([
+                            L1_V,
+                            L2_V,
+                            L3_V
+                            ]))
+                    logger.log(logging.INFO2,"P1Monitor: Volt sum all phases: " + str(totalVolt) + "V")
+                    logger.log(logging.INFO2,"P1Monitor: Highest by a phase: " + str(maxVolt) + "V")
+                    logger.log(logging.INFO2,"P1Monitor: Lowest by a phase: " + str(minVolt) + "V")
+                    if (totalVolt > maxVolt):
+                        phases = 3
+                        logger.log(logging.INFO2,"P1Monitor: Determined " + str(phases) + " phases. Reason: Sum of all voltages (" + str(totalVolt) + "V) > than the highest voltage (" + str(maxVolt) + "V) reported")
+
+                    elif (totalVolt == maxVolt) or (minVolt == 0):
+                        phases = 1
+                        logger.log(logging.INFO2,"P1Monitor: Determined " + str(phases) + " phases. Reason: Sum of all voltages (" + str(totalVolt) + "V) == the highest volt (" + str(maxVolt) + " V) reported or the lowest voltage == 0 (Reported: " + str(minVolt) + " V).")
+                    else:
+                        logger.error(logging.error,"P1Monitor: Cannot determine 1 or 3 phases! Check output of P1Monitor phase API! (Reported: L1_V: " + str(L1_V) + "V , L2_V: " + str(L2_V) + "V , L3_V: " + str(L3_V)  + "V)")
+
+                    #Get the sum value of consumption through all phases. TWCManager self will devide the total usage over phases. We will report the maximum loaded phase multiplied by the amount of phases so we never overload a single phase.
+                    consumedW = int(
                         max([
                             CONSUMPTION_L1_W_Avg,
                             CONSUMPTION_L2_W_Avg,
                             CONSUMPTION_L3_W_Avg
                             ])
                     )
-                    # Get the sum value of production, because it should be installed within the fuse configuration
-                    # and we want to make use of all the power we produce.
+                    logger.log(logging.INFO2,"P1Monitor: Phase with highest load consumes: " + str(consumedW) + "W")
+
+                    # Report the load to TWCManager
+                    self.consumedW = consumedW * int(phases)
+                    logger.log(logging.INFO2,"P1Monitor: Reporting " + str(self.consumedW) + "W to TWCManager")
+
+                    # Report the generation to TWCManager
                     self.generatedW = int(
                         sum([
                             PRODUCTION_L1_W_Avg,
