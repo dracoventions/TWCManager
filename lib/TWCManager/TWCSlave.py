@@ -940,18 +940,12 @@ class TWCSlave:
 
         # Keep charger on or off if dampening changes. See reasoning above where
         # I don't turn the charger off till it's been on for a bit.
-        if self.lastAmpsOffered > 0 and desiredAmpsOffered == 0 and dampenChanges:
-            logger.info(
-                "Don't stop charging TWC "
-                + self.master.hex_str(self.TWCID)
-                + " yet."
-            )
+        if self.reportedAmpsActual > 0 and desiredAmpsOffered == 0 and dampenChanges:
+            logger.info("Don't stop TWC " + self.master.hex_str(self.TWCID) + " yet.")
             desiredAmpsOffered = self.minAmpsTWCSupports
         elif self.lastAmpsOffered == 0 and desiredAmpsOffered > 0 and dampenChanges:
             logger.info(
-                "Don't start charging TWC "
-                + self.master.hex_str(self.TWCID)
-                + " yet."
+                "Don't start charging TWC " + self.master.hex_str(self.TWCID) + " yet."
             )
             desiredAmpsOffered = 0
 
@@ -965,17 +959,11 @@ class TWCSlave:
         # Keep charger on or off if dampening changes. See reasoning above where
         # I don't turn the charger off till it's been on for a bit.
         if self.reportedAmpsActual > 0 and desiredAmpsOffered == 0 and dampenChanges:
-            logger.debug(
-                "Don't stop TWC "
-                + self.master.hex_str(self.TWCID)
-                + " yet."
-            )
+            logger.debug("Don't stop TWC " + self.master.hex_str(self.TWCID) + " yet.")
             desiredAmpsOffered = self.minAmpsTWCSupports
         elif self.lastAmpsOffered == 0 and desiredAmpsOffered > 0 and dampenChanges:
             logger.debug(
-                "Don't start charging TWC "
-                + self.master.hex_str(self.TWCID)
-                + " yet."
+                "Don't start charging TWC " + self.master.hex_str(self.TWCID) + " yet."
             )
             desiredAmpsOffered = 0
 

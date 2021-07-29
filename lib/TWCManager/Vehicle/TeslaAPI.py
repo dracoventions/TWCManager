@@ -704,7 +704,7 @@ class TeslaAPI:
             for vehicle in self.getCarApiVehicles():
                 vehicle.stopAskingToStartCharging = False
 
-        if (now - self.getLastStartOrStopChargeTime() < 60):
+        if now - self.getLastStartOrStopChargeTime() < 60:
 
             # Don't start or stop more often than once a minute
             logger.log(
