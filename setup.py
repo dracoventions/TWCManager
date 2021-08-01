@@ -17,6 +17,10 @@ setup(
         "growattServer>=1.0.0",
         "jinja2==2.11.2",
         "MarkupSafe < 2.0.0; python_version < '3.6'",
+        "numpy==1.16.6; python_version == '3.4'",
+        "numpy==1.18.5; python_version == '3.5'",
+        "numpy==1.19.5; python_version == '3.6'",
+        "numpy>=1.21.1; python_version >= '3.7'",
         "ocpp",
         "paho_mqtt>=1.5.0",
         "pyModbusTCP>=0.1.8",
@@ -30,8 +34,7 @@ setup(
         "termcolor>=1.1.0",
         "websockets; python_version >= '3.6'",
         "ww>=0.2.1",
-        "scipy>=1.7.0",
-        "numpy>=1.21.1"
+        "scipy>=1.7.0"
     ],
     # Package Metadata
     author="Nathan Gardiner",
