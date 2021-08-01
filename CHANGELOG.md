@@ -19,6 +19,7 @@ This document logs the changes per release of TWCManager.
   * (@mvaneijken) - Add MySQL logging module Port parameter
   * (@ngardiner) - Refactor TWCManager structure to allow for entire project to be packaged into pypi packaging for easy install/upgrades
   * (@jherby2k) - Add IotaWatt EMS interface
+  * (@mvaneijken) - Added P1 Monitor EMS module
 
 ## v1.2.2 - 2021-06-09
 
