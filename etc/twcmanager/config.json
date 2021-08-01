@@ -523,6 +523,14 @@
       # This is not yet available.
           "enabled": false
         },
+        "P1Monitor":{
+          # Support for P1 Monitor API (https://www.ztatz.nl/)
+          # Reads /api/v1/phase
+          "enabled": true,
+          "serverIP":"192.168.1.2",
+          # Amount of samples to take average from (min 1, max 10, default 1)
+          "samples": 1
+        },
         "OpenWeatherMap": {
             "enabled": false,
             #your position on earth, use maps.google and copy from the URL parameters after the @ sign

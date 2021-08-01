@@ -29,7 +29,9 @@ setup(
         "sysv_ipc >= 1.0.1; python_version >= '3.6'",
         "termcolor>=1.1.0",
         "websockets; python_version >= '3.6'",
-        "ww>=0.2.1"
+        "ww>=0.2.1",
+        "scipy>=1.7.0",
+        "numpy>=1.21.1"
     ],
     # Package Metadata
     author="Nathan Gardiner",

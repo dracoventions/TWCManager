@@ -1,5 +1,5 @@
 FROM debian:buster
-RUN apt-get -y update && apt-get -y install build-essential git lsb-release make python3 python3-pip
+RUN apt-get -y update && apt-get -y install build-essential git lsb-release make python3 python3-pip libatlas-base-dev
 RUN cd /usr/src && git clone https://github.com/ngardiner/TWCManager
 RUN cd /usr/src/TWCManager && make install SUDO=""
 
