@@ -700,7 +700,9 @@ class TWCSlave:
 
         dampenChanges = (
             True
-            if now - self.timeLastAmpsDesiredFlipped < self.startStopDelay
+            if now
+            - min(self.timeLastAmpsDesiredFlipped, self.timeLastAmpsOfferedChanged)
+            < self.startStopDelay
             else False
         )
 
@@ -936,7 +938,7 @@ class TWCSlave:
         ):
             self.lastAmpsDesired = desiredAmpsOffered
             self.timeLastAmpsDesiredFlipped = now
-            logger.info("lastAmpsDesired flipped - now " + str(desiredAmpsOffered))
+            logger.debug("lastAmpsDesired flipped - now " + str(desiredAmpsOffered))
 
         # Keep charger on or off if dampening changes. See reasoning above where
         # I don't turn the charger off till it's been on for a bit.
