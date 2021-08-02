@@ -53,7 +53,7 @@ class TWCMaster:
         "scheduledAmpsEndHour": -1,
         "scheduledAmpsMax": 0,
         "scheduledAmpsStartHour": -1,
-        "sendServerTime": 0
+        "sendServerTime": 0,
     }
     slaveHeartbeatData = bytearray(
         [0x01, 0x0F, 0xA0, 0x0F, 0xA0, 0x00, 0x00, 0x00, 0x00]
@@ -169,7 +169,10 @@ class TWCMaster:
         if str(self.settings.get("chargeAuthorizationMode", "1")) == "1":
             # In this mode, we allow all vehicles to charge unless they
             # are explicitly banned from charging
-            if subTWC.currentVIN in self.settings["VehicleGroups"]["Deny Charging"]["Members"]:
+            if (
+                subTWC.currentVIN
+                in self.settings["VehicleGroups"]["Deny Charging"]["Members"]
+            ):
                 return 0
             else:
                 return 1
@@ -177,7 +180,10 @@ class TWCMaster:
         elif str(self.settings.get("chargeAuthorizationMode", "1")) == "2":
             # In this mode, vehicles may only charge if they are listed
             # in the Allowed VINs list
-            if subTWC.currentVIN in self.settings["VehicleGroups"]["Allow Charging"]["Members"]:
+            if (
+                subTWC.currentVIN
+                in self.settings["VehicleGroups"]["Allow Charging"]["Members"]
+            ):
                 return 1
             else:
                 return 0
@@ -239,7 +245,8 @@ class TWCMaster:
         # Start by reading the offset value from config, if it exists
         # This is a legacy value but it doesn't hurt to keep it
         offset = self.convertAmpsToWatts(
-            self.config["config"].get("greenEnergyAmpsOffset", 0))
+            self.config["config"].get("greenEnergyAmpsOffset", 0)
+        )
 
         # Iterate through the offsets listed in settings
         for offsetName in self.settings.get("consumptionOffset", {}).keys():
@@ -247,7 +254,8 @@ class TWCMaster:
                 offset += self.settings["consumptionOffset"][offsetName]["value"]
             else:
                 offset += self.convertAmpsToWatts(
-                    self.settings["consumptionOffset"][offsetName]["value"])
+                    self.settings["consumptionOffset"][offsetName]["value"]
+                )
         return offset
 
     def getHourResumeTrackGreenEnergy(self):
@@ -386,7 +394,9 @@ class TWCMaster:
             % float(self.getMaxAmpsToDivideAmongSlaves()),
         }
         if self.settings.get("sendServerTime", "0") == 1:
-            data["currentServerTime"] = datetime.now().strftime("%Y-%m-%d, %H:%M&nbsp;|&nbsp;")
+            data["currentServerTime"] = datetime.now().strftime(
+                "%Y-%m-%d, %H:%M&nbsp;|&nbsp;"
+            )
         consumption = float(self.getConsumption())
         if consumption:
             data["consumptionAmps"] = ("%.2f" % self.convertWattsToAmps(consumption),)
@@ -525,7 +535,7 @@ class TWCMaster:
 
         offset = self.getConsumptionOffset()
         if offset < 0:
-            generationVal += (-1 * offset)
+            generationVal += -1 * offset
 
         return float(generationVal)
 
@@ -697,13 +707,13 @@ class TWCMaster:
             self.settings["VehicleGroups"]["Allow Charging"] = {
                 "Description": "Built-in Group - Vehicles in this Group can charge on managed TWCs",
                 "Built-in": 1,
-                "Members": []
+                "Members": [],
             }
         if not self.settings["VehicleGroups"].get("Deny Charging", None):
             self.settings["VehicleGroups"]["Deny Charging"] = {
                 "Description": "Built-in Group - Vehicles in this Group cannot charge on managed TWCs",
                 "Built-in": 1,
-                "Members": []
+                "Members": [],
             }
 
     def master_id_conflict(self):
@@ -1031,7 +1041,9 @@ class TWCMaster:
                 json.dump(self.settings, outconfig)
             self.lastSaveFailed = 0
         except PermissionError as e:
-            logger.info("Permission Denied trying to save to settings.json. Please check the permissions of the file and try again.")
+            logger.info(
+                "Permission Denied trying to save to settings.json. Please check the permissions of the file and try again."
+            )
             self.lastSaveFailed = 1
         except TypeError as e:
             logger.info("Exception raised while attempting to save settings file:")
@@ -1152,11 +1164,11 @@ class TWCMaster:
                 + bytearray(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
             )
 
-    def sendStopCommand(self, subTWC = None):
+    def sendStopCommand(self, subTWC=None):
         # This function will loop through each of the Slave TWCs, and send them the stop command.
         # If the subTWC parameter is supplied, we only stop the specified TWC
         for slaveTWC in self.getSlaveTWCs():
-            if ((not subTWC) or (subTWC == slaveTWC.TWCID)):
+            if (not subTWC) or (subTWC == slaveTWC.TWCID):
                 self.getInterfaceModule().send(
                     bytearray(b"\xFC\xB2")
                     + self.TWCID
@@ -1346,22 +1358,22 @@ class TWCMaster:
     def translateModuleNameToConfig(self, modulename):
         # This function takes a module name (eg. EMS.Fronius) and returns a config section (Sources.Fronius)
         # It makes it easier for us to determine where a module's config should be
-        configloc = [ "", "" ]
+        configloc = ["", ""]
         if modulename[0] == "Control":
-            configloc[0] = "control";
-            configloc[1] = str(modulename[1]).replace('Control','')
+            configloc[0] = "control"
+            configloc[1] = str(modulename[1]).replace("Control", "")
         elif modulename[0] == "EMS":
-            configloc[0] = "sources";
+            configloc[0] = "sources"
             configloc[1] = modulename[1]
         elif modulename[0] == "Interface":
-            configloc[0] = "interface";
+            configloc[0] = "interface"
             configloc[1] = modulename[1]
         elif modulename[0] == "Logging":
-            configloc[0] = "logging";
-            configloc[1] = str(modulename[1]).replace('Logging','')
+            configloc[0] = "logging"
+            configloc[1] = str(modulename[1]).replace("Logging", "")
         elif modulename[0] == "Status":
-            configloc[0] = "status";
-            configloc[1] = str(modulename[1]).replace('Status','')
+            configloc[0] = "status"
+            configloc[1] = str(modulename[1]).replace("Status", "")
         else:
             return modulename
 

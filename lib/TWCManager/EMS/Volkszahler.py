@@ -55,7 +55,7 @@ class Volkszahler:
         # Return consumption value
         # negative 'TotalGridW' is 'Export to Grid'
         if (self.PhotovoltaikW + self.TotalGridW) > 0:
-            return (self.PhotovoltaikW + self.TotalGridW)
+            return self.PhotovoltaikW + self.TotalGridW
         else:
             return 0
 
@@ -75,7 +75,14 @@ class Volkszahler:
             return 0
 
     def getPhotovoltaikW(self):
-        url = "http://" + self.serverIP + ":" + self.serverPort + "/api/data.txt?from=now&uuid=" + self.uuidPhotovoltaikW
+        url = (
+            "http://"
+            + self.serverIP
+            + ":"
+            + self.serverPort
+            + "/api/data.txt?from=now&uuid="
+            + self.uuidPhotovoltaikW
+        )
         headers = {"content-type": "text/plain"}
 
         # Update fetchFailed boolean to False before fetch attempt
@@ -93,9 +100,7 @@ class Volkszahler:
             self.fetchFailed = True
             return False
         except requests.exceptions.ReadTimeout as e:
-            logger.log(
-                logging.INFO4, "Read Timeout occurred at getPhotovoltaikW"
-            )
+            logger.log(logging.INFO4, "Read Timeout occurred at getPhotovoltaikW")
             logger.debug(str(e))
             self.fetchFailed = True
             return False
@@ -103,7 +108,8 @@ class Volkszahler:
         if httpResponse.status_code != 200:
             logger.log(
                 logging.INFO4,
-                "Volkszahler API reports HTTP Status Code " + str(httpResponse.status_code)
+                "Volkszahler API reports HTTP Status Code "
+                + str(httpResponse.status_code),
             )
             return False
 
@@ -117,12 +123,22 @@ class Volkszahler:
             msgMatch = re.search("^(.+) W$", httpResponse.text, re.DOTALL)
 
             if msgMatch:
-                self.PhotovoltaikW = float( msgMatch.group(1) )
+                self.PhotovoltaikW = float(msgMatch.group(1))
             else:
-                logger.log(logging.INFO4, "Did not find expected value inside of Volkszahler API response.")
+                logger.log(
+                    logging.INFO4,
+                    "Did not find expected value inside of Volkszahler API response.",
+                )
 
     def getTotalGridW(self):
-        url = "http://" + self.serverIP + ":" + self.serverPort + "/api/data.txt?from=now&uuid=" + self.uuidTotalGridW
+        url = (
+            "http://"
+            + self.serverIP
+            + ":"
+            + self.serverPort
+            + "/api/data.txt?from=now&uuid="
+            + self.uuidTotalGridW
+        )
         headers = {"content-type": "text/plain"}
 
         # Update fetchFailed boolean to False before fetch attempt
@@ -140,9 +156,7 @@ class Volkszahler:
             self.fetchFailed = True
             return False
         except requests.exceptions.ReadTimeout as e:
-            logger.log(
-                logging.INFO4, "Read Timeout occurred getTotalGridW"
-            )
+            logger.log(logging.INFO4, "Read Timeout occurred getTotalGridW")
             logger.debug(str(e))
             self.fetchFailed = True
             return False
@@ -150,7 +164,8 @@ class Volkszahler:
         if httpResponse.status_code != 200:
             logger.log(
                 logging.INFO4,
-                "Volkszahler API reports HTTP Status Code " + str(httpResponse.status_code)
+                "Volkszahler API reports HTTP Status Code "
+                + str(httpResponse.status_code),
             )
             return False
 
@@ -164,9 +179,12 @@ class Volkszahler:
             msgMatch = re.search("^(.+) W$", httpResponse.text, re.DOTALL)
 
             if msgMatch:
-                self.TotalGridW = float( msgMatch.group(1) )
+                self.TotalGridW = float(msgMatch.group(1))
             else:
-                logger.log(logging.INFO4, "Did not find expected value inside of Volkszahler API response.")
+                logger.log(
+                    logging.INFO4,
+                    "Did not find expected value inside of Volkszahler API response.",
+                )
 
     def setCacheTime(self, cacheTime):
         self.cacheTime = cacheTime
