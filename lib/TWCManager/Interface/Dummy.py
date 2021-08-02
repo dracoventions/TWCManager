@@ -27,7 +27,9 @@ class Dummy:
         # Configure the module
         if "interface" in master.config:
             if master.config["interface"][classname].get("twcID", False):
-                self.twcID =  bytearray(str(master.config["interface"][classname].get("twcID")).encode())
+                self.twcID = bytearray(
+                    str(master.config["interface"][classname].get("twcID")).encode()
+                )
 
         # Instantiate protocol module for sending/recieving TWC protocol
         self.proto = self.master.getModuleByName("TWCProtocol")
@@ -48,18 +50,26 @@ class Dummy:
 
         packet = self.proto.parseMessage(msg)
         if packet["Command"] == "MasterLinkready2":
-            self.sendInternal(self.proto.createMessage({
-                "Command": "SlaveLinkready",
-                "SenderID": self.twcID,
-                "Sign": self.master.getSlaveSign(),
-                "Amps": bytearray(b"\x1F\x40")
-            }))
+            self.sendInternal(
+                self.proto.createMessage(
+                    {
+                        "Command": "SlaveLinkready",
+                        "SenderID": self.twcID,
+                        "Sign": self.master.getSlaveSign(),
+                        "Amps": bytearray(b"\x1F\x40"),
+                    }
+                )
+            )
         elif packet["Command"] == "MasterHeartbeat":
-            self.sendInternal(self.proto.createMessage({
-                 "Command": "SlaveHeartbeat",
-                 "SenderID": self.twcID,
-                 "RecieverID": packet["SenderID"]
-            }))
+            self.sendInternal(
+                self.proto.createMessage(
+                    {
+                        "Command": "SlaveHeartbeat",
+                        "SenderID": self.twcID,
+                        "RecieverID": packet["SenderID"],
+                    }
+                )
+            )
 
         logger.log(logging.INFO9, "Tx@: " + self.master.hex_str(msg))
         self.timeLastTx = time.time()
@@ -85,7 +95,7 @@ class Dummy:
         for i in range(1, len(msg)):
             checksum += msg[i]
 
-        msg.append(checksum & 0xff)
+        msg.append(checksum & 0xFF)
 
         # Escaping special chars:
         # The protocol uses C0 to mark the start and end of the message.  If a C0
@@ -99,10 +109,10 @@ class Dummy:
 
         i = 0
         while i < len(msg):
-            if msg[i] == 0xc0:
+            if msg[i] == 0xC0:
                 msg[i : i + 1] = b"\xdb\xdc"
                 i = i + 1
-            elif msg[i] == 0xdb:
+            elif msg[i] == 0xDB:
                 msg[i : i + 1] = b"\xdb\xdd"
                 i = i + 1
             i = i + 1

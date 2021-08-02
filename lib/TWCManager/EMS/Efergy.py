@@ -1,6 +1,7 @@
 # Efergy
 import time
 
+
 class Efergy:
 
     import requests
@@ -76,7 +77,9 @@ class Efergy:
         try:
             r = self.requests.get(url, timeout=self.timeout)
         except self.requests.exceptions.ConnectionError as e:
-            logger.log(logging.INFO4, "Error connecting to Efergy to fetch sensor value")
+            logger.log(
+                logging.INFO4, "Error connecting to Efergy to fetch sensor value"
+            )
             logger.debug(str(e))
             self.fetchFailed = True
             return False
@@ -105,7 +108,8 @@ class Efergy:
                     self.consumedW = list(meterData[0]["data"][0].values())[0]
                 except (KeyError, TypeError) as e:
                     logger.log(
-                        logging.INFO4, "Exception during parsing Meter Data (Consumption)"
+                        logging.INFO4,
+                        "Exception during parsing Meter Data (Consumption)",
                     )
                     logger.debug(str(e))
 
