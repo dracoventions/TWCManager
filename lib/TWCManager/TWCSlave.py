@@ -54,7 +54,7 @@ class TWCSlave:
     lastAmpsDesired = -1
     useFlexAmpsToStartCharge = False
     timeLastAmpsOfferedChanged = 0
-    timeLastAmpsOfferedFlipped = 0
+    timeLastAmpsDesiredFlipped = 0
     lastHeartbeatDebugOutput = ""
     startStopDelay = 0
     timeLastHeartbeatDebugOutput = 0
@@ -700,7 +700,7 @@ class TWCSlave:
 
         dampenChanges = (
             True
-            if now - self.timeLastAmpsOfferedFlipped < self.startStopDelay
+            if now - self.timeLastAmpsDesiredFlipped < self.startStopDelay
             else False
         )
 
@@ -935,7 +935,7 @@ class TWCSlave:
             self.lastAmpsDesired > 0 and desiredAmpsOffered == 0
         ):
             self.lastAmpsDesired = desiredAmpsOffered
-            self.timeLastAmpsOfferedFlipped = now
+            self.timeLastAmpsDesiredFlipped = now
             logger.info("lastAmpsDesired flipped - now " + str(desiredAmpsOffered))
 
         # Keep charger on or off if dampening changes. See reasoning above where
@@ -953,7 +953,7 @@ class TWCSlave:
             self.lastAmpsDesired > 0 and desiredAmpsOffered == 0
         ):
             self.lastAmpsDesired = desiredAmpsOffered
-            self.timeLastAmpsOfferedFlipped = now
+            self.timeLastAmpsDesiredFlipped = now
             logger.debug("lastAmpsDesired flipped - now " + str(desiredAmpsOffered))
 
         # Keep charger on or off if dampening changes. See reasoning above where
