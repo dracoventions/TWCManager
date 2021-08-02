@@ -199,10 +199,20 @@ class TWCMaster:
     def countSlaveTWC(self):
         return int(len(self.slaveTWCRoundRobin))
 
-    def deleteBackgroundTask(self, task):
+    def delete_background_task(self, task):
+        if (
+            task["cmd"] in self.backgroundTasksCmds
+            and self.backgroundTasksCmds[task["cmd"]] == task
+        ):
+            del self.backgroundTasksCmds[task["cmd"]]["cmd"]
+            del self.backgroundTasksCmds[task["cmd"]]
+
+    def doneBackgroundTask(self, task):
+
+        # Delete task['cmd'] from backgroundTasksCmds such that
+        # queue_background_task() can queue another task['cmd'] in the future.
         del self.backgroundTasksCmds[task["cmd"]]
 
-    def doneBackgroundTask(self):
         # task_done() must be called to let the queue know the task is finished.
         # backgroundTasksQueue.join() can then be used to block until all tasks
         # in the queue are done.
