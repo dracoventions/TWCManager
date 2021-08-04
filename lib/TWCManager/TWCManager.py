@@ -240,74 +240,75 @@ def background_tasks_thread(master):
         try:
             task = master.getBackgroundTask()
 
-            if task["cmd"] == "applyChargeLimit":
-                carapi.applyChargeLimit(limit=task["limit"])
-            elif task["cmd"] == "charge":
-                # car_api_charge does nothing if it's been under 60 secs since it
-                # was last used so we shouldn't have to worry about calling this
-                # too frequently.
-                carapi.car_api_charge(task["charge"])
-            elif task["cmd"] == "carApiEmailPassword":
-                carapi.resetCarApiLastErrorTime()
-                carapi.car_api_available(task["email"], task["password"])
-            elif task["cmd"] == "checkArrival":
-                limit = (
-                    carapi.lastChargeLimitApplied
-                    if carapi.lastChargeLimitApplied != 0
-                    else -1
-                )
-                carapi.applyChargeLimit(limit=limit, checkArrival=True)
-            elif task["cmd"] == "checkCharge":
-                carapi.updateChargeAtHome()
-            elif task["cmd"] == "checkDeparture":
-                carapi.applyChargeLimit(
-                    limit=carapi.lastChargeLimitApplied, checkDeparture=True
-                )
-            elif task["cmd"] == "checkGreenEnergy":
-                check_green_energy()
-            elif task["cmd"] == "checkVINEntitlement":
-                # The two possible arguments are task["subTWC"] which tells us
-                # which TWC to check, or task["vin"] which tells us which VIN
-                if task.get("vin", None):
-                    task["subTWC"] = master.getTWCbyVIN(task["vin"])
+            if "cmd" in task:
+                if task["cmd"] == "applyChargeLimit":
+                    carapi.applyChargeLimit(limit=task["limit"])
+                elif task["cmd"] == "charge":
+                    # car_api_charge does nothing if it's been under 60 secs since it
+                    # was last used so we shouldn't have to worry about calling this
+                    # too frequently.
+                    carapi.car_api_charge(task["charge"])
+                elif task["cmd"] == "carApiEmailPassword":
+                    carapi.resetCarApiLastErrorTime()
+                    carapi.car_api_available(task["email"], task["password"])
+                elif task["cmd"] == "checkArrival":
+                    limit = (
+                        carapi.lastChargeLimitApplied
+                        if carapi.lastChargeLimitApplied != 0
+                        else -1
+                    )
+                    carapi.applyChargeLimit(limit=limit, checkArrival=True)
+                elif task["cmd"] == "checkCharge":
+                    carapi.updateChargeAtHome()
+                elif task["cmd"] == "checkDeparture":
+                    carapi.applyChargeLimit(
+                        limit=carapi.lastChargeLimitApplied, checkDeparture=True
+                    )
+                elif task["cmd"] == "checkGreenEnergy":
+                    check_green_energy()
+                elif task["cmd"] == "checkVINEntitlement":
+                    # The two possible arguments are task["subTWC"] which tells us
+                    # which TWC to check, or task["vin"] which tells us which VIN
+                    if task.get("vin", None):
+                        task["subTWC"] = master.getTWCbyVIN(task["vin"])
 
-                if task["subTWC"]:
-                    if master.checkVINEntitlement(task["subTWC"]):
-                        logger.info(
-                            "Vehicle %s on TWC %02X%02X is permitted to charge."
-                            % (
-                                task["subTWC"].currentVIN,
-                                task["subTWC"].TWCID[0],
-                                task["subTWC"].TWCID[1],
+                    if task["subTWC"]:
+                        if master.checkVINEntitlement(task["subTWC"]):
+                            logger.info(
+                                "Vehicle %s on TWC %02X%02X is permitted to charge."
+                                % (
+                                    task["subTWC"].currentVIN,
+                                    task["subTWC"].TWCID[0],
+                                    task["subTWC"].TWCID[1],
+                                )
                             )
-                        )
+                        else:
+                            logger.info(
+                                "Vehicle %s on TWC %02X%02X is not permitted to charge. Terminating session."
+                                % (
+                                    task["subTWC"].currentVIN,
+                                    task["subTWC"].TWCID[0],
+                                    task["subTWC"].TWCID[1],
+                                )
+                            )
+                            master.sendStopCommand(task["subTWC"].TWCID)
+
+                elif task["cmd"] == "getLifetimekWh":
+                    master.getSlaveLifetimekWh()
+                elif task["cmd"] == "getVehicleVIN":
+                    master.getVehicleVIN(task["slaveTWC"], task["vinPart"])
+                elif task["cmd"] == "snapHistoryData":
+                    master.snapHistoryData()
+                elif task["cmd"] == "updateStatus":
+                    update_statuses()
+                elif task["cmd"] == "webhook":
+                    if config["config"].get("webhookMethod", "POST") == "GET":
+                        requests.get(task["url"])
                     else:
-                        logger.info(
-                            "Vehicle %s on TWC %02X%02X is not permitted to charge. Terminating session."
-                            % (
-                                task["subTWC"].currentVIN,
-                                task["subTWC"].TWCID[0],
-                                task["subTWC"].TWCID[1],
-                            )
-                        )
-                        master.sendStopCommand(task["subTWC"].TWCID)
-
-            elif task["cmd"] == "getLifetimekWh":
-                master.getSlaveLifetimekWh()
-            elif task["cmd"] == "getVehicleVIN":
-                master.getVehicleVIN(task["slaveTWC"], task["vinPart"])
-            elif task["cmd"] == "snapHistoryData":
-                master.snapHistoryData()
-            elif task["cmd"] == "updateStatus":
-                update_statuses()
-            elif task["cmd"] == "webhook":
-                if config["config"].get("webhookMethod", "POST") == "GET":
-                    requests.get(task["url"])
-                else:
-                    body = master.getStatus()
-                    requests.post(task["url"], json=body)
-            elif task["cmd"] == "saveSettings":
-                master.saveSettings()
+                        body = master.getStatus()
+                        requests.post(task["url"], json=body)
+                elif task["cmd"] == "saveSettings":
+                    master.saveSettings()
 
         except:
             logger.info(
@@ -319,14 +320,10 @@ def background_tasks_thread(master):
             )
             pass
 
-        # Delete task['cmd'] from backgroundTasksCmds such that
-        # queue_background_task() can queue another task['cmd'] in the future.
-        master.deleteBackgroundTask(task)
-
         # task_done() must be called to let the queue know the task is finished.
         # backgroundTasksQueue.join() can then be used to block until all tasks
         # in the queue are done.
-        master.doneBackgroundTask()
+        master.doneBackgroundTask(task)
 
 
 def check_green_energy():
