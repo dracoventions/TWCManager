@@ -127,9 +127,7 @@ class TWCSlave:
             lastAmpsUsed = 0
             ampsUsed = 1
             debugOutputCompare = debugOutput
-            m1 = re.search(
-                r"SHB ....: .. (..\...)/", self.lastHeartbeatDebugOutput
-            )
+            m1 = re.search(r"SHB ....: .. (..\...)/", self.lastHeartbeatDebugOutput)
             if m1:
                 lastAmpsUsed = float(m1.group(1))
             m2 = re.search(r"SHB ....: .. (..\...)/", debugOutput)
@@ -152,7 +150,8 @@ class TWCSlave:
 
                 logger.info(
                     "Slave power for TWCID %02X%02X, status: %s",
-                    self.TWCID[0], self.TWCID[1],
+                    self.TWCID[0],
+                    self.TWCID[1],
                     heartbeatData[0],
                     extra={
                         "logtype": "slave_power",
@@ -331,7 +330,10 @@ class TWCSlave:
         # that we store in masterHeartbeatData.
 
         if self.master.settings.get("respondToSlaves", 1) == 0:
-            if self.master.settings.get("respondToSlavesExpiry", time.time()) > time.time():
+            if (
+                self.master.settings.get("respondToSlavesExpiry", time.time())
+                > time.time()
+            ):
                 # We have been instructed not to send master heartbeats
                 return
             else:
@@ -519,6 +521,7 @@ class TWCSlave:
                         + str(self.reportedAmpsActual)
                         + " < 4"
                     )
+                    self.master.cancelStopCarsCharging()
                 else:
                     # Car is trying to charge, so stop it via car API.
                     # car_api_charge() will prevent telling the car to start or stop
@@ -941,6 +944,9 @@ class TWCSlave:
         # final value for desiredAmpsOffered.
         desiredAmpsOffered = self.set_last_amps_offered(desiredAmpsOffered)
 
+        if desiredAmpsOffered > 0:
+            self.master.cancelStopCarsCharging()
+
         # See notes in send_slave_heartbeat() for details on how we transmit
         # desiredAmpsOffered and the meaning of the code in
         # self.masterHeartbeatData[0].
@@ -970,8 +976,8 @@ class TWCSlave:
             self.masterHeartbeatData = bytearray(
                 [
                     (0x09 if self.protocolVersion == 2 else 0x05),
-                    (desiredHundredthsOfAmps >> 8) & 0xff,
-                    desiredHundredthsOfAmps & 0xff,
+                    (desiredHundredthsOfAmps >> 8) & 0xFF,
+                    desiredHundredthsOfAmps & 0xFF,
                     0x00,
                     0x00,
                     0x00,

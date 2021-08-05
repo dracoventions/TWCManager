@@ -110,13 +110,24 @@ class SmartPi:
             conWatts = 0
             try:
                 for phase in httpResponse.json()["datasets"][0]["phases"]:
-                    logger.log(logging.INFO8, "Logged " + str(phase["values"][0]["data"]) + " " + str(phase["values"][0]["unity"]) + " for phase " + str(phase["name"]))
+                    logger.log(
+                        logging.INFO8,
+                        "Logged "
+                        + str(phase["values"][0]["data"])
+                        + " "
+                        + str(phase["values"][0]["unity"])
+                        + " for phase "
+                        + str(phase["name"]),
+                    )
                     if float(phase["values"][0]["data"]) < 0:
                         genWatts += float(phase["values"][0]["data"])
                     else:
                         conWatts += float(phase["values"][0]["data"])
             except KeyError:
-                logger.log(logging.INFO4, "Expected Key datasets[0][phases] not found in response from SmartPi API.")
+                logger.log(
+                    logging.INFO4,
+                    "Expected Key datasets[0][phases] not found in response from SmartPi API.",
+                )
 
             self.generatedW = genWatts * -1
             self.consumedW = conWatts

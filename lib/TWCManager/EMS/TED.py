@@ -102,9 +102,7 @@ class TED:
             value = self.getTEDValue(url)
             m = None
             if value:
-                m = re.search(
-                    b"^Solar,[^,]+,-?([^, ]+),", value, re.MULTILINE
-                )
+                m = re.search(b"^Solar,[^,]+,-?([^, ]+),", value, re.MULTILINE)
             else:
                 logger.log(logging.INFO5, "Failed to find value in response from TED")
                 self.fetchFailed = True

@@ -40,8 +40,12 @@ class IotaWatt:
             self.configIotaWatt = {}
         self.status = self.configIotaWatt.get("enabled", False)
         self.serverIP = self.configIotaWatt.get("serverIP", None)
-        self.iotaWattOutputConsumption = self.configIotaWatt.get("outputConsumption", None)
-        self.iotaWattOutputGeneration = self.configIotaWatt.get("outputGeneration", None)
+        self.iotaWattOutputConsumption = self.configIotaWatt.get(
+            "outputConsumption", None
+        )
+        self.iotaWattOutputGeneration = self.configIotaWatt.get(
+            "outputGeneration", None
+        )
 
         # Unload if this module is disabled or misconfigured
         if (not self.status) or (not self.serverIP):

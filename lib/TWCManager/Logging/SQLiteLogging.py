@@ -58,7 +58,6 @@ class SQLiteHandler(logging.Handler):
         else:
             logger.error("SQLite connection is null")
 
-
     def emit(self, record):
         self.format(record)
         log_type = getattr(record, "logtype", "")
@@ -92,7 +91,9 @@ class SQLiteHandler(logging.Handler):
 
                 # Update the open charging session in memory.
                 if getattr(record, "vehicleVIN", None):
-                    query = "UPDATE charge_sessions SET vehicleVIN = ? WHERE slaveTWC = ?"
+                    query = (
+                        "UPDATE charge_sessions SET vehicleVIN = ? WHERE slaveTWC = ?"
+                    )
                     conn = sqlite3.connect(self.db, uri=True)
                     conn.execute(query, (getattr(record, "vehicleVIN", "")))
                     conn.commit()
@@ -102,9 +103,7 @@ class SQLiteHandler(logging.Handler):
                     getattr(record, "TWCID")[0],
                     getattr(record, "TWCID")[1],
                 )
-                query = (
-                    "UPDATE charge_sessions SET endTime = ?, endkWh = ? WHERE slaveTWC = ?"
-                )
+                query = "UPDATE charge_sessions SET endTime = ?, endkWh = ? WHERE slaveTWC = ?"
                 conn = sqlite3.connect(self.db, uri=True)
                 conn.execute(
                     query,
@@ -177,6 +176,7 @@ class SQLiteLogging:
 
         global sqlite3
         import sqlite3
+
         self.db = self.configLogging["path"]
         sqlite_handler = SQLiteHandler(db=self.db)
         sqlite_handler.addFilter(self.sqlite_filter)
@@ -216,7 +216,11 @@ class SQLiteLogging:
         rows = 0
         result = {}
         try:
-            conn = sqlite3.connect(self.db, uri=True, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
+            conn = sqlite3.connect(
+                self.db,
+                uri=True,
+                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
+            )
             cur = conn.cursor()
             rows = cur.execute(
                 query, (data.get("dateBegin", 0), data.get("dateEnd", 0))

@@ -80,7 +80,7 @@
                 </tr>
               </thead>
     {% for twc in master.getSlaveTWCs() %}
-      {% set twcid = '%0x%0x' % (twc.TWCID[0], twc.TWCID[1]) %}
+      {% set twcid = '%02x%02x' % (twc.TWCID[0], twc.TWCID[1]) %}
               <tr>
                 <td>{{ twcid }}</td>
                 <td><div id='{{ twcid }}_state'></div></td>

@@ -57,7 +57,9 @@ class FileLogging:
             logger.error("Permission Denied error opening logfile for writing")
         if handler:
             handler.setFormatter(
-                logging.Formatter("%(asctime)s - %(name)-10.10s %(levelno)02d %(message)s")
+                logging.Formatter(
+                    "%(asctime)s - %(name)-10.10s %(levelno)02d %(message)s"
+                )
             )
             logging.getLogger("").addHandler(handler)
 
