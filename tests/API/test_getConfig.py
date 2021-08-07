@@ -33,7 +33,7 @@ except requests.ConnectionError:
 jsonResp = None
 
 if response.status_code == 200:
-    while (not jsonResp and getAttempts < 3):
+    while (not jsonResp and getAttempts < 10):
         getAttempts += 1
         try:
             jsonResp = response.json()
