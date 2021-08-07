@@ -1,4 +1,4 @@
-﻿# P1 Monitor API integration  (https://www.ztatz.nl/)
+# P1 Monitor API integration  (https://www.ztatz.nl/)
 
 # This module takes an average of the last X (min 1, max 10) values deliverd by the P1 Monitor API.
 # This makes that any spikes are not directly influence the behavior of TWCManager.
@@ -21,16 +21,10 @@ class P1Monitor:
 
     def __init__(self, master):
 
-        try:
-            self.p1monData = {}
-            self.configP1Mon = master.config["sources"]["P1Monitor"]
-            self.serverIP = self.configP1Mon.get("serverIP", None)
-            logger.log(logging.INFO2, "P1Monitor: serverIP: " + str(self.serverIP))
-            self.samples = self.configP1Mon.get("samples", 1)
-            logger.log(logging.INFO2, "P1Monitor: samples: " + str(self.samples))
-
-        except (KeyError) as e:
-            logger.error("Cannot get configuration for P1Monitor in config.json", e)
+        self.p1monData = {}
+        self.configP1Mon = master.config["sources"].get("P1Monitor", {})
+        self.serverIP = self.configP1Mon.get("serverIP", None)
+        self.samples = self.configP1Mon.get("samples", 1)
 
         # Unload if this module is disabled or misconfigured
         if not self.serverIP:
