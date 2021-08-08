@@ -36,8 +36,8 @@ setup(
         "sysv_ipc < 1.1.0; python_version < '3.6'",
         "sysv_ipc >= 1.0.1; python_version >= '3.6'",
         "termcolor>=1.1.0",
-        "websockets==7.0; python_version < '3.6' and "arm" not in platform_machine",
-        "websockets>=9.1; python_version >= '3.6' and "arm" not in platform_machine",
+        "websockets==7.0; python_version < '3.6' and 'arm' not in platform_machine",
+        "websockets>=9.1; python_version >= '3.6' and 'arm' not in platform_machine",
         "ww>=0.2.1"
     ],
     # Package Metadata
