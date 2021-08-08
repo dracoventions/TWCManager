@@ -2,9 +2,9 @@ FROM debian:buster
 RUN apt-get -y update && apt-get -y install build-essential ca-certificates git lsb-release make python3 python3-pip libatlas-base-dev
 RUN cd /usr/src && git clone https://github.com/ngardiner/TWCManager
 
-# Remove problematic depedencies
-RUN cp /usr/src/TWCManager/setup.py /usr/src/TWCManager/setup.py.tmp
-RUN cat /usr/src/TWCManager/setup.py.tmp | grep -v numpy | grep -v scipy | grep -v websockets > /usr/src/TWCManager/setup.py
+# Remove problematic depedencies on arm7l
+RUN if [ `uname -m` == "armv7l" ]; then cp /usr/src/TWCManager/setup.py /usr/src/TWCManager/setup.py.tmp; fi
+RUN if [ `uname -m` == "armv7l" ]; then cat /usr/src/TWCManager/setup.py.tmp | grep -v numpy | grep -v scipy | grep -v websockets > /usr/src/TWCManager/setup.py; fi
 RUN cd /usr/src/TWCManager && make install SUDO=""
 
 VOLUME /etc/twcmanager
