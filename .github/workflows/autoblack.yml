@@ -15,6 +15,7 @@ on:
 
 jobs:
   build:
+    name: Format Sources
     runs-on: [ "self-hosted", "build_host" ]
     steps:
       - uses: actions/checkout@v2
@@ -26,5 +27,5 @@ jobs:
           python-version: 3.7
       - name: Install Black
         run: pip install black
-      - name: Run black --check .
-        run: black --check .
+      - name: Check if formatting is required for any file
+        run: black --exclude=tests --exclude=setup.py --check .
