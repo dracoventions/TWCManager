@@ -2,6 +2,10 @@ FROM debian:buster
 RUN apt-get -y update && apt-get -y install build-essential ca-certificates git lsb-release make python3 python3-pip libatlas-base-dev
 RUN cd /usr/src && git clone https://github.com/ngardiner/TWCManager
 
+# Pre-install dependencies on arm7l (setuptools failing to install)
+RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install pymysql; fi
+RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install sysv_ipc; fi
+
 # Remove problematic depedencies on arm7l
 RUN if [ "`uname -m`" = "armv7l" ]; then cp /usr/src/TWCManager/setup.py /usr/src/TWCManager/setup.py.tmp; fi
 # See if this is related

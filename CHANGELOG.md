@@ -20,6 +20,8 @@ This document logs the changes per release of TWCManager.
   * (@ngardiner) - Refactor TWCManager structure to allow for entire project to be packaged into pypi packaging for easy install/upgrades
   * (@jherby2k) - Add IotaWatt EMS interface
   * (@mvaneijken) - Added P1 Monitor EMS module
+  * (@jherby2k) - Add support for HomeAssistant integration
+  * (@MikeBishop) - Add support for deleting tasks, avoid sending stop commands under some conditions to avoid unnecessary transitions
 
 ## v1.2.2 - 2021-06-09
 
