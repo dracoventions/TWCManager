@@ -2,24 +2,31 @@ FROM debian:buster
 RUN apt-get -y update && apt-get -y install build-essential ca-certificates gfortran git lsb-release make python3 python3-pip libatlas-base-dev
 RUN cd /usr/src && git clone https://github.com/ngardiner/TWCManager
 
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install commentjson; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install cryptography; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install growattServer; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install jinja2; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install MarkupSafe; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install numpy; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install ocpp; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install paho_mqtt; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install pyModbusTCP; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install pymysql; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install pyserial; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install requests; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install scipy; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install sentry_sdk; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install sysv_ipc; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install termcolor; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install websockets; fi
-RUN if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install ww; fi
+# Helper script for downloading arm python wheels for dependencies. Saves hours of compiling.
+# Non-ARM6 and 7 wheels are downloaded normally
+RUN echo "#!/bin/sh" > /tmp/install.sh
+RUN echo 'if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install --extra-index-url=https://www.piwheels.org/simple \$1; fi' > /tmp/install.sh
+RUN chmod +x /tmp/install.sh
+
+# Install prerequisites. Only active for arm platforms
+RUN /tmp/install.sh commentjson
+RUN /tmp/install.sh cryptography
+RUN /tmp/install.sh growattServer
+RUN /tmp/install.sh jinja2
+RUN /tmp/install.sh MarkupSafe
+RUN /tmp/install.sh numpy
+RUN /tmp/install.sh ocpp
+RUN /tmp/install.sh paho_mqtt
+RUN /tmp/install.sh pyModbusTCP
+RUN /tmp/install.sh pymysql
+RUN /tmp/install.sh pyserial
+RUN /tmp/install.sh requests
+RUN /tmp/install.sh scipy
+RUN /tmp/install.sh sentry_sdk
+RUN /tmp/install.sh sysv_ipc
+RUN /tmp/install.sh termcolor
+RUN /tmp/install.sh websockets
+RUN /tmp/install.sh ww
 
 # Install TWCManager
 RUN cd /usr/src/TWCManager && make install SUDO=""
