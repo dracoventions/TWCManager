@@ -28,4 +28,4 @@ jobs:
       - name: Install Black
         run: pip install black
       - name: Check if formatting is required for any file
-        run: black --exclude=tests --exclude=setup.py --check .
+        run: black --exclude=tests/ --exclude=setup.py --check .
