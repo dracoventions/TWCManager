@@ -5,7 +5,7 @@ RUN cd /usr/src && git clone https://github.com/ngardiner/TWCManager
 # Helper script for downloading arm python wheels for dependencies. Saves hours of compiling.
 # Non-ARM6 and 7 wheels are downloaded normally
 RUN echo "#!/bin/sh" > /tmp/install.sh
-RUN echo 'if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install --extra-index-url=https://www.piwheels.org/simple \$1; fi' > /tmp/install.sh
+RUN echo 'if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install --extra-index-url=https://www.piwheels.org/simple $1; fi' > /tmp/install.sh
 RUN chmod +x /tmp/install.sh
 
 # Install prerequisites. Only active for arm platforms
