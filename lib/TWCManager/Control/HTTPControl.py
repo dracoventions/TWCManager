@@ -374,7 +374,7 @@ def CreateHTTPHandlerClass(master):
 
                 json_data = json.dumps(output)
                 self.wfile.write(json_data.encode("utf-8"))
-            
+
             elif self.url.path == "/api/getUUID":
                 self.send_response(200)
                 self.send_header("Content-type", "text/plain")
