@@ -8,9 +8,14 @@ RUN echo "#!/bin/sh" > /tmp/install.sh
 RUN echo 'if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install --extra-index-url=https://www.piwheels.org/simple $1; fi' > /tmp/install.sh
 RUN chmod +x /tmp/install.sh
 
+# Upgrade script for dependencies which require upgrade
+RUN echo "#!/bin/sh" > /tmp/upgrade.sh
+RUN echo 'if [ "`/usr/src/TWCManager/contrib/docker/checkarch.sh`" = "y" ]; then pip3 install --upgrade --extra-index-url=https://www.piwheels.org/simple $1; fi' > /tmp/upgrade.sh
+RUN chmod +x /tmp/upgrade.sh
+
 # Install prerequisites. Only active for arm platforms
 RUN /tmp/install.sh commentjson
-RUN /tmp/install.sh cryptography
+RUN /tmp/upgrade.sh cryptography
 RUN /tmp/install.sh growattServer
 RUN /tmp/install.sh jinja2
 RUN /tmp/install.sh MarkupSafe
