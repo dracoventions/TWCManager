@@ -10,8 +10,6 @@ on:
     branches:
       - 'ci_dev'
       - 'main'
-    tags:
-      - 'v*'
 
 jobs:
   build:
@@ -29,3 +27,13 @@ jobs:
         run: pip install black
       - name: Check if formatting is required for any file
         run: black --exclude="setup.py|tests/*" --check .
+      - name: If needed, commit black changes to the repo
+        if: failure()
+        run: |
+          black --exclude="setup.py|tests/*" .
+          git config --global user.name 'Auto Format'
+          git config --global user.email 'ngardiner@gmail.com'
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+          git checkout
+          git commit -am "fixup: Format Python code with Black"
+          git push

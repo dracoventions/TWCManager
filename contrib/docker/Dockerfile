@@ -3,13 +3,24 @@ RUN apt-get -y update && apt-get -y install build-essential ca-certificates git 
 RUN cd /usr/src && git clone https://github.com/ngardiner/TWCManager
 
 # Pre-install dependencies on arm7l (setuptools failing to install)
+RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install commentjson; fi
+RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install cryptography; fi
+RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install jinja2; fi
+RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install numpy; fi
+RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install ocpp; fi
+RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install paho_mqtt; fi
+RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install pyModbusTCP; fi
 RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install pymysql; fi
+RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install pyserial; fi
+RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install requests; fi
+RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install scipy; fi
+RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install sentry_sdk; fi
 RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install sysv_ipc; fi
+RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install termcolor; fi
+RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install websockets; fi
+RUN if [ "`uname -m`" = "armv7l" ]; then pip3 install ww; fi
 
-# Remove problematic depedencies on arm7l
-RUN if [ "`uname -m`" = "armv7l" ]; then cp /usr/src/TWCManager/setup.py /usr/src/TWCManager/setup.py.tmp; fi
-# See if this is related
-RUN if [ "`uname -m`" = "armv7l" ]; then cat /usr/src/TWCManager/setup.py.tmp | grep -v numpy | grep -v scipy | grep -v sysv_ipc | grep -v websockets > /usr/src/TWCManager/setup.py; fi
+# Install TWCManager
 RUN cd /usr/src/TWCManager && make install SUDO=""
 
 VOLUME /etc/twcmanager
