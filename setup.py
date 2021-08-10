@@ -8,6 +8,7 @@ setup(
     package_dir={"": "lib"},
     packages=find_namespace_packages(where="lib"),
     python_requires=">= 3.4",
+    include_package_data=True,
     # Dependencies
     install_requires=[
         "commentjson < 0.9.0; python_version < '3.6'",
@@ -15,7 +16,8 @@ setup(
         "cryptography==2.1.4; python_version < '3.6'",
         "cryptography>=3.4; python_version >= '3.6'",
         "growattServer>=1.0.0",
-        "jinja2>=2.11.2",
+        "jinja2==2.11.2; python_version < '3.6'",
+        "jinja2>=2.11.2; python_version >= '3.6'",
         "MarkupSafe < 2.0.0; python_version < '3.6'",
         "numpy==1.16.6; python_version == '3.4'",
         "numpy==1.18.5; python_version == '3.5'",
