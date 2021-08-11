@@ -53,7 +53,7 @@ sudo docker-compose -f docker-compose.yml up
 To start up TWCManager in background mode, run the following command:
 
 ```
-sudo docker-compose -d -f docker-compose.yml up
+sudo docker-compose -f docker-compose.yml up -d
 ```
 
 ## Monitoring the container operation
@@ -88,7 +88,7 @@ If you are using the ```latest``` Docker image instead of the current Stable ver
 ```
 suoo docker-compose -f docker-compose.yml down
 sudo docker-compose -f docker-compose.yml pull
-sudo docker-compose -d -f docker-compose.yml up
+sudo docker-compose -f docker-compose.yml up -d
 ```
 
 You can tell if you are running the latest image vs a stable release with the following command:
@@ -122,7 +122,7 @@ Press ```Ctrl + C``` in the console of the Docker Container to stop TWCManager f
 Use the following command to stop TWCManager's docker container from running in Background Mode:
 
 ```
-sudo docker-compose -f contrib/docker/docker-compose.yml down
+sudo docker-compose -f docker-compose.yml down
 ```
 
 ## Starting TWCManager at Boot
