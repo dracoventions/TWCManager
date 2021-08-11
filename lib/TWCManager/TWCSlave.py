@@ -702,7 +702,7 @@ class TWCSlave:
         dampenChanges = (
             True
             if now
-            - min(self.timeLastAmpsDesiredFlipped, self.timeLastAmpsOfferedChanged)
+            - max(self.timeLastAmpsDesiredFlipped, self.timeLastAmpsOfferedChanged)
             < self.startStopDelay
             else False
         )
