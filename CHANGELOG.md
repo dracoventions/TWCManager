@@ -2,7 +2,9 @@
 
 This document logs the changes per release of TWCManager.
 
-## v1.2.3 - Current development version
+## v1.3.0 - Latest Development Version
+
+## v1.2.3 - 2021-08-10
 
   * **NOTE**: v1.2.3 contains a potentially breaking change for users of OpenWB or the Legacy Web Interface
      * As of v1.2.3, the Legacy Web Interface and its dependencies such as lighttpd and php are no longer installed by default.
