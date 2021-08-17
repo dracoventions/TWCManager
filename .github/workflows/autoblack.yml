@@ -1,0 +1,39 @@
+# GitHub Action that uses Black to reformat the Python code in an incoming pull request.
+# If all Python code in the pull request is compliant with Black then this Action does nothing.
+# Othewrwise, Black is run and its changes are committed back to the incoming pull request.
+# https://github.com/cclauss/autoblack
+
+name: Automatically format sources
+
+on:
+  push:
+    branches:
+      - 'ci_dev'
+      - 'main'
+
+jobs:
+  build:
+    name: Format Sources
+    runs-on: [ "self-hosted", "build_host" ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.push.head.sha }}
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+      - name: Install Black
+        run: pip install black
+      - name: Check if formatting is required for any file
+        run: black --exclude="setup.py|tests/*" --check .
+      - name: If needed, commit black changes to the repo
+        if: failure()
+        run: |
+          black --exclude="setup.py|tests/*" .
+          git config --global user.name 'Auto Format'
+          git config --global user.email 'ngardiner@gmail.com'
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+          git checkout
+          git commit -am "fixup: Format Python code with Black"
+          git push

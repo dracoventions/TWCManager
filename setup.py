@@ -8,6 +8,7 @@ setup(
     package_dir={"": "lib"},
     packages=find_namespace_packages(where="lib"),
     python_requires=">= 3.4",
+    include_package_data=True,
     # Dependencies
     install_requires=[
         "commentjson < 0.9.0; python_version < '3.6'",
@@ -15,7 +16,9 @@ setup(
         "cryptography==2.1.4; python_version < '3.6'",
         "cryptography>=3.4; python_version >= '3.6'",
         "growattServer>=1.0.0",
-        "jinja2==2.11.2",
+        "jinja2==2.11.2; python_version == '3.4'",
+        "jinja2==2.11.2; python_version == '3.5'",
+        "jinja2>=2.11.2; python_version >= '3.6'",
         "MarkupSafe < 2.0.0; python_version < '3.6'",
         "ocpp",
         "paho_mqtt>=1.5.0",
@@ -28,7 +31,8 @@ setup(
         "sysv_ipc < 1.1.0; python_version < '3.6'",
         "sysv_ipc >= 1.0.1; python_version >= '3.6'",
         "termcolor>=1.1.0",
-        "websockets; python_version >= '3.6'",
+        "websockets==7.0; python_version < '3.6'",
+        "websockets>=9.1; python_version >= '3.6'",
         "ww>=0.2.1"
     ],
     # Package Metadata

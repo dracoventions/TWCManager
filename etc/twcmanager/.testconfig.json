@@ -493,6 +493,14 @@
       # This is not yet available.
           "enabled": false
         },
+        "P1Monitor":{
+          # Support for P1 Monitor API (https://www.ztatz.nl/)
+          # Reads /api/v1/phase
+          "enabled": false,
+          "serverIP":"192.168.1.2",
+          # Amount of samples to take average from (min 1, max 10, default 1)
+          "samples": 1
+        },
       # Tesla Powerwall2
       # This module fetches both consumption and solar generation details
         "Powerwall2": {

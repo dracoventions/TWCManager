@@ -3,6 +3,7 @@ import re
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
 
+
 class TWCProtocol:
 
     # To avoid a situation where we would have to re-implement TWCManager logic to parse the
@@ -28,26 +29,29 @@ class TWCProtocol:
         # steps is to automatically fill in fields where we can likely
         # determine the correct value
         if not packet.get("SenderID", None):
-            packet["SenderID"] = bytearray(
-                str(self.master.masterTWCID).encode('utf-8')
-            )
+            packet["SenderID"] = bytearray(str(self.master.masterTWCID).encode("utf-8"))
         if packet.get("Command", "") != "SlaveLinkready":
             if not packet.get("RecieverID", None):
                 packet["RecieverID"] = bytearray(
-                    str(self.master.getSlaveTWCs()[0].TWCID).encode('utf-8')
+                    str(self.master.getSlaveTWCs()[0].TWCID).encode("utf-8")
                 )
 
         if packet["Command"] == "Custom":
             # Send a custom command. This can be dangerous!
 
             # Let's first check if any dangerous command is sent
-            if (packet["CustomCommand"].lower().startswith("fc19") or
-                packet["CustomCommand"].lower().startswith("fc1a")):
-               self.master.lastTWCResponseMsg = bytearray(b"Command blocked as it may cause your TWC to be permanently disabled!")
-               return
+            if packet["CustomCommand"].lower().startswith("fc19") or packet[
+                "CustomCommand"
+            ].lower().startswith("fc1a"):
+                self.master.lastTWCResponseMsg = bytearray(
+                    b"Command blocked as it may cause your TWC to be permanently disabled!"
+                )
+                return
 
             if packet["CustomCommand"].lower().startswith("fbe8"):
-                self.master.lastTWCResponseMsg = bytearray(b"Command blocked as it may cause your TWC to crash!")
+                self.master.lastTWCResponseMsg = bytearray(
+                    b"Command blocked as it may cause your TWC to crash!"
+                )
                 return
 
             msg = (
@@ -101,15 +105,10 @@ class TWCProtocol:
     def parseMessage(self, msg):
 
         # Define protocol packet format
-        packet = {
-            "Command": None,
-            "Errors": [],
-            "SenderID": None,
-            "Match": False
-        }
+        packet = {"Command": None, "Errors": [], "SenderID": None, "Match": False}
 
         msgMatch = re.search(
-            b'\xfc\xe1(..)(.)\x00\x00\x00\x00\x00\x00\x00\x00+?.*\Z',
+            b"\xfc\xe1(..)(.)\x00\x00\x00\x00\x00\x00\x00\x00+?.*\Z",
             msg,
             re.DOTALL,
         )
@@ -121,14 +120,18 @@ class TWCProtocol:
             packet["Command"] = "MasterLinkready1"
             packet["SenderID"] = msgMatch.group(1)
             sign = msgMatch.group(2)
-            #self.master.setMasterTWCID(senderID)
+            # self.master.setMasterTWCID(senderID)
 
             # This message seems to always contain seven 00 bytes in its
             # data area. If we ever get this message with non-00 data
             # we'll print it as an unexpected message.
             logger.info(
                 "Master TWC %02X%02X Linkready1.  Sign: %s"
-                % (packet["SenderID"][0], packet["SenderID"][1], self.master.hex_str(sign))
+                % (
+                    packet["SenderID"][0],
+                    packet["SenderID"][1],
+                    self.master.hex_str(sign),
+                )
             )
 
             # Other than picking a new fakeTWCID if ours conflicts with
@@ -138,7 +141,7 @@ class TWCProtocol:
 
         else:
             msgMatch = re.search(
-                b'\xfb\xe2(..)(.)\x00\x00\x00\x00\x00\x00\x00\x00+?.*\Z',
+                b"\xfb\xe2(..)(.)\x00\x00\x00\x00\x00\x00\x00\x00+?.*\Z",
                 msg,
                 re.DOTALL,
             )
@@ -149,7 +152,7 @@ class TWCProtocol:
                 packet["Command"] = "MasterLinkready2"
                 packet["SenderID"] = msgMatch.group(1)
                 sign = msgMatch.group(2)
-                #master.setMasterTWCID(senderID)
+                # master.setMasterTWCID(senderID)
 
                 # This message seems to always contain seven 00 bytes in its
                 # data area. If we ever get this message with non-00 data
@@ -157,7 +160,11 @@ class TWCProtocol:
 
                 logger.info(
                     "Master TWC %02X%02X Linkready2.  Sign: %s"
-                    % (packet["SenderID"][0], packet["SenderID"][1], self.master.hex_str(sign))
+                    % (
+                        packet["SenderID"][0],
+                        packet["SenderID"][1],
+                        self.master.hex_str(sign),
+                    )
                 )
 
             else:
@@ -172,6 +179,5 @@ class TWCProtocol:
                 packet["SenderID"] = msgMatch.group(1)
                 packet["ReceiverID"] = msgMatch.group(2)
                 packet["HeartbeatData"] = msgMatch.group(3)
-
 
         return packet

@@ -16,7 +16,7 @@ The following packages are required to fetch and install the TWCManager project.
 
 ```
 sudo apt-get update
-sudo apt-get install -y git python3 python3-setuptools python3-dev
+sudo apt-get install -y git python3 python3-setuptools python3-dev libatlas-base-dev
 ```
 
 ## Default to Python3

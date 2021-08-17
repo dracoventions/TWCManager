@@ -47,13 +47,13 @@ On your first start of the TWCManager docker container, a directory on the host 
 To start up TWCManager in interactive mode, run the following command:
 
 ```
-docker-compose -f contrib/docker/docker-compose.yml up
+sudo docker-compose -f docker-compose.yml up
 ```
 
 To start up TWCManager in background mode, run the following command:
 
 ```
-docker-compose -d -f contrib/docker/docker-compose.yml up
+sudo docker-compose -f docker-compose.yml up -d
 ```
 
 ## Monitoring the container operation
@@ -86,9 +86,9 @@ The latest image gives you up to the minute access to TWCManager features and ch
 If you are using the ```latest``` Docker image instead of the current Stable version, you can fetch the latest TWCManager updates by executing the following commands:
 
 ```
-docker-compose -f docker-compose.yml down
-docker-compose -f docker-compose.yml pull
-docker-compose -d -f docker-compose.yml up
+suoo docker-compose -f docker-compose.yml down
+sudo docker-compose -f docker-compose.yml pull
+sudo docker-compose -f docker-compose.yml up -d
 ```
 
 You can tell if you are running the latest image vs a stable release with the following command:
@@ -102,11 +102,11 @@ grep -q :latest docker-compose.yml; [[ $? -eq 1 ]] && echo "Stable Version" || e
 If you are running a stable version of the Docker Image, you can upgrade to the latest stable version **v1.2.2** with the following commands:
 
 ```
-docker-compose -f docker-compose.yml down
+sudo docker-compose -f docker-compose.yml down
 
 curl https://raw.githubusercontent.com/ngardiner/TWCManager/main/contrib/docker/docker-compose-v1.2.2.yml -o docker-compose.yml
-docker-compose -f docker-compose.yml pull
-docker-compose -d -f docker-compose.yml up
+sudo docker-compose -f docker-compose.yml pull
+sudo docker-compose -d -f docker-compose.yml up
 ```
 
 ## Stopping TWCManager
@@ -122,9 +122,17 @@ Press ```Ctrl + C``` in the console of the Docker Container to stop TWCManager f
 Use the following command to stop TWCManager's docker container from running in Background Mode:
 
 ```
-docker-compose -f contrib/docker/docker-compose.yml down
+sudo docker-compose -f docker-compose.yml down
 ```
 
 ## Starting TWCManager at Boot
 
-To be completed
+The default restart policy for the Docker Container is to always restart the container if it is stopped. This is in the form of the following config stanza:
+
+```restart: always```
+
+This means that by default, after a docker-compose up, TWCManager will start on boot automatiacally. 
+
+If you'd like to change the behaviour of TWCManager's restart policy, edit the docker-compose.yml file and refer to the following for available restart options:
+
+https://github.com/compose-spec/compose-spec/blob/master/spec.md

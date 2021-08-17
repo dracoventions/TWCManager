@@ -183,9 +183,7 @@ class HASSStatus:
 
     def settingRetryRate(self, msg):
         # Setting elapsing time to now + retryRateInSeconds
-        self.msgQueue[msg.sensor].elapsingTime = (
-            time.time() + self.retryRateInSeconds
-        )
+        self.msgQueue[msg.sensor].elapsingTime = time.time() + self.retryRateInSeconds
 
 
 class HASSMessage:

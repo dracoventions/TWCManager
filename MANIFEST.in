@@ -1,0 +1,2 @@
+graft lib/TWCManager/Control/static
+graft lib/TWCManager/Control/themes

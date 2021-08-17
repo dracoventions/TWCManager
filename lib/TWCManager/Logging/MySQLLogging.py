@@ -76,7 +76,9 @@ class MySQLHandler(logging.Handler):
                     cur = self.db.cursor()
                     rows = 0
                     try:
-                        rows = cur.execute(query % (getattr(record, "vehicleVIN", ""), chgid, twcid))
+                        rows = cur.execute(
+                            query % (getattr(record, "vehicleVIN", ""), chgid, twcid)
+                        )
                     except Exception as e:
                         logger.error("Error updating MySQL database: %s", e)
                     if rows:
