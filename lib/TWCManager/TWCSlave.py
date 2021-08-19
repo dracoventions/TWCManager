@@ -934,8 +934,12 @@ class TWCSlave:
                 if now - self.timeLastAmpsOfferedChanged < 5:
                     desiredAmpsOffered = self.lastAmpsOffered
 
-        if (self.lastAmpsDesired <= 0 and desiredAmpsOffered > 0) or (
-            self.lastAmpsDesired > 0 and desiredAmpsOffered == 0
+        if (
+            self.lastAmpsDesired < minAmpsToOffer
+            and desiredAmpsOffered >= minAmpsToOffer
+        ) or (
+            self.lastAmpsDesired >= minAmpsToOffer
+            and desiredAmpsOffered < minAmpsToOffer
         ):
             self.lastAmpsDesired = desiredAmpsOffered
             self.timeLastAmpsDesiredFlipped = now
