@@ -699,7 +699,12 @@ class TWCSlave:
         ):
             desiredAmpsOffered = minAmpsToOffer
 
-        dampenChanges = (now - self.timeLastAmpsDesiredFlipped) < self.startStopDelay
+        dampenChanges = False
+        if self.master.getModuleByName("Policy").policyIsGreen():
+            if (now - self.timeLastAmpsDesiredFlipped) < self.startStopDelay:
+                dampenChanges = True
+        else:
+            self.timeLastAmpsDesiredFlipped = 0
 
         if desiredAmpsOffered < minAmpsToOffer:
             logger.debug(
