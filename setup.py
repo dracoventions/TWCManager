@@ -14,7 +14,7 @@ setup(
         "commentjson < 0.9.0; python_version < '3.6'",
         "commentjson >= 0.8.3; python_version >= '3.6'",
         "cryptography==2.1.4; python_version < '3.6'",
-        "cryptography>=3.4; python_version >= '3.6'",
+        "cryptography<3.4; python_version >= '3.6'",
         "growattServer>=1.0.0",
         "jinja2==2.11.2; python_version == '3.4'",
         "jinja2==2.11.2; python_version == '3.5'",

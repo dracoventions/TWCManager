@@ -74,7 +74,7 @@ We have two versions of the codebase that you may want to check out. The stable 
 ```
 git clone https://github.com/ngardiner/TWCManager
 cd TWCManager
-git checkout v1.2.2
+git checkout v1.2.3
 sudo make install
 ```
 
@@ -96,14 +96,6 @@ The following documents provide detail on specific areas of configuration:
 
 ## Running TWCManager
 Once the above steps are complete, start the TWCManager script with the following command:
-
-Prior to v1.2.3:
-
-```
-python -m TWCManager
-```
-
-From v1.2.3 onwards:
 
 ```
 sudo -u twcmanager python -m TWCManager
@@ -149,4 +141,38 @@ journalctl -f
 To disable the TWCManager service permanently use the following command.  This will persist after rebooting.
 ```
 sudo systemctl disable twcmanager
+```
+
+## Upgrading TWCManager
+
+### Stable Release
+
+From version v1.2.3 of TWCManager and beyond, you can use pip to upgrade TWCManager to the latest stable version.
+
+To upgrade TWCManager to the latest version:
+
+```
+sudo pip install --upgrade twcmanager
+```
+
+### Development Version
+
+If you would prefer to upgrade to the latest Development release, you should do the following:
+
+   * Enter the directory in which the TWCManager sources are downloaded
+
+```
+cd /home/pi/TWCManager
+```
+
+   * Download the latest updates using git
+
+```
+git pull
+```
+
+   * Build the latest TWCManager package
+
+```
+make install
 ```

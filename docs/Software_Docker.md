@@ -99,12 +99,12 @@ grep -q :latest docker-compose.yml; [[ $? -eq 1 ]] && echo "Stable Version" || e
 
 ### Using a Stable version
 
-If you are running a stable version of the Docker Image, you can upgrade to the latest stable version **v1.2.2** with the following commands:
+If you are running a stable version of the Docker Image, you can upgrade to the latest stable version **v1.2.3** with the following commands:
 
 ```
 sudo docker-compose -f docker-compose.yml down
 
-curl https://raw.githubusercontent.com/ngardiner/TWCManager/main/contrib/docker/docker-compose-v1.2.2.yml -o docker-compose.yml
+curl https://raw.githubusercontent.com/ngardiner/TWCManager/main/contrib/docker/docker-compose-v1.2.3.yml -o docker-compose.yml
 sudo docker-compose -f docker-compose.yml pull
 sudo docker-compose -d -f docker-compose.yml up
 ```
