@@ -133,22 +133,22 @@ class TWCMaster:
 
             if pkgInfo.get("info", {}).get("version", None):
                 if pkgInfo["info"]["version"] != self.version:
-                   # Versions don't match. Let's make sure the new one really is newer
-                   current_arr = [int(v) for v in self.version.split(".")]
-                   avail_arr = [int(v) for v in pkgInfo["info"]["version"].split(".")]
-                   for i in range(max(len(current_arr),len(avail_arr))):
-                      v1 = current_arr[i] if i < len(current_arr) else 0
-                      v2 = avail_arr[i] if i < len(avail_arr) else 0
+                    # Versions don't match. Let's make sure the new one really is newer
+                    current_arr = [int(v) for v in self.version.split(".")]
+                    avail_arr = [int(v) for v in pkgInfo["info"]["version"].split(".")]
+                    for i in range(max(len(current_arr), len(avail_arr))):
+                        v1 = current_arr[i] if i < len(current_arr) else 0
+                        v2 = avail_arr[i] if i < len(avail_arr) else 0
 
-                      # If any element of current version in order from first to last is lower than available version,
-                      # advertise newer version
-                      if v1 < v2:
-                         self.updateVersion = pkgInfo["info"]["version"]
-                         break
+                        # If any element of current version in order from first to last is lower than available version,
+                        # advertise newer version
+                        if v1 < v2:
+                            self.updateVersion = pkgInfo["info"]["version"]
+                            break
 
-                      # If current version is greater than available version, do not advertise newer version
-                      if v1 > v2:
-                         break
+                        # If current version is greater than available version, do not advertise newer version
+                        if v1 > v2:
+                            break
 
         return self.updateVersion
 
