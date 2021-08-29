@@ -8,7 +8,9 @@ This document logs the changes per release of TWCManager.
 
   * Bugfixes:
       * (@MikeBishop) - Fix debounce mechanism to avoid continuous charging when minimum generation is not met in some circumstances
-  * (@ngardiner) - Add version check to Web UI
+      * (@ngardiner) - Align web interface TWCID so that it is lowercase, avoiding issues with JavaScript and Jinja2 misalignment
+      * (@ngardiner) - Change cryptography module dependency to avoid versions requiring rust compiler
+ * (@ngardiner) - Add version check to Web UI
 
 ## v1.2.3 - 2021-08-10
 
