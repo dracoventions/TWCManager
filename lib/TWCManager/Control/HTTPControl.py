@@ -130,6 +130,7 @@ def CreateHTTPHandlerClass(master):
             self.templateEnv.globals.update(ampsList=self.ampsList)
             self.templateEnv.globals.update(chargeScheduleDay=self.chargeScheduleDay)
             self.templateEnv.globals.update(checkBox=self.checkBox)
+            self.templateEnv.globals.update(checkForUpdates=master.checkForUpdates)
             self.templateEnv.globals.update(doChargeSchedule=self.do_chargeSchedule)
             self.templateEnv.globals.update(
                 getMFADevices=master.getModuleByName("TeslaAPI").getMFADevices

@@ -46,7 +46,7 @@ $(document).ready(function() {
                 var json = $.parseJSON(data);
                 Object.keys(json).forEach(function(key) {
                   var slvtwc = json[key];
-                  var twc = '#' + slvtwc['TWCID']
+                  var twc = '#' + slvtwc['TWCID'].toLowerCase()
                   Object.keys(slvtwc).forEach(function(key) {
                     $(twc+'_'+key).html(slvtwc[key]);
                   });

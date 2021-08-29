@@ -12,6 +12,7 @@ import time
 from ww import f
 import math
 import random
+import requests
 import bisect
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
@@ -32,6 +33,7 @@ class TWCMaster:
     lastkWhPoll = 0
     lastSaveFailed = 0
     lastTWCResponseMsg = None
+    lastUpdateCheck = 0
     masterTWCID = ""
     maxAmpsToDivideAmongSlaves = 0
     modules = {}
@@ -65,7 +67,8 @@ class TWCMaster:
     subtractChargerLoad = False
     teslaLoginAskLater = False
     TWCID = None
-    version = "1.2.3"
+    updateVersion = False
+    version = "1.2.4"
 
     # TWCs send a seemingly-random byte after their 2-byte TWC id in a number of
     # messages. I call this byte their "Sign" for lack of a better term. The byte
@@ -104,6 +107,50 @@ class TWCMaster:
 
     def cancelStopCarsCharging(self):
         self.delete_background_task({"cmd": "charge", "charge": False})
+
+    def checkForUpdates(self):
+        # This function is used by the Web UI and later on will be used by the console to detect TWCManager Updates
+        # It runs a maximum of once per hour, and queries the current PyPi package version vs the current version
+        # If they match, it returns false. If there's a different version available, we alert the user
+        if time.time() > self.lastUpdateCheck + (60 * 60):
+            self.lastUpdateCheck = time.time()
+
+            # Fetch the JSON data from PyPi for our package
+            url = "https://pypi.org/pypi/twcmanager/json"
+
+            try:
+                req = requests.get(url)
+                logger.log(logging.INFO8, "Requesting PyPi package info " + str(req))
+                pkgInfo = json.loads(req.text)
+            except requests.exceptions.RequestException:
+                logger.info("Failed to fetch package details " + url)
+                logger.log(logging.INFO6, "Response: " + req.text)
+                pass
+            except json.decoder.JSONDecodeError:
+                logger.info("Could not parse JSON result from " + url)
+                logger.log(logging.INFO6, "Response: " + req.text)
+                pass
+
+            if pkgInfo.get("info", {}).get("version", None):
+                if pkgInfo["info"]["version"] != self.version:
+                   # Versions don't match. Let's make sure the new one really is newer
+                   current_arr = [int(v) for v in self.version.split(".")]
+                   avail_arr = [int(v) for v in pkgInfo["info"]["version"].split(".")]
+                   for i in range(max(len(current_arr),len(avail_arr))):
+                      v1 = current_arr[i] if i < len(current_arr) else 0
+                      v2 = avail_arr[i] if i < len(avail_arr) else 0
+
+                      # If any element of current version in order from first to last is lower than available version,
+                      # advertise newer version
+                      if v1 < v2:
+                         self.updateVersion = pkgInfo["info"]["version"]
+                         break
+
+                      # If current version is greater than available version, do not advertise newer version
+                      if v1 > v2:
+                         break
+
+        return self.updateVersion
 
     def checkModuleCapability(self, type, capability):
         # For modules which advertise capabilities, scan all loaded modules of a certain type and

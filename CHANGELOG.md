@@ -4,6 +4,12 @@ This document logs the changes per release of TWCManager.
 
 ## v1.3.0 - Latest Development Version
 
+## v1.2.4 - 2021-08-29
+
+  * Bugfixes:
+      * (@MikeBishop) - Fix debounce mechanism to avoid continuous charging when minimum generation is not met in some circumstances
+  * (@ngardiner) - Add version check to Web UI
+
 ## v1.2.3 - 2021-08-10
 
   * **NOTE**: v1.2.3 contains a potentially breaking change for users of OpenWB or the Legacy Web Interface

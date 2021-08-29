@@ -17,6 +17,10 @@
         </ul>
         <span class='navbar-text' id="currentServerTime"></span>
         <span class='navbar-text'>v{{ master.version }}</span>
+        {% if checkForUpdates() %}
+            &nbsp;
+            <span class='navbar-text'>(v{{ checkForUpdates() }} Available)</span>
+        {% endif %}
    </div>
 </nav>
 <div class='container-fluid'>
