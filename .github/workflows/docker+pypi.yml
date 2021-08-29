@@ -7,13 +7,34 @@ on:
       - 'main'
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: The version that you would like to create a release for. This does not yet work
+        required: true
+        default: "v1.2.3"
+      trigger_docker_latest:
+        required: true
+        default: "no"
+      trigger_docker_release:
+        required: true
+        default: "no"
+      trigger_pypi_dev:
+        description: "Should we trigger the pypi-dev upload action? This will create a fake version number for upload."
+        required: true
+        default: "no"
+      trigger_pypi_prod:
+        required: true
+        default: "no"
 
 jobs:
   pypi-dev:
     name: Build a PyPi Package if this is a commit to the ci_dev branch
     runs-on: [ "self-hosted", "build_host" ]
 
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/ci_dev')
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/ci_dev')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.trigger_pypi_dev == 'yes')
 
     steps:
     - name: Check out Repository
@@ -63,7 +84,9 @@ jobs:
     name: Build a PyPi Package if this is a tagged release commit
     runs-on: [ "self-hosted", "build_host" ]
 
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.trigger_pypi_prod == 'yes')
 
     steps:
     - name: Check out Repository
@@ -106,6 +129,10 @@ jobs:
     name: Create docker-latest Docker Image from current head
     runs-on: [ "self-hosted", "build_host" ]
 
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.trigger_docker_latest == 'yes')
+
     steps:
     - name: Check out Repository
       uses: actions/checkout@v2
@@ -142,7 +169,9 @@ jobs:
     name: Create docker-release Docker Image for release version
     runs-on: [ "self-hosted", "build_host" ]
 
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.trigger_docker_release == 'yes')
 
     steps:
 
