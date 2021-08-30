@@ -216,6 +216,7 @@ class TeslaPowerwall2:
             except Exception as e:
                 if hasattr(e, "response") and e.response.status_code == 403:
                     logger.info("Authentication required to access local Powerwall API")
+                    self.tokenTimeout = 0
                 else:
                     logger.log(
                         logging.INFO4,
