@@ -4,12 +4,13 @@ This document logs the changes per release of TWCManager.
 
 ## v1.3.0 - Latest Development Version
 
-## v1.2.4 - 2021-08-29
+## v1.2.4 - 2021-08-31
 
   * Bugfixes:
       * (@MikeBishop) - Fix debounce mechanism to avoid continuous charging when minimum generation is not met in some circumstances
       * (@ngardiner) - Align web interface TWCID so that it is lowercase, avoiding issues with JavaScript and Jinja2 misalignment
       * (@ngardiner) - Change cryptography module dependency to avoid versions requiring rust compiler
+ * (@MikeBishop) - Change to Powerwall Auth handling to expire auth tokens earlier due to changes in Powerwall auth handling
  * (@ngardiner) - Add version check to Web UI
 
 ## v1.2.3 - 2021-08-10
