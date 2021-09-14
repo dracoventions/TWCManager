@@ -119,7 +119,7 @@ class TeslaAPI:
                     )
                     self.getApiCaptcha()
                     return "Phase1Captcha"
-                elif 'g-recaptcha' in self.__resp.text:
+                elif "g-recaptcha" in self.__resp.text:
                     logger.log(
                         logging.INFO6,
                         "Tesla Auth form challenged us for Google Recaptcha. Redirecting.",
