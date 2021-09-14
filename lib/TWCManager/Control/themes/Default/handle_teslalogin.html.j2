@@ -50,6 +50,10 @@
       <input type=submit value="Send Captcha" />
     </form>
   </font>
+{% elif url.path == "/teslaAccount/Phase1Recaptcha" %}
+  <font color='red'>
+    <b>Sadly, Tesla have changed the auth process on us again and we need to make some changes on our side. We're working on it.</b>
+  </font>
 {% elif url.path == "/teslaAccount/Phase2Error" or url.path == "/teslaAccount/Phase2ErrorTip" %}
   <font color='red'>
     <b>Error encountered during Phase 2 (POST) of the Tesla Authentication process.</b>
