@@ -447,7 +447,7 @@ class TWCSlave:
 
                 if (
                     now - self.timeLastAmpsOfferedChanged < 60
-                    or now - self.timeReportedAmpsActualChangedSignificantly < 60
+                    or now - self.timeReportedAmpsActualChangedSignificantly < self.startStopDelay
                     or self.reportedAmpsActual < 4.0
                 ):
                     # We want to tell the car to stop charging. However, it's
