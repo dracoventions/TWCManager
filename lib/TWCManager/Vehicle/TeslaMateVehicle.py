@@ -76,7 +76,9 @@ class TeslaMateVehicle:
                 cur = conn.cursor()
 
                 # Query DB for latest access and refresh token
-                cur.execute("SELECT access, refresh FROM tokens ORDER BY id DESC LIMIT 1")
+                cur.execute(
+                    "SELECT access, refresh FROM tokens ORDER BY id DESC LIMIT 1"
+                )
 
                 # Fetch result
                 result = cur.fetchone()
