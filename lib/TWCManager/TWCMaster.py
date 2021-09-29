@@ -1416,6 +1416,18 @@ class TWCMaster:
             "%H:%M:%S" + (".%f" if self.config["config"]["displayMilliseconds"] else "")
         )
 
+    def tokenSyncEnabled(self):
+        # TODO: Should not be hardcoded
+        # Check if any modules are performing token sync from other projects or interfaces
+        # if so, we do not prompt locally for authentication and we don't use our own settings
+        tokenSync = False
+
+        if self.getModuleByName("TeslaMateVehicle"):
+            if self.getModuleByName("TeslaMateVehicle").syncTokens:
+                tokenSync = True
+
+        return tokenSync
+
     def translateModuleNameToConfig(self, modulename):
         # This function takes a module name (eg. EMS.Fronius) and returns a config section (Sources.Fronius)
         # It makes it easier for us to determine where a module's config should be

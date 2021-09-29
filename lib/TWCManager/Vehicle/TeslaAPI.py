@@ -16,6 +16,7 @@ class TeslaAPI:
 
     __apiCaptcha = None
     __apiCaptchaCode = None
+    __apiCaptchaInterface = None
     authURL = "https://auth.tesla.com/oauth2/v3/authorize"
     callbackURL = "https://auth.tesla.com/void/callback"
     captchaURL = "https://auth.tesla.com/captcha"
@@ -170,11 +171,15 @@ class TeslaAPI:
         }
 
         # If a captcha code is stored, inject it into the data parameter
-        if self.__apiCaptchaCode:
+        if self.__apiCaptchaCode and self.__apiCaptchaInterface == "captcha":
             data["captcha"] = self.__apiCaptchaCode
 
             # Clear captcha data
             self.__apiCaptcha = None
+
+        elif self.__apiCaptchaCode and self.__apiCaptchaInterface == "recaptcha":
+            data["recaptcha"] = self.__apiCaptchaCode
+            data["g-recaptcha-response"] = self.__apiCaptchaCode
 
         # Clear stored credentials
         self.__email = None
@@ -337,8 +342,9 @@ class TeslaAPI:
 
         # Authentiate to Tesla API
         if (
-            self.getCarApiBearerToken() == ""
-            or self.getCarApiTokenExpireTime() - now < 30 * 24 * 60 * 60
+            not self.master.tokenSyncEnabled()
+            and (self.getCarApiBearerToken() == ""
+            or self.getCarApiTokenExpireTime() - now < 30 * 24 * 60 * 60)
         ):
             if self.getCarApiRefreshToken() != "":
                 headers = {
@@ -1230,8 +1236,14 @@ class TeslaAPI:
 
     def setCarApiBearerToken(self, token=None):
         if token:
-            self.carApiBearerToken = token
-            return True
+            # TODO: Should not be hardcoded
+            tokenSync = False
+            if self.master.tokenSyncEnabled():
+                # We won't accept tokens if Token Sync is already in place
+                return False
+            else:
+                self.carApiBearerToken = token
+                return True
         else:
             return False
 
@@ -1243,8 +1255,9 @@ class TeslaAPI:
         self.carApiTokenExpireTime = value
         return True
 
-    def submitCaptchaCode(self, code):
+    def submitCaptchaCode(self, code, interface):
         self.__apiCaptchaCode = code
+        self.__apiCaptchaInterface = interface
         return self.apiLoginPhaseOne()
 
     def updateCarApiLastErrorTime(self, vehicle=None):

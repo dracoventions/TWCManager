@@ -1,4 +1,4 @@
-DEPS := screen git libffi-dev libssl-dev
+DEPS := screen git libffi-dev libpq-dev libssl-dev
 WEBDEPS := $(DEPS) lighttpd
 SUDO := sudo
 USER := twcmanager

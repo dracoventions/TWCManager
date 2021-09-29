@@ -22,6 +22,8 @@ setup(
         "MarkupSafe < 2.0.0; python_version < '3.6'",
         "ocpp",
         "paho_mqtt>=1.5.0",
+        "psycopg2 <= 2.8.6; python_version < '3.6'",
+        "psycopg2; python_version >= '3.6'",
         "pyModbusTCP>=0.1.8",
         "pymysql==0.9.3; python_version < '3.6'",
         "pymysql; python_version >= '3.6'",

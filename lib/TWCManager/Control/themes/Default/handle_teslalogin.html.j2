@@ -47,13 +47,61 @@
     <form action="/teslaAccount/submitCaptcha" method=POST>
       Enter Captcha Code:
       <input type=text size=6 name=captchaCode />
+      <input type=hidden name=interface value="captcha" />
       <input type=submit value="Send Captcha" />
     </form>
   </font>
 {% elif url.path == "/teslaAccount/Phase1Recaptcha" %}
-  <font color='red'>
-    <b>Sadly, Tesla have changed the auth process on us again and we need to make some changes on our side. We're working on it.</b>
+  <font color='black'>
+    <b>Tesla have added ReCaptcha login validation which we can't integrate with our login flow.</b>
   </font>
+
+  <br/>Your options are:
+
+  <ul>
+    <li>Use an app to authenticate to Tesla and obtain tokens. These can be entered under the Settings menu.</li>
+    <ul>
+      <li><a href="https://apps.apple.com/us/app/auth-app-for-tesla/id1552058613#?platform=iphone">Auth app for Tesla (iOS)</a></li>
+      <li><a href="https://play.google.com/store/apps/details?id=net.leveugle.teslatokens">Tesla Tokens (Android)</a></li>
+      <li><a href="https://github.com/adriankumpf/tesla_auth">Tesla Auth (macOS, Linux, Windows)</a></li>
+    </ul>
+    <li>Configure Token Sync with an external application like <a href="https://github.com/ngardiner/TWCManager/blob/main/docs/modules/Vehicle_TeslaMate.md" target="_blank">TeslaMate</a></li>
+
+    {% if host and host.endswith('.tesla.com') %}
+      <li>Congrats: Because your site is configured with a .tesla.com suffix, you can use the ReCaptcha prompt below.</li>
+    {% else %}
+      <li>You could perform a <a href="https://github.com/ngardiner/TWCManager/blob/main/docs/TeslaAPI_Rediection.md">DNS redirection trick</a> to host TWCManager on a tesla.com domain. </li>
+    {% endif %}
+  </ul>
+
+  {% if host and host.endswith('.tesla.com') %}
+
+    <div id="captcha_container"></div>
+
+    <form id="captchaForm" method=POST action="/teslaAccount/submitCaptcha">
+      <input type=hidden size=6 name=captchaCode id=captchaCode />
+      <input type=hidden name=interface value="recaptcha" />
+    </form>
+
+    <script>
+     function onSubmit(token) {
+       document.getElementById("captchaCode").value = token;
+       document.getElementById("captchaForm").submit();
+     }
+
+    function loadCaptcha() {
+      grecaptcha.render('captcha_container', {
+        'sitekey' : '6LdUQhgUAAAAAEe8NWX3Rur9bQRqq-2RUPhthpJs',
+
+        'badge': 'bottom-right',
+        'callback' : onSubmit
+      });
+      }
+    </script>
+
+    <script src="https://www.google.com/recaptcha/api.js?onload=loadCaptcha&render=explicit" async defer></script>
+  {% endif %}
+
 {% elif url.path == "/teslaAccount/Phase2Error" or url.path == "/teslaAccount/Phase2ErrorTip" %}
   <font color='red'>
     <b>Error encountered during Phase 2 (POST) of the Tesla Authentication process.</b>
@@ -73,9 +121,11 @@
 {% endif %}
 
 {% if not master.teslaLoginAskLater
-      and url.path != "/teslaAccount/True" 
+      and not master.tokenSyncEnabled()
+      and url.path != "/teslaAccount/True"
       and not url.path.startswith("/teslaAccount/MFA")
-      and not url.path == "/teslaAccount/Phase1Captcha" %}
+      and not url.path == "/teslaAccount/Phase1Captcha"
+      and not url.path == "/teslaAccount/Phase1Recaptcha" %}
       <!-- Check if we have already stored the Tesla credentials
            If we can access the Tesla API okay, don't prompt -->
       {% if not apiAvailable %}
