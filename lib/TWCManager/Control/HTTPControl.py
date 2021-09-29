@@ -670,8 +670,8 @@ def CreateHTTPHandlerClass(master):
                 self.host = self.headers.get("Host", "")
 
                 # Remove port number from domain
-                if ':' in self.host:
-                    self.host = self.host.split(':',1)[0]
+                if ":" in self.host:
+                    self.host = self.host.split(":", 1)[0]
             except IndexError:
                 self.host = None
 
@@ -904,7 +904,9 @@ def CreateHTTPHandlerClass(master):
                 captchaCode = self.getFieldValue("captchaCode")
                 interface = self.getFieldValue("interface")
 
-                resp = master.getModuleByName("TeslaAPI").submitCaptchaCode(captchaCode, interface)
+                resp = master.getModuleByName("TeslaAPI").submitCaptchaCode(
+                    captchaCode, interface
+                )
 
                 self.send_response(302)
                 self.send_header("Location", "/teslaAccount/" + str(resp))

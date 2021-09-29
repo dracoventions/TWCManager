@@ -3,6 +3,7 @@ import psycopg2
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
 
+
 class TeslaMateVehicle:
 
     __db_host = None
@@ -30,7 +31,7 @@ class TeslaMateVehicle:
             self.__configTeslaMate = {}
 
         # Unload if this module is disabled or misconfigured
-        if (not self.status):
+        if not self.status:
             self.__master.releaseModule("lib.TWCManager.Vehicle", "TeslaMate")
             return None
 
@@ -49,18 +50,19 @@ class TeslaMateVehicle:
     def doSyncTokens(self):
         # Connect to TeslaMate database and synchronize API tokens
 
-        if (self.__db_host and self.__db_name and self.__db_user and self.__db_pass):
+        if self.__db_host and self.__db_name and self.__db_user and self.__db_pass:
 
             conn = psycopg2.connect(
                 host=self.__db_host,
                 database=self.__db_name,
                 user=self.__db_user,
-                password=self.__db_pass)
+                password=self.__db_pass,
+            )
 
         cur = conn.cursor()
 
         # Query DB for latest access and refresh token
-        cur.execute('SELECT access, refresh, updated_at FROM tokens WHERE id = MAX(id)')
+        cur.execute("SELECT access, refresh, updated_at FROM tokens WHERE id = MAX(id)")
 
         # Fetch result
         result = cur.fetchone()

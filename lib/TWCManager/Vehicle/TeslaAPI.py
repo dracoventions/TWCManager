@@ -341,10 +341,9 @@ class TeslaAPI:
             )
 
         # Authentiate to Tesla API
-        if (
-            not self.master.tokenSyncEnabled()
-            and (self.getCarApiBearerToken() == ""
-            or self.getCarApiTokenExpireTime() - now < 30 * 24 * 60 * 60)
+        if not self.master.tokenSyncEnabled() and (
+            self.getCarApiBearerToken() == ""
+            or self.getCarApiTokenExpireTime() - now < 30 * 24 * 60 * 60
         ):
             if self.getCarApiRefreshToken() != "":
                 headers = {
