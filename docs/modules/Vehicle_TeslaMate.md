@@ -34,7 +34,34 @@ Please note that turning on the Token Sync functionality of this module will hav
    }
 ```
 
+#### Access to Database Instance
+
+By default, TWCManager may not be able to access the database for TeslaMate.
+
+Depending on your TeslaMate installation type, you may need to take different steps to make the PostgreSQL database available to TWCManager in order to sync Tesla auth tokens. Follow the appropriate section below for your installation type.
+
+##### Manual Installation
+
+For a manual installation, the ```/etc/postgresql/pg_hba.conf``` file will need to be updated to allow the TWCManager host to connect remotely to the database.
+
+Add the following line below to pg_hba.conf, substituting the IP address of your TWCManager machine:
+
+```
+host    teslamate       teslamate       192.168.1.1/32        md5
+```
+
+After adding this, reload the PostgreSQL configuration:
+
+```
+service postgresql reload
+```
+
+##### Docker Installation
+
+To be updated
 
 ### Telemetry Information
 
 TWCManager can use the MQTT topics advertised by TeslaMate to recieve charge state and SoC information from your vehicle
+
+Note: This functionality is not yet available. This guide will be updated once it is.

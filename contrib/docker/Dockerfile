@@ -22,6 +22,7 @@ RUN /tmp/install.sh MarkupSafe
 RUN /tmp/install.sh numpy
 RUN /tmp/install.sh ocpp
 RUN /tmp/install.sh paho_mqtt
+RUN /tmp/install.sh psycopg2
 RUN /tmp/install.sh pyModbusTCP
 RUN /tmp/install.sh pymysql
 RUN /tmp/install.sh pyserial

@@ -1,5 +1,6 @@
 import logging
 import psycopg2
+import time
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
 
@@ -14,6 +15,7 @@ class TeslaMateVehicle:
     __configConfig = None
     __configTeslaMate = None
     __master = None
+    lastSync = 0
     status = None
     syncTokens = False
 
@@ -27,6 +29,7 @@ class TeslaMateVehicle:
             self.__configConfig = {}
         try:
             self.__configTeslaMate = self.__config["vehicle"]["TeslaMate"]
+            self.status = self.__config["vehicle"]["TeslaMate"]["enabled"]
         except KeyError:
             self.__configTeslaMate = {}
 
@@ -52,19 +55,56 @@ class TeslaMateVehicle:
 
         if self.__db_host and self.__db_name and self.__db_user and self.__db_pass:
 
-            conn = psycopg2.connect(
-                host=self.__db_host,
-                database=self.__db_name,
-                user=self.__db_user,
-                password=self.__db_pass,
+            conn = None
+
+            try:
+                conn = psycopg2.connect(
+                    host=self.__db_host,
+                    database=self.__db_name,
+                    user=self.__db_user,
+                    password=self.__db_pass,
+                )
+            except psycopg2.OperationalError as e:
+                logger.log(
+                    logging.ERROR,
+                    "Failed to connect to TeslaMate database: " + str(e),
+                )
+
+                self.syncTokens = False
+
+            if conn:
+                cur = conn.cursor()
+
+                # Query DB for latest access and refresh token
+                cur.execute("SELECT access, refresh FROM tokens ORDER BY id DESC LIMIT 1")
+
+                # Fetch result
+                result = cur.fetchone()
+
+                # Set Bearer and Refresh Tokens
+                carapi = self.__master.getModuleByName("TeslaAPI")
+                # We don't want to refresh the token - let the source handle that.
+                carapi.setCarApiTokenExpireTime(99999 * 99999 * 99999)
+                carapi.setCarApiBearerToken(result[0])
+                carapi.setCarApiRefreshToken(result[1])
+                self.lastSync = time.time()
+
+            else:
+
+                logger.log(
+                    logging.ERROR,
+                    "Failed to connect to TeslaMate database. Disabling Token Sync",
+                )
+
+                # Connection failed. Turn off token sync
+                self.syncTokens = False
+
+        else:
+
+            logger.log(
+                logging.ERROR,
+                "TeslaMate Database connection settings not specified. Disabling Token Sync",
             )
 
-        cur = conn.cursor()
-
-        # Query DB for latest access and refresh token
-        cur.execute("SELECT access, refresh, updated_at FROM tokens WHERE id = MAX(id)")
-
-        # Fetch result
-        result = cur.fetchone()
-
-        print(result)
+            # Required database details not provided. Turn off token sync
+            self.syncTokens = False
