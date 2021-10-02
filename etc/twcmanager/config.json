@@ -648,12 +648,17 @@
     },
     "vehicle": {
         "TeslaMate": {
-            "enabled": true,
-            "syncTokens": true,
+            "enabled": false,
+            "syncTokens": false,
             "db_host": "192.168.1.1",
             "db_name": "teslamate",
             "db_pass": "teslamate",
             "db_user": "teslamate"
+            "syncTelemetry": false,
+            "mqtt_host": "192.168.1.1",
+            "mqtt_user": "teslamate",
+            "mqtt_pass": "teslamate",
+            "mqtt_prefix": "teslamate"
         }
     }
 }

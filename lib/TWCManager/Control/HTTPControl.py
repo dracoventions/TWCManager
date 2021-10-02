@@ -15,7 +15,7 @@ import uuid
 import math
 from ww import f
 
-logger = logging.getLogger(__name__.rsplit(".")[-1])
+logger = logging.getLogger("\U0001F3AE HTTP")
 
 
 class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
@@ -141,6 +141,9 @@ def CreateHTTPHandlerClass(master):
             self.templateEnv.globals.update(navbarItem=self.navbar_item)
             self.templateEnv.globals.update(optionList=self.optionList)
             self.templateEnv.globals.update(timeList=self.timeList)
+            self.templateEnv.globals.update(
+                vehicles=master.getModuleByName("TeslaAPI").getCarApiVehicles
+            )
 
             # Set master object
             self.master = master
@@ -533,6 +536,20 @@ def CreateHTTPHandlerClass(master):
                 master.sendStopCommand()
                 self.send_response(204)
                 self.end_headers()
+
+            elif self.url.path == "/api/sendTeslaAPICommand":
+                data = json.loads(self.post_data.decode("UTF-8"))
+                command = str(data.get("commandName", None))
+                vehicle = str(data.get("vehicleID", None))
+                params = str(data.get("parameters", None))
+
+                res = master.getModuleByName("TeslaAPI").apiDebugInterface(command, vehicle, params)
+                if res == True:
+                    self.send_response(200)
+                    self.end_headers()
+                else:
+                    self.send_response(400)
+                    self.end_headers()
 
             elif self.url.path == "/api/setSetting":
                 data = json.loads(self.post_data.decode("UTF-8"))

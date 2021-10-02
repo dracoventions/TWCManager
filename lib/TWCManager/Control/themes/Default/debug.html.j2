@@ -8,7 +8,7 @@
   <body>
     {% include 'navbar.html.j2' %}
     <form method=POST action='/debug/save'>
-    <h3>Send Command</h3>
+    <h3>Send TWC Command</h3>
     <b>Warning:</b> The Send Command function is potentially dangerous and, if used to send the wrong command, could render your TWC permanently inoperable. For that reason, you must enable use of the function before it will be available. If you don't require the function, we recommend leaving it disabled.
     <table>
       <tr>
@@ -59,7 +59,41 @@
     </table>
 
     <p>&nbsp;</p>
-    <h2>Advanced Settings</h2>
+    <h3>Send Tesla API Command</h3>
+    <form method=POST action='/debug/TeslaAPICommand'>
+    <table>
+      <tr>
+        <td><b>Send Command:</b></td>
+        <td><select id="TeslaAPICommand">
+          <option value="setChargeRate">Set Charge Rate</option>
+          <option value="wakeVehicle">Wake Up Vehicle</option>
+        </select></td>
+        <td> to vehicle </td>
+        <td><select id="TeslaAPIVehicle">
+          {% for vehicle in vehicles() %}
+            <option value="{{ vehicle.ID }}">{{ vehicle.name }}</option>
+          {% endfor %}
+        </select></td>
+      </tr>
+      <tr>
+        <td><b>Command Parameters:</b></td>
+        <td colspan=2><textarea id="TeslaAPIParams"></textarea></td>
+      </tr>
+      <tr>
+        <td>&nbsp;</td>
+        <td colspan = 3>
+          {{ addButton(
+            ["sendTeslaAPICommand", "Send Tesla API Command", { "buttonType": "button" }],
+            "class='btn btn-outline-success'",
+            )|safe }}
+        </td>
+      </tr>
+
+    </table>
+    </form>
+
+    <p>&nbsp;</p>
+    <h3>Advanced Settings</h3>
     These advanced settings can alter the way that the TWCManager operates, potentially causing the behaviour to change. Modifying these settings will be the most likely reason that something will work abnormally in your setup.
     <table>
       <tr>
