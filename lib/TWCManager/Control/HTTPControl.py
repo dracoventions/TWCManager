@@ -543,7 +543,9 @@ def CreateHTTPHandlerClass(master):
                 vehicle = str(data.get("vehicleID", None))
                 params = str(data.get("parameters", None))
 
-                res = master.getModuleByName("TeslaAPI").apiDebugInterface(command, vehicle, params)
+                res = master.getModuleByName("TeslaAPI").apiDebugInterface(
+                    command, vehicle, params
+                )
                 if res == True:
                     self.send_response(200)
                     self.end_headers()
