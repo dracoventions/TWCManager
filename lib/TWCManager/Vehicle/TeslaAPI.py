@@ -1293,7 +1293,7 @@ class TeslaAPI:
             return False
         except json.decoder.JSONDecodeError:
             return False
- 
+
         return apiResponseDict
 
     def submitCaptchaCode(self, code, interface):
