@@ -1,8 +1,11 @@
 import logging
 import psycopg2
+import paho.mqtt.client as mqtt
+import _thread
+import threading
 import time
 
-logger = logging.getLogger(__name__.rsplit(".")[-1])
+logger = logging.getLogger("\U0001F697 TeslaMate")
 
 
 class TeslaMateVehicle:
@@ -11,13 +14,20 @@ class TeslaMateVehicle:
     __db_name = None
     __db_pass = None
     __db_user = None
+    __client = None
     __config = None
     __configConfig = None
     __configTeslaMate = None
     __master = None
+    __mqtt_host = None
+    __mqtt_user = None
+    __mqtt_pass = None
+    __mqtt_port = 1883
+    __mqtt_prefix = None
     lastSync = 0
     status = None
     syncTokens = False
+    vehicles = {}
 
     def __init__(self, master):
         self.__master = master
@@ -44,11 +54,54 @@ class TeslaMateVehicle:
         self.__db_pass = self.__configTeslaMate.get("db_pass", None)
         self.__db_user = self.__configTeslaMate.get("db_user", None)
 
+        # Configure MQTT parameters
+        self.__mqtt_host = self.__configTeslaMate.get("mqtt_host", None)
+        self.__mqtt_user = self.__configTeslaMate.get("mqtt_user", None)
+        self.__mqtt_pass = self.__configTeslaMate.get("mqtt_pass", None)
+        self.__mqtt_prefix = self.__configTeslaMate.get("mqtt_prefix", None)
+
+        self.syncTelemetry = self.__configTeslaMate.get("syncTelemetry", False)
         self.syncTokens = self.__configTeslaMate.get("syncTokens", False)
 
         # If we're set to sync the auth tokens from the database, do this at startup
         if self.syncTokens:
             self.doSyncTokens()
+
+        if self.syncTelemetry:
+            # We delay collecting TeslaMate telemetry for a short period
+            # This gives the TeslaAPI module time to connect to the Tesla API
+            # and fetch vehicle information, allowing us to then merge our
+            # TeslaMate and Tesla API information cleanly
+            logger.log(
+                logging.INFO4, "Telemetry information will be fetched in 30 seconds."
+            )
+            timer = threading.Timer(30, self.doMQTT)
+            timer.start()
+
+    def doMQTT(self):
+        self.__client = mqtt.Client("TWCTeslaMate")
+        if self.__mqtt_user and self.__mqtt_pass:
+            self.__client.username_pw_set(self.__mqtt_user, self.__mqtt_pass)
+        self.__client.on_connect = self.mqttConnect
+        self.__client.on_message = self.mqttMessage
+        self.__client.on_subscribe = self.mqttSubscribe
+
+        logger.log(logging.INFO4, "Attempting connection to MQTT Broker")
+
+        try:
+            self.__client.connect_async(
+                self.__mqtt_host, port=self.__mqtt_port, keepalive=30
+            )
+        except ConnectionRefusedError as e:
+            logger.log(logging.INFO4, "Error connecting to MQTT Broker")
+            logger.debug(str(e))
+            return False
+        except OSError as e:
+            logger.log(logging.INFO4, "Error connecting to MQTT Broker")
+            logger.debug(str(e))
+            return False
+
+        self.__client.loop_start()
 
     def doSyncTokens(self):
         # Connect to TeslaMate database and synchronize API tokens
@@ -110,3 +163,44 @@ class TeslaMateVehicle:
 
             # Required database details not provided. Turn off token sync
             self.syncTokens = False
+
+    def mqttConnect(self, client, userdata, flags, rc):
+        logger.log(logging.INFO5, "MQTT Connected.")
+        logger.log(logging.INFO5, "Subscribe to " + self.__mqtt_prefix + "/cars/#")
+        res = client.subscribe(self.__mqtt_prefix + "/cars/#", qos=0)
+        logger.log(logging.INFO5, "Res: " + str(res))
+
+    def mqttMessage(self, client, userdata, message):
+
+        topic = str(message.topic).split("/")
+        payload = str(message.payload.decode("utf-8"))
+
+        if topic[0] == self.__mqtt_prefix and topic[1] == "cars":
+
+            if topic[3] == "battery_level":
+                pass
+            elif topic[3] == "display_name":
+                # We can map the car ID in TeslaMate to the vehicle
+                # in the Tesla API module
+                if self.vehicles.get(topic[2], None):
+                    # We already have this vehicle mapped
+                    pass
+                else:
+                    for apiVehicle in self.__master.getModuleByName(
+                        "TeslaAPI"
+                    ).getCarApiVehicles():
+                        if apiVehicle.name == payload:
+                            # Found a match
+                            logger.info(
+                                "Vehicle "
+                                + payload
+                                + " telemetry being provided by TeslaMate"
+                            )
+                            self.vehicle[topic[2]] = apiVehicle
+
+            else:
+                # logger.info("MQTT MESSAGE: " + message.topic)
+                pass
+
+    def mqttSubscribe(self, client, userdata, mid, granted_qos):
+        logger.info("Subscribe operation completed with mid " + str(mid))

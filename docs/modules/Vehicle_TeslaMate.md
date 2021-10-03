@@ -64,4 +64,18 @@ To be updated
 
 TWCManager can use the MQTT topics advertised by TeslaMate to recieve charge state and SoC information from your vehicle
 
+#### Confirming Telemetry Flow
+
+Once you have MQTT connectivity set up for TeslaMate telemetry, you should see the following log entry appear for each of the vehicles tracked by TeslaMate, as long as they are within your Tesla API credential account, which indicates that we have detected Telemetry information for this vehicle:
+
+00:06:58 🚗 TeslaMat 20 Vehicle R*display_name* telemetry being provided by TeslaMate
+
+This indicates that we have internally switched off telemetry polling to the Tesla API for this vehicle, to instead obtain the information from TeslaMate.
+
+Note however that TeslaMate has a health indicator which indicates whether there is an issue with a TeslaMate vehicle's tracking or connectivity. If we see that the health indicator indicates an issue, we will stop tracking the telemetry via TeslaMate until it shows healthy again, and the following message will appear:
+
+IN PROGRESS
+
+Currently, we do not detect if TeslaMate has stopped providing data after the connection. If this occurs, currently you'll need to turn off TeslaMate in the config. Functionality for this is in progress.
+
 Note: This functionality is not yet available. This guide will be updated once it is.
