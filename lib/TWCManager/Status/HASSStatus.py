@@ -6,7 +6,7 @@ import time
 from ww import f
 
 
-logger = logging.getLogger(__name__.rsplit(".")[-1])
+logger = logging.getLogger("\U0001F4CA HASS")
 
 
 class HASSStatus:

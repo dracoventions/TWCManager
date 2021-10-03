@@ -5,7 +5,7 @@ import re
 import time
 
 
-logger = logging.getLogger(__name__.rsplit(".")[-1])
+logger = logging.getLogger("\u26FD Slave")
 
 
 class TWCSlave:

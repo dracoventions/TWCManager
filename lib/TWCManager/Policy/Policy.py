@@ -3,7 +3,7 @@ import time
 from ww import f
 
 
-logger = logging.getLogger(__name__.rsplit(".")[-1])
+logger = logging.getLogger("\u26FD Policy")
 
 
 class Policy:

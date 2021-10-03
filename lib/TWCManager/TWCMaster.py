@@ -15,7 +15,7 @@ import random
 import requests
 import bisect
 
-logger = logging.getLogger(__name__.rsplit(".")[-1])
+logger = logging.getLogger("\u26FD Master")
 
 
 class TWCMaster:

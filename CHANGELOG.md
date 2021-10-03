@@ -14,6 +14,7 @@ This document logs the changes per release of TWCManager.
  * (@MikeBishop) - Change to Powerwall Auth handling to expire auth tokens earlier due to changes in Powerwall auth handling
  * (@ngardiner) - Add version check to Web UI
  * (@ngardiner) - Add handling of recaptcha challenge (with DNS workaround), and provide other options if this is not possible
+ * (@ngardiner) - Add Tesla API debug interface to allow sending Tesla API commands
 
 ## v1.2.3 - 2021-08-10
 
