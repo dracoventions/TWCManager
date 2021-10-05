@@ -1,9 +1,10 @@
-name: "Deploy TWCManager"
+name: "Deploy TWCManager Test Suite"
 on:
   push:
 
 jobs:
-  twcmanager-python3_4:
+  twcmanager-python3_4_direct:
+    name: Python 3.4 - Run Direct
     runs-on: [ "self-hosted", "python3.4.10" ]
     steps:
       - name: "Checkout Repository"
@@ -27,6 +28,33 @@ jobs:
       - name: "Upload any debug files collected"
         if: always()
         run: make upload
+
+  twcmanager-python3_4_service:
+    name: Python 3.4 - Run as a Service
+    runs-on: [ "self-hosted", "python3.4.10" ]
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v2
+
+      - name: "Upgrade setuptools"
+        run: pip3 install --upgrade setuptools
+
+      - name: "Build Project"
+        run: CI=1 make webbuild
+
+      - name: "Deploy Test Configuration"
+        run: make testconfig
+
+      - name: "Install Legacy Web Files"
+        run: make webfiles
+
+      - name: "Run Test Suite"
+        run: make test_service
+
+      - name: "Upload any debug files collected"
+        if: always()
+        run: make upload
+
 
   twcmanager-python3_5:
     runs-on: [ "self-hosted", "python3.5.3" ]

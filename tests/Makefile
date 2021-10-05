@@ -1,4 +1,6 @@
-all: general_prereqs mqtt_setup mysql_setup run_twcmanager wait preflight api ems
+all: test_direct
+test_direct: general_prereqs mqtt_setup mysql_setup run_twcmanager wait preflight api ems
+test_service: general_prereqs mqtt_setup mysql_setup run_service wait preflight api ems
 
 bold:=$(shell tput -T ansi bold)
 red:=$(shell tput -T ansi setaf 1)
@@ -28,6 +30,11 @@ mysql_setup:
 	@sudo /home/docker/.pyenv/shims/python3 env_preparation.py
 	@echo "${bold}${red}(P6/${pre})${reset} ${yellow}Set up SQLite Database"
 	@sudo -u twcmanager /home/docker/.pyenv/shims/python3 scripts/sqlite_setup.py
+
+run_service:
+	echo "Run service here"
+	sudo cp contrib/twcmanager.service /etc/systemd/system/twcmanager.service
+	sudo systemctl enable twcmanager.service --now
 
 run_twcmanager:
 	@echo "${bold}${red}(M1/2)${reset} ${yellow}Running TWCManager"

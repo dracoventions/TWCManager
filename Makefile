@@ -76,6 +76,12 @@ endif
 	$(SUDO) ./setup.py install
 endif
 
+test_direct:
+	cd tests && make test_direct
+
+test_service:
+	cd tests && make test_service
+
 tests:
 	cd tests && make
 
