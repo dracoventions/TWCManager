@@ -31,7 +31,7 @@ mysql_setup:
 
 run_twcmanager:
 	@echo "${bold}${red}(M1/2)${reset} ${yellow}Running TWCManager"
-	@cd .. && sudo -u twcmanager /home/docker/.pyenv/shims/python3 -m TWCManager &
+	@cd .. && sudo -u twcmanager PYTHONIOENCODING=UTF-8 /home/docker/.pyenv/shims/python3 -m TWCManager &
 
 upload:
 	@echo Uploading debug files
