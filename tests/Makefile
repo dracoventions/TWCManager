@@ -36,7 +36,7 @@ service_logs:
 
 run_service:
 	echo "Run service here"
-	sudo cp contrib/twcmanager.service /etc/systemd/system/twcmanager.service
+	cd .. && sudo cp contrib/twcmanager.service /etc/systemd/system/twcmanager.service
 	sudo systemctl enable twcmanager.service --now
 
 run_twcmanager:
