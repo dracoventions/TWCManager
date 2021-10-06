@@ -55,7 +55,6 @@ jobs:
         if: always()
         run: make upload
 
-
   twcmanager-python3_5_direct:
     name: Python 3.5 - Run Direct
     runs-on: [ "self-hosted", "python3.5.3" ]
@@ -108,7 +107,8 @@ jobs:
         if: always()
         run: make upload
 
-  twcmanager-python3_6:
+  twcmanager-python3_6_direct:
+    name: Python 3.6 - Run Direct
     runs-on: [ "self-hosted", "python3.6.13" ]
     steps:
       - name: "Checkout Repository"
@@ -127,7 +127,33 @@ jobs:
         run: make webfiles
 
       - name: "Run Test Suite"
-        run: make tests
+        run: make test_direct
+
+      - name: "Upload any debug files collected"
+        if: always()
+        run: make upload
+
+  twcmanager-python3_6_service:
+    name: Python 3.6 - Run as a Service
+    runs-on: [ "self-hosted", "python3.6.13" ]
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v2
+
+      - name: "Upgrade setuptools"
+        run: pip3 install --upgrade setuptools
+
+      - name: "Build Project"
+        run: CI=1 make webbuild
+
+      - name: "Deploy Test Configuration"
+        run: make testconfig
+
+      - name: "Install Legacy Web Files"
+        run: make webfiles
+
+      - name: "Run Test Suite"
+        run: make test_service
 
       - name: "Upload any debug files collected"
         if: always()
