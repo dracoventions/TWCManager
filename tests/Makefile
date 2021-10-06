@@ -27,7 +27,7 @@ mysql_setup:
 	@echo "${bold}${red}(P4/${pre})${reset} ${yellow}Setup MySQL Database"
 	@sudo /home/docker/.pyenv/shims/python3 scripts/mysql_setup.py
 	@echo "${bold}${red}(P5/${pre})${reset} ${yellow}Environment Preparation"
-	@sudo /home/docker/.pyenv/shims/python3 env_preparation.py
+	@sudo /home/docker/.pyenv/shims/python3 pre-flight/env_preparation.py
 	@echo "${bold}${red}(P6/${pre})${reset} ${yellow}Set up SQLite Database"
 	@sudo -u twcmanager /home/docker/.pyenv/shims/python3 scripts/sqlite_setup.py
 
@@ -35,9 +35,12 @@ service_logs:
 	journalctl -u twcmanager.service
 
 run_service:
-	cd .. && sudo cp contrib/twcmanager.service /etc/systemd/system/twcmanager.service
+	@cd .. && sudo cp contrib/twcmanager.service /etc/systemd/system/twcmanager.service
 	@sudo apt-get install -y systemctl
+	@echo "${bold}${red}(M1/2)${reset} ${yellow}Running TWCManager"
 	@sudo /usr/bin/systemctl enable twcmanager.service --now
+	@sleep 5
+	@systemctl status twcmanager.service --full
 
 run_twcmanager:
 	@echo "${bold}${red}(M1/2)${reset} ${yellow}Running TWCManager"
