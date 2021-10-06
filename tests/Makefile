@@ -36,6 +36,7 @@ service_logs:
 
 run_service:
 	cd .. && sudo cp contrib/twcmanager.service /etc/systemd/system/twcmanager.service
+	@sudo apt-get install -y systemctl
 	@sudo /usr/bin/systemctl enable twcmanager.service --now
 
 run_twcmanager:
