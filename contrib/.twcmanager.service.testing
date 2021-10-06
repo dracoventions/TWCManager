@@ -1,0 +1,14 @@
+[Unit]
+Description=Tesla Wall Charger Manager
+
+[Service]
+Type=simple
+User=twcmanager
+WorkingDirectory=/tmp
+ExecStart=/usr/bin/python3 -u -m TWCManager.TWCManager
+Restart=always
+StartLimitInterval=60s
+StartLimitBurst=5
+
+[Install]
+WantedBy=multi-user.target
