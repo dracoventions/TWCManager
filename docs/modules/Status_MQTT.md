@@ -23,6 +23,20 @@ The module uses supplied credentials to connect to the MQTT server, and publishe
 | *prefix*/config/maxAmpsForSlaves | Integer: Total number of amps on power circuit to divide amongst Slave TWCs | 32 |
 | *prefix*/config/minAmpsPerTWC    | Integer: Minimum amps to charge per TWC (from config) | 6 |
 
+### Rate limiting
+
+By default, the MQTT Status Module will limit one update per topic per 60 seconds. The reason for this is that MQTT publishing is an asynchronous process. Updates are queued and sent in order to the MQTT broker. If there was a delay in publishing and acknowledging the MQTT messages on the broker side, the queue would continue to grow and the message buffer would consume more memory until it eventually ran out of available memory.
+
+This isn't going to be an issue in all environments, but defaulting to a configuration that cannot effectively handle latency would be a worse situation. If you'd like to reduce or even disable the rate limiting, you can adjust it in the configuration file:
+
+```
+"status": {
+  "MQTT": {
+    "ratelimit": {number in seconds for how many seconds per update per topic, or 0 to disable)
+  }
+}
+```
+
 ### State Codes
 
 The following state codes are reported by Slave TWCs:
