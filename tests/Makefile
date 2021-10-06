@@ -35,9 +35,8 @@ service_logs:
 	journalctl -u twcmanager.service
 
 run_service:
-	echo "Run service here"
 	cd .. && sudo cp contrib/twcmanager.service /etc/systemd/system/twcmanager.service
-	sudo systemctl enable twcmanager.service --now
+	@sudo /usr/bin/systemctl enable twcmanager.service --now
 
 run_twcmanager:
 	@echo "${bold}${red}(M1/2)${reset} ${yellow}Running TWCManager"
