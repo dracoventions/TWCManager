@@ -638,7 +638,12 @@
         "MQTT": {
             "enabled": false,
             "brokerIP": "192.168.1.1",
-            "topicPrefix": "TWC"
+            "topicPrefix": "TWC",
+
+       # By default we rate-limit per-topic to avoid excessive load on the MQTT server. You are free to reduce the
+       # rate limit value as low as you'd like - zero will disable rate limiting altogether. The default is one
+       # update per topic every 60 seconds
+            "ratelimit": 60,
 
        # Username and password are optional. If your broker requires a username and password to authenticate
        # clients, set them here. Otherwise, leave them commented out
