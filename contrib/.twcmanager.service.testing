@@ -5,10 +5,9 @@ Description=Tesla Wall Charger Manager
 Type=simple
 User=twcmanager
 WorkingDirectory=/tmp
-ExecStart=/home/docker/.pyenv/shims/python3 -u -m TWCManager.TWCManager > /tmp/twcmanager-tests/twcmanager.service.output.log
+ExecStart=/home/docker/.pyenv/shims/python3 -u -m TWCManager.TWCManager
+StandardOutput=file:/tmp/twcmanager-tests/twcmanager.service.stdout.log
+StandardError=file:/tmp/twcmanager-tests/twcmanager.service.stderr.log
 Restart=always
 StartLimitInterval=60s
 StartLimitBurst=5
-
-[Install]
-WantedBy=multi-user.target
