@@ -1397,7 +1397,7 @@ class CarApiVehicle:
 
     # Sync values are updated by an external module such as TeslaMate
     syncTimestamp = 0
-    syncTimeout = (60 * 60)
+    syncTimeout = 60 * 60
     syncLat = 10000
     syncLon = 10000
     syncState = "asleep"
@@ -1423,8 +1423,18 @@ class CarApiVehicle:
         # we switch back to using the API
 
         while True:
-            if self.syncSource != "TeslaAPI" and self.self.is_awake() and (self.syncTimestamp < (time.time() - self.syncTimeout)):
-                logger.error("Data from " + self.syncSource + " for " + self.name + " is stale. Switching back to TeslaAPI")
+            if (
+                self.syncSource != "TeslaAPI"
+                and self.self.is_awake()
+                and (self.syncTimestamp < (time.time() - self.syncTimeout))
+            ):
+                logger.error(
+                    "Data from "
+                    + self.syncSource
+                    + " for "
+                    + self.name
+                    + " is stale. Switching back to TeslaAPI"
+                )
                 self.syncSource = "TeslaAPI"
             time.sleep(self.syncTimeout)
 
@@ -1465,10 +1475,17 @@ class CarApiVehicle:
     def is_awake(self):
         if self.syncSource == "TeslaAPI":
             url = "https://owner-api.teslamotors.com/api/1/vehicles/" + str(self.ID)
-            (result, response) = self.get_car_api(url, checkReady=False, provesOnline=False)
+            (result, response) = self.get_car_api(
+                url, checkReady=False, provesOnline=False
+            )
             return result and response.get("state", "") == "online"
         else:
-            return (self.syncState == "online" or self.syncState == "charging" or self.syncState == "updating" or self.syncState == "driving")
+            return (
+                self.syncState == "online"
+                or self.syncState == "charging"
+                or self.syncState == "updating"
+                or self.syncState == "driving"
+            )
 
     def get_car_api(self, url, checkReady=True, provesOnline=True):
         if checkReady and not self.ready():
