@@ -15,16 +15,17 @@ class MQTTStatus:
 
     brokerIP = None
     brokerPort = 1883
-    config = None
-    configConfig = None
-    configMQTT = {}
+    __carsCharging = {}
+    __config = None
+    __configConfig = None
+    __configMQTT = {}
     connectionState = 0
-    master = None
+    __master = None
     msgQueue = []
     msgQueueBuffer = []
     msgQueueMax = 16
-    msgRate = {}
-    msgRatePerTopic = 60
+    __msgRate = {}
+    __msgRatePerTopic = 60
     password = None
     status = False
     serverTLS = False
@@ -32,25 +33,34 @@ class MQTTStatus:
     username = None
 
     def __init__(self, master):
-        self.config = master.config
-        self.master = master
+        self.__config = master.config
+        self.__master = master
         try:
-            self.configConfig = self.config["config"]
+            self.__configConfig = self.__config["config"]
         except KeyError:
-            self.configConfig = {}
+            self.__configConfig = {}
         try:
-            self.configMQTT = self.config["status"]["MQTT"]
+            self.__configMQTT = self.__config["status"]["MQTT"]
         except KeyError:
-            self.configMQTT = {}
-        self.status = self.configMQTT.get("enabled", False)
-        self.brokerIP = self.configMQTT.get("brokerIP", None)
-        self.topicPrefix = self.configMQTT.get("topicPrefix", None)
-        self.username = self.configMQTT.get("username", None)
-        self.password = self.configMQTT.get("password", None)
+            self.__configMQTT = {}
+        self.status = self.__configMQTT.get("enabled", False)
+        self.brokerIP = self.__configMQTT.get("brokerIP", None)
+        self.topicPrefix = self.__configMQTT.get("topicPrefix", None)
+        self.username = self.__configMQTT.get("username", None)
+        self.password = self.__configMQTT.get("password", None)
+        self.__msgRatePerTopic = int(self.__configMQTT.get("ratelimit", 60))
 
         # Unload if this module is disabled or misconfigured
         if (not self.status) or (not self.brokerIP):
-            self.master.releaseModule("lib.TWCManager.Status", "MQTTStatus")
+            self.__master.releaseModule("lib.TWCManager.Status", "MQTTStatus")
+
+    def handleCarsCharging(self, twc, twident, value):
+        # When an update comes in for the carsCharging value, check if it was previously 1 for the
+        # given TWC, and if it is now 0. If so, zero out relevant topics related to charge rate
+        if self.__carsCharging.get(twident, "0") != str(value):
+            if str(value) == "0":
+                self.setStatus(twc, "amps_in_use", "ampsInUse", 0, "A")
+        self.__carsCharging[twident] = str(value)
 
     def setStatus(self, twcid, key_underscore, key_camelcase, value, unit):
         if self.status:
@@ -64,17 +74,25 @@ class MQTTStatus:
             topic = self.topicPrefix + "/" + twident
             topic = topic + "/" + key_camelcase
 
+            # We have a special case where we perform extra handling of the carsCharging topic
+            # This is because, once carsCharging goes from 1 to 0 for a given TWC, we no longer
+            # get any status events about charge rate, but it will effectively be 0
+            # So in this case, if we see carsCharging drop from 1 to 0, we publish 0 for the
+            # sensors that should be updated as a result
+            if key_camelcase == "carsCharging":
+                self.handleCarsCharging(twcid, twident, value)
+
             # Perform rate limiting first (as there are some very chatty topics).
             # For each message that comes through, we take the topic name and check
             # when we last sent a message. If it was less than msgRatePerTopic
             # seconds ago, we dampen it.
-            if topic in self.msgRate:
-                if (time.time() - self.msgRate[topic]) < self.msgRatePerTopic:
+            if self.__msgRatePerTopic and topic in self.__msgRate:
+                if (time.time() - self.__msgRate[topic]) < self.__msgRatePerTopic:
                     return True
                 else:
-                    self.msgRate[topic] = time.time()
+                    self.__msgRate[topic] = time.time()
             else:
-                self.msgRate[topic] = time.time()
+                self.__msgRate[topic] = time.time()
 
             # Now, we push the message that we'd like to send into the
             # list of messages to be published once a connection is established
