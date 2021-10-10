@@ -159,7 +159,8 @@ jobs:
         if: always()
         run: make upload
 
-  twcmanager-python3_7:
+  twcmanager-python3_7_direct:
+    name: Python 3.7 - Run Direct
     runs-on: [ "self-hosted", "python3.7.10" ]
     steps:
       - name: "Checkout Repository"
