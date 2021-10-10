@@ -178,29 +178,70 @@ class TeslaMateVehicle:
         if topic[0] == self.__mqtt_prefix and topic[1] == "cars":
 
             if topic[3] == "battery_level":
-                pass
+                if self.vehicles.get(topic[2], None):
+                    self.vehicles[topic[2]].batteryLevel = int(payload)
+                    self.vehicles[topic[2]].lastChargeStatusTime = time.time()
+                    self.vehicles[topic[2]].syncTimestamp = time.time()
+
+            elif topic[3] == "charge_limit_soc":
+                if self.vehicles.get(topic[2], None):
+                    self.vehicles[topic[2]].chargeLimit = int(payload)
+                    self.vehicles[topic[2]].lastChargeStatusTime = time.time()
+                    self.vehicles[topic[2]].syncTimestamp = time.time()
+
             elif topic[3] == "display_name":
                 # We can map the car ID in TeslaMate to the vehicle
                 # in the Tesla API module
+                self.updateVehicles(topic[2], payload)
+
+            elif topic[3] == "latitude":
+
                 if self.vehicles.get(topic[2], None):
-                    # We already have this vehicle mapped
-                    pass
-                else:
-                    for apiVehicle in self.__master.getModuleByName(
-                        "TeslaAPI"
-                    ).getCarApiVehicles():
-                        if apiVehicle.name == payload:
-                            # Found a match
-                            logger.info(
-                                "Vehicle "
-                                + payload
-                                + " telemetry being provided by TeslaMate"
-                            )
-                            self.vehicle[topic[2]] = apiVehicle
+                    self.vehicles[topic[2]].syncLat = float(payload)
+                    self.vehicles[topic[2]].syncTimestamp = time.time()
+
+            elif topic[3] == "longitude":
+
+                if self.vehicles.get(topic[2], None):
+                    self.vehicles[topic[2]].syncLon = float(payload)
+                    self.vehicles[topic[2]].syncTimestamp = time.time()
+
+            elif topic[3] == "state":
+
+                if self.vehicles.get(topic[2], None):
+                    self.vehicles[topic[2]].syncState = payload
+                    self.vehicles[topic[2]].syncTimestamp = time.time()
+
+            elif topic[3] == "time_to_full_charge":
+                if self.vehicles.get(topic[2], None):
+                    self.vehicles[topic[2]].timeToFullCharge = int(payload)
+                    self.vehicles[topic[2]].lastChargeStatusTime = time.time()
+                    self.vehicles[topic[2]].syncTimestamp = time.time()
 
             else:
-                # logger.info("MQTT MESSAGE: " + message.topic)
                 pass
 
     def mqttSubscribe(self, client, userdata, mid, granted_qos):
         logger.info("Subscribe operation completed with mid " + str(mid))
+
+    def updateVehicles(self, vehicle_id, vehicle_name):
+        # Called by mqttMessage each time we get the display_name topic
+        # We check to see if this aligns with a vehicle we know of from the API
+
+        if self.vehicles.get(vehicle_id, None):
+            # We already have this vehicle mapped
+            pass
+        else:
+            for apiVehicle in self.__master.getModuleByName(
+                "TeslaAPI"
+            ).getCarApiVehicles():
+                if apiVehicle.name == vehicle_name:
+                    # Found a match
+                    self.vehicles[vehicle_id] = apiVehicle
+                    self.vehicles[vehicle_id].syncSource = "TeslaMateVehicle"
+
+                    logger.info(
+                        "Vehicle "
+                        + vehicle_name
+                        + " telemetry being provided by TeslaMate"
+                    )

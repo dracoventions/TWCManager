@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import requests
+from threading import Thread
 import time
 from urllib.parse import parse_qs
 from ww import f
@@ -17,7 +18,7 @@ class TeslaAPI:
     __apiCaptcha = None
     __apiCaptchaCode = None
     __apiCaptchaInterface = None
-    authURL = "https://auth.tesla.com/oauth2/v3/authorize"
+    __authURL = "https://auth.tesla.com/oauth2/v3/authorize"
     callbackURL = "https://auth.tesla.com/void/callback"
     captchaURL = "https://auth.tesla.com/captcha"
     carApiLastErrorTime = 0
@@ -131,7 +132,7 @@ class TeslaAPI:
             )
 
             self.session = requests.Session()
-            self.__resp = self.session.get(self.authURL, params=self.params)
+            self.__resp = self.session.get(self.__authURL, params=self.params)
 
             if self.__resp.ok and "<title>" in self.__resp.text:
                 logger.log(
@@ -218,7 +219,7 @@ class TeslaAPI:
 
         for attempt in range(self.maxLoginRetries):
             resp = self.session.post(
-                self.authURL, params=self.params, data=data, allow_redirects=False
+                self.__authURL, params=self.params, data=data, allow_redirects=False
             )
             if resp.ok and (resp.status_code == 302 or "<title>" in resp.text):
                 logger.log(
@@ -1366,15 +1367,13 @@ class TeslaAPI:
 
 
 class CarApiVehicle:
-    import time
-    import requests
-    import json
 
     carapi = None
-    config = None
+    __config = None
     debuglevel = 0
     ID = None
     name = ""
+    syncSource = "TeslaAPI"
     VIN = ""
 
     firstWakeAttemptTime = 0
@@ -1396,12 +1395,38 @@ class CarApiVehicle:
     atHome = False
     timeToFullCharge = 0.0
 
+    # Sync values are updated by an external module such as TeslaMate
+    syncTimestamp = 0
+    syncTimeout = (60 * 60)
+    syncLat = 10000
+    syncLon = 10000
+    syncState = "asleep"
+
     def __init__(self, json, carapi, config):
         self.carapi = carapi
-        self.config = config
+        self.__config = config
         self.ID = json["id"]
         self.VIN = json["vin"]
         self.name = json["display_name"]
+
+        # Launch sync monitoring thread
+        Thread(target=self.checkSyncNotStale).start()
+
+    def checkSyncNotStale(self):
+        # Once an external system begins providing sync functionality to defer
+        # Tesla API queries and provide already fetched information, there is a
+        # potential condition which may occur in which the external system goes
+        # away and leaves us with stale data.
+
+        # To guard against this, this threaded function will loop every x minutes
+        # and check the last sync timestamp. If it has not updated in that interval,
+        # we switch back to using the API
+
+        while True:
+            if self.syncSource != "TeslaAPI" and self.self.is_awake() and (self.syncTimestamp < (time.time() - self.syncTimeout)):
+                logger.error("Data from " + self.syncSource + " for " + self.name + " is stale. Switching back to TeslaAPI")
+                self.syncSource = "TeslaAPI"
+            time.sleep(self.syncTimeout)
 
     def ready(self):
         if self.carapi.getCarApiRetryRemaining(self):
@@ -1438,9 +1463,12 @@ class CarApiVehicle:
 
     # Permits opportunistic API requests
     def is_awake(self):
-        url = "https://owner-api.teslamotors.com/api/1/vehicles/" + str(self.ID)
-        (result, response) = self.get_car_api(url, checkReady=False, provesOnline=False)
-        return result and response.get("state", "") == "online"
+        if self.syncSource == "TeslaAPI":
+            url = "https://owner-api.teslamotors.com/api/1/vehicles/" + str(self.ID)
+            (result, response) = self.get_car_api(url, checkReady=False, provesOnline=False)
+            return result and response.get("state", "") == "online"
+        else:
+            return (self.syncState == "online" or self.syncState == "charging" or self.syncState == "updating" or self.syncState == "driving")
 
     def get_car_api(self, url, checkReady=True, provesOnline=True):
         if checkReady and not self.ready():
@@ -1505,50 +1533,66 @@ class CarApiVehicle:
 
     def update_location(self, cacheTime=60):
 
-        url = "https://owner-api.teslamotors.com/api/1/vehicles/"
-        url = url + str(self.ID) + "/data_request/drive_state"
+        if self.syncSource == "TeslaAPI":
+            url = "https://owner-api.teslamotors.com/api/1/vehicles/"
+            url = url + str(self.ID) + "/data_request/drive_state"
 
-        now = time.time()
+            now = time.time()
 
-        if now - self.lastDriveStatusTime < cacheTime:
-            return True
+            if now - self.lastDriveStatusTime < cacheTime:
+                return True
 
-        try:
-            (result, response) = self.get_car_api(url)
-        except TypeError:
-            logger.log(logging.error, "Got None response from get_car_api()")
-            return False
+            try:
+                (result, response) = self.get_car_api(url)
+            except TypeError:
+                logger.log(logging.error, "Got None response from get_car_api()")
+                return False
 
-        if result:
-            self.lastDriveStatusTime = now
-            self.lat = response["latitude"]
-            self.lon = response["longitude"]
+            if result:
+                self.lastDriveStatusTime = now
+                self.lat = response["latitude"]
+                self.lon = response["longitude"]
+                self.atHome = self.carapi.is_location_home(self.lat, self.lon)
+
+            return result
+
+        else:
+
+            self.lat = self.syncLat
+            self.lon = self.syncLon
             self.atHome = self.carapi.is_location_home(self.lat, self.lon)
 
-        return result
-
-    def update_charge(self):
-        url = "https://owner-api.teslamotors.com/api/1/vehicles/"
-        url = url + str(self.ID) + "/data_request/charge_state"
-
-        now = time.time()
-
-        if now - self.lastChargeStatusTime < 60:
             return True
 
-        try:
-            (result, response) = self.get_car_api(url)
-        except TypeError:
-            logger.log(logging.error, "Got None response from get_car_api()")
-            return False
+    def update_charge(self):
 
-        if result:
-            self.lastChargeStatusTime = time.time()
-            self.chargeLimit = response["charge_limit_soc"]
-            self.batteryLevel = response["battery_level"]
-            self.timeToFullCharge = response["time_to_full_charge"]
+        if self.syncSource == "TeslaAPI":
 
-        return result
+            url = "https://owner-api.teslamotors.com/api/1/vehicles/"
+            url = url + str(self.ID) + "/data_request/charge_state"
+
+            now = time.time()
+
+            if now - self.lastChargeStatusTime < 60:
+                return True
+
+            try:
+                (result, response) = self.get_car_api(url)
+            except TypeError:
+                logger.log(logging.error, "Got None response from get_car_api()")
+                return False
+
+            if result:
+                self.lastChargeStatusTime = time.time()
+                self.chargeLimit = response["charge_limit_soc"]
+                self.batteryLevel = response["battery_level"]
+                self.timeToFullCharge = response["time_to_full_charge"]
+
+            return result
+
+        else:
+
+            return True
 
     def apply_charge_limit(self, limit):
         if self.stopTryingToApplyLimit:

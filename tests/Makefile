@@ -40,7 +40,6 @@ run_service:
 	@echo "${bold}${red}(M1/2)${reset} ${yellow}Running TWCManager"
 	@sudo /usr/bin/systemctl enable twcmanager.service --now
 	@sleep 5
-	@journalctl -u twcmanager.service
 	@systemctl status twcmanager.service --full
 
 run_twcmanager:

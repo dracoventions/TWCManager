@@ -4,7 +4,11 @@
 
 <a href="https://github.com/adriankumpf/teslamate">TeslaMate</a> is a self-hosted Tesla datalogger.
 
-The purpose of this integration is to allow users of TWCManager who also use <a href="https://github.com/adriankumpf/teslamate">TeslaMate</a>
+The purpose of this integration is to allow users of TWCManager who also use <a href="https://github.com/adriankumpf/teslamate">TeslaMate</a> to leverage on the work already performed by TeslaMate to fetch vehicle status, significantly reducing the number of Tesla API calls that TWCManager needs to make.
+
+With both the API Token and Telemetry options enabled, we're effectively using TeslaMate to manage our API login credentials and fetch all of our vehicle status updates. The only requests that TWCManager would need to send are the initial API call to list all vehicles in your account, and commands (such as wake_up, charge, etc).
+
+There is no requirement to use both sync functions when integrating with TeslaMate. You can sync only tokens, or only telemetry.
 
 ## Integrations
 
@@ -58,7 +62,7 @@ service postgresql reload
 
 ##### Docker Installation
 
-To be updated
+To be updated - I am not using this configuration, I welcome feedback if you do.
 
 ### Telemetry Information
 
@@ -76,6 +80,10 @@ Note however that TeslaMate has a health indicator which indicates whether there
 
 IN PROGRESS
 
-Currently, we do not detect if TeslaMate has stopped providing data after the connection. If this occurs, currently you'll need to turn off TeslaMate in the config. Functionality for this is in progress.
+It is possible for TeslaMate to lose connection to the MQTT server and for the data served to become stale. If this occurs, TWCManager will detect it within 1 hour of the data going stale if the vehicle was online at the time. Currently, if the vehicle was offline at the time it will not be detected. 
 
-Note: This functionality is not yet available. This guide will be updated once it is.
+Once this is detected, TWCManager will print an error message similar to the below, and revert to API polling again:
+
+```
+18:03:25 🚗 TeslaAPI 40 Data from TeslaMateVehicle for *display_name* is stale. Switching back to TeslaAPI
+```
