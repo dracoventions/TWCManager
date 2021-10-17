@@ -658,7 +658,7 @@
             "db_host": "192.168.1.1",
             "db_name": "teslamate",
             "db_pass": "teslamate",
-            "db_user": "teslamate"
+            "db_user": "teslamate",
             "syncTelemetry": false,
             "mqtt_host": "192.168.1.1",
             "mqtt_user": "teslamate",

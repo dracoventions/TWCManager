@@ -11,3 +11,6 @@ StandardError=file:/tmp/twcmanager-tests/twcmanager.service.stderr.log
 Restart=always
 StartLimitInterval=60s
 StartLimitBurst=5
+
+[Install]
+WantedBy=multi-user.target
