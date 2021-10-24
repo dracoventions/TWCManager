@@ -1,6 +1,6 @@
 all: test_direct
 test_direct: general_prereqs mqtt_setup mysql_setup run_twcmanager wait preflight api ems
-test_service: general_prereqs mqtt_setup mysql_setup run_service wait preflight api ems service_logs
+test_service: general_prereqs mqtt_setup mysql_setup run_service wait preflight api ems
 
 bold:=$(shell tput -T ansi bold)
 red:=$(shell tput -T ansi setaf 1)
@@ -30,9 +30,6 @@ mysql_setup:
 	@sudo /home/docker/.pyenv/shims/python3 pre-flight/env_preparation.py
 	@echo "${bold}${red}(P6/${pre})${reset} ${yellow}Set up SQLite Database"
 	@sudo -u twcmanager /home/docker/.pyenv/shims/python3 scripts/sqlite_setup.py
-
-service_logs:
-	journalctl -u twcmanager.service
 
 run_service:
 	@cd .. && sudo cp contrib/.twcmanager.service.testing /etc/systemd/system/twcmanager.service

@@ -1284,7 +1284,7 @@ class TeslaAPI:
             "Authorization": "Bearer " + self.getCarApiBearerToken(),
         }
 
-        body = {"amps": charge_rate}
+        body = {"charging_amps": charge_rate}
 
         try:
             req = requests.post(url, headers=headers, json=body)
