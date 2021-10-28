@@ -1,6 +1,7 @@
 all: test_direct
 test_direct: general_prereqs mqtt_setup mysql_setup run_twcmanager wait preflight api ems
 test_service: general_prereqs mqtt_setup mysql_setup run_service wait preflight api ems
+test_service_nofail: general_prereqs mqtt_setup mysql_setup run_service_nofail wait
 
 bold:=$(shell tput -T ansi bold)
 red:=$(shell tput -T ansi setaf 1)
@@ -38,6 +39,15 @@ run_service:
 	@sudo /usr/bin/systemctl enable twcmanager.service --now
 	@sleep 5
 	@systemctl status twcmanager.service --full
+
+run_service_nofail:
+	@cd .. && sudo cp contrib/.twcmanager.service.testing /etc/systemd/system/twcmanager.service
+	@sudo apt-get install -y systemctl > /dev/null
+	@echo "${bold}${red}(M1/2)${reset} ${yellow}Running TWCManager"
+	@sudo /usr/bin/systemctl enable twcmanager.service --now
+	@sleep 5
+	@systemctl status twcmanager.service --full || exit 0
+        cat /var/log/syslog
 
 run_twcmanager:
 	@echo "${bold}${red}(M1/2)${reset} ${yellow}Running TWCManager"

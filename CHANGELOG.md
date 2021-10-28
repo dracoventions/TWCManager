@@ -17,6 +17,7 @@ This document logs the changes per release of TWCManager.
  * (@ngardiner) - Add Tesla API debug interface to allow sending Tesla API commands
  * (@ngardiner) - Added TeslaMate sync functionality to allow sync of telemetry and API token details
  * (@MikeBishop) - Restrict dampening to green policies only, and prefer to keep charging vs stop/start
+ * (@ngardiner) - Reduce potential Tesla API backoff time
 
 ## v1.2.3 - 2021-08-10
 

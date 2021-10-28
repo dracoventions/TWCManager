@@ -153,7 +153,7 @@ jobs:
         run: make webfiles
 
       - name: "Run Test Suite"
-        run: make test_service
+        run: make test_service_nofail
 
       - name: "Upload any debug files collected"
         if: always()
@@ -177,6 +177,32 @@ jobs:
 
       - name: "Run Test Suite"
         run: make tests
+
+      - name: "Upload any debug files collected"
+        if: always()
+        run: make upload
+
+  twcmanager-python3_7_service:
+    name: Python 3.7 - Run as a Service
+    runs-on: [ "self-hosted", "python3.7.10" ]
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v2
+
+      - name: "Upgrade setuptools"
+        run: pip3 install --upgrade setuptools
+
+      - name: "Build Project"
+        run: CI=1 make webbuild
+
+      - name: "Deploy Test Configuration"
+        run: make testconfig
+
+      - name: "Install Legacy Web Files"
+        run: make webfiles
+
+      - name: "Run Test Suite"
+        run: make test_service
 
       - name: "Upload any debug files collected"
         if: always()
