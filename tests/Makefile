@@ -47,7 +47,7 @@ run_service_nofail:
 	@sudo /usr/bin/systemctl enable twcmanager.service --now
 	@sleep 5
 	@systemctl status twcmanager.service --full || exit 0
-        cat /var/log/syslog
+	cat /var/log/syslog
 
 run_twcmanager:
 	@echo "${bold}${red}(M1/2)${reset} ${yellow}Running TWCManager"
