@@ -13,6 +13,9 @@ class TWCSlave:
     config = None
     configConfig = None
     TWCID = None
+    __lastAPIAmpsValue = 0
+    __lastAPIAmpsRequest = time.time() + 30
+    __lastAPIAmpsRepeat = 0
     lastVINQuery = 0
     maxAmps = None
     master = None
@@ -748,7 +751,9 @@ class TWCSlave:
                         + str(self.minAmpsTWCSupports)
                         + " (self.minAmpsTWCSupports)"
                     )
+
                     desiredAmpsOffered = self.minAmpsTWCSupports
+
                 else:
                     # There is not enough power available to give each car
                     # minAmpsToOffer, so don't offer power to any cars. Alternately,
@@ -797,6 +802,26 @@ class TWCSlave:
                 # so we need to set desiredAmpsOffered to 0
                 logger.debug("no cars charging, setting desiredAmpsOffered to 0")
                 desiredAmpsOffered = 0
+        elif int(self.master.settings.get("chargeRateControl", 1)) == 2:
+            # Exclusive control is given to the Tesla API to control Charge Rate
+            # We offer the maximum wiring amps from the TWC, and ask the API to control charge rate
+
+            # Call the Tesla API to set the charge rate for vehicle connected to this TWC
+            # TODO: Identify vehicle
+            if ((int(desiredAmpsOffered) == self.__lastAPIAmpsValue and (self.__lastAPIAmpsRepeat > 50 or self.__lastAPIAmpsRepeat % 10 != 0)) or self.__lastAPIAmpsRequest > time.time() - 15):
+                # Unfortunately some API requests just don't result in the desired amperage being set, so we allow one in 10
+                # to be repeated up to 50, as long as none had been sent in the last 15 seconds
+                # This results in a small number of repeat requests sent to the API each time
+                # we change the target charge rate, but adds stability to the process
+                self.__lastAPIAmpsRepeat += 1
+            else:
+                self.__lastAPIAmpsRequest = time.time()
+                self.__lastAPIAmpsRepeat = 0
+                self.__lastAPIAmpsValue = int(desiredAmpsOffered)
+                self.master.getModuleByName("TeslaAPI").setChargeRate(int(desiredAmpsOffered))
+
+            desiredAmpsOffered = int(self.configConfig.get("wiringMaxAmpsPerTWC", 6))
+
         else:
             # We can tell the TWC how much power to use in 0.01A increments, but
             # the car will only alter its power in larger increments (somewhere
