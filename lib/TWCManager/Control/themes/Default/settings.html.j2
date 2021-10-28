@@ -96,6 +96,20 @@
           </td>
         </tr>
         <tr>
+          <th>Charge Rate Control:</th>
+          <td>
+            {{ optionList(
+              [
+                [1, "Use TWC Exclusively to control Charge Rate"],
+                [2, "Use Tesla API Exclusively to control Charge Rate"],
+              ],
+              {
+                "name": "chargeRateControl",
+                "value": master.settings.get("chargeRateControl", "1")
+              })|safe }}
+          </td>
+        </tr>
+        <tr>
           <th>Consumption Offsets</th>
           <td>
             <table id="consumptionOffsets">
