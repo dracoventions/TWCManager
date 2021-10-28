@@ -82,6 +82,9 @@ test_direct:
 test_service:
 	cd tests && make test_service
 
+test_service_nofail:
+	cd tests && make test_service_nofail
+
 tests:
 	cd tests && make
 
