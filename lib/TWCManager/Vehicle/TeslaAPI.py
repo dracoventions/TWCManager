@@ -1274,13 +1274,13 @@ class TeslaAPI:
         self.carApiTokenExpireTime = value
         return True
 
-    def setChargeRate(self, charge_rate, vehicle = None):
+    def setChargeRate(self, charge_rate, vehicle=None):
 
         # As a fallback to allow initial implementation of the charge rate functionality for single car installs,
         # If no vehcle is specified, we take the first returned to us.
 
         if not vehicle:
-           vehicle = self.getCarApiVehicles()[0]
+            vehicle = self.getCarApiVehicles()[0]
 
         vehicle.lastAPIAccessTime = time.time()
 

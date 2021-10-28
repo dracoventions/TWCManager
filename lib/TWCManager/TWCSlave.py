@@ -808,7 +808,12 @@ class TWCSlave:
 
             # Call the Tesla API to set the charge rate for vehicle connected to this TWC
             # TODO: Identify vehicle
-            if ((int(desiredAmpsOffered) == self.__lastAPIAmpsValue and (self.__lastAPIAmpsRepeat > 50 or self.__lastAPIAmpsRepeat % 10 != 0)) or self.__lastAPIAmpsRequest > time.time() - 15):
+            if (
+                int(desiredAmpsOffered) == self.__lastAPIAmpsValue
+                and (
+                    self.__lastAPIAmpsRepeat > 50 or self.__lastAPIAmpsRepeat % 10 != 0
+                )
+            ) or self.__lastAPIAmpsRequest > time.time() - 15:
                 # Unfortunately some API requests just don't result in the desired amperage being set, so we allow one in 10
                 # to be repeated up to 50, as long as none had been sent in the last 15 seconds
                 # This results in a small number of repeat requests sent to the API each time
@@ -818,7 +823,9 @@ class TWCSlave:
                 self.__lastAPIAmpsRequest = time.time()
                 self.__lastAPIAmpsRepeat = 0
                 self.__lastAPIAmpsValue = int(desiredAmpsOffered)
-                self.master.getModuleByName("TeslaAPI").setChargeRate(int(desiredAmpsOffered))
+                self.master.getModuleByName("TeslaAPI").setChargeRate(
+                    int(desiredAmpsOffered)
+                )
 
             desiredAmpsOffered = int(self.configConfig.get("wiringMaxAmpsPerTWC", 6))
 
