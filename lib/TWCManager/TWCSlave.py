@@ -825,11 +825,12 @@ class TWCSlave:
                 self.__lastAPIAmpsValue = int(desiredAmpsOffered)
 
                 # Determine vehicle to control
-                targetVehicle = None if self.getLastVehicle() is None else self.getLastVehicle()
+                targetVehicle = (
+                    None if self.getLastVehicle() is None else self.getLastVehicle()
+                )
 
                 self.master.getModuleByName("TeslaAPI").setChargeRate(
-                    int(desiredAmpsOffered),
-                    targetVehicle
+                    int(desiredAmpsOffered), targetVehicle
                 )
 
             desiredAmpsOffered = int(self.configConfig.get("wiringMaxAmpsPerTWC", 6))
