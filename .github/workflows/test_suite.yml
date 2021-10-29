@@ -189,9 +189,6 @@ jobs:
       - name: "Checkout Repository"
         uses: actions/checkout@v2
 
-      - name: "Upgrade setuptools"
-        run: pip3 install --upgrade setuptools
-
       - name: "Build Project"
         run: CI=1 make webbuild
 
