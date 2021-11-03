@@ -47,7 +47,7 @@ class SQLiteHandler(logging.Handler):
         conn = None
         try:
             conn = sqlite3.connect(self.db, uri=True)
-        except sqlite3.OperationalError:
+        except sqlite3.OperationalError as e:
             logger.exception("Error Opening SQLite3 Databaase: %s", e)
 
         if conn:
