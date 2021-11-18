@@ -11,7 +11,7 @@ The addConsumptionOffset API command is accompanied by a payload which describes
 ```
 {
   "offsetName": "WattsOffset",
-  "chargeNowRate": 500.5,
+  "offsetValue": 500.5,
   "offsetUnit": "W"
 }
 ```
@@ -22,7 +22,7 @@ The addConsumptionOffset API command is accompanied by a payload which describes
 An example of how to call this function via cURL is:
 
 ```
-curl -X POST -d '{ "offsetName": "WattsOffset", "chargeNowRate": 500.5, "offsetUnit": "W" } http://192.168.1.1:8080/api/addConsumptionOffset
+curl -X POST -d '{ "offsetName": "WattsOffset", "offsetValue": 500.5, "offsetUnit": "W" } http://192.168.1.1:8080/api/addConsumptionOffset
 
 ```
 

@@ -23,7 +23,7 @@ jobs:
         run: make webfiles
 
       - name: "Run Test Suite"
-        run: make tests
+        run: make test_direct
 
       - name: "Upload any debug files collected"
         if: always()
@@ -49,7 +49,7 @@ jobs:
         run: make webfiles
 
       - name: "Run Test Suite"
-        run: make test_service
+        run: make test_service_nofail
 
       - name: "Upload any debug files collected"
         if: always()
@@ -101,7 +101,7 @@ jobs:
         run: make webfiles
 
       - name: "Run Test Suite"
-        run: make test_service
+        run: make test_service_nofail
 
       - name: "Upload any debug files collected"
         if: always()
@@ -176,7 +176,7 @@ jobs:
         run: make webfiles
 
       - name: "Run Test Suite"
-        run: make tests
+        run: make test_direct
 
       - name: "Upload any debug files collected"
         if: always()
@@ -199,7 +199,7 @@ jobs:
         run: make webfiles
 
       - name: "Run Test Suite"
-        run: make test_service
+        run: make test_service_nofail
 
       - name: "Upload any debug files collected"
         if: always()
