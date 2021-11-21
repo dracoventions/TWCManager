@@ -65,7 +65,7 @@ logging.INFO9 = 12
 logging.DEBUG2 = 9
 
 
-logger = logging.getLogger("TWCManager")
+logger = logging.getLogger("\u26FD Manager")
 
 # Define available modules for the instantiator
 # All listed modules will be loaded at boot time
@@ -83,6 +83,7 @@ modules_available = [
     "Interface.TCP",
     "Policy.Policy",
     "Vehicle.TeslaAPI",
+    "Vehicle.TeslaMateVehicle",
     "Control.WebIPCControl",
     "Control.HTTPControl",
     "Control.MQTTControl",
