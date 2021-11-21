@@ -604,8 +604,18 @@
           "uuidPhotovoltaikW": "00000006-0002-1570-ffff-0123456789ab",
           # Consumption from grid as positive values or Push to grid as negative values.
           "uuidTotalGridW": "1cbbe494-a049-11eb-bcbc-0242ac130002"
+        },
+        # The URL module allows fetching of consumption and generation data from URL items.
+        # If you do not track one of these values (generation or consumption) via URL, leave
+        # the parameter blank, and it will not be retrieved.
+        # Full URLs should use format http[s]://abc/def/[consumptionItemValue|generationItemValue]
+        "URL": {
+          "enabled": false,
+          "url": "http(s)://your/base/url/without/slash/at/end",
+          "consumptionItem": "Consumption item name",
+          "generationItem": "Generation item name"
         }
-    },
+      },
 
     # Status plugins allow us to export status detail out of TWCManager.
     # This will use interfaces such as MQTT or HomeAssistant API to update status for charging, power draw, etc.
