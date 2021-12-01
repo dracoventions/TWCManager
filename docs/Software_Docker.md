@@ -36,9 +36,9 @@ You may need to perform some configuration of TWCManager in your environment.
 
 The default ```docker-compose.yml``` file assumes that you will be using Serial interface ```/dev/ttyUSB0``` on the host machine as the serial port to communicate with the TWCs you are managing. If this is not the case, you will need to edit the file and specify the correct interface.
 
-   * /etc/twcmanager/config.json
-
 The default  ```docker-compose.yml``` file also contains a default timezone Environment variable, commented out. Some systems will not require this to be set, however if you find the graphs and schedules are operating in a different timezone to your location (such as UTC/GMT), then you can specify the TZ attribute here with the linux value for timezone definitions. Uncomment this line to have it take effect.
+
+   * /etc/twcmanager/config.json
 
 On your first start of the TWCManager docker container, a directory on the host will be created if it does not currently exist, and the default configuration file will be copied there. The location of this volume is ```/etc/twcmanager```. If you need to edit the configuration file, run the Docker container in interactive mode (instructions below), exit with Ctrl+C and then edit the ```/etc/twcmanager/config.json``` file that was created.
 
@@ -86,7 +86,7 @@ The latest image gives you up to the minute access to TWCManager features and ch
 If you are using the ```latest``` Docker image instead of the current Stable version, you can fetch the latest TWCManager updates by executing the following commands:
 
 ```
-suoo docker-compose -f docker-compose.yml down
+sudo docker-compose -f docker-compose.yml down
 sudo docker-compose -f docker-compose.yml pull
 sudo docker-compose -f docker-compose.yml up -d
 ```
