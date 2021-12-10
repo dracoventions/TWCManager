@@ -776,6 +776,11 @@ class TWCMaster:
                 "Built-in": 1,
                 "Members": [],
             }
+        # Fill in old defaults as bridge
+        if not self.settings.get("sunrise", None):
+            self.settings["sunrise"] = 6
+        if not self.settings.get("sunset", None):
+            self.settings["sunset"] = 20
 
     def master_id_conflict(self):
         # We're playing fake slave, and we got a message from a master with our TWCID.
