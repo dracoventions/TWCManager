@@ -516,17 +516,19 @@ def update_sunrise_sunset():
 
         if r.get("sunrise", None):
             try:
-                sunrise = datetime.datetime.astimezone(
+                dtSunrise = datetime.datetime.astimezone(
                     datetime.datetime.fromisoformat(r["sunrise"])
-                ).hour
+                )
+                sunrise = dtSunrise.hour + (1 if dtSunrise.minute >= 30 else 0)
             except:
                 pass
 
         if r.get("sunset", None):
             try:
-                sunset = datetime.datetime.astimezone(
+                dtSunset = datetime.datetime.astimezone(
                     datetime.datetime.fromisoformat(r["sunset"])
-                ).hour
+                )
+                sunset = dtSunset.hour + (1 if dtSunset.minute >= 30 else 0)
             except:
                 pass
 

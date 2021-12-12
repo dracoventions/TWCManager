@@ -46,7 +46,7 @@ class Policy:
         {
             "name": "Track Green Energy",
             "match": ["tm_hour", "tm_hour", "settings.hourResumeTrackGreenEnergy"],
-            "condition": ["gte", "lte", "lte"],
+            "condition": ["gte", "lt", "lte"],
             "value": ["settings.sunrise", "settings.sunset", "tm_hour"],
             "background_task": "checkGreenEnergy",
             "allowed_flex": "config.greenEnergyFlexAmps",
