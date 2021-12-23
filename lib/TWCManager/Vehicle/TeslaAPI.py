@@ -688,6 +688,7 @@ class TeslaAPI:
             self.master.setHomeLat(lat)
             self.master.setHomeLon(lon)
             self.master.queue_background_task({"cmd": "saveSettings"})
+            self.master.queue_background_task({"cmd": "sunrise"})
             return True
 
         # 1 lat or lon = ~364488.888 feet. The exact feet is different depending
