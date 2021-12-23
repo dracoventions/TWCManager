@@ -535,7 +535,6 @@ def update_sunrise_sunset():
         master.settings["sunrise"] = sunrise
         master.settings["sunset"] = sunset
 
-    master.queue_background_task({"cmd": "saveSettings"})
     tomorrow = datetime.datetime.combine(
         datetime.datetime.today(), datetime.time(hour=1)
     ) + datetime.timedelta(days=1)
