@@ -6,12 +6,8 @@ jobs:
   twcmanager-python3_4_direct:
     name: Python 3.4 - Run Direct
     runs-on: [ "self-hosted", "build_host" ]
+    container: runner-image-py3.4.10
     steps:
-      - name: "Setup Python Version"
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.4.10
-          architecture: x64
 
       - name: "Checkout Repository"
         uses: actions/checkout@v2
@@ -63,7 +59,8 @@ jobs:
 
   twcmanager-python3_5_direct:
     name: Python 3.5 - Run Direct
-    runs-on: [ "self-hosted", "python3.5.3" ]
+    runs-on: [ "self-hosted", "build_host" ]
+    container: runner-image-py3.5.3
     steps:
       - name: "Checkout Repository"
         uses: actions/checkout@v2
