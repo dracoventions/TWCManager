@@ -65,7 +65,10 @@ class TeslaMateVehicle:
 
         # If we're set to sync the auth tokens from the database, do this at startup
         if self.syncTokens:
-            self.doSyncTokens()
+            self.doSyncTokens(True)
+
+            # After initial sync, set a timer to continue to sync the tokens every hour
+            resync = threading.Timer(3600, self.doSyncTokens)
 
         if self.syncTelemetry:
             # We delay collecting TeslaMate telemetry for a short period
@@ -103,7 +106,7 @@ class TeslaMateVehicle:
 
         self.__client.loop_start()
 
-    def doSyncTokens(self):
+    def doSyncTokens(self, firstrun = False):
         # Connect to TeslaMate database and synchronize API tokens
 
         if self.__db_host and self.__db_name and self.__db_user and self.__db_pass:
@@ -123,7 +126,10 @@ class TeslaMateVehicle:
                     "Failed to connect to TeslaMate database: " + str(e),
                 )
 
-                self.syncTokens = False
+                if firstrun:
+                    # If this is the first time we try to fetch, disable token sync.
+                    # On subsequent fetches, we don't want to disable token sync as it could be a transient connectivity issue
+                    self.syncTokens = False
 
             if conn:
                 cur = conn.cursor()
@@ -152,7 +158,10 @@ class TeslaMateVehicle:
                 )
 
                 # Connection failed. Turn off token sync
-                self.syncTokens = False
+                if firstrun:
+                    # If this is the first time we try to fetch, disable token sync.
+                    # On subsequent fetches, we don't want to disable token sync as it could be a transient connectivity issue
+                    self.syncTokens = False
 
         else:
 

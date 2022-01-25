@@ -5,8 +5,14 @@ on:
 jobs:
   twcmanager-python3_4_direct:
     name: Python 3.4 - Run Direct
-    runs-on: [ "self-hosted", "python3.4.10" ]
+    runs-on: [ "self-hosted", "build_host" ]
     steps:
+      - name: "Setup Python Version"
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.4.10
+          architecture: x64
+
       - name: "Checkout Repository"
         uses: actions/checkout@v2
 
