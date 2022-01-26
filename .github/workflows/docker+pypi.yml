@@ -1,5 +1,9 @@
 name: "Create PyPi Package and Docker Image"
 
+defaults:
+  run:
+    working-directory: pypi
+
 on:
   push:
     branches:

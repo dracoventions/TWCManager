@@ -15,7 +15,8 @@ setup(
         "commentjson >= 0.8.3; python_version >= '3.6'",
         "cryptography==2.1.4; python_version < '3.6'",
         "cryptography<3.4; python_version >= '3.6'",
-        "growattServer>=1.0.0",
+        "growattServer<=1.1.0; python_version == '3.4'",
+        "growattServer>=1.0.0; python_version >= '3.5'",
         "jinja2==2.11.2; python_version == '3.4'",
         "jinja2==2.11.2; python_version == '3.5'",
         "jinja2>=2.11.2; python_version >= '3.6'",
@@ -36,7 +37,8 @@ setup(
         "sysv_ipc >= 1.0.1; python_version >= '3.6'",
         "termcolor>=1.1.0",
         "websockets==7.0; python_version < '3.6'",
-        "websockets>=9.1; python_version >= '3.6'",
+        "websockets<=9.1; python_version == '3.6'",
+        "websockets>=9.1; python_version >= '3.7'",
         "ww>=0.2.1"
     ],
     # Package Metadata
