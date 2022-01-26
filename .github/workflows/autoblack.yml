@@ -5,6 +5,10 @@
 
 name: Automatically format sources
 
+defaults:
+  run:
+    working-directory: ./black
+
 on:
   push:
     branches:
