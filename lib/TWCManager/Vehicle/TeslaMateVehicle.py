@@ -106,7 +106,7 @@ class TeslaMateVehicle:
 
         self.__client.loop_start()
 
-    def doSyncTokens(self, firstrun = False):
+    def doSyncTokens(self, firstrun=False):
         # Connect to TeslaMate database and synchronize API tokens
 
         if self.__db_host and self.__db_name and self.__db_user and self.__db_pass:
