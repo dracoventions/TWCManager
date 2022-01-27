@@ -118,8 +118,18 @@ class HASSStatus:
             )
 
             devclass = ""
-            if str.upper(msg.unit) in ["W", "A", "V", "KWH"]:
+            state_class = ""
+            if msg.unit in ["W", "kW"]:
                 devclass = "power"
+            elif msg.unit in ["Wh", "kWh", "MWh"]:
+                devclass = "energy"
+                state_class = "total"
+            elif msg.unit == "A":
+                devclass = "current"
+                state_class = "measurement"
+            elif msg.unit == "V":
+                devclass = "voltage"
+                state_class = "measurement"
 
             if len(msg.unit) > 0:
                 self.requests.post(
@@ -129,6 +139,7 @@ class HASSStatus:
                         "attributes": {
                             "unit_of_measurement": msg.unit,
                             "device_class": devclass,
+                            "state_class": state_class,
                             "friendly_name": "TWC "
                             + str(self.getTwident(msg.twcid))
                             + " "
