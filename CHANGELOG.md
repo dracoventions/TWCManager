@@ -19,6 +19,9 @@ This document logs the changes per release of TWCManager.
  * (@ngardiner) - Added TeslaMate sync functionality to allow sync of telemetry and API token details
  * (@MikeBishop) - Restrict dampening to green policies only, and prefer to keep charging vs stop/start
  * (@ngardiner) - Reduce potential Tesla API backoff time
+ * (@deece) - Addition of Open Energy Monitor EMS module
+ * (@dehsgr) - Addition of URL EMS module
+ * (@tjikkun) - Set HASS sensor state class to make it work with statistics dashboard
 
 ## v1.2.3 - 2021-08-10
 
