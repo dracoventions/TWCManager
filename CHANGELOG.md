@@ -11,6 +11,7 @@ This document logs the changes per release of TWCManager.
       * (@ngardiner) - Align web interface TWCID so that it is lowercase, avoiding issues with JavaScript and Jinja2 misalignment
       * (@ngardiner) - Change cryptography module dependency to avoid versions requiring rust compiler
       * (@ngardiner) - Add logic to set token expiry time when manually adding tokens
+      * (@blach) - Fix Tesla API token refresh logic
  * (@MikeBishop) - Change to Powerwall Auth handling to expire auth tokens earlier due to changes in Powerwall auth handling
  * (@ngardiner) - Add version check to Web UI
  * (@ngardiner) - Add handling of recaptcha challenge (with DNS workaround), and provide other options if this is not possible

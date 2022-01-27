@@ -41,7 +41,7 @@ class TeslaAPI:
     minChargeLevel = -1
     params = None
     __password = None
-    refreshURL = "https://owner-api.teslamotors.com/oauth/token"
+    refreshURL = "https://auth.tesla.com/oauth2/v3/token"
     __resp = None
     session = None
     verifier = ""
@@ -291,10 +291,10 @@ class TeslaAPI:
         # days when first issued, so we'll get a new token every 15 days.
         headers = {"accept": "application/json", "Content-Type": "application/json"}
         data = {
-            "client_id": self.clientID,
-            "client_secret": self.clientSecret,
+            "client_id": "ownerapi",
             "grant_type": "refresh_token",
             "refresh_token": self.getCarApiRefreshToken(),
+            "scope": "openid email offline_access",
         }
         req = None
         now = time.time()
@@ -367,7 +367,7 @@ class TeslaAPI:
         # Authentiate to Tesla API
         if not self.master.tokenSyncEnabled() and (
             self.getCarApiBearerToken() == ""
-            or self.getCarApiTokenExpireTime() - now < 30 * 24 * 60 * 60
+            or self.getCarApiTokenExpireTime() - now < 60 * 60
         ):
             if self.getCarApiRefreshToken() != "":
                 headers = {

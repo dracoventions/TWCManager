@@ -17,6 +17,7 @@ setup(
         "cryptography<3.4; python_version >= '3.6'",
         "growattServer<=1.1.0; python_version == '3.4'",
         "growattServer>=1.0.0; python_version >= '3.5'",
+        "idna<3,>=2.5; python_version == '3.4'",
         "jinja2==2.11.2; python_version == '3.4'",
         "jinja2==2.11.2; python_version == '3.5'",
         "jinja2>=2.11.2; python_version >= '3.6'",
