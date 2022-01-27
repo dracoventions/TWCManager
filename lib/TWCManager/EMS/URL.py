@@ -72,11 +72,7 @@ class URL:
         return self.generatedW
 
     def getAPIValue(self, item):
-        url = (
-            self.URL
-			+ "/"
-            + item
-        )
+        url = self.URL + "/" + item
 
         # Update fetchFailed boolean to False before fetch attempt
         # This will change to true if the fetch failed, ensuring we don't then use the value to update our cache
@@ -86,16 +82,12 @@ class URL:
             logger.debug("Fetching URL EMS item value " + str(item))
             httpResponse = requests.get(url, timeout=self.timeout)
         except requests.exceptions.ConnectionError as e:
-            logger.log(
-                logging.INFO4, "Error connecting to URL to fetch item values"
-            )
+            logger.log(logging.INFO4, "Error connecting to URL to fetch item values")
             logger.debug(str(e))
             self.fetchFailed = True
             return False
         except requests.exceptions.ReadTimeout as e:
-            logger.log(
-                logging.INFO4, "Read Timeout occurred fetching URL item value"
-            )
+            logger.log(logging.INFO4, "Read Timeout occurred fetching URL item value")
             logger.debug(str(e))
             self.fetchFailed = True
             return False
@@ -134,9 +126,7 @@ class URL:
                     logger.debug("URL getConsumption returns " + str(apivalue))
                     self.consumedW = apivalue
                 else:
-                    logger.debug(
-                        "URL getConsumption fetch failed, using cached values"
-                    )
+                    logger.debug("URL getConsumption fetch failed, using cached values")
             else:
                 logger.debug("URL Consumption Entity Not Supplied. Not Querying")
 
@@ -146,9 +136,7 @@ class URL:
                     logger.debug("URL getGeneration returns " + str(apivalue))
                     self.generatedW = apivalue
                 else:
-                    logger.debug(
-                        "URL getGeneration fetch failed, using cached values"
-                    )
+                    logger.debug("URL getGeneration fetch failed, using cached values")
             else:
                 logger.debug("URL Generation Entity Not Supplied. Not Querying")
 
