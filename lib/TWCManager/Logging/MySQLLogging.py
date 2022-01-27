@@ -34,10 +34,10 @@ class MySQLHandler(logging.Handler):
 
                 # Ensure database connection is alive, or reconnect if not
                 try:
-                   self.db.ping(reconnect=True)
+                    self.db.ping(reconnect=True)
                 except pymysql.err.OperationalError as e:
-                   logger.info("Error connecting to MySQL database. %s", str(e))
-                   return
+                    logger.info("Error connecting to MySQL database. %s", str(e))
+                    return
 
                 cur = self.db.cursor()
                 rows = 0
@@ -76,10 +76,10 @@ class MySQLHandler(logging.Handler):
 
                     # Ensure database connection is alive, or reconnect if not
                     try:
-                       self.db.ping(reconnect=True)
+                        self.db.ping(reconnect=True)
                     except pymysql.err.OperationalError as e:
-                       logger.info("Error connecting to MySQL database. %s", str(e))
-                       return
+                        logger.info("Error connecting to MySQL database. %s", str(e))
+                        return
 
                     cur = self.db.cursor()
                     rows = 0
@@ -110,10 +110,10 @@ class MySQLHandler(logging.Handler):
 
                 # Ensure database connection is alive, or reconnect if not
                 try:
-                   self.db.ping(reconnect=True)
+                    self.db.ping(reconnect=True)
                 except pymysql.err.OperationalError as e:
-                   logger.info("Error connecting to MySQL database. %s", str(e))
-                   return
+                    logger.info("Error connecting to MySQL database. %s", str(e))
+                    return
 
                 cur = self.db.cursor()
                 rows = 0
@@ -140,10 +140,10 @@ class MySQLHandler(logging.Handler):
         elif log_type == "green_energy":
             # Ensure database connection is alive, or reconnect if not
             try:
-               self.db.ping(reconnect=True)
+                self.db.ping(reconnect=True)
             except pymysql.err.OperationalError as e:
-               logger.info("Error connecting to MySQL database. %s", str(e))
-               return
+                logger.info("Error connecting to MySQL database. %s", str(e))
+                return
 
             query = """
                 INSERT INTO green_energy (time, genW, conW, chgW)
@@ -254,10 +254,10 @@ class MySQLLogging:
 
         # Ensure database connection is alive, or reconnect if not
         try:
-           self.db.ping(reconnect=True)
+            self.db.ping(reconnect=True)
         except pymysql.err.OperationalError as e:
-           logger.info("Error connecting to MySQL database. %s", str(e))
-           return
+            logger.info("Error connecting to MySQL database. %s", str(e))
+            return
 
         query = """
             SELECT * from green_energy where time>%s and time<%s
@@ -288,10 +288,10 @@ class MySQLLogging:
 
         # Ensure database connection is alive, or reconnect if not
         try:
-           self.db.ping(reconnect=True)
+            self.db.ping(reconnect=True)
         except pymysql.err.OperationalError as e:
-           logger.info("Error connecting to MySQL database. %s", str(e))
-           return
+            logger.info("Error connecting to MySQL database. %s", str(e))
+            return
 
         # Otherwise, add to database
         cursor = self.db.cursor()
