@@ -89,13 +89,21 @@ class EmonCMS:
             return False
 
         http = "http://" if not (self.useHttps) else "https://"
-        url = http + self.serverIP + ":" + self.serverPort + self.serverPath + "/feed/fetch.json?ids=" + ','.join(feeds)
+        url = (
+            http
+            + self.serverIP
+            + ":"
+            + self.serverPort
+            + self.serverPath
+            + "/feed/fetch.json?ids="
+            + ",".join(feeds)
+        )
         headers = {
             "Authorization": "Bearer " + self.apiKey,
         }
 
         try:
-            logger.debug("Fetching EmonCMS feeds " + ','.join(feeds))
+            logger.debug("Fetching EmonCMS feeds " + ",".join(feeds))
             httpResponse = self.requests.get(url, headers=headers, timeout=self.timeout)
         except self.requests.exceptions.ConnectionError as e:
             logger.log(
@@ -115,7 +123,10 @@ class EmonCMS:
         if httpResponse.status_code != 200:
             logger.log(
                 logging.INFO4,
-                "Failed to fetch " + url + " HTTP Status: " + str(httpResponse.status_code),
+                "Failed to fetch "
+                + url
+                + " HTTP Status: "
+                + str(httpResponse.status_code),
             )
             return False
 
