@@ -420,7 +420,7 @@
                 "ChargeSessions": false,
                 "GreenEnergy": true,
                 "SlavePower": true,
-                "SlaveStatus": true,
+                "SlaveStatus": true
             }
         },
         "MySQL": {

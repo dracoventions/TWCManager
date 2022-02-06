@@ -127,7 +127,15 @@ else:
         jsonconfig = open("config.json")
 
 if jsonconfig:
-    config = json.loads('\n'.join(line for line in jsonconfig if not line.lstrip().startswith("//") and not line.lstrip().startswith("#")))
+    configtext = ""
+    for line in jsonconfig:
+        if line.lstrip().startswith("//") or line.lstrip().startswith("#"):
+            configtext = "\n"
+        else:
+            configtext = line.strip()
+
+    config = json.loads(configtext)
+    configtext = None
 else:
     logger.error("Unable to find a configuration file.")
     sys.exit()
