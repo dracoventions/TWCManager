@@ -27,9 +27,9 @@
 #
 # For more information, please visit http://unlicense.org
 
-import commentjson
 import importlib
 import json
+from jsoncomment import JsonComment
 import logging
 import os.path
 import math
@@ -128,6 +128,7 @@ else:
     if os.path.isfile("config.json"):
         jsonconfig = open("config.json")
 
+commentjson = JsonComment()
 if jsonconfig:
     config = commentjson.load(jsonconfig)
 else:

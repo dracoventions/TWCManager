@@ -11,8 +11,6 @@ setup(
     include_package_data=True,
     # Dependencies
     install_requires=[
-        "commentjson < 0.9.0; python_version < '3.6'",
-        "commentjson >= 0.8.3; python_version >= '3.6'",
         "cryptography==2.1.4; python_version < '3.6'",
         "cryptography<3.4; python_version >= '3.6'",
         "growattServer<=1.1.0; python_version == '3.4'",
@@ -21,6 +19,7 @@ setup(
         "jinja2==2.11.2; python_version == '3.4'",
         "jinja2==2.11.2; python_version == '3.5'",
         "jinja2>=2.11.2; python_version >= '3.6'",
+        "jsoncomment",
         "MarkupSafe < 2.0.0; python_version < '3.6'",
         "ocpp",
         "paho_mqtt>=1.5.0",
