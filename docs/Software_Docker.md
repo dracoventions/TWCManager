@@ -8,24 +8,24 @@ These instructions will result in the **latest** version of the TWCManager code 
 
 ```
 sudo apt-get update
-sudo apt-get install -y docker.io
+sudo apt-get install -y curl docker.io
 
-pip3 install docker-compose
+sudo pip3 install docker-compose
 
 curl https://raw.githubusercontent.com/ngardiner/TWCManager/main/contrib/docker/docker-compose.yml -o docker-compose.yml
 ```
 
 ### Using Stable Versions (Recommended)
 
-If you would like to opt for a more stable version, specify the version of TWCmanager that you would like to use. For example, to use the latest Stable version **v1.2.2**, use the following commands:
+If you would like to opt for a more stable version, specify the version of TWCmanager that you would like to use. For example, to use the latest Stable version **v1.2.3**, use the following commands:
 
 ```
 sudo apt-get update
 sudo apt-get install -y docker.io
 
-pip3 install docker-compose
+sudo pip3 install docker-compose
 
-curl https://raw.githubusercontent.com/ngardiner/TWCManager/main/contrib/docker/docker-compose-v1.2.2.yml -o docker-compose.yml
+curl https://raw.githubusercontent.com/ngardiner/TWCManager/main/contrib/docker/docker-compose-v1.2.3.yml -o docker-compose.yml
 ```
 
 ## Configuring TWCManager for Docker

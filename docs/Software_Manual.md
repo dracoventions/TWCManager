@@ -59,6 +59,8 @@ You can check that this command has been successful by running ```python --versi
 
 ### Raspbian Stretch
 
+Please note that Raspbian Stretch will no longer be supported as of v1.2.4 of TWCManager. The following instructions are relevant for versions earlier than this.
+
 You may need to set python3 as your default python interpreter version on Debian/Ubuntu. The following command will set python 3.5 as your default interpreter.
 
 ```
