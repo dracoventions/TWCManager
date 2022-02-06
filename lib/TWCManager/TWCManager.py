@@ -130,11 +130,11 @@ if jsonconfig:
     configtext = ""
     for line in jsonconfig:
         if line.lstrip().startswith("//") or line.lstrip().startswith("#"):
-            configtext = "\n"
+            configtext += "\n"
         else:
-            configtext = line.split("#")[0]
+            configtext += line.replace("\t"," ").split("#")[0]
 
-    config = yaml.loads(configtext)
+    config = yaml.safe_load(configtext)
     configtext = None
 else:
     logger.error("Unable to find a configuration file.")

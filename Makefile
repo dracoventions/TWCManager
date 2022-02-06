@@ -68,9 +68,11 @@ ifeq ($(CI), 1)
 else
 ifneq (,$(wildcard /usr/bin/pip3))
 	$(SUDO) pip3 install --upgrade setuptools
+	$(SUDO) pip3 install PyYAML
 else
 ifneq (,$(wildcard /usr/bin/pip))
 	$(SUDO) pip install --upgrade setuptools
+	$(SUDO) pip install PyYAML
 endif
 endif
 	$(SUDO) ./setup.py install
