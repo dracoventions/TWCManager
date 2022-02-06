@@ -6,6 +6,7 @@ This document logs the changes per release of TWCManager.
 
 ## v1.2.4 - 2022-02-06
 
+  * **Breaking Changes** - Due to changes introduced by Python 3.9, the minimum version of Python supported from v1.2.4 forward is **Python 3.6**
   * Bugfixes:
       * (@MikeBishop) - Fix debounce mechanism to avoid continuous charging when minimum generation is not met in some circumstances
       * (@ngardiner) - Align web interface TWCID so that it is lowercase, avoiding issues with JavaScript and Jinja2 misalignment

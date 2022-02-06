@@ -38,7 +38,6 @@ import time
 import traceback
 from datetime import datetime
 import threading
-from ww import f
 from TWCManager.TWCMaster import TWCMaster
 import requests
 from enum import Enum
@@ -354,7 +353,7 @@ def update_statuses():
     # Print a status update if we are on track green energy showing the
     # generation and consumption figures
     maxamps = master.getMaxAmpsToDivideAmongSlaves()
-    maxampsDisplay = f("{maxamps:.2f}A")
+    maxampsDisplay = f'{maxamps:.2f}A'
     if master.getModuleByName("Policy").policyIsGreen():
         genwatts = master.getGeneration()
         conwatts = master.getConsumption()
