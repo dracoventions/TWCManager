@@ -20,6 +20,7 @@ setup(
         "pyModbusTCP>=0.1.8",
         "pymysql",
         "pyserial>=3.4",
+        "pyyaml",
         "requests>=2.23.0",
         "sentry_sdk>=0.11.2",
         "sysv_ipc",

@@ -28,7 +28,6 @@
 # For more information, please visit http://unlicense.org
 
 import importlib
-import json
 import logging
 import os.path
 import math
@@ -36,6 +35,7 @@ import re
 import sys
 import time
 import traceback
+import yaml
 from datetime import datetime
 import threading
 from TWCManager.TWCMaster import TWCMaster
@@ -132,9 +132,9 @@ if jsonconfig:
         if line.lstrip().startswith("//") or line.lstrip().startswith("#"):
             configtext = "\n"
         else:
-            configtext = line.strip()
+            configtext = line.split("#")[0]
 
-    config = json.loads(configtext)
+    config = yaml.loads(configtext)
     configtext = None
 else:
     logger.error("Unable to find a configuration file.")
