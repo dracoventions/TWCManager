@@ -3,122 +3,122 @@ on:
   push:
 
 jobs:
-  twcmanager-python3_4_direct:
-    name: Python 3.4 - Run Direct
-    runs-on: [ "self-hosted", "build_host" ]
-    container:
-      image: twcmanager/twcmanager-testsuite:py3.4.10
-      options: --user root
-    steps:
+#  twcmanager-python3_4_direct:
+#    name: Python 3.4 - Run Direct
+#    runs-on: [ "self-hosted", "build_host" ]
+#    container:
+#      image: twcmanager/twcmanager-testsuite:py3.4.10
+#      options: --user root
+#    steps:
+#
+#      - name: "Checkout Repository"
+#        uses: actions/checkout@v2
+#
+#      - name: "Upgrade setuptools"
+#        run: pip3 install --upgrade setuptools
+#
+#      - name: "Build Project"
+#        run: CI=1 make webbuild
+#
+#      - name: "Deploy Test Configuration"
+#        run: make testconfig
+#
+#      - name: "Install Legacy Web Files"
+#        run: make webfiles
+#
+#      - name: "Run Test Suite"
+#        run: make test_direct
+#
+#      - name: "Upload any debug files collected"
+#        if: always()
+#        run: make upload
 
-      - name: "Checkout Repository"
-        uses: actions/checkout@v2
+#  twcmanager-python3_4_service:
+#    name: Python 3.4 - Run as a Service
+#    runs-on: [ "self-hosted", "build_host" ]
+#    container:
+#      image: twcmanager/twcmanager-testsuite:py3.4.10
+#      options: --user root
+#    steps:
+#      - name: "Checkout Repository"
+#        uses: actions/checkout@v2
+#
+#      - name: "Upgrade setuptools"
+#        run: pip3 install --upgrade setuptools
+#
+#      - name: "Build Project"
+#        run: CI=1 make webbuild
+#
+#      - name: "Deploy Test Configuration"
+#        run: make testconfig
+#
+#      - name: "Install Legacy Web Files"
+#        run: make webfiles
+#
+#      - name: "Run Test Suite"
+#        run: make test_service_nofail
+#
+#      - name: "Upload any debug files collected"
+#        if: always()
+#        run: make upload
 
-      - name: "Upgrade setuptools"
-        run: pip3 install --upgrade setuptools
+#  twcmanager-python3_5_direct:
+#    name: Python 3.5 - Run Direct
+#    runs-on: [ "self-hosted", "build_host" ]
+#    container:
+#      image: twcmanager/twcmanager-testsuite:py3.5.3
+#      options: --user root
+#    steps:
+#      - name: "Checkout Repository"
+#        uses: actions/checkout@v2
+#
+#      - name: "Upgrade setuptools"
+#        run: pip3 install --upgrade setuptools
+#
+#      - name: "Build Project"
+#        run: CI=1 make webbuild
+#
+#      - name: "Deploy Test Configuration"
+#        run: make testconfig
+#
+#      - name: "Install Legacy Web Files"
+#        run: make webfiles
+#
+#      - name: "Run Test Suite"
+#        run: make test_direct
+#
+#      - name: "Upload any debug files collected"
+#        if: always()
+#        run: make upload
 
-      - name: "Build Project"
-        run: CI=1 make webbuild
-
-      - name: "Deploy Test Configuration"
-        run: make testconfig
-
-      - name: "Install Legacy Web Files"
-        run: make webfiles
-
-      - name: "Run Test Suite"
-        run: make test_direct
-
-      - name: "Upload any debug files collected"
-        if: always()
-        run: make upload
-
-  twcmanager-python3_4_service:
-    name: Python 3.4 - Run as a Service
-    runs-on: [ "self-hosted", "build_host" ]
-    container:
-      image: twcmanager/twcmanager-testsuite:py3.4.10
-      options: --user root
-    steps:
-      - name: "Checkout Repository"
-        uses: actions/checkout@v2
-
-      - name: "Upgrade setuptools"
-        run: pip3 install --upgrade setuptools
-
-      - name: "Build Project"
-        run: CI=1 make webbuild
-
-      - name: "Deploy Test Configuration"
-        run: make testconfig
-
-      - name: "Install Legacy Web Files"
-        run: make webfiles
-
-      - name: "Run Test Suite"
-        run: make test_service_nofail
-
-      - name: "Upload any debug files collected"
-        if: always()
-        run: make upload
-
-  twcmanager-python3_5_direct:
-    name: Python 3.5 - Run Direct
-    runs-on: [ "self-hosted", "build_host" ]
-    container:
-      image: twcmanager/twcmanager-testsuite:py3.5.3
-      options: --user root
-    steps:
-      - name: "Checkout Repository"
-        uses: actions/checkout@v2
-
-      - name: "Upgrade setuptools"
-        run: pip3 install --upgrade setuptools
-
-      - name: "Build Project"
-        run: CI=1 make webbuild
-
-      - name: "Deploy Test Configuration"
-        run: make testconfig
-
-      - name: "Install Legacy Web Files"
-        run: make webfiles
-
-      - name: "Run Test Suite"
-        run: make test_direct
-
-      - name: "Upload any debug files collected"
-        if: always()
-        run: make upload
-
-  twcmanager-python3_5_service:
-    name: Python 3.5 - Run as a Service
-    runs-on: [ "self-hosted", "build_host" ]
-    container:
-      image: twcmanager/twcmanager-testsuite:py3.5.3
-      options: --user root
-    steps:
-      - name: "Checkout Repository"
-        uses: actions/checkout@v2
-
-      - name: "Upgrade setuptools"
-        run: pip3 install --upgrade setuptools
-
-      - name: "Build Project"
-        run: CI=1 make webbuild
-
-      - name: "Deploy Test Configuration"
-        run: make testconfig
-
-      - name: "Install Legacy Web Files"
-        run: make webfiles
-
-      - name: "Run Test Suite"
-        run: make test_service_nofail
-
-      - name: "Upload any debug files collected"
-        if: always()
-        run: make upload
+#  twcmanager-python3_5_service:
+#    name: Python 3.5 - Run as a Service
+#    runs-on: [ "self-hosted", "build_host" ]
+#    container:
+#      image: twcmanager/twcmanager-testsuite:py3.5.3
+#      options: --user root
+#    steps:
+#      - name: "Checkout Repository"
+#        uses: actions/checkout@v2
+#
+#      - name: "Upgrade setuptools"
+#        run: pip3 install --upgrade setuptools
+#
+#      - name: "Build Project"
+#        run: CI=1 make webbuild
+#
+#      - name: "Deploy Test Configuration"
+#        run: make testconfig
+#
+#      - name: "Install Legacy Web Files"
+#        run: make webfiles
+#
+#      - name: "Run Test Suite"
+#        run: make test_service_nofail
+#
+#      - name: "Upload any debug files collected"
+#        if: always()
+#        run: make upload
 
   twcmanager-python3_6_direct:
     name: Python 3.6 - Run Direct

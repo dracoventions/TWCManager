@@ -442,7 +442,6 @@ def update_statuses():
             nominalOfferDisplay = f'{nominalOffer:.2f}A'
             logger.debug(
                 f'Offering {maxampsDisplay} instead of {nominalOfferDisplay} to compensate for inexact current draw'
-                )
             )
             conwatts = genwatts - master.convertAmpsToWatts(maxamps)
         generation = f'{master.convertWattsToAmps(genwatts):.2f}A'
@@ -462,7 +461,7 @@ def update_statuses():
         )
 
     # Print minimum charge for all charging policies
-    minchg = f'{config['config']['minAmpsPerTWC']}A'
+    minchg = f"{config['config']['minAmpsPerTWC']}A"
     logger.info(
         "Charge when above %s (minAmpsPerTWC).", minchg, extra={"colored": "magenta"}
     )
