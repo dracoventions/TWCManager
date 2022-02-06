@@ -19,7 +19,6 @@ setup(
         "jinja2==2.11.2; python_version == '3.4'",
         "jinja2==2.11.2; python_version == '3.5'",
         "jinja2>=2.11.2; python_version >= '3.6'",
-        "jsoncomment",
         "MarkupSafe < 2.0.0; python_version < '3.6'",
         "ocpp",
         "paho_mqtt>=1.5.0",

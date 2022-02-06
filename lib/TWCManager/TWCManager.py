@@ -29,7 +29,6 @@
 
 import importlib
 import json
-from jsoncomment import JsonComment
 import logging
 import os.path
 import math
@@ -128,9 +127,8 @@ else:
     if os.path.isfile("config.json"):
         jsonconfig = open("config.json")
 
-commentjson = JsonComment()
 if jsonconfig:
-    config = commentjson.load(jsonconfig)
+    config = json.loads('\n'.join(line for line in jsonconfig if not line.lstrip().startswith("//") and not line.lstrip().startswith("#")))
 else:
     logger.error("Unable to find a configuration file.")
     sys.exit()
