@@ -1,5 +1,4 @@
 import logging
-from ww import f
 
 logger = logging.getLogger("\U0001F3AE MQTT")
 

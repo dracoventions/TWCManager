@@ -13,7 +13,6 @@ import time
 import urllib.parse
 import uuid
 import math
-from ww import f
 
 logger = logging.getLogger("\U0001F3AE HTTP")
 

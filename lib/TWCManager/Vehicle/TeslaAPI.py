@@ -8,7 +8,6 @@ import requests
 from threading import Thread
 import time
 from urllib.parse import parse_qs
-from ww import f
 
 logger = logging.getLogger("\U0001F697 TeslaAPI")
 
@@ -1184,9 +1183,7 @@ class TeslaAPI:
 
     def getMFADevices(self, transaction_id):
         # Requests a list of devices we can use for MFA
-        url = f(
-            "https://auth.tesla.com/oauth2/v3/authorize/mfa/factors?transaction_id={transaction_id}"
-        )
+        url = f'https://auth.tesla.com/oauth2/v3/authorize/mfa/factors?transaction_id={transaction_id}'
         resp = self.session.get(url)
         try:
             content = json.loads(resp.text)

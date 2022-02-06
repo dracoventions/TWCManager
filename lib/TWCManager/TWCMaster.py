@@ -9,7 +9,6 @@ import queue
 from sys import modules
 import threading
 import time
-from ww import f
 import math
 import random
 import requests

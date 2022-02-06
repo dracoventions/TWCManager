@@ -3,7 +3,6 @@
 
 import logging
 import time
-from ww import f
 
 
 logger = logging.getLogger("\U0001F4CA HASS")
@@ -112,9 +111,7 @@ class HASSStatus:
         try:
             logger.log(
                 logging.INFO8,
-                f(
-                    "Sending POST request to HomeAssistant for sensor {msg.sensor} (value {msg.value})."
-                ),
+                f'Sending POST request to HomeAssistant for sensor {msg.sensor} (value {msg.value}).',
             )
 
             devclass = ""

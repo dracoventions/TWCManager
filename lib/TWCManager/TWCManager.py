@@ -381,9 +381,9 @@ def update_statuses():
 
             logger.info(
                 "Green energy Generates %s, Consumption %s (Charger Load %s)",
-                f("{genwatts:.0f}W"),
-                f("{conwatts:.0f}W"),
-                f("{chgwatts:.0f}W"),
+                f'{genwatts:.0f}W',
+                f'{conwatts:.0f}W',
+                f'{chgwatts:.0f}W',
                 extra=logExtra,
             )
 
@@ -391,10 +391,10 @@ def update_statuses():
 
             logger.info(
                 "Green energy Generates %s, Consumption %s (Charger Load %s, Other Load %s)",
-                f("{genwatts:.0f}W"),
-                f("{conwatts:.0f}W"),
-                f("{chgwatts:.0f}W"),
-                f("{othwatts:.0f}W"),
+                f'{genwatts:.0f}W',
+                f'{conwatts:.0f}W',
+                f'{chgwatts:.0f}W',
+                f'{othwatts:.0f}W',
                 extra=logExtra,
             )
 
@@ -402,11 +402,11 @@ def update_statuses():
 
             logger.info(
                 "Green energy Generates %s, Consumption %s (Charger Load %s, Other Load %s, Offset %s)",
-                f("{genwatts:.0f}W"),
-                f("{conwatts:.0f}W"),
-                f("{chgwatts:.0f}W"),
-                f("{othwatts:.0f}W"),
-                f("{conoffset:.0f}W"),
+                f'{genwatts:.0f}W',
+                f'{conwatts:.0f}W',
+                f'{chgwatts:.0f}W',
+                f'{othwatts:.0f}W',
+                f'{conoffset:.0f}W',
                 extra=logExtra,
             )
 
@@ -414,11 +414,11 @@ def update_statuses():
 
             logger.info(
                 "Green energy Generates %s (Offset %s), Consumption %s (Charger Load %s, Other Load %s)",
-                f("{genwatts:.0f}W"),
-                f("{(-1 * conoffset):.0f}W"),
-                f("{conwatts:.0f}W"),
-                f("{chgwatts:.0f}W"),
-                f("{othwatts:.0f}W"),
+                f'{genwatts:.0f}W',
+                f'{(-1 * conoffset):.0f}W',
+                f'{conwatts:.0f}W',
+                f'{chgwatts:.0f}W',
+                f'{othwatts:.0f}W',
                 extra=logExtra,
             )
 
@@ -439,15 +439,14 @@ def update_statuses():
             )
         )
         if abs(maxamps - nominalOffer) > 0.005:
-            nominalOfferDisplay = f("{nominalOffer:.2f}A")
+            nominalOfferDisplay = f'{nominalOffer:.2f}A'
             logger.debug(
-                f(
-                    "Offering {maxampsDisplay} instead of {nominalOfferDisplay} to compensate for inexact current draw"
+                f'Offering {maxampsDisplay} instead of {nominalOfferDisplay} to compensate for inexact current draw'
                 )
             )
             conwatts = genwatts - master.convertAmpsToWatts(maxamps)
-        generation = f("{master.convertWattsToAmps(genwatts):.2f}A")
-        consumption = f("{master.convertWattsToAmps(conwatts):.2f}A")
+        generation = f'{master.convertWattsToAmps(genwatts):.2f}A'
+        consumption = f'{master.convertWattsToAmps(conwatts):.2f}A'
         logger.info(
             "Limiting charging to %s - %s = %s.",
             generation,
@@ -463,7 +462,7 @@ def update_statuses():
         )
 
     # Print minimum charge for all charging policies
-    minchg = f("{config['config']['minAmpsPerTWC']}A")
+    minchg = f'{config['config']['minAmpsPerTWC']}A'
     logger.info(
         "Charge when above %s (minAmpsPerTWC).", minchg, extra={"colored": "magenta"}
     )
