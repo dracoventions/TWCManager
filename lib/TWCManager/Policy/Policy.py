@@ -301,7 +301,7 @@ class Policy:
 
         logger.log(
             logging.INFO8,
-            f'Evaluating Policy match (%s [{matchValue}]), condition (%s), value (%s)',
+            f"Evaluating Policy match (%s [{matchValue}]), condition (%s), value (%s)",
             match,
             condition,
             value,

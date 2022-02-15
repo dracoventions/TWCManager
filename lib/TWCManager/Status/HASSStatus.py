@@ -111,7 +111,7 @@ class HASSStatus:
         try:
             logger.log(
                 logging.INFO8,
-                f'Sending POST request to HomeAssistant for sensor {msg.sensor} (value {msg.value}).',
+                f"Sending POST request to HomeAssistant for sensor {msg.sensor} (value {msg.value}).",
             )
 
             devclass = ""
