@@ -10,7 +10,7 @@ WORKDIR /usr/src/TWCManager
 
 COPY entrypoint.sh ./entrypoint.sh
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["/usr/bin/python3","TWCManager.py"]
+CMD ["/usr/bin/python3","-m","TWCManager"]
 
 # SSL_CERTIFICATE_FAILED errors
 # These errors began appearing and impacing the build pipeline in Jul 2021
