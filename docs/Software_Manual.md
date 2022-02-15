@@ -74,13 +74,13 @@ You can check that this command has been successful by running ```python --versi
 
 During this step, the source code and all related files will be cloned from the GitHub repository and installed into the appropriate location on your system.
 
-We have two versions of the codebase that you may want to check out. The stable version is **v1.2.3**, which will only change for stability or urgent fixes. To check out **v1.2.3**, follow these steps:
+We have two versions of the codebase that you may want to check out. The stable version is **v1.2.4**, which will only change for stability or urgent fixes. To check out **v1.2.4**, follow these steps:
 
 
 ```
 git clone https://github.com/ngardiner/TWCManager
 cd TWCManager
-git checkout v1.2.3
+git checkout v1.2.4
 sudo make install
 ```
 
@@ -153,7 +153,7 @@ sudo systemctl disable twcmanager
 
 ### Stable Release
 
-From version v1.2.3 of TWCManager and beyond, you can use pip to upgrade TWCManager to the latest stable version.
+From version v1.2.4 of TWCManager and beyond, you can use pip to upgrade TWCManager to the latest stable version.
 
 To upgrade TWCManager to the latest version:
 

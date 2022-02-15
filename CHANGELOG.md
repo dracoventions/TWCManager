@@ -2,9 +2,9 @@
 
 This document logs the changes per release of TWCManager.
 
-## v1.3.0 - Latest Development Version
+## v1.2.5 - Latest Development Version
 
-## v1.2.4 - 2022-02-06
+## v1.2.4 - 2022-02-15
 
   * **Breaking Changes**
       * Due to changes introduced by Python 3.9, the minimum version of Python supported from v1.2.4 forward is **Python 3.6**

@@ -1,6 +1,6 @@
 # TWCManager
 
-[![Stable Release](https://img.shields.io/badge/Stable_Release-1.2.3-blue)](https://github.com/ngardiner/TWCManager/releases/tag/v1.2.3)
+[![Stable Release](https://img.shields.io/badge/Stable_Release-1.2.4-blue)](https://github.com/ngardiner/TWCManager/releases/tag/v1.2.4)
 [![Development Release](https://img.shields.io/badge/Devel_Release-1.3.0-green.svg)](https://github.com/ngardiner/TWCManager/tree/main)
 ![Build Status](https://github.com/ngardiner/TWCManager/actions/workflows/test_suite.yml/badge.svg)
 ![GitHub commits](https://img.shields.io/github/commit-activity/m/ngardiner/TWCManager)
