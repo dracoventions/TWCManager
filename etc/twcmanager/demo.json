@@ -197,7 +197,7 @@
     # If you enable more than one, only the first enabled interface will be used
     "interface": {
       "Dummy": {
-        "enabled": false,
+        "enabled": true,
 
         # The dummy module is used for testing. It will simulate an actual
         # slave TWC for the purpose of offline testing of TWCManager.
@@ -206,7 +206,7 @@
         "twcID": "AB"
       },
       "RS485": {
-        "enabled": true,
+        "enabled": false,
 
         # TWC's rs485 port runs at 9600 baud which has been verified with an
         # oscilloscope. Don't change this unless something changes in future hardware.

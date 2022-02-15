@@ -1,6 +1,6 @@
 # TWCManager
 
-[![Stable Release](https://img.shields.io/badge/Stable_Release-1.2.3-blue)](https://github.com/ngardiner/TWCManager/releases/tag/1.2.3)
+[![Stable Release](https://img.shields.io/badge/Stable_Release-1.2.4-blue)](https://github.com/ngardiner/TWCManager/releases/tag/v1.2.4)
 [![Development Release](https://img.shields.io/badge/Devel_Release-1.3.0-green.svg)](https://github.com/ngardiner/TWCManager/tree/main)
 ![Build Status](https://github.com/ngardiner/TWCManager/actions/workflows/test_suite.yml/badge.svg)
 ![GitHub commits](https://img.shields.io/github/commit-activity/m/ngardiner/TWCManager)
@@ -60,8 +60,9 @@ EMS Interfaces read solar generation and/or consumption values from an external 
 | [Fronius Inverter](docs/modules/EMS_Fronius.md) | Available | Supports Fronius Inverter API |
 | [Growatt](docs/modules/EMS_Growatt.md)          | Available | Support for Growatt Battery systems |
 | [HomeAssistant](docs/modules/EMS_HASS.md)       | Available | Supports HomeAssistant sensors |
-| [Iotawatt](docs/modules/EMS_Iotawatt.md)       | Pre-release | Supports Iotawatt outputs |
+| [IoTaWatt](docs/modules/EMS_Iotawatt.md)       | Available | Supports Iotawatt outputs |
 | [Kostal (Pico/Plenticore)](docs/modules/EMS_Kostal.md) | Available | Support for Kostal Inverters via ModBus |
+| [Open Energy Monitor](docs/modules/EMS_EmonCMS.md) | Available | Support [Open Energy Monitor](https://openenergymonitor.org) integration |
 | [openHAB](docs/modules/EMS_OpenHab.md)          | Available | Supports openHAB items |
 | [OpenWeatherMap](docs/modules/EMS_OpenWeatherMap.md) | Available | Supports OpenWeatherMap forecast-based tracking where inverter EMS is not available. |
 | [P1 Monitor](docs/modules/EMS_P1Monitor.md)     | Available | Supports P1 Monitor (Energy Monitoring tool for Pi) |
@@ -71,6 +72,7 @@ EMS Interfaces read solar generation and/or consumption values from an external 
 | [SolarLog](docs/modules/EMS_SolarLog.md)        | Available | Supports SolarLog Base API |
 | [Tesla Powerwall2](docs/modules/EMS_Powerwall2.md) | Available | Support for Tesla Powerwall 2 |
 | [The Energy Detective](docs/modules/EMS_TED.md) | Available | Support for TED (The Energy Detective) |
+| [URL](docs/modules/EMS_URL.md)  | Available | Support for URL based generation/consumption values (eg Node-RED) |
 | [Volkszähler](docs/modules/EMS_Volkszahler.md)  | Available | Support for Volkszahler |
 
 ### Logging Interfaces

@@ -27,9 +27,7 @@
 #
 # For more information, please visit http://unlicense.org
 
-import commentjson
 import importlib
-import json
 import logging
 import os.path
 import math
@@ -38,8 +36,8 @@ import sys
 import time
 import traceback
 import datetime
+import yaml
 import threading
-from ww import f
 from TWCManager.TWCMaster import TWCMaster
 import requests
 from enum import Enum
@@ -89,6 +87,7 @@ modules_available = [
     "Control.MQTTControl",
     #    "Control.OCPPControl",
     "EMS.Efergy",
+    "EMS.EmonCMS",
     "EMS.Enphase",
     "EMS.Fronius",
     "EMS.Growatt",
@@ -105,6 +104,7 @@ modules_available = [
     "EMS.TeslaPowerwall2",
     "EMS.TED",
     "EMS.Volkszahler",
+    "EMS.URL",
     "Status.HASSStatus",
     "Status.MQTTStatus",
 ]
@@ -127,7 +127,15 @@ else:
         jsonconfig = open("config.json")
 
 if jsonconfig:
-    config = commentjson.load(jsonconfig)
+    configtext = ""
+    for line in jsonconfig:
+        if line.lstrip().startswith("//") or line.lstrip().startswith("#"):
+            configtext += "\n"
+        else:
+            configtext += line.replace("\t", " ").split("#")[0]
+
+    config = yaml.safe_load(configtext)
+    configtext = None
 else:
     logger.error("Unable to find a configuration file.")
     sys.exit()
@@ -355,7 +363,7 @@ def update_statuses():
     # Print a status update if we are on track green energy showing the
     # generation and consumption figures
     maxamps = master.getMaxAmpsToDivideAmongSlaves()
-    maxampsDisplay = f("{maxamps:.2f}A")
+    maxampsDisplay = f"{maxamps:.2f}A"
     if master.getModuleByName("Policy").policyIsGreen():
         genwatts = master.getGeneration()
         conwatts = master.getConsumption()
@@ -383,9 +391,9 @@ def update_statuses():
 
             logger.info(
                 "Green energy Generates %s, Consumption %s (Charger Load %s)",
-                f("{genwatts:.0f}W"),
-                f("{conwatts:.0f}W"),
-                f("{chgwatts:.0f}W"),
+                f"{genwatts:.0f}W",
+                f"{conwatts:.0f}W",
+                f"{chgwatts:.0f}W",
                 extra=logExtra,
             )
 
@@ -393,10 +401,10 @@ def update_statuses():
 
             logger.info(
                 "Green energy Generates %s, Consumption %s (Charger Load %s, Other Load %s)",
-                f("{genwatts:.0f}W"),
-                f("{conwatts:.0f}W"),
-                f("{chgwatts:.0f}W"),
-                f("{othwatts:.0f}W"),
+                f"{genwatts:.0f}W",
+                f"{conwatts:.0f}W",
+                f"{chgwatts:.0f}W",
+                f"{othwatts:.0f}W",
                 extra=logExtra,
             )
 
@@ -404,11 +412,11 @@ def update_statuses():
 
             logger.info(
                 "Green energy Generates %s, Consumption %s (Charger Load %s, Other Load %s, Offset %s)",
-                f("{genwatts:.0f}W"),
-                f("{conwatts:.0f}W"),
-                f("{chgwatts:.0f}W"),
-                f("{othwatts:.0f}W"),
-                f("{conoffset:.0f}W"),
+                f"{genwatts:.0f}W",
+                f"{conwatts:.0f}W",
+                f"{chgwatts:.0f}W",
+                f"{othwatts:.0f}W",
+                f"{conoffset:.0f}W",
                 extra=logExtra,
             )
 
@@ -416,11 +424,11 @@ def update_statuses():
 
             logger.info(
                 "Green energy Generates %s (Offset %s), Consumption %s (Charger Load %s, Other Load %s)",
-                f("{genwatts:.0f}W"),
-                f("{(-1 * conoffset):.0f}W"),
-                f("{conwatts:.0f}W"),
-                f("{chgwatts:.0f}W"),
-                f("{othwatts:.0f}W"),
+                f"{genwatts:.0f}W",
+                f"{(-1 * conoffset):.0f}W",
+                f"{conwatts:.0f}W",
+                f"{chgwatts:.0f}W",
+                f"{othwatts:.0f}W",
                 extra=logExtra,
             )
 
@@ -441,15 +449,13 @@ def update_statuses():
             )
         )
         if abs(maxamps - nominalOffer) > 0.005:
-            nominalOfferDisplay = f("{nominalOffer:.2f}A")
+            nominalOfferDisplay = f"{nominalOffer:.2f}A"
             logger.debug(
-                f(
-                    "Offering {maxampsDisplay} instead of {nominalOfferDisplay} to compensate for inexact current draw"
-                )
+                f"Offering {maxampsDisplay} instead of {nominalOfferDisplay} to compensate for inexact current draw"
             )
             conwatts = genwatts - master.convertAmpsToWatts(maxamps)
-        generation = f("{master.convertWattsToAmps(genwatts):.2f}A")
-        consumption = f("{master.convertWattsToAmps(conwatts):.2f}A")
+        generation = f"{master.convertWattsToAmps(genwatts):.2f}A"
+        consumption = f"{master.convertWattsToAmps(conwatts):.2f}A"
         logger.info(
             "Limiting charging to %s - %s = %s.",
             generation,
@@ -465,7 +471,7 @@ def update_statuses():
         )
 
     # Print minimum charge for all charging policies
-    minchg = f("{config['config']['minAmpsPerTWC']}A")
+    minchg = f"{config['config']['minAmpsPerTWC']}A"
     logger.info(
         "Charge when above %s (minAmpsPerTWC).", minchg, extra={"colored": "magenta"}
     )

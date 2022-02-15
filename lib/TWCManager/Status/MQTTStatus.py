@@ -3,7 +3,6 @@
 
 import logging
 import time
-from ww import f
 
 
 logger = logging.getLogger("\U0001F4CA MQTT")

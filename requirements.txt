@@ -1,0 +1,18 @@
+cryptography<3.4
+build
+growattServer>=1.0.0
+jinja2>=2.11.2
+ocpp
+paho_mqtt>=1.5.0
+psycopg2
+pyModbusTCP>=0.1.8
+pymysql
+pyserial>=3.4
+PyYAML
+requests>=2.23.0
+sentry_sdk>=0.11.2
+sysv_ipc
+termcolor>=1.1.0
+websockets<=9.1; python_version == '3.6'
+websockets>=9.1; python_version >= '3.7'
+

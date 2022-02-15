@@ -8,24 +8,24 @@ These instructions will result in the **latest** version of the TWCManager code 
 
 ```
 sudo apt-get update
-sudo apt-get install -y docker.io
+sudo apt-get install -y curl docker.io
 
-pip3 install docker-compose
+sudo pip3 install docker-compose
 
 curl https://raw.githubusercontent.com/ngardiner/TWCManager/main/contrib/docker/docker-compose.yml -o docker-compose.yml
 ```
 
 ### Using Stable Versions (Recommended)
 
-If you would like to opt for a more stable version, specify the version of TWCmanager that you would like to use. For example, to use the latest Stable version **v1.2.2**, use the following commands:
+If you would like to opt for a more stable version, specify the version of TWCmanager that you would like to use. For example, to use the latest Stable version **v1.2.4**, use the following commands:
 
 ```
 sudo apt-get update
 sudo apt-get install -y docker.io
 
-pip3 install docker-compose
+sudo pip3 install docker-compose
 
-curl https://raw.githubusercontent.com/ngardiner/TWCManager/main/contrib/docker/docker-compose-v1.2.2.yml -o docker-compose.yml
+curl https://raw.githubusercontent.com/ngardiner/TWCManager/main/contrib/docker/docker-compose-v1.2.4.yml -o docker-compose.yml
 ```
 
 ## Configuring TWCManager for Docker
@@ -36,9 +36,9 @@ You may need to perform some configuration of TWCManager in your environment.
 
 The default ```docker-compose.yml``` file assumes that you will be using Serial interface ```/dev/ttyUSB0``` on the host machine as the serial port to communicate with the TWCs you are managing. If this is not the case, you will need to edit the file and specify the correct interface.
 
-   * /etc/twcmanager/config.json
-
 The default  ```docker-compose.yml``` file also contains a default timezone Environment variable, commented out. Some systems will not require this to be set, however if you find the graphs and schedules are operating in a different timezone to your location (such as UTC/GMT), then you can specify the TZ attribute here with the linux value for timezone definitions. Uncomment this line to have it take effect.
+
+   * /etc/twcmanager/config.json
 
 On your first start of the TWCManager docker container, a directory on the host will be created if it does not currently exist, and the default configuration file will be copied there. The location of this volume is ```/etc/twcmanager```. If you need to edit the configuration file, run the Docker container in interactive mode (instructions below), exit with Ctrl+C and then edit the ```/etc/twcmanager/config.json``` file that was created.
 
@@ -86,7 +86,7 @@ The latest image gives you up to the minute access to TWCManager features and ch
 If you are using the ```latest``` Docker image instead of the current Stable version, you can fetch the latest TWCManager updates by executing the following commands:
 
 ```
-suoo docker-compose -f docker-compose.yml down
+sudo docker-compose -f docker-compose.yml down
 sudo docker-compose -f docker-compose.yml pull
 sudo docker-compose -f docker-compose.yml up -d
 ```
@@ -99,12 +99,12 @@ grep -q :latest docker-compose.yml; [[ $? -eq 1 ]] && echo "Stable Version" || e
 
 ### Using a Stable version
 
-If you are running a stable version of the Docker Image, you can upgrade to the latest stable version **v1.2.3** with the following commands:
+If you are running a stable version of the Docker Image, you can upgrade to the latest stable version **v1.2.4** with the following commands:
 
 ```
 sudo docker-compose -f docker-compose.yml down
 
-curl https://raw.githubusercontent.com/ngardiner/TWCManager/main/contrib/docker/docker-compose-v1.2.3.yml -o docker-compose.yml
+curl https://raw.githubusercontent.com/ngardiner/TWCManager/main/contrib/docker/docker-compose-v1.2.4.yml -o docker-compose.yml
 sudo docker-compose -f docker-compose.yml pull
 sudo docker-compose -d -f docker-compose.yml up
 ```

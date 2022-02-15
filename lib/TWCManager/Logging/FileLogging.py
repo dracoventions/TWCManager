@@ -4,7 +4,6 @@ import logging
 from sys import modules
 import logging
 from logging.handlers import TimedRotatingFileHandler
-from ww import f
 import re
 
 

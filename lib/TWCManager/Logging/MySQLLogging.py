@@ -29,11 +29,15 @@ class MySQLHandler(logging.Handler):
 
                 query = """
                     INSERT INTO charge_sessions (chargeid, startTime, startkWh, slaveTWC)
-                    VALUES (%s,now(),%s,%s)
+                    VALUES (%s,now(),%s,'%s')
                 """
 
                 # Ensure database connection is alive, or reconnect if not
-                self.db.ping(reconnect=True)
+                try:
+                    self.db.ping(reconnect=True)
+                except pymysql.err.OperationalError as e:
+                    logger.info("Error connecting to MySQL database. %s", str(e))
+                    return
 
                 cur = self.db.cursor()
                 rows = 0
@@ -67,11 +71,15 @@ class MySQLHandler(logging.Handler):
                 if getattr(record, "vehicleVIN", None):
                     query = """
                         UPDATE charge_sessions SET vehicleVIN = '%s'
-                        WHERE chargeid = %s AND slaveTWC = %s"
+                        WHERE chargeid = %s AND slaveTWC = '%s'
                     """
 
                     # Ensure database connection is alive, or reconnect if not
-                    self.db.ping(reconnect=True)
+                    try:
+                        self.db.ping(reconnect=True)
+                    except pymysql.err.OperationalError as e:
+                        logger.info("Error connecting to MySQL database. %s", str(e))
+                        return
 
                     cur = self.db.cursor()
                     rows = 0
@@ -97,11 +105,15 @@ class MySQLHandler(logging.Handler):
                 chgid = self.slaveSession.get(twcid, 0)
                 query = """
                     UPDATE charge_sessions SET endTime = now(), endkWh = %s
-                    WHERE chargeid = %s AND slaveTWC = %s
+                    WHERE chargeid = %s AND slaveTWC = '%s'
                 """
 
                 # Ensure database connection is alive, or reconnect if not
-                self.db.ping(reconnect=True)
+                try:
+                    self.db.ping(reconnect=True)
+                except pymysql.err.OperationalError as e:
+                    logger.info("Error connecting to MySQL database. %s", str(e))
+                    return
 
                 cur = self.db.cursor()
                 rows = 0
@@ -127,7 +139,11 @@ class MySQLHandler(logging.Handler):
                 self.slaveSession[twcid] = 0
         elif log_type == "green_energy":
             # Ensure database connection is alive, or reconnect if not
-            self.db.ping(reconnect=True)
+            try:
+                self.db.ping(reconnect=True)
+            except pymysql.err.OperationalError as e:
+                logger.info("Error connecting to MySQL database. %s", str(e))
+                return
 
             query = """
                 INSERT INTO green_energy (time, genW, conW, chgW)
@@ -235,8 +251,13 @@ class MySQLLogging:
         # Check if this status is muted
         if self.configLogging["mute"].get("GreenEnergy", 0):
             return None
+
         # Ensure database connection is alive, or reconnect if not
-        self.db.ping(reconnect=True)
+        try:
+            self.db.ping(reconnect=True)
+        except pymysql.err.OperationalError as e:
+            logger.info("Error connecting to MySQL database. %s", str(e))
+            return
 
         query = """
             SELECT * from green_energy where time>%s and time<%s
@@ -266,7 +287,11 @@ class MySQLLogging:
             return None
 
         # Ensure database connection is alive, or reconnect if not
-        self.db.ping(reconnect=True)
+        try:
+            self.db.ping(reconnect=True)
+        except pymysql.err.OperationalError as e:
+            logger.info("Error connecting to MySQL database. %s", str(e))
+            return
 
         # Otherwise, add to database
         cursor = self.db.cursor()

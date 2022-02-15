@@ -2,22 +2,32 @@
 
 This document logs the changes per release of TWCManager.
 
-## v1.3.0 - Latest Development Version
+## v1.2.5 - Latest Development Version
 
-## v1.2.4 - 2021-08-31
+## v1.2.4 - 2022-02-15
 
+  * **Breaking Changes**
+      * Due to changes introduced by Python 3.9, the minimum version of Python supported from v1.2.4 forward is **Python 3.6**
+          * This means that v1.2.3 is the end of the line for Debian Stretch based machines - upgrade to buster to use v1.2.4 and above.
+      * The configuration parsing engine has been changed to PyYAML
+          * This may cause your config file to stop parsing correctly. If so, my apologies, however it does allow us to support both JSON and YAML formats going forward.
   * Bugfixes:
       * (@MikeBishop) - Fix debounce mechanism to avoid continuous charging when minimum generation is not met in some circumstances
       * (@ngardiner) - Align web interface TWCID so that it is lowercase, avoiding issues with JavaScript and Jinja2 misalignment
-      * (@ngardiner) - Change cryptography module dependency to avoid versions requiring rust compiler
+      * (@ngardiner) - Change cryptography module dependency to avoid versions requiring rust compiler (no module named setuptools_rust error)
       * (@ngardiner) - Add logic to set token expiry time when manually adding tokens
+      * (@blach) - Fix Tesla API token refresh logic
  * (@MikeBishop) - Change to Powerwall Auth handling to expire auth tokens earlier due to changes in Powerwall auth handling
  * (@ngardiner) - Add version check to Web UI
  * (@ngardiner) - Add handling of recaptcha challenge (with DNS workaround), and provide other options if this is not possible
  * (@ngardiner) - Add Tesla API debug interface to allow sending Tesla API commands
  * (@ngardiner) - Added TeslaMate sync functionality to allow sync of telemetry and API token details
+ * (@ngardiner) - In line with changes made by setuptools team to deprecate setup.py as command line tool, switched to native python build tools
  * (@MikeBishop) - Restrict dampening to green policies only, and prefer to keep charging vs stop/start
  * (@ngardiner) - Reduce potential Tesla API backoff time
+ * (@deece) - Addition of Open Energy Monitor EMS module
+ * (@dehsgr) - Addition of URL EMS module
+ * (@tjikkun) - Set HASS sensor state class to make it work with statistics dashboard
 
 ## v1.2.3 - 2021-08-10
 

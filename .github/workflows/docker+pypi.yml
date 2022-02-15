@@ -1,5 +1,9 @@
 name: "Create PyPi Package and Docker Image"
 
+defaults:
+  run:
+    working-directory: ./pypi
+
 on:
   push:
     branches:
@@ -39,6 +43,8 @@ jobs:
     steps:
     - name: Check out Repository
       uses: actions/checkout@v2
+      with:
+        path: ./pypi
 
     - name: Set up Python 3.7
       uses: actions/setup-python@v1
@@ -91,6 +97,8 @@ jobs:
     steps:
     - name: Check out Repository
       uses: actions/checkout@v2
+      with:
+        path: ./pypi
 
     - name: Set up Python 3.7
       uses: actions/setup-python@v1
@@ -136,6 +144,8 @@ jobs:
     steps:
     - name: Check out Repository
       uses: actions/checkout@v2
+      with:
+        path: ./pypi
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
@@ -184,6 +194,8 @@ jobs:
 
     - name: Check out Repository
       uses: actions/checkout@v2
+      with:
+        path: ./pypi
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1

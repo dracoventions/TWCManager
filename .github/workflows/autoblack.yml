@@ -5,6 +5,10 @@
 
 name: Automatically format sources
 
+defaults:
+  run:
+    working-directory: ./black
+
 on:
   push:
     branches:
@@ -18,6 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
+          path: ./black
           ref: ${{ github.event.push.head.sha }}
       - name: Set up Python 3.7
         uses: actions/setup-python@v1

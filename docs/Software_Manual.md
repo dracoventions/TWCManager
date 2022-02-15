@@ -42,6 +42,10 @@ This indicates an older version of setuptools is installed. To resolve this issu
 pip3 install --upgrade setuptools
 ```
 
+### Raspberry Pi OS / Raspbian Bullseye (11)
+
+There is no need to change the python intepreter to python3 in Bullseye, this is the default.
+
 ### Raspberry Pi OS / Raspbian Buster
 
 You may need to set python3 as your default python interpreter version on Raspberry Pi OS / Debian Buster. The following command will set python 3.7 as your default interpreter.
@@ -54,6 +58,8 @@ sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.7 2
 You can check that this command has been successful by running ```python --version``` and checking that the version is python3.
 
 ### Raspbian Stretch
+
+Please note that Raspbian Stretch will no longer be supported as of v1.2.4 of TWCManager. The following instructions are relevant for versions earlier than this.
 
 You may need to set python3 as your default python interpreter version on Debian/Ubuntu. The following command will set python 3.5 as your default interpreter.
 
@@ -68,13 +74,13 @@ You can check that this command has been successful by running ```python --versi
 
 During this step, the source code and all related files will be cloned from the GitHub repository and installed into the appropriate location on your system.
 
-We have two versions of the codebase that you may want to check out. The stable version is **v1.2.2**, which will only change for stability or urgent fixes. To check out **v1.2.2**, follow these steps:
+We have two versions of the codebase that you may want to check out. The stable version is **v1.2.4**, which will only change for stability or urgent fixes. To check out **v1.2.4**, follow these steps:
 
 
 ```
 git clone https://github.com/ngardiner/TWCManager
 cd TWCManager
-git checkout v1.2.3
+git checkout v1.2.4
 sudo make install
 ```
 
@@ -147,7 +153,7 @@ sudo systemctl disable twcmanager
 
 ### Stable Release
 
-From version v1.2.3 of TWCManager and beyond, you can use pip to upgrade TWCManager to the latest stable version.
+From version v1.2.4 of TWCManager and beyond, you can use pip to upgrade TWCManager to the latest stable version.
 
 To upgrade TWCManager to the latest version:
 

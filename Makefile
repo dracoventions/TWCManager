@@ -1,4 +1,4 @@
-DEPS := screen git libffi-dev libpq-dev libssl-dev
+DEPS := git libffi-dev libpq-dev libssl-dev
 WEBDEPS := $(DEPS) lighttpd
 SUDO := sudo
 USER := twcmanager
@@ -7,8 +7,9 @@ VER := $(shell lsb_release -sr)
 
 .PHONY: tests upload
 
-build: deps setup
-webbuild: webdeps setup
+build: deps build_pkg
+docker: deps build_pkg config
+webbuild: webdeps build_pkg
 
 config:
 	# Create twcmanager user and group
@@ -46,8 +47,8 @@ endif
 	$(SUDO) lighty-enable-mod fastcgi-php ; exit 0
 	$(SUDO) service lighttpd force-reload ; exit 0
 
-install: deps setup config
-webinstall: webdeps setup config webfiles
+install: deps install_pkg config
+webinstall: webdeps install_pkg config webfiles
 
 testconfig:
 	# Create twcmanager user and group
@@ -61,19 +62,38 @@ endif
 	$(SUDO) chown $(USER):$(GROUP) /etc/twcmanager -R
 	$(SUDO) chmod 755 /etc/twcmanager -R
 
-setup:
+build_pkg:
+	# Install build pre-requisite
+	$(SUDO) apt-get -y install python3-venv
+
 	# Install TWCManager packages
 ifeq ($(CI), 1)
-	$(SUDO) /home/docker/.pyenv/shims/python3 setup.py install
+	$(SUDO) /home/docker/.pyenv/shims/pip3 install -r requirements.txt
+	$(SUDO) /home/docker/.pyenv/shims/python3 -m build
 else
 ifneq (,$(wildcard /usr/bin/pip3))
+	$(SUDO) pip3 install --upgrade pip
 	$(SUDO) pip3 install --upgrade setuptools
+	$(SUDO) pip3 install -r requirements.txt
 else
 ifneq (,$(wildcard /usr/bin/pip))
+	$(SUDO) pip install --upgrade pip
 	$(SUDO) pip install --upgrade setuptools
+	$(SUDO) pip install -r requirements.txt
 endif
 endif
-	$(SUDO) ./setup.py install
+	$(SUDO) python3 -m build
+endif
+
+install_pkg:
+ifneq (,$(wildcard /usr/bin/pip3))
+	$(SUDO) pip3 install -r requirements.txt
+	$(SUDO) pip3 install TWCManager
+else
+ifneq (,$(wildcard /usr/bin/pip))
+	$(SUDO) pip install -r requirement.txt
+	$(SUDO) pip install TWCManager
+endif
 endif
 
 test_direct:

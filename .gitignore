@@ -6,3 +6,4 @@ dist/
 TWCManager.egg-info/
 .idea/
 venv/
+.DS_Store
