@@ -62,6 +62,9 @@ endif
 	$(SUDO) chmod 755 /etc/twcmanager -R
 
 build_pkg:
+	# Install build pre-requisite
+	$(SUDO) apt-get -y install python3-venv
+
 	# Install TWCManager packages
 ifeq ($(CI), 1)
 	$(SUDO) /home/docker/.pyenv/shims/pip3 install -r requirements.txt

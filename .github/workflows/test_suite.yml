@@ -230,3 +230,32 @@ jobs:
         if: always()
         run: make upload
 
+  twcmanager-python3_8_direct:
+    name: Python 3.8 - Run Direct
+    runs-on: [ "self-hosted", "build_host" ]
+    container:
+      image: twcmanager/twcmanager-testsuite:py3.8.12
+      options: --user root
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v2
+
+      - name: "Upgrade setuptools"
+        run: pip3 install --upgrade setuptools
+
+      - name: "Build Project"
+        run: CI=1 make webbuild
+
+      - name: "Deploy Test Configuration"
+        run: make testconfig
+
+      - name: "Install Legacy Web Files"
+        run: make webfiles
+
+      - name: "Run Test Suite"
+        run: make test_direct
+
+      - name: "Upload any debug files collected"
+        if: always()
+        run: make upload
+
