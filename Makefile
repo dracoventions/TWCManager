@@ -64,19 +64,20 @@ endif
 build_pkg:
 	# Install TWCManager packages
 ifeq ($(CI), 1)
-	$(SUDO) pip install -r requirements.txt
+	$(SUDO) /home/docker/.pyenv/shims/pip3 install -r requirements.txt
 	$(SUDO) /home/docker/.pyenv/shims/python3 -m build
 else
 ifneq (,$(wildcard /usr/bin/pip3))
+	$(SUDO) pip3 install --upgrade pip
 	$(SUDO) pip3 install --upgrade setuptools
-	$(SUDO) pip3 install PyYAML
+	$(SUDO) pip3 install -r requirements.txt
 else
 ifneq (,$(wildcard /usr/bin/pip))
+	$(SUDO) pip install --upgrade pip
 	$(SUDO) pip install --upgrade setuptools
-	$(SUDO) pip install PyYAML
-endif
-endif
 	$(SUDO) pip install -r requirements.txt
+endif
+endif
 	$(SUDO) python3 -m build
 endif
 

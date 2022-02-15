@@ -22,6 +22,7 @@ This document logs the changes per release of TWCManager.
  * (@ngardiner) - Add handling of recaptcha challenge (with DNS workaround), and provide other options if this is not possible
  * (@ngardiner) - Add Tesla API debug interface to allow sending Tesla API commands
  * (@ngardiner) - Added TeslaMate sync functionality to allow sync of telemetry and API token details
+ * (@ngardiner) - In line with changes made by setuptools team to deprecate setup.py as command line tool, switched to native python build tools
  * (@MikeBishop) - Restrict dampening to green policies only, and prefer to keep charging vs stop/start
  * (@ngardiner) - Reduce potential Tesla API backoff time
  * (@deece) - Addition of Open Energy Monitor EMS module
