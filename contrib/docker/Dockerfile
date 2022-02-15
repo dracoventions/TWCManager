@@ -3,7 +3,7 @@ RUN apt-get -y update && apt-get -y install build-essential ca-certificates gfor
 RUN cd /usr/src && git clone https://github.com/ngardiner/TWCManager
 
 # Install TWCManager
-RUN cd /usr/src/TWCManager && make build SUDO=""
+RUN cd /usr/src/TWCManager && make docker SUDO=""
 
 VOLUME /etc/twcmanager
 WORKDIR /usr/src/TWCManager

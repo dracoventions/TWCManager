@@ -8,6 +8,7 @@ VER := $(shell lsb_release -sr)
 .PHONY: tests upload
 
 build: deps build_pkg
+docker: deps build_pkg config
 webbuild: webdeps build_pkg
 
 config:
