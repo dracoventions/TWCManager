@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  twcmanager:
+    image: twcmanager/twcmanager:v1.2.3
+    restart: always
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
+    ports:
+      - 80:80
+      - 8080:8080
+#    environment:
+#      - TZ=Australia/Sydney
+    volumes:
+      - /etc/twcmanager:/etc/twcmanager
+      - /etc/localtime:/etc/localtime:ro
