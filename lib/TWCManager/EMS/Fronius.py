@@ -126,7 +126,8 @@ class Fronius:
                             self.voltage = inverterData["Body"]["Data"]["UAC"]["Value"]
                     except (KeyError, TypeError) as e:
                         logger.log(
-                            logging.INFO4, "Exception during parsing Inverter Data (UAC)"
+                            logging.INFO4,
+                            "Exception during parsing Inverter Data (UAC)",
                         )
                         logger.debug(e)
 
