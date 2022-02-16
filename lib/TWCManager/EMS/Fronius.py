@@ -42,7 +42,7 @@ class Fronius:
 
         # If serverIP is not a list, make it one
         if not isinstance(self.serverIP, list):
-            self.serverIP = [ self.serverIP ]
+            self.serverIP = [self.serverIP]
 
         # Unload if this module is disabled or misconfigured
         if (not self.status) or (not self.serverIP) or (int(self.serverPort) < 1):
