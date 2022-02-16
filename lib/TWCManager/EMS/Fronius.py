@@ -40,6 +40,10 @@ class Fronius:
         self.serverIP = self.configFronius.get("serverIP", None)
         self.serverPort = self.configFronius.get("serverPort", "80")
 
+        # If serverIP is not a list, make it one
+        if not isinstance(self.serverIP, list):
+            self.serverIP = [ self.serverIP ]
+
         # Unload if this module is disabled or misconfigured
         if (not self.status) or (not self.serverIP) or (int(self.serverPort) < 1):
             self.master.releaseModule("lib.TWCManager.EMS", "Fronius")
@@ -71,8 +75,8 @@ class Fronius:
             self.generatedW = 0
         return float(self.generatedW)
 
-    def getInverterData(self):
-        url = "http://" + self.serverIP + ":" + self.serverPort
+    def getInverterData(self, inverter):
+        url = "http://" + inverter + ":" + self.serverPort
         url = (
             url
             + "/solar_api/v1/GetInverterRealtimeData.cgi?Scope=Device&DeviceID=1&DataCollection=CommonInverterData"
@@ -100,8 +104,8 @@ class Fronius:
         jsondata = r.json()
         return jsondata
 
-    def getMeterData(self):
-        url = "http://" + self.serverIP + ":" + self.serverPort
+    def getMeterData(self, inverter):
+        url = "http://" + inverter + ":" + self.serverPort
         url = url + "/solar_api/v1/GetPowerFlowRealtimeData.fcgi?Scope=System"
 
         return self.getInverterValue(url)
@@ -111,37 +115,44 @@ class Fronius:
         if (int(time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from Fronius inverter.
 
-            inverterData = self.getInverterData()
-            if inverterData:
-                try:
-                    if "UAC" in inverterData["Body"]["Data"]:
-                        self.voltage = inverterData["Body"]["Data"]["UAC"]["Value"]
-                except (KeyError, TypeError) as e:
-                    logger.log(
-                        logging.INFO4, "Exception during parsing Inveter Data (UAC)"
-                    )
-                    logger.debug(e)
+            con = 0
+            gen = 0
+            for inverter in self.serverIP:
 
-            meterData = self.getMeterData()
-            if meterData:
-                try:
+                inverterData = self.getInverterData(inverter)
+                if inverterData:
+                    try:
+                        if "UAC" in inverterData["Body"]["Data"]:
+                            self.voltage = inverterData["Body"]["Data"]["UAC"]["Value"]
+                    except (KeyError, TypeError) as e:
+                        logger.log(
+                            logging.INFO4, "Exception during parsing Inveter Data (UAC)"
+                        )
+                        logger.debug(e)
 
-                    self.generatedW = meterData["Body"]["Data"]["Site"]["P_PV"]
-                except (KeyError, TypeError) as e:
-                    logger.log(
-                        logging.INFO4,
-                        "Exception during parsing Meter Data (Generation)",
-                    )
-                    logger.debug(e)
+                meterData = self.getMeterData(inverter)
+                if meterData:
+                    try:
+                        gen += meterData["Body"]["Data"]["Site"]["P_PV"]
+                    except (KeyError, TypeError) as e:
+                        logger.log(
+                            logging.INFO4,
+                            "Exception during parsing Meter Data (Generation)",
+                        )
+                        logger.debug(e)
 
-                try:
-                    self.consumedW = meterData["Body"]["Data"]["Site"]["P_Load"]
-                except (KeyError, TypeError) as e:
-                    logger.log(
-                        logging.INFO4,
-                        "Exception during parsing Meter Data (Consumption)",
-                    )
-                    logger.debug(e)
+                    try:
+                        con += meterData["Body"]["Data"]["Site"]["P_Load"]
+                    except (KeyError, TypeError) as e:
+                        logger.log(
+                            logging.INFO4,
+                            "Exception during parsing Meter Data (Consumption)",
+                        )
+                        logger.debug(e)
+
+            # Update values
+            self.consumedW = con
+            self.generatedW = gen
 
             # Update last fetch time
             if self.fetchFailed is not True:
