@@ -36,15 +36,27 @@ The following table shows the available configuration parameters for the Fronius
 | Parameter   | Value         |
 | ----------- | ------------- |
 | enabled     | *required* Boolean value, ```true``` or ```false```. Determines whether we will poll the Fronius Inverter. |
-| serverIP    | *required* The IP address of the Fronius Inverter. We will poll this device's HTTP API. |
+| serverIP    | *required* The IP address of the Fronius Inverter. We will poll this device's HTTP API. Multiple Fronius inverters can be specified, please see examples below. |
 | serverPort  | *optional* Web Server port. This is the port that we should connect to. This is almost always 80 (HTTP). |
 
 ### JSON Configuration Example
+
+Single inverter configuration:
 
 ```
 "Fronius": {
   "enabled": true,
   "serverIP": "192.168.1.2",
+  "serverPort": 80
+}
+```
+
+Multiple inverter confgiuration:
+
+```
+"Fronius": {
+  "enabled": true,
+  "serverIP": [ "192.168.1.2", "192.168.1.3", "192.168.1.4" ],
   "serverPort": 80
 }
 ```

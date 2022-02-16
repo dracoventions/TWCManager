@@ -4,6 +4,8 @@ This document logs the changes per release of TWCManager.
 
 ## v1.2.5 - Latest Development Version
 
+  * (@ngardiner) - Add support for multiple Fronius inverters
+
 ## v1.2.4 - 2022-02-15
 
   * **Breaking Changes**
