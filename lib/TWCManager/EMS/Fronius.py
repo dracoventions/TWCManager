@@ -3,7 +3,7 @@ import logging
 import requests
 import time
 
-logger = logging.getLogger(__name__.rsplit(".")[-1])
+logger = logging.getLogger("\U000026C5 Fronius")
 
 
 class Fronius:
@@ -19,7 +19,7 @@ class Fronius:
     exportW = 0
     lastFetch = 0
     master = None
-    serverIP = None
+    serverIP = []
     serverPort = 80
     status = False
     timeout = 10
@@ -126,14 +126,15 @@ class Fronius:
                             self.voltage = inverterData["Body"]["Data"]["UAC"]["Value"]
                     except (KeyError, TypeError) as e:
                         logger.log(
-                            logging.INFO4, "Exception during parsing Inveter Data (UAC)"
+                            logging.INFO4, "Exception during parsing Inverter Data (UAC)"
                         )
                         logger.debug(e)
 
                 meterData = self.getMeterData(inverter)
                 if meterData:
                     try:
-                        gen += meterData["Body"]["Data"]["Site"]["P_PV"]
+                        if "P_PV" in meterData["Body"]["Data"]["Site"]:
+                            gen += float(meterData["Body"]["Data"]["Site"]["P_PV"])
                     except (KeyError, TypeError) as e:
                         logger.log(
                             logging.INFO4,
@@ -142,7 +143,8 @@ class Fronius:
                         logger.debug(e)
 
                     try:
-                        con += meterData["Body"]["Data"]["Site"]["P_Load"]
+                        if "P_Load" in meterData["Body"]["Data"]["Site"]:
+                            con += float(meterData["Body"]["Data"]["Site"]["P_Load"])
                     except (KeyError, TypeError) as e:
                         logger.log(
                             logging.INFO4,
