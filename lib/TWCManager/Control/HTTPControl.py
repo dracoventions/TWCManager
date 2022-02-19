@@ -886,6 +886,10 @@ def CreateHTTPHandlerClass(master):
                 self.process_save_settings("debug")
                 return
 
+            if self.url.path == "/debug/saveToggle":
+                self.process_save_settings("debug_toggle")
+                return
+
             if self.url.path == "/schedule/save":
                 # User has submitted schedule.
                 self.process_save_schedule()
@@ -1230,9 +1234,12 @@ def CreateHTTPHandlerClass(master):
             # set certain settings to false if they were not seen in the
             # request data - This is because Check Boxes don't have a value
             # if they aren't set
+            if page == "debug_toggle":
+                if "enableDebugCommands" not in self.fields:
+                    master.settings["enableDebugCommands"] = 0
+
             if page == "debug":
                 checkboxes = [
-                    "enableDebugCommands",
                     "spikeAmpsProactively",
                     "spikeAmpsReactively",
                 ]
