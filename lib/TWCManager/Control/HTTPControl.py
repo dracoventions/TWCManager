@@ -1225,7 +1225,6 @@ def CreateHTTPHandlerClass(master):
             # Track Green Energy, set Non-Scheduled power rate to 0
             if int(master.settings.get("nonScheduledAction", 1)) > 1:
                 master.settings["nonScheduledAmpsMax"] = 0
-            master.queue_background_task({"cmd": "saveSettings"})
 
             # If triggered from the Debug page (not settings page), we need to
             # set certain settings to false if they were not seen in the
@@ -1240,6 +1239,9 @@ def CreateHTTPHandlerClass(master):
                 for checkbox in checkboxes:
                     if checkbox not in self.fields:
                         master.settings[checkbox] = 0
+
+            # Save Settings
+            master.queue_background_task({"cmd": "saveSettings"})
 
             # Redirect to the index page
             self.send_response(302)
