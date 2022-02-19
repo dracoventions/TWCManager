@@ -7,7 +7,7 @@
   </head>
   <body>
     {% include 'navbar.html.j2' %}
-    <form method=POST action='/debug/save'>
+    <form method=POST action='/debug/saveToggle'>
     <h3>Send TWC Command</h3>
     <b>Warning:</b> The Send Command function is potentially dangerous and, if used to send the wrong command, could render your TWC permanently inoperable. For that reason, you must enable use of the function before it will be available. If you don't require the function, we recommend leaving it disabled.
     <table>
@@ -15,6 +15,7 @@
         <td>{{ checkBox("enableDebugCommands", master.settings.get("enableDebugCommands", 0))| safe }}</td>
         <th colspan = 2>Enable Advanced Debug Settings</th>
       </tr>
+      <input class='btn btn-outline-success' type=submit value='Save Settings' />
       {% if master.settings.get("enableDebugCommands", 0) %}
       <tr>
         <td>&nbsp;</td>
@@ -99,6 +100,7 @@
     </form>
 
     <p>&nbsp;</p>
+    <form method=POST action='/debug/save'>
     <h3>Advanced Settings</h3>
     These advanced settings can alter the way that the TWCManager operates, potentially causing the behaviour to change. Modifying these settings will be the most likely reason that something will work abnormally in your setup.
     <table>
