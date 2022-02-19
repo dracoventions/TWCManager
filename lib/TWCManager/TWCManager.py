@@ -35,8 +35,8 @@ import re
 import sys
 import time
 import traceback
+import datetime
 import yaml
-from datetime import datetime
 import threading
 from TWCManager.TWCMaster import TWCMaster
 import requests
@@ -195,7 +195,7 @@ def hex_str(ba: bytearray):
 
 def time_now():
     global config
-    return datetime.now().strftime(
+    return datetime.datetime.now().strftime(
         "%H:%M:%S" + (".%f" if config["config"]["displayMilliseconds"] else "")
     )
 
@@ -318,6 +318,8 @@ def background_tasks_thread(master):
                         requests.post(task["url"], json=body)
                 elif task["cmd"] == "saveSettings":
                     master.saveSettings()
+                elif task["cmd"] == "sunrise":
+                    update_sunrise_sunset()
 
         except:
             logger.info(
@@ -492,6 +494,60 @@ def update_statuses():
         )
 
 
+def update_sunrise_sunset():
+
+    ltNow = time.localtime()
+    latlong = master.getHomeLatLon()
+    if latlong[0] == 10000:
+        # We don't know where home is; keep defaults
+        master.settings["sunrise"] = 6
+        master.settings["sunset"] = 20
+    else:
+        sunrise = 6
+        sunset = 20
+        url = (
+            "https://api.sunrise-sunset.org/json?lat="
+            + str(latlong[0])
+            + "&lng="
+            + str(latlong[1])
+            + "&formatted=0&date="
+            + "-".join([str(ltNow.tm_year), str(ltNow.tm_mon), str(ltNow.tm_mday)])
+        )
+
+        r = {}
+        try:
+            r = requests.get(url).json().get("results")
+        except:
+            pass
+
+        if r.get("sunrise", None):
+            try:
+                dtSunrise = datetime.datetime.astimezone(
+                    datetime.datetime.fromisoformat(r["sunrise"])
+                )
+                sunrise = dtSunrise.hour + (1 if dtSunrise.minute >= 30 else 0)
+            except:
+                pass
+
+        if r.get("sunset", None):
+            try:
+                dtSunset = datetime.datetime.astimezone(
+                    datetime.datetime.fromisoformat(r["sunset"])
+                )
+                sunset = dtSunset.hour + (1 if dtSunset.minute >= 30 else 0)
+            except:
+                pass
+
+        master.settings["sunrise"] = sunrise
+        master.settings["sunset"] = sunset
+
+    tomorrow = datetime.datetime.combine(
+        datetime.datetime.today(), datetime.time(hour=1)
+    ) + datetime.timedelta(days=1)
+    diff = tomorrow - datetime.datetime.now()
+    master.queue_background_task({"cmd": "sunrise"}, diff.total_seconds())
+
+
 #
 # End functions
 #
@@ -592,6 +648,8 @@ master.loadSettings()
 backgroundTasksThread = threading.Thread(target=background_tasks_thread, args=(master,))
 backgroundTasksThread.daemon = True
 backgroundTasksThread.start()
+
+master.queue_background_task({"cmd": "sunrise"}, 30)
 
 logger.info(
     "TWC Manager starting as fake %s with id %02X%02X and sign %02X"
