@@ -223,7 +223,7 @@ class TeslaMateVehicle:
 
             elif topic[3] == "time_to_full_charge":
                 if self.vehicles.get(topic[2], None):
-                    self.vehicles[topic[2]].timeToFullCharge = int(payload)
+                    self.vehicles[topic[2]].timeToFullCharge = int(float(payload))
                     self.vehicles[topic[2]].lastChargeStatusTime = time.time()
                     self.vehicles[topic[2]].syncTimestamp = time.time()
 
