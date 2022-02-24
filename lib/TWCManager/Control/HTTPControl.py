@@ -128,13 +128,13 @@ def CreateHTTPHandlerClass(master):
             # render HTML, we can keep using those even inside jinja2
             self.templateEnv.globals.update(addButton=self.addButton)
             self.templateEnv.globals.update(ampsList=self.ampsList)
+            self.templateEnv.globals.update(
+                apiChallenge=master.getModuleByName("TeslaAPI").getApiChallenge
+            )
             self.templateEnv.globals.update(chargeScheduleDay=self.chargeScheduleDay)
             self.templateEnv.globals.update(checkBox=self.checkBox)
             self.templateEnv.globals.update(checkForUpdates=master.checkForUpdates)
             self.templateEnv.globals.update(doChargeSchedule=self.do_chargeSchedule)
-            self.templateEnv.globals.update(
-                getMFADevices=master.getModuleByName("TeslaAPI").getMFADevices
-            )
             self.templateEnv.globals.update(host=self.host)
             self.templateEnv.globals.update(hoursDurationList=self.hoursDurationList)
             self.templateEnv.globals.update(navbarItem=self.navbar_item)
@@ -728,20 +728,11 @@ def CreateHTTPHandlerClass(master):
                 {"route": "/debug", "tmpl": "debug.html.j2"},
                 {"route": "/schedule", "tmpl": "schedule.html.j2"},
                 {"route": "/settings", "tmpl": "settings.html.j2"},
-                {"route": "/teslaAccount/login", "error": "insecure"},
-                {"route": "/teslaAccount/mfaCode", "error": "insecure"},
-                {"route": "/teslaAccount/submitCaptcha", "error": "insecure"},
+                {"route": "/teslaAccount/saveToken", "error": "insecure"},
                 {"rstart": "/teslaAccount", "tmpl": "main.html.j2"},
                 {"rstart": "/vehicleDetail", "tmpl": "vehicleDetail.html.j2"},
                 {"route": "/vehicles", "tmpl": "vehicles.html.j2"},
             ]
-
-            if self.url.path == "/teslaAccount/getCaptchaImage":
-                self.send_response(200)
-                self.send_header("Content-type", "image/svg+xml")
-                self.end_headers()
-                self.wfile.write(master.getModuleByName("TeslaAPI").getCaptchaImage())
-                return
 
             if self.url.path == "/":
                 self.send_response(200)
@@ -901,41 +892,6 @@ def CreateHTTPHandlerClass(master):
                 self.process_save_settings()
                 return
 
-            if self.url.path == "/teslaAccount/login":
-                # User has submitted Tesla login.
-                # Pass it to the dedicated process_teslalogin function
-                self.process_teslalogin()
-                return
-
-            if self.url.path == "/teslaAccount/mfaCode":
-                transactionID = self.getFieldValue("transactionID")
-                mfaDevice = self.getFieldValue("mfaDevice")
-                mfaCode = self.getFieldValue("mfaCode")
-
-                resp = master.getModuleByName("TeslaAPI").mfaLogin(
-                    transactionID, mfaDevice, mfaCode
-                )
-
-                self.send_response(302)
-                self.send_header("Location", "/teslaAccount/" + str(resp))
-                self.end_headers()
-                self.wfile.write("".encode("utf-8"))
-                return
-
-            if self.url.path == "/teslaAccount/submitCaptcha":
-                captchaCode = self.getFieldValue("captchaCode")
-                interface = self.getFieldValue("interface")
-
-                resp = master.getModuleByName("TeslaAPI").submitCaptchaCode(
-                    captchaCode, interface
-                )
-
-                self.send_response(302)
-                self.send_header("Location", "/teslaAccount/" + str(resp))
-                self.end_headers()
-                self.wfile.write("".encode("utf-8"))
-                return
-
             if self.url.path == "/graphs/dates":
                 # User has submitted dates to graph this period.
                 objIni = self.getFieldValue("dateIni")
@@ -951,6 +907,35 @@ def CreateHTTPHandlerClass(master):
                     self.process_save_graphs(objIni, objEnd)
                     self.send_response(302)
                     self.send_header("Location", "/graphsP")
+
+                self.end_headers()
+                self.wfile.write("".encode("utf-8"))
+                return
+
+            if self.url.path == "/teslaAccount/saveToken":
+
+                # Check if we are skipping Tesla Login submission
+                later = False
+                try:
+                    later = len(self.fields["later"][0])
+                except KeyError:
+                    later = False
+
+                res = ""
+                url = self.getFieldValue("url")
+
+                if later:
+                    master.teslaLoginAskLater = True
+                    res = "later"
+
+                else:
+
+                    res = master.getModuleByName(
+                        "TeslaAPI"
+                    ).saveApiToken(url)
+
+                self.send_response(302)
+                self.send_header("Location", "/teslaAccount/" + res)
 
                 self.end_headers()
                 self.wfile.write("".encode("utf-8"))
@@ -1256,51 +1241,6 @@ def CreateHTTPHandlerClass(master):
             self.end_headers()
             self.wfile.write("".encode("utf-8"))
             return
-
-        def process_teslalogin(self):
-            # Check if we are skipping Tesla Login submission
-
-            if not master.teslaLoginAskLater:
-                later = False
-                try:
-                    later = len(self.fields["later"][0])
-                except KeyError:
-                    later = False
-
-                if later:
-                    master.teslaLoginAskLater = True
-
-            if not master.teslaLoginAskLater:
-                # Connect to Tesla API
-
-                carapi = master.getModuleByName("TeslaAPI")
-                carapi.resetCarApiLastErrorTime()
-                try:
-                    ret = carapi.apiLogin(
-                        self.fields["email"][0], self.fields["password"][0]
-                    )
-                except KeyError:
-                    self.send_response(302)
-                    self.send_header("Location", "/teslaAccount/NotSpecified")
-                    self.end_headers()
-                    self.wfile.write("".encode("utf-8"))
-                    return
-
-                # Redirect to an index page with output based on the return state of
-                # the function
-                self.send_response(302)
-                self.send_header("Location", "/teslaAccount/" + str(ret))
-                self.end_headers()
-                self.wfile.write("".encode("utf-8"))
-                return
-            else:
-                # User has asked to skip Tesla Account submission for this session
-                # Redirect back to /
-                self.send_response(302)
-                self.send_header("Location", "/")
-                self.end_headers()
-                self.wfile.write("".encode("utf-8"))
-                return
 
         def process_save_graphs(self, initial, end):
             # Check that Graphs dict exists within settings.

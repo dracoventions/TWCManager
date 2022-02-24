@@ -1,26 +1,28 @@
-<form action='/teslaAccount/login' method='POST'>
-  <p>Enter your email and password to allow TWCManager to start and 
-     stop Tesla vehicles you own from charging. These credentials are 
-     sent once to Tesla and are not stored. Credentials must be entered 
-     again if no cars are connected to this charger for over 45 days.
+<form action='/teslaAccount/saveToken' method='POST'>
+  <p>TWCManager uses Tesla API to start and stop Tesla vehicles you own from charging.
   </p>
 
   <input type=hidden name='page' value='tesla-login' />
   <p>
     <table>
+      To log in to your Tesla account, please do the following:
       <tr>
-        <td>Tesla Account E-Mail:</td>
-        <td><input type='text' name='email' value='' class='form-control'></td>
+        <td><b>Step 1</b></td>
+        <td>Click the following link: <a href="https://auth.tesla.com/oauth2/v3/authorize?client_id=ownerapi&code_challenge={{ apiChallenge()[0] }}&code_challenge_method=S256&redirect_uri=https%3A%2F%2Fauth.tesla.com%2Fvoid%2Fcallback&response_type=code&scope=openid+email+offline_access&state={{ apiChallenge()[1] }}" target="_blank">Tesla Login</a></td>
       </tr>
       <tr>
-        <td>Password:</td>
-        <td><input type='password' name='password' class='form-control'></td>
+        <td><b>Step 2</b></td>
+        <td>After you login, you'll be redirected to a <b>Page Not Found</b> page with an auth.tesla.com URL. Copy the URL from your browser bar.</td>
+      </tr>
+      <tr>
+        <td><b>Paste the URL here:</b></td>
+        <td><input name="url" size=70> </td>
       </tr>
       <tr>
         <td>
           {{ addButton(
-              ["submit", "Log In"],
-              "class='btn btn-outline-success' name='submit'",
+              ["later", "Save API Key"],
+              "class='btn btn-outline-info' name='save'",
           )|safe }}
         </td>
         <td>
