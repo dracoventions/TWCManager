@@ -119,12 +119,16 @@ class TeslaAPI:
             logger.log(logging.INFO2, "Car API request" + str(req))
             apiResponseDict = json.loads(req.text)
         except requests.exceptions.RequestException:
-            logger.log(logging.INFO2, "Request Exception parsing API Token Refresh Response")
+            logger.log(
+                logging.INFO2, "Request Exception parsing API Token Refresh Response"
+            )
             pass
         except ValueError:
             pass
         except json.decoder.JSONDecodeError:
-            logger.log(logging.INFO2, "JSON Decode Error parsing API Token Refresh Response")
+            logger.log(
+                logging.INFO2, "JSON Decode Error parsing API Token Refresh Response"
+            )
             pass
 
         try:
@@ -502,7 +506,11 @@ class TeslaAPI:
         )
 
     def getApiChallenge(self):
-        return (self.__apiChallenge.decode("UTF-8"), self.__apiState, self.__apiVerifier)
+        return (
+            self.__apiChallenge.decode("UTF-8"),
+            self.__apiState,
+            self.__apiVerifier,
+        )
 
     def is_location_home(self, lat, lon):
 
@@ -1005,9 +1013,7 @@ class TeslaAPI:
 
     def saveApiToken(self, url):
         # Extract code from url
-        code = re.search(
-            r'code=(.+)&state=(.+)', url
-        )
+        code = re.search(r"code=(.+)&state=(.+)", url)
 
         logger.log(logging.INFO2, "Code: " + code.group(1))
         logger.log(logging.INFO2, "State: " + code.group(2))
@@ -1040,7 +1046,7 @@ class TeslaAPI:
 
         # Check for errors
         if "error" in params:
-            return params['error']
+            return params["error"]
 
         if "access_token" in params:
             try:

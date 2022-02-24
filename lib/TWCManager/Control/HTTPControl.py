@@ -930,9 +930,7 @@ def CreateHTTPHandlerClass(master):
 
                 else:
 
-                    res = master.getModuleByName(
-                        "TeslaAPI"
-                    ).saveApiToken(url)
+                    res = master.getModuleByName("TeslaAPI").saveApiToken(url)
 
                 self.send_response(302)
                 self.send_header("Location", "/teslaAccount/" + res)
