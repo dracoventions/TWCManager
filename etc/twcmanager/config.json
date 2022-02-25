@@ -272,6 +272,14 @@
     # - Evaluate any user defined extensions in the after section below
     # - Outside Scheduled Charging, charge at unscheduled charge rate
     "policy":{
+      # By default, EMS modules are polled only when the data is needed
+      # to track green energy. If you would like to always poll EMS for
+      # display purposes, uncomment this.
+      #
+      # This will not work for custom policies which specify their own
+      # background task.
+      #"alwaysPollEMS": true,
+
       "engine":{
         "policyCheckInterval": 30
       },

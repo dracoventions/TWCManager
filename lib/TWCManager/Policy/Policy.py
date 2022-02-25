@@ -121,6 +121,11 @@ class Policy:
                 for (name, position) in [("after", 3), ("before", 1), ("emergency", 0)]:
                     self.charge_policy[position:position] = config_extend.get(name, [])
 
+            if config_policy.get("alwaysPollEMS", False):
+                for policy in self.charge_policy:
+                    if policy.get("background_task", None) is None:
+                        policy["background_task"] = "checkGreenEnergy"
+
             # Set the Policy Check Interval if specified
             policy_engine = config_policy.get("engine")
             if policy_engine:
