@@ -153,6 +153,8 @@ class TeslaAPI:
             self.setCarApiBearerToken("")
             self.setCarApiRefreshToken("")
             self.master.queue_background_task({"cmd": "saveSettings"})
+        except UnboundLocalError:
+            pass
 
     def car_api_available(
         self, email=None, password=None, charge=None, applyLimit=None
@@ -1070,8 +1072,6 @@ class TeslaAPI:
 
     def setCarApiBearerToken(self, token=None):
         if token:
-            # TODO: Should not be hardcoded
-            tokenSync = False
             if self.master.tokenSyncEnabled():
                 # We won't accept tokens if Token Sync is already in place
                 return False

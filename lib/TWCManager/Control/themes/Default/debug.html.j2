@@ -118,6 +118,15 @@
     </table>
 
     <p>&nbsp;</p>
+    <h3>Debug Information</h3>
+    <table>
+      <tr>
+        <th>Task Queue Length</th>
+        <td>{{ master.backgroundTasksQueue.qsize() }}
+      </tr>
+    </table>
+
+    <p>&nbsp;</p>
     <input class='btn btn-outline-success' type=submit value='Save Settings' />
   </body>
 </html>
