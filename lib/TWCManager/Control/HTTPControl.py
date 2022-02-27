@@ -1196,9 +1196,8 @@ def CreateHTTPHandlerClass(master):
                     carapi = master.getModuleByName("TeslaAPI")
                     if key == "carApiBearerToken":
                         carapi.setCarApiBearerToken(self.getFieldValue(key))
-                        # We don't know the token expiry time as it was entered manually,
-                        # but we'll assume it was freshly created which means 45 day expiry
-                        carapi.setCarApiTokenExpireTime(time.time() + 45 * 24 * 60 * 60)
+                        # New tokens expire after 8 hours
+                        carapi.setCarApiTokenExpireTime(time.time() + 8 * 60 * 60)
                     elif key == "carApiRefreshToken":
                         carapi.setCarApiRefreshToken(self.getFieldValue(key))
                         carapi.setCarApiTokenExpireTime(time.time() + 45 * 24 * 60 * 60)

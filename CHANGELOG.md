@@ -5,7 +5,8 @@ This document logs the changes per release of TWCManager.
 ## v1.2.5 - Latest Development Version
 
   * Bugfixes:
-     * Fix debug settings form issues
+     * (@ngardiner) - Fix debug settings form issues
+     * (@ngardiner) - Fix token refresh timing for manually entered tokens
   * (@ngardiner) - Add support for multiple Fronius inverters
   * (@MikeBishop) - Add support for detecting sunrise and sunset times based on home location using sunrise-sunset.org API
   * (@ngardiner) - Replace Tesla Login flow with one that is workable with the latest (millionth?) iteration of Tesla API auth flow
