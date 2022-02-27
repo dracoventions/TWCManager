@@ -44,7 +44,7 @@ jobs:
     - name: Check out Repository
       uses: actions/checkout@v2
       with:
-        path: ./pypi
+        path: ./pypi-dev
 
     - name: Set up Python 3.7
       uses: actions/setup-python@v1
@@ -145,7 +145,7 @@ jobs:
     - name: Check out Repository
       uses: actions/checkout@v2
       with:
-        path: ./pypi
+        path: ./docker-latest
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
@@ -195,7 +195,7 @@ jobs:
     - name: Check out Repository
       uses: actions/checkout@v2
       with:
-        path: ./pypi
+        path: ./docker-release
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
