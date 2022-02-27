@@ -2,7 +2,9 @@
 
 This document logs the changes per release of TWCManager.
 
-## v1.2.5 - Latest Development Version
+## v1.3.0 - Latest Development version
+
+## v1.2.5 - 2022-02-27
 
   * Bugfixes:
      * (@ngardiner) - Fix debug settings form issues
