@@ -9,6 +9,7 @@ This document logs the changes per release of TWCManager.
   * (@ngardiner) - Add support for multiple Fronius inverters
   * (@MikeBishop) - Add support for detecting sunrise and sunset times based on home location using sunrise-sunset.org API
   * (@ngardiner) - Replace Tesla Login flow with one that is workable with the latest (millionth?) iteration of Tesla API auth flow
+  * (@MikeBishop) - Add configuration parameter to always perform Green Energy checking, including outside of daylight hours (maintaining current default of off for now)
 
 ## v1.2.4 - 2022-02-15
 

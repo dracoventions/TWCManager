@@ -1015,6 +1015,8 @@ class TeslaAPI:
 
     def saveApiToken(self, url):
         # Extract code from url
+        if isinstance(url, bytes):
+            url = url.decode("UTF-8")
         code = re.search(r"code=(.+)&state=(.+)", url)
 
         logger.log(logging.INFO2, "Code: " + code.group(1))
@@ -1025,7 +1027,7 @@ class TeslaAPI:
         data = {
             "client_id": "ownerapi",
             "grant_type": "authorization_code",
-            "code": code.group(1),
+            "code": str(code.group(1)),
             "code_verifier": self.__apiVerifier,
             "redirect_uri": self.__callbackURL,
         }
