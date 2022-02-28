@@ -827,7 +827,9 @@ def CreateHTTPHandlerClass(master):
                         ]
                     )
                 except subprocess.CalledProcessError as error:
-                    page += "An error occurred attempting upgrade: " + str(error.output())
+                    page += "An error occurred attempting upgrade: " + str(
+                        error.output()
+                    )
 
                 self.wfile.write(page.encode("utf-8"))
                 return
