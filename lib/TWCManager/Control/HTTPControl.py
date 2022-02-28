@@ -812,6 +812,11 @@ def CreateHTTPHandlerClass(master):
 
             if self.url.path == "/upgrade":
                 # This is extremely beta
+                # Attempt a self-update of TWCManager by calling pip
+                self.send_response(200)
+                self.send_header("Content-type", "text/html")
+                self.end_headers()
+
                 self.template = self.templateEnv.get_template("upgrade.html.j2")
                 page = self.template.render(self.__dict__)
 
@@ -826,10 +831,10 @@ def CreateHTTPHandlerClass(master):
                             "--upgrade",
                             "TWCManager",
                         ]
-                    )
+                    ).decode("UTF-8")
                 except subprocess.CalledProcessError as error:
                     page += "An error occurred attempting upgrade: " + str(
-                        error.output()
+                        error
                     )
 
                 self.wfile.write(page.encode("utf-8"))

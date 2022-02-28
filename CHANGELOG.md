@@ -4,6 +4,12 @@ This document logs the changes per release of TWCManager.
 
 ## v1.3.0 - Latest Development version
 
+## v1.2.6 - 2022-02-28
+
+  * Bugfixes:
+     * (@ngardiner) - Fix for exception regarding serialization of bytes object in JSON data for Tesla Auth Flow
+  * (@ngardiner) - First revision of self-update mechanism for TWCManager - will be activated once v1.3.0 is released
+
 ## v1.2.5 - 2022-02-27
 
   * Bugfixes:
