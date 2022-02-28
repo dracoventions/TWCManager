@@ -732,6 +732,7 @@ def CreateHTTPHandlerClass(master):
                 {"route": "/settings", "tmpl": "settings.html.j2"},
                 {"route": "/teslaAccount/saveToken", "error": "insecure"},
                 {"rstart": "/teslaAccount", "tmpl": "main.html.j2"},
+                {"route": "/upgradePrompt", "tmpl": "upgradePrompt.html.j2"},
                 {"rstart": "/vehicleDetail", "tmpl": "vehicleDetail.html.j2"},
                 {"route": "/vehicles", "tmpl": "vehicles.html.j2"},
             ]
@@ -815,7 +816,7 @@ def CreateHTTPHandlerClass(master):
                 page = self.template.render(self.__dict__)
 
                 try:
-                    page += subprocess.check_call(
+                    page += subprocess.check_output(
                         [
                             sys.executable,
                             "-m",

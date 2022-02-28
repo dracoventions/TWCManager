@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang='en'>
+  <head>
+    <title>TWCManager</title>
+    {% include 'bootstrap.html.j2' %}
+    <script type="text/javascript" src="/static/js/settings.js"></script>
+  </head>
+  <body>
+    {% include 'navbar.html.j2' %}
+
+   <p> If you choose to continue, TWCManager will attempt to upgrade itself.
+
+This requires that TWCManager has write access to the twcmanager user account's home directory.
+
+Once the upgrade is complete you will need to restart TWCManager (either via docker, systemctl or manually) for the new version to take effect.</p>
+
+<p>
+If you're sure that you would like to continue, please click the link below:
+</p>
+
+<p>
+<a href="/upgrade">Upgrade TWCManager</a>
+or 
+<a href="/">Cancel Upgrade</a>
+</p>
