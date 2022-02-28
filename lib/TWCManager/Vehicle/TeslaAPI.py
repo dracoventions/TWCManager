@@ -42,7 +42,6 @@ class TeslaAPI:
     refreshURL = "https://auth.tesla.com/oauth2/v3/token"
     __resp = None
     session = None
-    verifier = ""
 
     # Transient errors are ones that usually disappear if we retry the car API
     # command a minute or less later.
@@ -1028,7 +1027,7 @@ class TeslaAPI:
             "client_id": "ownerapi",
             "grant_type": "authorization_code",
             "code": str(code.group(1)),
-            "code_verifier": self.__apiVerifier,
+            "code_verifier": self.__apiVerifier.decode("UTF-8"),
             "redirect_uri": self.__callbackURL,
         }
         req = None

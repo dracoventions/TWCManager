@@ -1,18 +1,20 @@
+import jinja2
+import json
 import logging
+import math
 import mimetypes
 import os
 import pathlib
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from datetime import datetime, timedelta
-import jinja2
-import json
 import re
+import subprocess
+import sys
 import threading
 import time
 import urllib.parse
 import uuid
-import math
 
 logger = logging.getLogger("\U0001F3AE HTTP")
 
@@ -804,6 +806,19 @@ def CreateHTTPHandlerClass(master):
                 page = self.template.render(self.__dict__)
 
                 page += self.do_get_policy()
+                self.wfile.write(page.encode("utf-8"))
+                return
+
+            if self.url.path == "/upgrade":
+                # This is extremely beta
+                self.template = self.templateEnv.get_template("upgrade.html.j2")
+                page = self.template.render(self.__dict__)
+
+                try:
+                    page += subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", "-u", "TWCManager"])
+                except subprocess.CalledProcessError as error:
+                    page += "An error occurred attempting upgrade: " + str(e.output())
+
                 self.wfile.write(page.encode("utf-8"))
                 return
 
