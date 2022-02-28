@@ -815,7 +815,17 @@ def CreateHTTPHandlerClass(master):
                 page = self.template.render(self.__dict__)
 
                 try:
-                    page += subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", "--upgrade", "TWCManager"])
+                    page += subprocess.check_call(
+                        [
+                            sys.executable,
+                            "-m",
+                            "pip",
+                            "install",
+                            "--user",
+                            "--upgrade",
+                            "TWCManager",
+                        ]
+                    )
                 except subprocess.CalledProcessError as error:
                     page += "An error occurred attempting upgrade: " + str(error.output())
 
