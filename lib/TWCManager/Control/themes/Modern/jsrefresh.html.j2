@@ -14,8 +14,8 @@
                     var surplus = 0;
 
                     Object.keys(json).forEach(function(key) {
-                        if (key == 'generationWatts' || key == 'consumptionWatts' || key == 'chargerLoadWatts') {
-                            var gen = json[key];
+                        if (key === 'generationWatts' || key === 'consumptionWatts' || key === 'chargerLoadWatts') {
+                            let gen = json[key];
                             if (gen > 1000) {
                                 gen = gen * 0.001;
                                 json[key] = gen.toFixed(2) + '&nbsp;<span class="text-secondary">kW</span>';
@@ -27,7 +27,7 @@
                     });
 
                     // calculate power surplus
-                    var surplusAmps = 0.0;
+                    let surplusAmps = 0.0;
                     if (generation > consumption) {
                         surplus = generation - consumption;
                         if (surplus > 1000) {

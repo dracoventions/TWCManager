@@ -67,7 +67,7 @@ class TWCMaster:
     teslaLoginAskLater = False
     TWCID = None
     updateVersion = False
-    version = "1.2.6"
+    version = "1.3.0"
 
     # TWCs send a seemingly-random byte after their 2-byte TWC id in a number of
     # messages. I call this byte their "Sign" for lack of a better term. The byte
