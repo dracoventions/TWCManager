@@ -6,6 +6,7 @@ This document logs the changes per release of TWCManager.
 
   * (@hopfi2k) - Major "Modern Theme" update. Switched to Bootstrap 5.02, bug fixes, now fully responsive
   * (@ngardiner) - Add Home Location view and modification controls to settings page
+  * (@ngardiner) - Adjust voltage / phase detection to handle combinations of 1/2/3 phase systems, as long as all slave TWCs have the same number of active phases
 
 ## v1.2.6 - 2022-02-28
 

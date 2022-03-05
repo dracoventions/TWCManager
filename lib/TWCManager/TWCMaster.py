@@ -681,7 +681,7 @@ class TWCMaster:
 
     def getVoltageMeasurement(self):
         slavesWithVoltage = [
-            slave for slave in self.getSlaveTWCs() if slave.voltsPhaseA > 0
+            slave for slave in self.getSlaveTWCs() if (slave.voltsPhaseA > 0 or slave.voltsPhaseB > 0 or slave.voltsPhaseC > 0)
         ]
         if len(slavesWithVoltage) == 0:
             # No slaves support returning voltage
@@ -692,28 +692,32 @@ class TWCMaster:
 
         total = 0
         phases = 0
-        if any([slave.voltsPhaseC > 0 for slave in slavesWithVoltage]):
-            # Three-phase system
-            phases = 3
-            if all([slave.voltsPhaseC > 0 for slave in slavesWithVoltage]):
-                total = sum(
-                    [
-                        (slave.voltsPhaseA + slave.voltsPhaseB + slave.voltsPhaseC)
-                        for slave in slavesWithVoltage
-                    ]
-                )
-            else:
+
+        # Detect number of active phases
+        for slave in slavesWithVoltage:
+            localPhases = 0
+            if slave.voltsPhaseA: localPhases += 1
+            if slave.voltsPhaseB: localPhases += 1
+            if slave.voltsPhaseC: localPhases += 1
+
+        if phases:
+            if localPhases != phases:
                 logger.info(
-                    "FATAL:  Mix of three-phase and single-phase not currently supported."
+                    "FATAL:  Mix of multi-phase TWC configurations not currently supported."
                 )
                 return (
                     self.config["config"].get("defaultVoltage", 240),
                     self.config["config"].get("numberOfPhases", 1),
                 )
         else:
-            # Single-phase system
-            total = sum([slave.voltsPhaseA for slave in slavesWithVoltage])
-            phases = 1
+            phases = localPhases
+
+        total = sum(
+            [
+                (slave.voltsPhaseA + slave.voltsPhaseB + slave.voltsPhaseC)
+                for slave in slavesWithVoltage
+            ]
+        )
 
         return (total / (phases * len(slavesWithVoltage)), phases)
 
