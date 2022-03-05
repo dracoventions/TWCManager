@@ -4,6 +4,20 @@
     <title>TWCManager</title>
     {% include 'bootstrap.html.j2' %}
     <script type="text/javascript" src="/static/js/settings.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+      html, body {
+        height: 100%;
+        padding: 0;
+        margin: 0;
+      }
+      #map {
+        /* configure the size of the map */
+        width: 50%;
+        height: 50%;
+      }
+    </style>
   </head>
   <body>
     {% include 'navbar.html.j2' %}
@@ -169,6 +183,45 @@
       </table>
     </form>
     <p>Click <a href='https://github.com/ngardiner/TWCManager/tree/main/docs/Settings.md' target='_blank'>here</a> for detailed information on settings on this page</p>
-  </div></body>
+  </div>
+
+  <h2>Home Location</h2>
+
+  <p>The following pins show the Home and Current Locations of your vehicle. If both are the same, you'll see a single pin.</p>
+  <div id="map"></div>
+    <script>
+      // initialize Leaflet
+      var map = L.map('map').setView({lon: {{ master.settings.get("homeLon", "0")}}, lat: {{ master.settings.get("homeLat", "0")}}}, 8);
+
+      // add the OpenStreetMap tiles
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+      }).addTo(map);
+
+      // show the scale bar on the lower left corner
+      L.control.scale({imperial: true, metric: true}).addTo(map);
+
+      // show a marker on the map
+      L.marker({lon: {{ master.settings.get("homeLon", "0")}}, lat: {{ master.settings.get("homeLat", "0")}}}).bindPopup('Home Location').addTo(map);
+      {% for vehicle in vehicles() %}
+      L.marker({lon: {{ vehicle.lon }}, lat: {{ vehicle.lat }}}).bindPopup('{{ vehicle.name }} Current Location').addTo(map);
+      {% endfor %}
+    </script>
+    <ul>
+      <li>Your vehicle's home location has been learned as {{ master.settings.get("homeLon", "0")}}, {{ master.settings.get("homeLat", "0")}} </li>
+      <li>If you reset the Home Location, the location at which your vehicle next parks will be set as the Home Location. Alternatively, you can choose a vehicle from your account, from which the current location will be set as your Home Location.</li>
+    </ul>
+    <form method=POST action='/settings/homeLocation'>
+      <input class='btn btn-outline-success' type=submit name=unset value='Unset Home Location' />
+      <input class='btn btn-outline-success' type=submit name=learn value='Make Vehicle Location Home Location' />
+      <select name=vehicle>
+      {% for vehicle in vehicles() %}
+      <option value="{{ vehicle.lon }},{{ vehicle.lat }}">{{ vehicle.name }}</option>
+      {% endfor %}
+      </select>
+    </form>
+
+</body>
 </html>
 

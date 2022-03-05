@@ -4,6 +4,9 @@ This document logs the changes per release of TWCManager.
 
 ## v1.3.0 - Latest Development version
 
+  * (@hopfi2k) - Major "Modern Theme" update. Switched to Bootstrap 5.02, bug fixes, now fully responsive
+  * (@ngardiner) - Add Home Location view and modification controls to settings page
+
 ## v1.2.6 - 2022-02-28
 
   * Bugfixes:

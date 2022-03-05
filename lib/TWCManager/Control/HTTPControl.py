@@ -730,6 +730,8 @@ def CreateHTTPHandlerClass(master):
                 {"route": "/debug", "tmpl": "debug.html.j2"},
                 {"route": "/schedule", "tmpl": "schedule.html.j2"},
                 {"route": "/settings", "tmpl": "settings.html.j2"},
+                {"route": "/settings/homeLocation", "error": "insecure"},
+                {"route": "/settings/save", "error": "insecure"},
                 {"route": "/teslaAccount/saveToken", "error": "insecure"},
                 {"rstart": "/teslaAccount", "tmpl": "main.html.j2"},
                 {"route": "/upgradePrompt", "tmpl": "upgradePrompt.html.j2"},
@@ -915,6 +917,11 @@ def CreateHTTPHandlerClass(master):
             if self.url.path == "/schedule/save":
                 # User has submitted schedule.
                 self.process_save_schedule()
+                return
+
+            if self.url.path == "/settings/homeLocation":
+                # User making changes to home location
+                self.process_home_location()
                 return
 
             if self.url.path == "/settings/save":
@@ -1115,6 +1122,29 @@ def CreateHTTPHandlerClass(master):
             page += "</select>"
             page += "</div>"
             return page
+
+        def process_home_location(self):
+
+            # If unset was selected, unset account
+            if "unset" in self.fields:
+                del master.settings["homeLat"]
+                del master.settings["homeLon"]
+
+            # If learn was selected, learn location
+            if "learn" in self.fields:
+                loc = self.getFieldValue("vehicle").split(",")
+                master.setHomeLon(loc[0])
+                master.setHomeLat(loc[1])
+
+            # Save Settings
+            master.queue_background_task({"cmd": "saveSettings"})
+
+            # Redirect to the index page
+            self.send_response(302)
+            self.send_header("Location", "/")
+            self.end_headers()
+            self.wfile.write("".encode("utf-8"))
+            return
 
         def process_save_schedule(self):
 
