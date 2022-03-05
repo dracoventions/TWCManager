@@ -527,9 +527,13 @@
             "outputGeneration":  "Solar"
         },
         "MQTT": {
-      # MQTT Sensor support for reading generation or consumption data.
-      # This is not yet available.
-          "enabled": false
+          "enabled": false,
+          "brokerIP": "192.168.1.2",
+      # The MQTT EMS module subscribes to the below topics to read Consumption/Generation values
+          "username": "mqttuser",
+          "password": "mqttpass",
+          "topicConsumption": "",
+          "topicGeneration": ""
         },
         "P1Monitor":{
           # Support for P1 Monitor API (https://www.ztatz.nl/)
