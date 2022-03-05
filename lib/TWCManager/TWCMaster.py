@@ -681,7 +681,9 @@ class TWCMaster:
 
     def getVoltageMeasurement(self):
         slavesWithVoltage = [
-            slave for slave in self.getSlaveTWCs() if (slave.voltsPhaseA > 0 or slave.voltsPhaseB > 0 or slave.voltsPhaseC > 0)
+            slave
+            for slave in self.getSlaveTWCs()
+            if (slave.voltsPhaseA > 0 or slave.voltsPhaseB > 0 or slave.voltsPhaseC > 0)
         ]
         if len(slavesWithVoltage) == 0:
             # No slaves support returning voltage
@@ -696,9 +698,12 @@ class TWCMaster:
         # Detect number of active phases
         for slave in slavesWithVoltage:
             localPhases = 0
-            if slave.voltsPhaseA: localPhases += 1
-            if slave.voltsPhaseB: localPhases += 1
-            if slave.voltsPhaseC: localPhases += 1
+            if slave.voltsPhaseA:
+                localPhases += 1
+            if slave.voltsPhaseB:
+                localPhases += 1
+            if slave.voltsPhaseC:
+                localPhases += 1
 
         if phases:
             if localPhases != phases:
