@@ -376,7 +376,7 @@
         "Console": {
             "enabled": true,
             # simple logging format omits timestamp and colorization
-            "simple": false
+            #"simple": true
         },
         "FileLogger": {
           "enabled": false,
