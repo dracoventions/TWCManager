@@ -374,7 +374,9 @@
         # a pi, it may mean considering alternatives such as a remote database
         # to reduce write cycles.
         "Console": {
-            "enabled": true
+            "enabled": true,
+            # simple logging format omits timestamp and colorization
+            "simple": false
         },
         "FileLogger": {
           "enabled": false,
