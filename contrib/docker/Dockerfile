@@ -8,7 +8,7 @@ RUN cd /usr/src/TWCManager && make docker SUDO=""
 VOLUME /etc/twcmanager
 WORKDIR /usr/src/TWCManager
 
-COPY entrypoint.sh ./entrypoint.sh
+RUN cp contrib/docker/entrypoint.sh ./entrypoint.sh
 ENTRYPOINT ["./entrypoint.sh"]
 CMD ["/usr/bin/python3","-m","TWCManager"]
 
