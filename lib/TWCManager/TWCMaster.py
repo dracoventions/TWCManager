@@ -633,7 +633,7 @@ class TWCMaster:
         # consumption.
 
         currentOffer = max(
-            self.getMaxAmpsToDivideAmongSlaves(),
+            int(self.getMaxAmpsToDivideAmongSlaves()),
             self.num_cars_charging_now() * self.config["config"]["minAmpsPerTWC"],
         )
         newOffer = currentOffer + self.convertWattsToAmps(generationW - consumptionW)
