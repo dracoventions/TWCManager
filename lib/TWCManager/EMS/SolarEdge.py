@@ -135,106 +135,110 @@ class SolarEdge:
 
             return r.json()
 
-    def update(self):
+    def updateCloudAPI(self):
 
-        if (int(time.time()) - self.lastFetch) > self.cacheTime:
-            # Cache has expired. Fetch values from Portal.
-
-            # Query for Generation Data, if pollMode is set to 1
-            # This is the higher resolution API endpoint, but it is for generation only
-            # If the API detects no consumption data, it will step down to this.
-            if self.pollMode == 1:
-                portalData = self.getPortalData("overview")
-                if portalData:
-                    try:
-                        self.generatedW = int(
-                            portalData["overview"]["currentPower"]["power"]
-                        )
-                    except (KeyError, TypeError) as e:
-                        logger.log(
-                            logging.INFO4,
-                            "Exception during parsing SolarEdge data (currentPower)",
-                        )
-                        logger.debug(e)
-                else:
-                    logger.log(
-                        logging.INFO4,
-                        "SolarEdge API result does not contain json content.",
-                    )
-                    self.fetchFailed = True
-
-            # Query for consumption data
-            # This query only executes if we're in pollMode 0 or 2. If we are in 1, we skip
-            # Because consumption data is optional, we won't raise an error if it doesn't parse
-            portalData = None
-            if self.pollMode == 0 or self.pollMode == 2:
-                portalData = self.getPortalData("currentPowerFlow")
+        # Query for Generation Data, if pollMode is set to 1
+        # This is the higher resolution API endpoint, but it is for generation only
+        # If the API detects no consumption data, it will step down to this.
+        if self.pollMode == 1:
+            portalData = self.getPortalData("overview")
             if portalData:
                 try:
-                    # The unit used is specified by the API
-                    if portalData["siteCurrentPowerFlow"]["unit"] == "W":
-                        self.consumedW = int(
-                            portalData["siteCurrentPowerFlow"]["LOAD"]["currentPower"]
+                    self.generatedW = int(
+                        portalData["overview"]["currentPower"]["power"]
+                    )
+                except (KeyError, TypeError) as e:
+                    logger.log(
+                        logging.INFO4,
+                        "Exception during parsing SolarEdge data (currentPower)",
+                    )
+                    logger.debug(e)
+            else:
+                logger.log(
+                    logging.INFO4,
+                    "SolarEdge API result does not contain json content.",
+                )
+                self.fetchFailed = True
+
+        # Query for consumption data
+        # This query only executes if we're in pollMode 0 or 2. If we are in 1, we skip
+        # Because consumption data is optional, we won't raise an error if it doesn't parse
+        portalData = None
+        if self.pollMode == 0 or self.pollMode == 2:
+            portalData = self.getPortalData("currentPowerFlow")
+        if portalData:
+            try:
+                # The unit used is specified by the API
+                if portalData["siteCurrentPowerFlow"]["unit"] == "W":
+                    self.consumedW = int(
+                        portalData["siteCurrentPowerFlow"]["LOAD"]["currentPower"]
+                    )
+                    # Whether the Generation value is taken from this query or from the
+                    # overview query depends on if we have determined whether consumption
+                    # values are being reported or not
+                    if self.pollMode == 0 or self.pollMode == 2:
+                        self.generatedW = int(
+                            portalData["siteCurrentPowerFlow"]["PV"]["currentPower"]
                         )
-                        # Whether the Generation value is taken from this query or from the
-                        # overview query depends on if we have determined whether consumption
-                        # values are being reported or not
-                        if self.pollMode == 0 or self.pollMode == 2:
-                            self.generatedW = int(
-                                portalData["siteCurrentPowerFlow"]["PV"]["currentPower"]
-                            )
-                    elif portalData["siteCurrentPowerFlow"]["unit"] == "kW":
-                        self.consumedW = int(
+                elif portalData["siteCurrentPowerFlow"]["unit"] == "kW":
+                    self.consumedW = int(
+                        float(
+                            portalData["siteCurrentPowerFlow"]["LOAD"][
+                                "currentPower"
+                            ]
+                        )
+                        * 1000
+                    )
+                    # Whether the Generation value is taken from this query or from the
+                    # overview query depends on if we have determined whether consumption
+                    # values are being reported or not
+                    if self.pollMode == 0 or self.pollMode == 2:
+                        self.generatedW = int(
                             float(
-                                portalData["siteCurrentPowerFlow"]["LOAD"][
+                                portalData["siteCurrentPowerFlow"]["PV"][
                                     "currentPower"
                                 ]
                             )
                             * 1000
                         )
-                        # Whether the Generation value is taken from this query or from the
-                        # overview query depends on if we have determined whether consumption
-                        # values are being reported or not
-                        if self.pollMode == 0 or self.pollMode == 2:
-                            self.generatedW = int(
-                                float(
-                                    portalData["siteCurrentPowerFlow"]["PV"][
-                                        "currentPower"
-                                    ]
-                                )
-                                * 1000
-                            )
 
-                    else:
-                        logger.info(
-                            "Unknown SolarEdge Consumption Value unit: %s "
-                            % str(portalData["siteCurrentPowerFlow"]["unit"])
-                        )
-
-                except (KeyError, TypeError) as e:
-                    logger.log(
-                        logging.INFO4,
-                        "Exception during parsing SolarEdge consumption data",
-                    )
-                    logger.debug(e)
-
-            # Check if we are still in the initial poll period, and if so, record any consumption
-            # reported to the pollconsumption counter. The reason for this is that if that value
-            # rises at all, we lock in to consumption mode and do not query the overview API anymore
-            if self.pollMode == 0 and self.pollCount <= 3:
-                self.pollCount += 1
-                self.pollConsumption += self.consumedW
-            elif self.pollMode == 0:
-                if self.pollConsumption:
-                    logger.info(
-                        "Detected consumption status capability. Switching to pollMode = 2"
-                    )
-                    self.pollMode = 2
                 else:
                     logger.info(
-                        "Detected no consumption status capability. Switching to pollMode = 1"
+                        "Unknown SolarEdge Consumption Value unit: %s "
+                        % str(portalData["siteCurrentPowerFlow"]["unit"])
                     )
-                    self.pollMode = 1
+
+            except (KeyError, TypeError) as e:
+                logger.log(
+                    logging.INFO4,
+                    "Exception during parsing SolarEdge consumption data",
+                )
+                logger.debug(e)
+
+        # Check if we are still in the initial poll period, and if so, record any consumption
+        # reported to the pollconsumption counter. The reason for this is that if that value
+        # rises at all, we lock in to consumption mode and do not query the overview API anymore
+        if self.pollMode == 0 and self.pollCount <= 3:
+            self.pollCount += 1
+            self.pollConsumption += self.consumedW
+        elif self.pollMode == 0:
+            if self.pollConsumption:
+                logger.info(
+                    "Detected consumption status capability. Switching to pollMode = 2"
+                )
+                self.pollMode = 2
+            else:
+                logger.info(
+                    "Detected no consumption status capability. Switching to pollMode = 1"
+                )
+                self.pollMode = 1
+
+    def update(self):
+
+        if (int(time.time()) - self.lastFetch) > self.cacheTime:
+            # Cache has expired. Fetch values from Portal.
+
+            self.updateCloudAPI()
 
             # Update last fetch time
             if self.fetchFailed is not True:
