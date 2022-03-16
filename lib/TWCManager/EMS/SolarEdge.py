@@ -351,6 +351,7 @@ class SolarEdge:
 
         # if we reach this point, everything should have gone well
         self.fetchFailed = False
+        inverter.disconnect()
 
     def update(self):
 
