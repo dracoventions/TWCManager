@@ -1,6 +1,7 @@
 # SolarEdge Monitoring Portal Integration
 import logging
 import time
+import solaredge_modbus
 
 logger = logging.getLogger(__name__.rsplit(".")[-1])
 
@@ -32,6 +33,10 @@ class SolarEdge:
     status = False
     timeout = 10
     voltage = 0
+    inverterHost = None
+    inverterPort = 1502
+    smartMeters = []
+    useModbusTCP = False
 
     def __init__(self, master):
         self.master = master
@@ -49,11 +54,39 @@ class SolarEdge:
         self.debugMode = self.configSolarEdge.get("debugMode", self.debugMode)
         self.status = self.configSolarEdge.get("enabled", self.status)
         self.siteID = self.configSolarEdge.get("siteID", None)
+        self.inverterHost = self.configSolarEdge.get("inverterHost", self.inverterHost)
+        self.inverterPort = self.configSolarEdge.get("inverterPort", self.inverterPort)
+        self.smartMeters = self.configSolarEdge.get("smartMeters", self.smartMeters)
 
         # Unload if this module is disabled or misconfigured
-        if (not self.status) or (not self.siteID) or (not self.apiKey):
+        if (not self.status) or (
+            ((not self.siteID) or (not self.apiKey))
+            and ((not self.inverterHost) or (not self.inverterPort)
+                 or (not self.smartMeters))
+        ):
             self.master.releaseModule("lib.TWCManager.EMS", "SolarEdge")
             return None
+
+        if self.inverterHost and self.inverterPort and self.smartMeters:
+            # basic syntax check for nested parameters
+            for smartMeter in self.smartMeters:
+                if not "name" in smartMeter:
+                    logger.error("missing 'name' for SolarEdge smartMeter in config.json"
+                                 " - please specify (try 'Meter1', 'Meter2', 'Meter3')")
+                    self.master.releaseModule("lib.TWCManager.EMS", "SolarEdge")
+                    return None
+                if (not "type" in smartMeter
+                    or (smartMeter["type"] != "consumption"
+                        and smartMeter["type"] != "export")
+                ):
+                    logger.error("invalid or missing 'type' for SolarEdge smartMeter in "
+                                 "config.json - please specify as 'consumption' or 'export'")
+                    self.master.releaseModule("lib.TWCManager.EMS", "SolarEdge")
+                    return None
+
+            # Drop the cacheTime to 10 seconds if we use local metering
+            self.useModbusTCP = True
+            self.cacheTime = 10
 
     def getConsumption(self):
 
@@ -233,12 +266,101 @@ class SolarEdge:
                 )
                 self.pollMode = 1
 
+    def updateModbusTCP(self):
+
+        meteredConsumption = 0
+        meteredExport = 0
+        exportIsMetered = False
+
+        # if we fail to update, we may be called again immediately
+        # this will make pymodbus.c choke, so give it a second to relax
+        if self.fetchFailed:
+            time.sleep(1)
+
+        inverter = solaredge_modbus.Inverter(host=self.inverterHost,
+                                             port=self.inverterPort)
+        # returns true/false, does not raise exception on connection error
+        # but pymodbus.c logs an error already at least
+        if not inverter.connect():
+            logger.error("failed to connect to inverter "
+                         f"{self.inverterHost!r} port {self.inverterPort!r}")
+            self.fetchFailed = True
+            return
+
+        # this should actually not fail unless SE changes its inverters or
+        # maybe if there is a connection error during transmission
+        # if we get a KeyError here, SE inverters and solaredge_modbus have
+        # changed and we need to adapt the code to the new data structure
+        try:
+            power_ac = inverter.read("power_ac")["power_ac"]
+            power_ac_scale = inverter.read("power_ac_scale")["power_ac_scale"]
+            # solaredge_modbus doesn't raise Exceptions, it just returns False
+            if power_ac is False or power_ac_scale is False:
+                raise Exception("unable to get power_ac values")
+            self.generatedW = int(power_ac * 10 ** power_ac_scale)
+        except Exception as e:
+            logger.error(f"failed to get AC power from inverter: {e!r}")
+            self.fetchFailed = True
+            inverter.disconnect()
+            return
+
+        # SE inverters can have three meters connected on the internal bus
+        # names are hardcoded to Meter1, Meter2, Meter3 by solaredge_modbus
+        for smartMeter in self.smartMeters:
+            # response from meters() may be empty if communication with
+            # inverter failed, or if there are just no meters connected
+            # I don't see a possibility to determine the actual reason
+            # as, again, solaredge_modbus doesn't raise Exceptions
+            try:
+                meter = inverter.meters()[smartMeter["name"]]
+            except KeyError as e:
+                logger.error(f"smart meter {smartMeter['name']!r} not found "
+                             "in modbus response from inverter")
+                self.fetchFailed = True
+                inverter.disconnect()
+                return
+            # this should actually not fail unless SE changes its inverters or
+            # maybe if there is a connection error during transmission
+            # if we get a KeyError here, SE inverters and solaredge_modbus have
+            # changed and we need to adapt the code to the new data structure
+            try:
+                power = meter.read("power")["power"]
+                power_scale = meter.read("power_scale")["power_scale"]
+                if power is False or power_scale is False:
+                    raise Exception("unable to get power values")
+                power = int(power * 10 ** power_scale)
+            except Exception as e:
+                logger.error("failed to get metered power for "
+                             f"{smartMeter['name']!r} from inverter: {e!r}")
+                self.fetchFailed = True
+                inverter.disconnect()
+                return
+
+            if smartMeter["type"] == "export":
+                # export might be exactly zero, so we need to remember
+                # by different means we have seen an export meter
+                exportIsMetered = True
+                meteredExport += power
+            elif smartMeter["type"] == "consumption":
+                meteredConsumption += power
+
+        if exportIsMetered:
+            self.consumedW = meteredConsumption + self.generatedW - meteredExport
+        else:
+            self.consumedW = meteredConsumption
+
+        # if we reach this point, everything should have gone well
+        self.fetchFailed = False
+
     def update(self):
 
         if (int(time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from Portal.
 
-            self.updateCloudAPI()
+            if self.useModbusTCP:
+                self.updateModbusTCP()
+            else:
+                self.updateCloudAPI()
 
             # Update last fetch time
             if self.fetchFailed is not True:

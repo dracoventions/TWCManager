@@ -578,12 +578,29 @@
           "serverPort": "1080"
         },
       # SolarEdge API, consumed from the internet-based SolarEdge Potal
+      # or directly from a local inverter with smart meter via modbus TCP
+      # NOTE: inverter needs to have modbus TCP enabled - call or email
+      #       SolarEdge to enable it for you or use SetApp to enable it
         "SolarEdge": {
           "enabled": false,
       # API Key must be specified in order to monitor a SolarEdge site
           "apiKey": "",
       # Site ID defines which system to monitor
-          "siteID": ""
+          "siteID": "",
+      ## or local inverter, "apiKey" and "siteID" are ignored if you use this
+      # local IP address or hostname of inverter
+          #"inverterHost": "",
+      # default port is 1502, shouldn't need to be changed
+          #"inverterPort": "1502",
+      # you need 1 smart meter to track consumption, up to 3 are supported
+      # NOTE: if a network part is metered by both a consumption and an export
+      #       meter, only add one of them or consumption will be counted twice
+          #"smartMeters": [{
+      # smart meter names currently may be "Meter1", "Meter2", "Meter3"
+          #  "name": "Meter1",
+      # specify what is metered: "consumption" or "export"
+          #  "type": "export"
+          #}]
         },
       # SolarLog Inverters
         "SolarLog": {

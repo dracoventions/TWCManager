@@ -23,6 +23,7 @@ setup(
         "pyyaml",
         "requests>=2.23.0",
         "sentry_sdk>=0.11.2",
+        "solaredge_modbus>=0.7.0",
         "sysv_ipc",
         "termcolor>=1.1.0",
         "websockets<=9.1; python_version == '3.6'",
