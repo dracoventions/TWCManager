@@ -705,17 +705,17 @@ class TWCMaster:
             if slave.voltsPhaseC:
                 localPhases += 1
 
-        if phases:
-            if localPhases != phases:
-                logger.info(
-                    "FATAL:  Mix of multi-phase TWC configurations not currently supported."
-                )
-                return (
-                    self.config["config"].get("defaultVoltage", 240),
-                    self.config["config"].get("numberOfPhases", 1),
-                )
-        else:
-            phases = localPhases
+            if phases:
+                if localPhases != phases:
+                    logger.info(
+                        "FATAL:  Mix of multi-phase TWC configurations not currently supported."
+                    )
+                    return (
+                        self.config["config"].get("defaultVoltage", 240),
+                        self.config["config"].get("numberOfPhases", 1),
+                    )
+            else:
+                phases = localPhases
 
         total = sum(
             [
