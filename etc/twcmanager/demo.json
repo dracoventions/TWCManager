@@ -82,6 +82,16 @@
         # a car not at home being stopped from charging by the API.
         "onlyChargeMultiCarsAtHome": true,
 
+        # Depending on your environment and experience with GPS location quality, you
+        # may want to choose how close a car needs to be to your home location to be
+        # considered "at home". Value is given in feet, one foot is about 0.3 meters.
+        # The default value is 10560 feet (2 miles), as cars in the past had quite some
+        # issues with location accuracy. Do not set this too low, but about 1000 feet
+        # should be safe usually.
+        # Note the covered area is actually not a circle, but a square with a side length
+        # of 2 * atHomeRadius (measured east-west & south-north).
+        # "atHomeRadius": 1000,
+
         # Newer TWCs can report actual voltages.  For older TWCs, you can specify
         # what voltage should be assumed and whether the power is single (1) or
         # 3-phase.
