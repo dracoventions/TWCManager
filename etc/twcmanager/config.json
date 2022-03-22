@@ -90,7 +90,7 @@
         # should be safe usually.
         # Note the covered area is actually not a circle, but a square with a side length
         # of 2 * atHomeRadius (measured east-west & south-north).
-        "atHomeRadius": 10560,
+        # "atHomeRadius": 1000,
 
         # Newer TWCs can report actual voltages.  For older TWCs, you can specify
         # what voltage should be assumed and whether the power is single (1) or
