@@ -94,6 +94,7 @@ modules_available = [
     "EMS.HASS",
     "EMS.IotaWatt",
     "EMS.Kostal",
+    "EMS.MQTT",
     "EMS.OpenHab",
     "EMS.OpenWeatherMap",
     "EMS.P1Monitor",

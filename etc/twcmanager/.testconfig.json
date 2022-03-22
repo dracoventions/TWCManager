@@ -489,9 +489,10 @@
             "hassEntityGeneration":  "sensor.inverter_power_live"
         },
         "MQTT": {
-      # MQTT Sensor support for reading generation or consumption data.
-      # This is not yet available.
-          "enabled": false
+          "enabled": true,
+          "brokerIP": "127.0.0.1",
+          "username": "twcmanager",
+          "password": "twcmanager"
         },
         "P1Monitor":{
           # Support for P1 Monitor API (https://www.ztatz.nl/)
@@ -566,9 +567,8 @@
     # This will use interfaces such as MQTT or HomeAssistant API to update status for charging, power draw, etc.
     "status": {
         "HASS": {
-      # Enabling the HASS status plugin will push TWCManager sensor values to a HomeAssistant server.
-            "enabled": false,
-            "serverIP": "192.168.1.1",
+            "enabled": true,
+            "serverIP": "127.0.0.1",
             "serverPort": "8123",
             "useHttps": false,
 
