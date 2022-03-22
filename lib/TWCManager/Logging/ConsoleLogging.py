@@ -54,9 +54,7 @@ class ConsoleLogging:
         handler = logging.StreamHandler(sys.stdout)
         if self.configLogging.get("simple", False):
             handler.setFormatter(
-                logging.Formatter(
-                    "%(name)-10.10s %(levelno)02d %(message)s"
-                )
+                logging.Formatter("%(name)-10.10s %(levelno)02d %(message)s")
             )
         else:
             color_formatter = ColorFormatter(
