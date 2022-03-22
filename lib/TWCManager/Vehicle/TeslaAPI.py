@@ -547,10 +547,7 @@ class TeslaAPI:
         # Desired maximum destination from home is now configurable. As the
         # parameter may not be set, we catch the key error and use the default
         # value documented above.
-        try:
-            atHomeRadius = 1/364488.888 * self.config["config"]["atHomeRadius"]
-        except KeyError:
-            atHomeRadius = 1/364488.888 * 10560
+        atHomeRadius = 1/364488.888 * float(self.config["config"].get('atHomeRadius', 10560))
         if (
             abs(self.master.getHomeLatLon()[0] - lat) > atHomeRadius
             or abs(self.master.getHomeLatLon()[1] - lon) > atHomeRadius
