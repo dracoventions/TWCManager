@@ -591,7 +591,7 @@
       # local IP address or hostname of inverter
           #"inverterHost": "",
       # default port is 1502, shouldn't need to be changed
-          #"inverterPort": "1502",
+          #"inverterPort": 1502,
       # you need 1 smart meter to track consumption, up to 3 are supported
       # NOTE: if a network part is metered by both a consumption and an export
       #       meter, only add one of them or consumption will be counted twice

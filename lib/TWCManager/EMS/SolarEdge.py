@@ -55,19 +55,18 @@ class SolarEdge:
         self.status = self.configSolarEdge.get("enabled", self.status)
         self.siteID = self.configSolarEdge.get("siteID", None)
         self.inverterHost = self.configSolarEdge.get("inverterHost", self.inverterHost)
-        self.inverterPort = self.configSolarEdge.get("inverterPort", self.inverterPort)
+        self.inverterPort = int(self.configSolarEdge.get("inverterPort", self.inverterPort))
         self.smartMeters = self.configSolarEdge.get("smartMeters", self.smartMeters)
 
         # Unload if this module is disabled or misconfigured
         if (not self.status) or (
             ((not self.siteID) or (not self.apiKey))
-            and ((not self.inverterHost) or (not self.inverterPort)
-                 or (not self.smartMeters))
+            and ((not self.inverterHost) or (not self.inverterPort))
         ):
             self.master.releaseModule("lib.TWCManager.EMS", "SolarEdge")
             return None
 
-        if self.inverterHost and self.inverterPort and self.smartMeters:
+        if self.inverterHost and self.inverterPort:
             # basic syntax check for nested parameters
             for smartMeter in self.smartMeters:
                 if not "name" in smartMeter:
