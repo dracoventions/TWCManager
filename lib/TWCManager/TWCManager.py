@@ -1230,7 +1230,7 @@ while True:
                         potentialVIN = "".join(slaveTWC.VINData)
 
                         # Ensure we have a valid VIN
-                        if len(potentialVIN) == 17:
+                        if len(potentialVIN) == 17 or len(potentialVIN) == 0:
                             # Record Vehicle VIN
                             slaveTWC.currentVIN = potentialVIN
 
