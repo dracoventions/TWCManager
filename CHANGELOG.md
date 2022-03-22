@@ -11,6 +11,7 @@ This document logs the changes per release of TWCManager.
   * (@hopfi2k) - Major "Modern Theme" update. Switched to Bootstrap 5.02, bug fixes, now fully responsive
   * (@ngardiner) - Add Home Location view and modification controls to settings page
   * (@ngardiner) - Add MQTT EMS module (currently pre-release for testing)
+  * (@dtiefnig) - Add switch to output plain text Console output (turn off color)
 
 ## v1.2.6 - 2022-02-28
 

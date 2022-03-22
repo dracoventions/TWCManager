@@ -85,6 +85,8 @@ ems:
 	@cd EMS && ./ems_emulator.py &
 	@echo "${bold}${red}(E2/${ems})${reset} ${yellow}Testing SmartPi EMS Module"
 	cd EMS && ./test_SmartPi.py
+	@echo "${bold}${red}(E3/${ems})${reset} ${yellow}Testing MQTT EMS Module"
+	cd EMS && ./test_MQTT.py
 
 preflight:
 	@echo "${bold}${red}(P7/${pre})${reset} ${yellow}Testing file existence and permissions"
