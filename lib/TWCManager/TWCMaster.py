@@ -614,8 +614,8 @@ class TWCMaster:
         # Returns Lat/Lon coordinates to check if car location is
         # at home
         latlon = [10000, 10000]
-        latlon[0] = self.settings.get("homeLat", 10000)
-        latlon[1] = self.settings.get("homeLon", 10000)
+        latlon[0] = float(self.settings.get("homeLat", 10000))
+        latlon[1] = float(self.settings.get("homeLon", 10000))
         return latlon
 
     def getMasterHeartbeatOverride(self):
