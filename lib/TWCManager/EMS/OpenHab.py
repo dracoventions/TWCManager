@@ -111,7 +111,7 @@ class OpenHab:
 
         # Strip units like '12.3 W'
         if " " in response:
-            return response.split(" ")[0]
+            response = response.split(" ")[0]
 
         try:
             responseAsFloat = float(response)
