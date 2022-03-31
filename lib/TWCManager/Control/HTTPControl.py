@@ -84,7 +84,8 @@ def CreateHTTPHandlerClass(master):
             if not len(self.ampsList):
                 self.ampsList.append([0, "Disabled"])
                 for amp in range(
-                    5, (master.config["config"].get("wiringMaxAmpsPerTWC", 5)) + 1
+                    master.config["config"].get("minAmpsPerTWC", 5),
+                    (master.config["config"].get("wiringMaxAmpsPerTWC", master.config["config"].get("minAmpsPerTWC", 5))) + 1
                 ):
                     self.ampsList.append([amp, str(amp) + "A"])
 
