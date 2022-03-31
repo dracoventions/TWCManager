@@ -153,7 +153,7 @@ wcmanager/settings.json and try saving your settings again.</b>
                                 Doesn't charge a vehicle when plugged in unless manually started (e.g. in the Tesla App)
                             </small>
                             <small id="helpTextSolar" class="form-text text-muted" {% if activeAction != 3 %}style="display: none;"{% endif %}>
-                                Charges a vehicle if Solar production is {{ master.settings.get("minAmpsPerTWC", 5) }} Amps or more than the current consumption
+                                Charges a vehicle if Solar production is at least {{ master.config["config"].get("minAmpsPerTWC", 5) }} Amps higher than the current consumption
                             </small>
                             <small id="helpTextUnknown" class="form-text text-muted" {% if activeAction %}style="display: none;"{% endif %}>
                                 Currently active policy is unknown, so I can't tell you what it does
