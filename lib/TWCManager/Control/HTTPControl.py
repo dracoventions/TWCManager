@@ -754,6 +754,19 @@ def CreateHTTPHandlerClass(master):
                 ).car_api_available()
                 self.scheduledAmpsMax = master.getScheduledAmpsMax()
 
+                policy = master.getModuleByName("Policy").active_policy
+                if policy == "Charge Now":
+                    self.activeAction = 1
+                elif policy == "Scheduled Charging":
+                    self.activeAction = 1
+                elif policy == "Track Green Energy":
+                    self.activeAction = 3
+                elif policy == "Non Scheduled Charging":
+                    self.activeAction = master.settings.get("nonScheduledAction", 1)
+                else:
+                    logger.error(f"non-standard policy {policy!r}, cannot display charge action in webinterface")
+
+
                 # Send the html message
                 page = self.template.render(vars(self))
 
