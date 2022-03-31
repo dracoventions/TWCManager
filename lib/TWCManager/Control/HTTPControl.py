@@ -755,7 +755,7 @@ def CreateHTTPHandlerClass(master):
                 ).car_api_available()
                 self.scheduledAmpsMax = master.getScheduledAmpsMax()
 
-                policy = master.getModuleByName("Policy").active_policy
+                policy = str(master.getModuleByName("Policy").active_policy)
                 if policy == "Charge Now":
                     self.activeAction = 1
                 elif policy == "Scheduled Charging":
