@@ -61,6 +61,64 @@
                             $("#cancel_chargenow").addClass("disabled");
                         }
                     }
+
+                    // change the state of the Charge Policy display buttons based on Charge Policy
+                    if (json["currentPolicy"] == "Track Green Energy" ||
+                        ( json["currentPolicy"] == "Non Scheduled Charging" &&
+                          $("#nonScheduledAction").val() == 3
+                       )) {
+                        $("#policy_solar").removeClass("btn-outline-primary");
+                        $("#policy_solar").addClass("btn-primary");
+                        $("#policy_fixed").removeClass("btn-primary");
+                        $("#policy_fixed").addClass("btn-outline-primary");
+                        $("#policy_dont").removeClass("btn-primary");
+                        $("#policy_dont").addClass("btn-outline-primary");
+                        $("#helpTextSolar").show();
+                        $("#helpTextFixed").hide();
+                        $("#helpTextDont").hide();
+                        $("#helpTextUnknown").hide();
+                    } else if (( json["currentPolicy"] == "Charge Now" ||
+                                 json["currentPolicy"] == "Scheduled Charging"
+                               ) || (
+                                 json["currentPolicy"] == "Non Scheduled Charging" &&
+                                 $("#nonScheduledAction").val() == 1
+                              )) {
+                        $("#policy_solar").removeClass("btn-primary");
+                        $("#policy_solar").addClass("btn-outline-primary");
+                        $("#policy_fixed").removeClass("btn-outline-primary");
+                        $("#policy_fixed").addClass("btn-primary");
+                        $("#policy_dont").removeClass("btn-primary");
+                        $("#policy_dont").addClass("btn-outline-primary");
+                        $("#helpTextSolar").hide();
+                        $("#helpTextFixed").show();
+                        $("#helpTextDont").hide();
+                        $("#helpTextUnknown").hide();
+                    } else if (json["currentPolicy"] == "Non Scheduled Charging" &&
+                               $("#nonScheduledAction").val() == 2
+                              ) {
+                        $("#policy_solar").removeClass("btn-primary");
+                        $("#policy_solar").addClass("btn-outline-primary");
+                        $("#policy_fixed").removeClass("btn-primary");
+                        $("#policy_fixed").addClass("btn-outline-primary");
+                        $("#policy_dont").removeClass("btn-outline-primary");
+                        $("#policy_dont").addClass("btn-primary");
+                        $("#helpTextSolar").hide();
+                        $("#helpTextFixed").hide();
+                        $("#helpTextDont").show();
+                        $("#helpTextUnknown").hide();
+                    } else {
+                        // unknown policy, remove highlights
+                        $("#policy_solar").removeClass("btn-primary");
+                        $("#policy_solar").addClass("btn-outline-primary");
+                        $("#policy_fixed").removeClass("btn-primary");
+                        $("#policy_fixed").addClass("btn-outline-primary");
+                        $("#policy_dont").removeClass("btn-primary");
+                        $("#policy_dont").addClass("btn-outline-primary");
+                        $("#helpTextSolar").hide();
+                        $("#helpTextFixed").hide();
+                        $("#helpTextDont").hide();
+                        $("#helpTextUnknown").show();
+                    }
                 }
             });
             setTimeout(requestStatus, 3000);
