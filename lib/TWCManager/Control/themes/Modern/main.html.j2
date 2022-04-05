@@ -137,8 +137,6 @@ wcmanager/settings.json and try saving your settings again.</b>
             <div class="col-sm-11 col-md-10 col-lg-8">
                 <div class="jumbotron px-5 py-4 rounded-xl" style="background-color: #f0f0f0; pointer-events:none;">
                     <div class="form-group row" style="margin-bottom: -1em!important;">
-                        <!-- note down non scheduled charging action setting for AJAX refresh -->
-                        <input id="nonScheduledAction" type="range" min="1" max="3" step="1" value="{{ master.settings.get("nonScheduledAction", 1) }}" style="display: none;" />
                         <label for="colBtns" class="col-lg-2 col-sm-12 col-form-label display-6">Charge Policy</label>
                         <div class="col-lg-10 col-sm-12 btn-group" id="colBtns" role="group" style="flex-wrap: wrap;">
                             <button id="policy_solar" type="button" class="btn btn-{% if activeAction != 3 %}outline-{% endif %}primary" role="button" aria-describedby="helpTextSolar">Solar Surplus</button>
@@ -154,9 +152,6 @@ wcmanager/settings.json and try saving your settings again.</b>
                             </small>
                             <small id="helpTextSolar" class="form-text text-muted" {% if activeAction != 3 %}style="display: none;"{% endif %}>
                                 Charges a vehicle if Solar production is at least {{ master.config["config"].get("minAmpsPerTWC", 5) }} Amps higher than the current consumption
-                            </small>
-                            <small id="helpTextUnknown" class="form-text text-muted" {% if activeAction %}style="display: none;"{% endif %}>
-                                Currently active policy is unknown, so I can't tell you what it does
                             </small>
                         </div>
                     </div>
