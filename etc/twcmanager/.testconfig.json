@@ -64,19 +64,6 @@
         # rates really does.
         "minAmpsPerTWC": 12,
 
-        # When you have more than one vehicle associated with the Tesla car API and
-        # onlyChargeMultiCarsAtHome = True, cars will only be controlled by the API when
-        # parked at home. For example, when one vehicle is plugged in at home and
-        # another is plugged in at a remote location and you've set TWCManager to stop
-        # charging at the current time, only the one plugged in at home will be stopped
-        # from charging using the car API.
-        # Unfortunately, bugs in the car GPS system may cause a car to not be reported
-        # as at home even if it is, in which case the car might not be charged when you
-        # expect it to be. If you encounter that problem with multiple vehicles, you can
-        # set onlyChargeMultiCarsAtHome = False, but you may encounter the problem of
-        # a car not at home being stopped from charging by the API.
-        "onlyChargeMultiCarsAtHome": true,
-
         # Newer TWCs can report actual voltages.  For older TWCs, you can specify
         # what voltage should be assumed and whether the power is single (1) or
         # 3-phase.
