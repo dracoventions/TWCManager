@@ -6,12 +6,15 @@ This document logs the changes per release of TWCManager.
 
   * Bugfixes
      * (@dtiefnig) - Fix issue with logic around detecting instances of multi-phase system incompatibility
+     * (@dtiefnig) - Fix issue with zero-byte VINs causing infinite VIN fetch retries
      * (@MikeBishop) - Fix rounding in calculation of current offer when calculating delta to new offer to improve accuracy
      * (@ngardiner) - Adjust voltage / phase detection to handle combinations of 1/2/3 phase systems, as long as all slave TWCs have the same number of active phases
   * (@hopfi2k) - Major "Modern Theme" update. Switched to Bootstrap 5.02, bug fixes, now fully responsive
   * (@ngardiner) - Add Home Location view and modification controls to settings page
   * (@ngardiner) - Add MQTT EMS module (currently pre-release for testing)
   * (@dtiefnig) - Add switch to output plain text Console output (turn off color)
+  * (@dtiefnig) - Unify single and multi-car charge at home behaviour
+  * (@dtiefnig) - Add Modbus TCP support for SolarEdge EMS module
 
 ## v1.2.6 - 2022-02-28
 
