@@ -61,9 +61,24 @@
                             $("#cancel_chargenow").addClass("disabled");
                         }
                     }
+                }
+            });
+            setTimeout(requestStatus, 3000);
+        }
+        requestStatus();
+    });
 
-                    // change the state of the Charge Policy display buttons based on Charge Policy
-                    if (json["isGreenPolicy"] == "Yes") {
+    // AJAX refresh to retrieve active policy action and update UI
+    $(document).ready(function() {
+        function updateAction() {
+            $.ajax({
+                url: "/api/getActivePolicyAction",
+                dataType: "text",
+                cache: false,
+                success: function(data) {
+                    var json = $.parseJSON(data);
+                    // change the state of the Charge Policy display buttons based on Charge Policy Action
+                    if (json == 3) {
                         $("#policy_solar").removeClass("btn-outline-primary");
                         $("#policy_solar").addClass("btn-primary");
                         $("#policy_fixed").removeClass("btn-primary");
@@ -73,9 +88,7 @@
                         $("#helpTextSolar").show();
                         $("#helpTextFixed").hide();
                         $("#helpTextDont").hide();
-                    } else if ($('#chargerAvailAmps').html() == "0") {
-                        // chargerAvailAmps not yet updated, do nothing
-                    } else if ($('#chargerAvailAmps').html() != "0.00") {
+                    } else if (json == 1) {
                         $("#policy_solar").removeClass("btn-primary");
                         $("#policy_solar").addClass("btn-outline-primary");
                         $("#policy_fixed").removeClass("btn-outline-primary");
@@ -85,7 +98,7 @@
                         $("#helpTextSolar").hide();
                         $("#helpTextFixed").show();
                         $("#helpTextDont").hide();
-                    } else {
+                    } else if (json == 2) {
                         $("#policy_solar").removeClass("btn-primary");
                         $("#policy_solar").addClass("btn-outline-primary");
                         $("#policy_fixed").removeClass("btn-primary");
@@ -95,12 +108,15 @@
                         $("#helpTextSolar").hide();
                         $("#helpTextFixed").hide();
                         $("#helpTextDont").show();
+                    } else {
+                        // TWCmanager (re)started and policy not yet initialized?
+                        console.log('unknown policy action "' + json + '"');
                     }
                 }
             });
-            setTimeout(requestStatus, 3000);
+            setTimeout(updateAction, 3000);
         }
-        requestStatus();
+        updateAction();
     });
 
     // AJAJ refresh for getSlaveTWCs API call

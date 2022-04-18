@@ -767,14 +767,7 @@ def CreateHTTPHandlerClass(master):
                 ).car_api_available()
                 self.scheduledAmpsMax = master.getScheduledAmpsMax()
 
-                if master.getModuleByName("Policy").policyIsGreen():
-                    self.activeAction = 3
-                else:
-                    policy = master.getModuleByName("Policy").getPolicyByName(str(master.getModuleByName("Policy").active_policy))
-                    if int(master.getModuleByName("Policy").policyValue(policy.get("charge_amps", 0))) > 0:
-                        self.activeAction = 1
-                    else:
-                        self.activeAction = 2
+                self.activeAction = master.getModuleByName("Policy").getActivePolicyAction()
 
                 # Send the html message
                 page = self.template.render(vars(self))
