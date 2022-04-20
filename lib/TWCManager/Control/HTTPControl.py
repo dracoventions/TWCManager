@@ -84,7 +84,8 @@ def CreateHTTPHandlerClass(master):
             if not len(self.ampsList):
                 self.ampsList.append([0, "Disabled"])
                 for amp in range(
-                    5, (master.config["config"].get("wiringMaxAmpsPerTWC", 5)) + 1
+                    master.config["config"].get("minAmpsPerTWC", 5),
+                    (master.config["config"].get("wiringMaxAmpsPerTWC", master.config["config"].get("minAmpsPerTWC", 5))) + 1
                 ):
                     self.ampsList.append([amp, str(amp) + "A"])
 
@@ -329,6 +330,18 @@ def CreateHTTPHandlerClass(master):
 
             elif self.url.path == "/api/getStatus":
                 data = master.getStatus()
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+
+                json_data = json.dumps(data)
+                try:
+                    self.wfile.write(json_data.encode("utf-8"))
+                except BrokenPipeError:
+                    self.debugLogAPI("Connection Error: Broken Pipe")
+
+            elif self.url.path == "/api/getActivePolicyAction":
+                data = master.getModuleByName("Policy").getActivePolicyAction()
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
@@ -753,6 +766,8 @@ def CreateHTTPHandlerClass(master):
                     "TeslaAPI"
                 ).car_api_available()
                 self.scheduledAmpsMax = master.getScheduledAmpsMax()
+
+                self.activeAction = master.getModuleByName("Policy").getActivePolicyAction()
 
                 # Send the html message
                 page = self.template.render(vars(self))

@@ -79,6 +79,8 @@ api:
 	@cd API && ./test_sendStopCommand.py
 	@echo "${bold}${red}(A10/${api})${reset} ${yellow}Test API consumption offsets"
 	@cd API && ./test_consumptionOffsets.py
+	@echo "${bold}${red}(A11/${api})${reset} ${yellow}Test API getActivePolicyAction"
+	@cd API && ./test_getActivePolicyAction.py
 
 ems:
 	@echo "${bold}${red}(E1/${ems})${reset} ${yellow}Starting EMS Test Web Server"
