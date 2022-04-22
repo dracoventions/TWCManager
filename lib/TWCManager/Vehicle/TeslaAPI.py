@@ -615,33 +615,28 @@ class TeslaAPI:
             # more than once per minute.
             self.updateLastStartOrStopChargeTime()
 
-            if (
-                self.config["config"]["onlyChargeMultiCarsAtHome"]
-                and self.getVehicleCount() > 1
-            ):
-                # When multiple cars are enrolled in the car API, only start/stop
-                # charging cars parked at home.
+            # only start/stop charging cars parked at home.
 
-                if vehicle.update_location() is False:
-                    result = "error"
-                    continue
+            if vehicle.update_location() is False:
+                result = "error"
+                continue
 
-                if not vehicle.atHome:
-                    # Vehicle is not at home, so don't change its charge state.
-                    logger.info(
-                        vehicle.name
-                        + " is not at home.  Do not "
-                        + startOrStop
-                        + " charge."
-                    )
-                    continue
+            if not vehicle.atHome:
+                # Vehicle is not at home, so don't change its charge state.
+                logger.info(
+                    vehicle.name
+                    + " is not at home.  Do not "
+                    + startOrStop
+                    + " charge."
+                )
+                continue
 
-                # If you send charge_start/stop less than 1 second after calling
-                # update_location(), the charge command usually returns:
-                #   {'response': {'result': False, 'reason': 'could_not_wake_buses'}}
-                # Waiting 2 seconds seems to consistently avoid the error, but let's
-                # wait 5 seconds in case of hardware differences between cars.
-                time.sleep(5)
+            # If you send charge_start/stop less than 1 second after calling
+            # update_location(), the charge command usually returns:
+            #   {'response': {'result': False, 'reason': 'could_not_wake_buses'}}
+            # Waiting 2 seconds seems to consistently avoid the error, but let's
+            # wait 5 seconds in case of hardware differences between cars.
+            time.sleep(5)
 
             if charge:
                 self.applyChargeLimit(self.lastChargeLimitApplied, checkArrival=True)

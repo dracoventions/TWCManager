@@ -69,19 +69,6 @@
         # for this many seconds.
         #"startStopDelay": 60,
 
-        # When you have more than one vehicle associated with the Tesla car API and
-        # onlyChargeMultiCarsAtHome = True, cars will only be controlled by the API when
-        # parked at home. For example, when one vehicle is plugged in at home and
-        # another is plugged in at a remote location and you've set TWCManager to stop
-        # charging at the current time, only the one plugged in at home will be stopped
-        # from charging using the car API.
-        # Unfortunately, bugs in the car GPS system may cause a car to not be reported
-        # as at home even if it is, in which case the car might not be charged when you
-        # expect it to be. If you encounter that problem with multiple vehicles, you can
-        # set onlyChargeMultiCarsAtHome = False, but you may encounter the problem of
-        # a car not at home being stopped from charging by the API.
-        "onlyChargeMultiCarsAtHome": true,
-
         # Depending on your environment and experience with GPS location quality, you
         # may want to choose how close a car needs to be to your home location to be
         # considered "at home". Value is given in feet, one foot is about 0.3 meters.
@@ -384,7 +371,9 @@
         # a pi, it may mean considering alternatives such as a remote database
         # to reduce write cycles.
         "Console": {
-            "enabled": true
+            "enabled": true,
+            # simple logging format omits timestamp and colorization
+            #"simple": true
         },
         "FileLogger": {
           "enabled": false,
@@ -588,12 +577,29 @@
           "serverPort": "1080"
         },
       # SolarEdge API, consumed from the internet-based SolarEdge Potal
+      # or directly from a local inverter with smart meter via modbus TCP
+      # NOTE: inverter needs to have modbus TCP enabled - call or email
+      #       SolarEdge to enable it for you or use SetApp to enable it
         "SolarEdge": {
           "enabled": false,
       # API Key must be specified in order to monitor a SolarEdge site
           "apiKey": "",
       # Site ID defines which system to monitor
-          "siteID": ""
+          "siteID": "",
+      ## or local inverter, "apiKey" and "siteID" are ignored if you use this
+      # local IP address or hostname of inverter
+          #"inverterHost": "",
+      # default port is 1502, shouldn't need to be changed
+          #"inverterPort": 1502,
+      # you need 1 smart meter to track consumption, up to 3 are supported
+      # NOTE: if a network part is metered by both a consumption and an export
+      #       meter, only add one of them or consumption will be counted twice
+          #"smartMeters": [{
+      # smart meter names currently may be "Meter1", "Meter2", "Meter3"
+          #  "name": "Meter1",
+      # specify what is metered: "consumption" or "export"
+          #  "type": "export"
+          #}]
         },
       # SolarLog Inverters
         "SolarLog": {

@@ -79,12 +79,16 @@ api:
 	@cd API && ./test_sendStopCommand.py
 	@echo "${bold}${red}(A10/${api})${reset} ${yellow}Test API consumption offsets"
 	@cd API && ./test_consumptionOffsets.py
+	@echo "${bold}${red}(A11/${api})${reset} ${yellow}Test API getActivePolicyAction"
+	@cd API && ./test_getActivePolicyAction.py
 
 ems:
 	@echo "${bold}${red}(E1/${ems})${reset} ${yellow}Starting EMS Test Web Server"
 	@cd EMS && ./ems_emulator.py &
 	@echo "${bold}${red}(E2/${ems})${reset} ${yellow}Testing SmartPi EMS Module"
 	cd EMS && ./test_SmartPi.py
+	@echo "${bold}${red}(E3/${ems})${reset} ${yellow}Testing MQTT EMS Module"
+	cd EMS && ./test_MQTT.py
 
 preflight:
 	@echo "${bold}${red}(P7/${pre})${reset} ${yellow}Testing file existence and permissions"

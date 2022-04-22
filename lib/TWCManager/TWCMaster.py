@@ -614,8 +614,8 @@ class TWCMaster:
         # Returns Lat/Lon coordinates to check if car location is
         # at home
         latlon = [10000, 10000]
-        latlon[0] = self.settings.get("homeLat", 10000)
-        latlon[1] = self.settings.get("homeLon", 10000)
+        latlon[0] = float(self.settings.get("homeLat", 10000))
+        latlon[1] = float(self.settings.get("homeLon", 10000))
         return latlon
 
     def getMasterHeartbeatOverride(self):
@@ -633,7 +633,7 @@ class TWCMaster:
         # consumption.
 
         currentOffer = max(
-            self.getMaxAmpsToDivideAmongSlaves(),
+            int(self.getMaxAmpsToDivideAmongSlaves()),
             self.num_cars_charging_now() * self.config["config"]["minAmpsPerTWC"],
         )
         newOffer = currentOffer + self.convertWattsToAmps(generationW - consumptionW)
@@ -705,17 +705,17 @@ class TWCMaster:
             if slave.voltsPhaseC:
                 localPhases += 1
 
-        if phases:
-            if localPhases != phases:
-                logger.info(
-                    "FATAL:  Mix of multi-phase TWC configurations not currently supported."
-                )
-                return (
-                    self.config["config"].get("defaultVoltage", 240),
-                    self.config["config"].get("numberOfPhases", 1),
-                )
-        else:
-            phases = localPhases
+            if phases:
+                if localPhases != phases:
+                    logger.info(
+                        "FATAL:  Mix of multi-phase TWC configurations not currently supported."
+                    )
+                    return (
+                        self.config["config"].get("defaultVoltage", 240),
+                        self.config["config"].get("numberOfPhases", 1),
+                    )
+            else:
+                phases = localPhases
 
         total = sum(
             [

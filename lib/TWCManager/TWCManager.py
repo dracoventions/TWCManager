@@ -94,6 +94,7 @@ modules_available = [
     "EMS.HASS",
     "EMS.IotaWatt",
     "EMS.Kostal",
+    "EMS.MQTT",
     "EMS.OpenHab",
     "EMS.OpenWeatherMap",
     "EMS.P1Monitor",
@@ -1230,7 +1231,7 @@ while True:
                         potentialVIN = "".join(slaveTWC.VINData)
 
                         # Ensure we have a valid VIN
-                        if len(potentialVIN) == 17:
+                        if len(potentialVIN) == 17 or len(potentialVIN) == 0:
                             # Record Vehicle VIN
                             slaveTWC.currentVIN = potentialVIN
 

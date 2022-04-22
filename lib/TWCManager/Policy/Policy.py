@@ -246,6 +246,25 @@ class Policy:
                 return policy
         return None
 
+    def getActivePolicyAction(self):
+        # getActivePolicyAction returns an integer value depending on what 
+        # charging action the currently active policy is following. Values
+        # correspond to nonScheduledAction values in settings.json:
+        # 1 ... fixed rate charging
+        # 2 ... do not charge
+        # 3 ... track green energy charging
+        # <None> will be returned if self.active_policy is not (yet) set
+        if self.active_policy == None:
+            return None
+        if self.policyIsGreen():
+            return 3
+        else:
+            policy = self.getPolicyByName(self.active_policy)
+            if int(self.policyValue(policy.get("charge_amps", 0))) > 0:
+                return 1
+            else:
+                return 2
+
     def policyValue(self, value):
         # policyValue is a macro to allow charging policy to refer to things
         # such as EMS module values or settings. This allows us to control
