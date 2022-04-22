@@ -85,7 +85,13 @@ def CreateHTTPHandlerClass(master):
                 self.ampsList.append([0, "Disabled"])
                 for amp in range(
                     master.config["config"].get("minAmpsPerTWC", 5),
-                    (master.config["config"].get("wiringMaxAmpsPerTWC", master.config["config"].get("minAmpsPerTWC", 5))) + 1
+                    (
+                        master.config["config"].get(
+                            "wiringMaxAmpsPerTWC",
+                            master.config["config"].get("minAmpsPerTWC", 5),
+                        )
+                    )
+                    + 1,
                 ):
                     self.ampsList.append([amp, str(amp) + "A"])
 
@@ -767,7 +773,9 @@ def CreateHTTPHandlerClass(master):
                 ).car_api_available()
                 self.scheduledAmpsMax = master.getScheduledAmpsMax()
 
-                self.activeAction = master.getModuleByName("Policy").getActivePolicyAction()
+                self.activeAction = master.getModuleByName(
+                    "Policy"
+                ).getActivePolicyAction()
 
                 # Send the html message
                 page = self.template.render(vars(self))

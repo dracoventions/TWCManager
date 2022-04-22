@@ -247,7 +247,7 @@ class Policy:
         return None
 
     def getActivePolicyAction(self):
-        # getActivePolicyAction returns an integer value depending on what 
+        # getActivePolicyAction returns an integer value depending on what
         # charging action the currently active policy is following. Values
         # correspond to nonScheduledAction values in settings.json:
         # 1 ... fixed rate charging

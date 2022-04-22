@@ -55,7 +55,9 @@ class SolarEdge:
         self.status = self.configSolarEdge.get("enabled", self.status)
         self.siteID = self.configSolarEdge.get("siteID", None)
         self.inverterHost = self.configSolarEdge.get("inverterHost", self.inverterHost)
-        self.inverterPort = int(self.configSolarEdge.get("inverterPort", self.inverterPort))
+        self.inverterPort = int(
+            self.configSolarEdge.get("inverterPort", self.inverterPort)
+        )
         self.smartMeters = self.configSolarEdge.get("smartMeters", self.smartMeters)
 
         # Unload if this module is disabled or misconfigured
@@ -70,16 +72,20 @@ class SolarEdge:
             # basic syntax check for nested parameters
             for smartMeter in self.smartMeters:
                 if not "name" in smartMeter:
-                    logger.error("missing 'name' for SolarEdge smartMeter in config.json"
-                                 " - please specify (try 'Meter1', 'Meter2', 'Meter3')")
+                    logger.error(
+                        "missing 'name' for SolarEdge smartMeter in config.json"
+                        " - please specify (try 'Meter1', 'Meter2', 'Meter3')"
+                    )
                     self.master.releaseModule("lib.TWCManager.EMS", "SolarEdge")
                     return None
-                if (not "type" in smartMeter
-                    or (smartMeter["type"] != "consumption"
-                        and smartMeter["type"] != "export")
+                if not "type" in smartMeter or (
+                    smartMeter["type"] != "consumption"
+                    and smartMeter["type"] != "export"
                 ):
-                    logger.error("invalid or missing 'type' for SolarEdge smartMeter in "
-                                 "config.json - please specify as 'consumption' or 'export'")
+                    logger.error(
+                        "invalid or missing 'type' for SolarEdge smartMeter in "
+                        "config.json - please specify as 'consumption' or 'export'"
+                    )
                     self.master.releaseModule("lib.TWCManager.EMS", "SolarEdge")
                     return None
 
@@ -215,9 +221,7 @@ class SolarEdge:
                 elif portalData["siteCurrentPowerFlow"]["unit"] == "kW":
                     self.consumedW = int(
                         float(
-                            portalData["siteCurrentPowerFlow"]["LOAD"][
-                                "currentPower"
-                            ]
+                            portalData["siteCurrentPowerFlow"]["LOAD"]["currentPower"]
                         )
                         * 1000
                     )
@@ -227,9 +231,7 @@ class SolarEdge:
                     if self.pollMode == 0 or self.pollMode == 2:
                         self.generatedW = int(
                             float(
-                                portalData["siteCurrentPowerFlow"]["PV"][
-                                    "currentPower"
-                                ]
+                                portalData["siteCurrentPowerFlow"]["PV"]["currentPower"]
                             )
                             * 1000
                         )
@@ -276,13 +278,16 @@ class SolarEdge:
         if self.fetchFailed:
             time.sleep(1)
 
-        inverter = solaredge_modbus.Inverter(host=self.inverterHost,
-                                             port=self.inverterPort)
+        inverter = solaredge_modbus.Inverter(
+            host=self.inverterHost, port=self.inverterPort
+        )
         # returns true/false, does not raise exception on connection error
         # but pymodbus.c logs an error already at least
         if not inverter.connect():
-            logger.error("failed to connect to inverter "
-                         f"{self.inverterHost!r} port {self.inverterPort!r}")
+            logger.error(
+                "failed to connect to inverter "
+                f"{self.inverterHost!r} port {self.inverterPort!r}"
+            )
             self.fetchFailed = True
             return
 
@@ -313,8 +318,10 @@ class SolarEdge:
             try:
                 meter = inverter.meters()[smartMeter["name"]]
             except KeyError as e:
-                logger.error(f"smart meter {smartMeter['name']!r} not found "
-                             "in modbus response from inverter")
+                logger.error(
+                    f"smart meter {smartMeter['name']!r} not found "
+                    "in modbus response from inverter"
+                )
                 self.fetchFailed = True
                 inverter.disconnect()
                 return
@@ -329,8 +336,10 @@ class SolarEdge:
                     raise Exception("unable to get power values")
                 power = int(power * 10 ** power_scale)
             except Exception as e:
-                logger.error("failed to get metered power for "
-                             f"{smartMeter['name']!r} from inverter: {e!r}")
+                logger.error(
+                    "failed to get metered power for "
+                    f"{smartMeter['name']!r} from inverter: {e!r}"
+                )
                 self.fetchFailed = True
                 inverter.disconnect()
                 return
