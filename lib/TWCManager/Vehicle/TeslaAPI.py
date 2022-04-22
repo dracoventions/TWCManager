@@ -544,9 +544,13 @@ class TeslaAPI:
         # also reports the car is not at its usual address.  I suspect this
         # is another case of a bug that's been causing car GPS to freeze  the
         # last couple months.
+        # Desired maximum destination from home is now configurable. As the
+        # parameter may not be set, we catch the key error and use the default
+        # value documented above.
+        atHomeRadius = 1/364488.888 * float(self.config["config"].get('atHomeRadius', 10560))
         if (
-            abs(self.master.getHomeLatLon()[0] - lat) > 0.0289
-            or abs(self.master.getHomeLatLon()[1] - lon) > 0.0289
+            abs(self.master.getHomeLatLon()[0] - lat) > atHomeRadius
+            or abs(self.master.getHomeLatLon()[1] - lon) > atHomeRadius
         ):
             return False
 
