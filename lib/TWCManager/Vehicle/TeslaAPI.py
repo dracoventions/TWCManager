@@ -875,6 +875,10 @@ class TeslaAPI:
                 # risk changing the charge limit yet.
                 continue
 
+            if not wasAtHome and not vehicle.atHome:
+                # If the vehicle was away and is still away, nothing to do.
+                continue
+
             if not wasAtHome and vehicle.atHome:
                 logger.log(logging.INFO2, vehicle.name + " has arrived")
                 outside = vehicle.chargeLimit
