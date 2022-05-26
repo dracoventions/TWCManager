@@ -706,11 +706,12 @@ class TeslaAPI:
                             self.resetCarApiLastErrorTime(vehicle)
                         elif charge:
                             reason = apiResponseDict["response"]["reason"]
-                            if reason == "complete" or reason == "charging":
+                            if reason in ["complete", "charging", "is_charging", "disconnected"]:
                                 # We asked the car to charge, but it responded that
                                 # it can't, either because it's reached target
                                 # charge state (reason == 'complete'), or it's
-                                # already trying to charge (reason == 'charging').
+                                # already trying to charge (reason == 'charging') or
+                                # it's not connected to a charger (reason == 'charging').
                                 # In these cases, it won't help to keep asking it to
                                 # charge, so set vehicle.stopAskingToStartCharging =
                                 # True.
@@ -720,7 +721,8 @@ class TeslaAPI:
                                 # which car in the list is connected to our TWC.
                                 logger.info(
                                     vehicle.name
-                                    + " is done charging or already trying to charge.  Stop asking to start charging."
+                                    + " is done charging or already trying to charge or not connected to a charger."
+                                    + "  Stop asking to start charging."
                                 )
                                 vehicle.stopAskingToStartCharging = True
                                 self.resetCarApiLastErrorTime(vehicle)
