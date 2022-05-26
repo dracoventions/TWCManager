@@ -654,6 +654,10 @@ class TWCMaster:
             result = self.settings["chargeLimits"][str(ID)]
             if type(result) is int:
                 result = (result, 0)
+            if result[0] is None:
+                result[0] = 0
+            if result[1] is None:
+                result[1] = 0
             return (True, result[0], result[1])
         return (False, None, None)
 

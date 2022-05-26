@@ -866,23 +866,27 @@ class TeslaAPI:
             if vehicle.stopTryingToApplyLimit or not vehicle.ready():
                 continue
 
-            located = vehicle.update_location()
             (wasAtHome, outside, lastApplied) = self.master.getNormalChargeLimit(
                 vehicle.ID
             )
             forgetVehicle = False
-            if not vehicle.update_charge():
-                # We failed to read the "normal" limit; don't risk changing it.
+            if not vehicle.update_charge() or not vehicle.update_location():
+                # We failed to read the "normal" limit or locate the car; don't
+                # risk changing the charge limit yet.
                 continue
 
-            if not wasAtHome and located and vehicle.atHome:
+            if not wasAtHome and not vehicle.atHome:
+                # If the vehicle was away and is still away, nothing to do.
+                continue
+
+            if not wasAtHome and vehicle.atHome:
                 logger.log(logging.INFO2, vehicle.name + " has arrived")
                 outside = vehicle.chargeLimit
-            elif wasAtHome and located and not vehicle.atHome:
+            elif wasAtHome and not vehicle.atHome:
                 logger.log(logging.INFO2, vehicle.name + " has departed")
                 forgetVehicle = True
 
-            if limit == -1 or (located and not vehicle.atHome):
+            if limit == -1 or not vehicle.atHome:
                 # We're removing any applied limit, provided it hasn't been manually changed
                 #
                 # If lastApplied == -1, the manual-change path is always selected.
