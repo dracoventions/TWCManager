@@ -705,7 +705,7 @@ class TeslaAPI:
                             self.resetCarApiLastErrorTime(vehicle)
                         elif charge:
                             reason = apiResponseDict["response"]["reason"]
-                            if reason == "complete" or reason == "charging" or reason == "disconnected":
+                            if reason in ["complete", "charging", "is_charging", "disconnected"]:
                                 # We asked the car to charge, but it responded that
                                 # it can't, either because it's reached target
                                 # charge state (reason == 'complete'), or it's
