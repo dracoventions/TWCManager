@@ -15,6 +15,7 @@ This document logs the changes per release of TWCManager.
   * (@dtiefnig) - Add switch to output plain text Console output (turn off color)
   * (@dtiefnig) - Unify single and multi-car charge at home behaviour
   * (@dtiefnig) - Add Modbus TCP support for SolarEdge EMS module
+  * (@dtiefnig / @MikeBishop) - Update Tesla API charging states
 
 ## v1.2.6 - 2022-02-28
 
