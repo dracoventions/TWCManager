@@ -8,8 +8,7 @@ RUN cd /usr/src/TWCManager && make docker SUDO=""
 VOLUME /etc/twcmanager
 WORKDIR /usr/src/TWCManager
 
-COPY entrypoint.sh ./entrypoint.sh
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["./contrib/docker/entrypoint.sh"]
 CMD ["/usr/bin/python3","-m","TWCManager"]
 
 # SSL_CERTIFICATE_FAILED errors
