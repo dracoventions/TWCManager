@@ -48,6 +48,9 @@ class RS485:
         elif porta:
             self.port = porta
 
+        self.connect()
+
+    def connect(self):
         # Connect to serial port
         self.ser = self.serial.serial_for_url(self.port, self.baud, timeout=0)
 
@@ -62,7 +65,11 @@ class RS485:
 
     def read(self, len):
         # Read the specified amount of data from the serial interface
-        return self.ser.read(len)
+        try:
+            return self.ser.read(len)
+        except serial.serialutil.SerialException as e:
+            logger.log(logging.ERROR, "Error reading from serial interface: {}. Will attempt re-connect.".format(e))
+            self.connect()
 
     def send(self, msg):
         # Send msg on the RS485 network. We'll escape bytes with a special meaning,
