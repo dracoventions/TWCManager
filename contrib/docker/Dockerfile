@@ -1,4 +1,4 @@
-FROM debian:buster
+FROM debian:bullseye
 RUN apt-get -y update && apt-get -y install build-essential ca-certificates gfortran git lsb-release make python3 python3-pip libatlas-base-dev
 RUN cd /usr/src && git clone https://github.com/ngardiner/TWCManager
 
