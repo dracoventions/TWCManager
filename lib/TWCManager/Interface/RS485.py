@@ -68,7 +68,12 @@ class RS485:
         try:
             return self.ser.read(len)
         except serial.serialutil.SerialException as e:
-            logger.log(logging.ERROR, "Error reading from serial interface: {}. Will attempt re-connect.".format(e))
+            logger.log(
+                logging.ERROR,
+                "Error reading from serial interface: {}. Will attempt re-connect.".format(
+                    e
+                ),
+            )
             self.connect()
 
     def send(self, msg):

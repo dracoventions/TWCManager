@@ -301,7 +301,7 @@ class SolarEdge:
             # solaredge_modbus doesn't raise Exceptions, it just returns False
             if power_ac is False or power_ac_scale is False:
                 raise Exception("unable to get power_ac values")
-            self.generatedW = int(power_ac * 10 ** power_ac_scale)
+            self.generatedW = int(power_ac * 10**power_ac_scale)
         except Exception as e:
             logger.error(f"failed to get AC power from inverter: {e!r}")
             self.fetchFailed = True
@@ -334,7 +334,7 @@ class SolarEdge:
                 power_scale = meter.read("power_scale")["power_scale"]
                 if power is False or power_scale is False:
                     raise Exception("unable to get power values")
-                power = int(power * 10 ** power_scale)
+                power = int(power * 10**power_scale)
             except Exception as e:
                 logger.error(
                     "failed to get metered power for "
