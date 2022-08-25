@@ -18,7 +18,9 @@ on:
 jobs:
   build:
     name: Format Sources
-    runs-on: [ "self-hosted", "build_host" ]
+# Temporary while self-hosted infra is down
+#    runs-on: [ "self-hosted", "build_host" ]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
         with:
