@@ -233,6 +233,16 @@ class Policy:
             limit = -1
         self.master.queue_background_task({"cmd": "applyChargeLimit", "limit": limit})
 
+        # Report current policy via Status modules
+        for module in self.master.getModulesByType("Status"):
+            module["ref"].setStatus(
+                bytes("all", "UTF-8"),
+                "current_policy",
+                "currentPolicy",
+                policy["name"],
+                "",
+            )
+
     def fireWebhook(self, hook):
         policy = self.getPolicyByName(self.active_policy)
         if policy:

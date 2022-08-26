@@ -11,7 +11,6 @@ This document logs the changes per release of TWCManager.
      * (@ngardiner) - Adjust voltage / phase detection to handle combinations of 1/2/3 phase systems, as long as all slave TWCs have the same number of active phases
      * (@ccutrer) - Fix openhab integration to properly parse floats
      * (@ngardiner) - Detect issues with serial connection (RS485) and automatically reconnect
-     * (@ngardiner) - Add automatic reconnect routine for RS485 serial module
   * (@hopfi2k) - Major "Modern Theme" update. Switched to Bootstrap 5.02, bug fixes, now fully responsive
   * (@ngardiner) - Add Home Location view and modification controls to settings page
   * (@ngardiner) - Add MQTT EMS module (currently pre-release for testing)
@@ -20,6 +19,7 @@ This document logs the changes per release of TWCManager.
   * (@dtiefnig) - Add Modbus TCP support for SolarEdge EMS module
   * (@dtiefnig / @MikeBishop) - Update Tesla API charging states
   * (@dtiefnig) - Reference entrypoint script from within Docker container to remove dependency on external source tree
+  * (@ngardiner) - Add Current Policy as status value (to be published to HASS / MQTT)
 
 ## v1.2.6 - 2022-02-28
 
