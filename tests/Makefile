@@ -65,21 +65,23 @@ api:
 	@cd API && ./test_getConfig.py
 	@echo "${bold}${red}(A3/${api})${reset} ${yellow}Test API getLastTWCResponse"
 	@cd API && ./test_getLastTWCResponse.py
-	@echo "${bold}${red}(A4/${api})${reset} ${yellow}Test API getPolicy"
+        @echo "${bold}${red}(A4/${api})${reset} ${yellow}Test API setLatLon"
+        @cd API && ./test_setLatLon.py
+	@echo "${bold}${red}(A5/${api})${reset} ${yellow}Test API getPolicy"
 	@cd API && ./test_getPolicy.py
-	@echo "${bold}${red}(A5/${api})${reset} ${yellow}Test API getSlaveTWCs"
+	@echo "${bold}${red}(A6/${api})${reset} ${yellow}Test API getSlaveTWCs"
 	@cd API && ./test_getSlaveTWCs.py
-	@echo "${bold}${red}(A6/${api})${reset} ${yellow}Test API getStatus"
+	@echo "${bold}${red}(A7/${api})${reset} ${yellow}Test API getStatus"
 	@cd API && ./test_getStatus.py
-	@echo "${bold}${red}(A7/${api})${reset} ${yellow}Test API chargeNow functionality"
+	@echo "${bold}${red}(A8/${api})${reset} ${yellow}Test API chargeNow functionality"
 	@cd API && ./test_chargeNow.py
-	@echo "${bold}${red}(A8/${api})${reset} ${yellow}Test API sendStartCommand"
+	@echo "${bold}${red}(A9/${api})${reset} ${yellow}Test API sendStartCommand"
 	@cd API && ./test_sendStartCommand.py
-	@echo "${bold}${red}(A9/${api})${reset} ${yellow}Test API sendStopCommand"
+	@echo "${bold}${red}(A10/${api})${reset} ${yellow}Test API sendStopCommand"
 	@cd API && ./test_sendStopCommand.py
-	@echo "${bold}${red}(A10/${api})${reset} ${yellow}Test API consumption offsets"
+	@echo "${bold}${red}(A11/${api})${reset} ${yellow}Test API consumption offsets"
 	@cd API && ./test_consumptionOffsets.py
-	@echo "${bold}${red}(A11/${api})${reset} ${yellow}Test API getActivePolicyAction"
+	@echo "${bold}${red}(A12/${api})${reset} ${yellow}Test API getActivePolicyAction"
 	@cd API && ./test_getActivePolicyAction.py
 
 ems:
