@@ -205,9 +205,15 @@
       "RS485": {
         "enabled": true,
 
-        # TWC's rs485 port runs at 9600 baud which has been verified with an
+        # TWC's RS485 port runs at 9600 baud which has been verified with an
         # oscilloscope. Don't change this unless something changes in future hardware.
         "baud": 9600,
+
+        # This value allows overriding of the default 26 second heartbeat timeout for Slave TWCs.
+        # This value should work in hard-wired systems, but if you are using network
+        # to RS485 adapters and experiencing occasional network loss or latency, this
+        # value can be tuned to extend the timeout.
+        #"slaveTimeout": 26,
 
         # Most users will have only one ttyUSB adapter plugged in and
         # '/dev/ttyUSB0' will work. If not, run 'dmesg |grep ttyUSB' on the

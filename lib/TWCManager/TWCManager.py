@@ -703,7 +703,7 @@ while True:
                     # It's been about a second since our last heartbeat.
                     if master.countSlaveTWC() > 0:
                         slaveTWC = master.getSlaveTWC(idxSlaveToSendNextHeartbeat)
-                        if time.time() - slaveTWC.timeLastRx > 26:
+                        if time.time() - slaveTWC.timeLastRx > config.get("interfaces", {}).get("RS485", {}).get("slaveTimeout", 26):
                             # A real master stops sending heartbeats to a slave
                             # that hasn't responded for ~26 seconds. It may
                             # still send the slave a heartbeat every once in
