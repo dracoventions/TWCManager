@@ -153,7 +153,9 @@ class MQTTStatus:
                 + ")",
             )
             try:
-                pub = client.publish(msg["topic"], payload=msg["payload"], qos=0, retain=True)
+                pub = client.publish(
+                    msg["topic"], payload=msg["payload"], qos=0, retain=True
+                )
             except e:
                 logger.log(logging.INFO4, "Error publishing MQTT Topic Status")
                 logger.debug(str(e))
