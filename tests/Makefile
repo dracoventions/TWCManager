@@ -65,8 +65,8 @@ api:
 	@cd API && ./test_getConfig.py
 	@echo "${bold}${red}(A3/${api})${reset} ${yellow}Test API getLastTWCResponse"
 	@cd API && ./test_getLastTWCResponse.py
-        @echo "${bold}${red}(A4/${api})${reset} ${yellow}Test API setLatLon"
-        @cd API && ./test_setLatLon.py
+	@echo "${bold}${red}(A4/${api})${reset} ${yellow}Test API setLatLon"
+	@cd API && ./test_setLatLon.py
 	@echo "${bold}${red}(A5/${api})${reset} ${yellow}Test API getPolicy"
 	@cd API && ./test_getPolicy.py
 	@echo "${bold}${red}(A6/${api})${reset} ${yellow}Test API getSlaveTWCs"
