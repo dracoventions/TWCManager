@@ -1419,6 +1419,8 @@ class CarApiVehicle:
 
             self.lastVehicleStatusTime = now
 
+        return result
+
     def update_charge(self):
 
         if self.syncSource == "TeslaAPI":
