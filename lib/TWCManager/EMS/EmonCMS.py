@@ -4,7 +4,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class EmonCMS:
-
     # OpenEnergyMonitor (EmonCMS) Module
     # Fetches Consumption and Generation details from Open Energy Monitor
 
@@ -57,7 +56,6 @@ class EmonCMS:
             return None
 
     def getConsumption(self):
-
         if not self.status:
             logger.debug("Module Disabled. Skipping getConsumption")
             return 0
@@ -69,7 +67,6 @@ class EmonCMS:
         return self.consumedW
 
     def getGeneration(self):
-
         if not self.status:
             logger.debug("Module Disabled. Skipping getGeneration")
             return 0

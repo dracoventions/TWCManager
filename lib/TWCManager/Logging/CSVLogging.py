@@ -4,7 +4,6 @@ import logging
 
 
 class CSVLogging:
-
     capabilities = {"queryGreenEnergy": False}
     config = None
     configConfig = None

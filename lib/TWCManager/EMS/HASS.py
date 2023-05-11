@@ -4,7 +4,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class HASS:
-
     # HomeAssistant EMS Module
     # Fetches Consumption and Generation details from HomeAssistant
 
@@ -54,7 +53,6 @@ class HASS:
             return None
 
     def getConsumption(self):
-
         if not self.status:
             logger.debug("Module Disabled. Skipping getConsumption")
             return 0
@@ -66,7 +64,6 @@ class HASS:
         return self.consumedW
 
     def getGeneration(self):
-
         if not self.status:
             logger.debug("Module Disabled. Skipping getGeneration")
             return 0

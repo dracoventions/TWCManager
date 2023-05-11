@@ -6,7 +6,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class TCP:
-
     import time
 
     config = None

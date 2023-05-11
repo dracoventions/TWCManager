@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class TED:
-
     # I check solar panel generation using an API exposed by The
     # Energy Detective (TED). It's a piece of hardware available
     # at http://www.theenergydetective.com
@@ -52,7 +51,6 @@ class TED:
             return None
 
     def getConsumption(self):
-
         if not self.status:
             logger.debug("TED EMS Module Disabled. Skipping getConsumption")
             return 0
@@ -64,7 +62,6 @@ class TED:
         return float(0)
 
     def getGeneration(self):
-
         if not self.status:
             logger.debug("TED EMS Module Disabled. Skipping getGeneration")
             return 0
@@ -76,7 +73,6 @@ class TED:
         return float(self.generatedW)
 
     def getTEDValue(self, url):
-
         # Fetch the specified URL from TED and return the data
         self.fetchFailed = False
 
@@ -92,7 +88,6 @@ class TED:
         return r
 
     def update(self):
-
         if (int(time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from HomeAssistant sensor.
 

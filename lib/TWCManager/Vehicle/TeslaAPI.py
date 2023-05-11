@@ -13,7 +13,6 @@ logger = logging.getLogger("\U0001F697 TeslaAPI")
 
 
 class TeslaAPI:
-
     __apiChallenge = None
     __apiVerifier = None
     __apiState = None
@@ -76,7 +75,6 @@ class TeslaAPI:
         return True
 
     def apiDebugInterface(self, command, vehicleID, parameters):
-
         # Provides an interface from the Web UI to allow commands to be run interactively
 
         # Map vehicle ID back to vehicle object
@@ -514,7 +512,6 @@ class TeslaAPI:
         )
 
     def is_location_home(self, lat, lon):
-
         if self.master.getHomeLatLon()[0] == 10000:
             logger.info(
                 "Home location for vehicles has never been set.  "
@@ -571,7 +568,6 @@ class TeslaAPI:
                 vehicle.stopAskingToStartCharging = False
 
         if now - self.getLastStartOrStopChargeTime() < 60:
-
             # Don't start or stop more often than once a minute
             logger.log(
                 logging.DEBUG2,
@@ -791,7 +787,6 @@ class TeslaAPI:
         return result
 
     def applyChargeLimit(self, limit, checkArrival=False, checkDeparture=False):
-
         if limit != -1 and (limit < 50 or limit > 100):
             logger.log(logging.INFO8, "applyChargeLimit skipped")
             return "error"
@@ -1103,7 +1098,6 @@ class TeslaAPI:
         return True
 
     def setChargeRate(self, charge_rate, vehicle=None):
-
         # As a fallback to allow initial implementation of the charge rate functionality for single car installs,
         # If no vehcle is specified, we take the first returned to us.
 
@@ -1198,7 +1192,6 @@ class TeslaAPI:
 
 
 class CarApiVehicle:
-
     carapi = None
     __config = None
     debuglevel = 0
@@ -1379,12 +1372,10 @@ class CarApiVehicle:
             return (False, None)
 
     def update_location(self, cacheTime=60):
-
         if self.syncSource == "TeslaAPI":
             return self.update_vehicle_data(cacheTime)
 
         else:
-
             self.lat = self.syncLat
             self.lon = self.syncLon
             self.atHome = self.carapi.is_location_home(self.lat, self.lon)
@@ -1422,7 +1413,6 @@ class CarApiVehicle:
         return result
 
     def update_charge(self):
-
         if self.syncSource == "TeslaAPI":
             return self.update_vehicle_data()
 

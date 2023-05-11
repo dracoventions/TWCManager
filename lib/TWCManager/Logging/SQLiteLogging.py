@@ -6,7 +6,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 class SQLiteHandler(logging.Handler):
     def __init__(self, db):
-
         logging.Handler.__init__(self)
         self.db = db
         # Initialize the database schema for a database that does not
@@ -144,7 +143,6 @@ class SQLiteHandler(logging.Handler):
 
 
 class SQLiteLogging:
-
     capabilities = {"queryGreenEnergy": True}
     config = None
     configConfig = None

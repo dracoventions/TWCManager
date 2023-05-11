@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class SentryLogging:
-
     capabilities = {"queryGreenEnergy": False}
     config = None
     configConfig = None

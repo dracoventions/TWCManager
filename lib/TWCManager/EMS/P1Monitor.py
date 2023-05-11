@@ -20,7 +20,6 @@ class P1Monitor:
     timeout = 10
 
     def __init__(self, master):
-
         self.p1monData = {}
         self.configP1Mon = master.config["sources"].get("P1Monitor", {})
         self.serverIP = self.configP1Mon.get("serverIP", None)
@@ -43,7 +42,6 @@ class P1Monitor:
             return None
 
     def getConsumption(self):
-
         # Perform updates if necessary
         self.caller = "getConsumption"
         self.update()
@@ -56,7 +54,6 @@ class P1Monitor:
             return float(0)
 
     def getGeneration(self):
-
         # Perform updates if necessary
         self.caller = "getGeneration"
         self.update()
@@ -71,7 +68,6 @@ class P1Monitor:
             return float(0)
 
     def getP1MonAPIData(self):
-
         # Fetch the specified data from the P1Monitor API and return the data
         self.fetchFailed = False
 
@@ -105,7 +101,6 @@ class P1Monitor:
         return r.json()
 
     def update(self):
-
         if not self.p1monData or self.caller == "getConsumption":
             logger.log(
                 logging.INFO2, "P1Monitor: Refreshing data. Caller: " + self.caller
@@ -118,7 +113,6 @@ class P1Monitor:
 
         if self.p1monData:
             try:
-
                 logger.log(
                     logging.INFO3,
                     "P1Monitor: API Json Output: " + json.dumps(self.p1monData),

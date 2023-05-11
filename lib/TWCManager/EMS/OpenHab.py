@@ -6,7 +6,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class OpenHab:
-
     # OpenHab EMS Module
     # Fetches Consumption and Generation details from OpenHab
 
@@ -50,7 +49,6 @@ class OpenHab:
             return None
 
     def getConsumption(self):
-
         if not self.status:
             logger.debug("OpenHab EMS Module Disabled. Skipping getConsumption")
             return 0
@@ -62,7 +60,6 @@ class OpenHab:
         return self.consumedW
 
     def getGeneration(self):
-
         if not self.status:
             logger.debug("OpenHab EMS Module Disabled. Skipping getGeneration")
             return 0

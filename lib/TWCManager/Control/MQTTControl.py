@@ -4,7 +4,6 @@ logger = logging.getLogger("\U0001F3AE MQTT")
 
 
 class MQTTControl:
-
     import paho.mqtt.client as mqtt
     import _thread
 
@@ -81,7 +80,6 @@ class MQTTControl:
         logger.log(logging.INFO5, "Res: " + str(res))
 
     def mqttMessage(self, client, userdata, message):
-
         # Takes an MQTT message which has a message body of the following format:
         # [Amps to charge at],[Seconds to charge for]
         # eg. 24,3600

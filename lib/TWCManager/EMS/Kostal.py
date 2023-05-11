@@ -105,7 +105,6 @@ class Kostal:
     # read registers directly from the inverter via Modbus protocol
     #
     def __readModbus(self, address, data_format="Float"):
-
         # open the Modbus connection if neccessary
         if not self.modbus.is_open():
             self.modbus.open()

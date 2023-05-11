@@ -6,7 +6,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class SmartPi:
-
     # SmartPi EMS Module
     # Fetches Consumption and Generation details from SmartPi API
 
@@ -41,7 +40,6 @@ class SmartPi:
             return None
 
     def getConsumption(self):
-
         if not self.status:
             logger.debug("EMS Module Disabled. Skipping getConsumption")
             return 0
@@ -54,7 +52,6 @@ class SmartPi:
             return 0
 
     def getGeneration(self):
-
         if not self.status:
             logger.debug("EMS Module Disabled. Skipping getGeneration")
             return 0

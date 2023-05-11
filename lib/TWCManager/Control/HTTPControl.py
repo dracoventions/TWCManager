@@ -31,7 +31,6 @@ class HTTPControl:
     status = False
 
     def __init__(self, master):
-
         self.master = master
         try:
             self.configConfig = master.config["config"]
@@ -78,7 +77,6 @@ def CreateHTTPHandlerClass(master):
         url = None
 
         def __init__(self, *args, **kwargs):
-
             # Populate ampsList so that any function which requires a list of supported
             # TWC amps can easily access it
             if not len(self.ampsList):
@@ -417,7 +415,6 @@ def CreateHTTPHandlerClass(master):
             self.debugLogAPI("Ending API GET")
 
         def do_API_POST(self):
-
             self.debugLogAPI("Starting API POST")
 
             if self.url.path == "/api/addConsumptionOffset":
@@ -520,7 +517,6 @@ def CreateHTTPHandlerClass(master):
                     self.wfile.write("".encode("utf-8"))
 
                 else:
-
                     self.send_response(400)
                     self.end_headers()
                     self.wfile.write("".encode("utf-8"))
@@ -794,7 +790,6 @@ def CreateHTTPHandlerClass(master):
                     break
 
             if route and route.get("error", None):
-
                 if route["error"] == "insecure":
                     # For security, these details should be submitted via a POST request
                     # Send a 405 Method Not Allowed in response.
@@ -914,7 +909,6 @@ def CreateHTTPHandlerClass(master):
             self.send_response(404)
 
         def do_POST(self):
-
             # Parse URL
             self.url = urllib.parse.urlparse(self.path)
 
@@ -964,7 +958,6 @@ def CreateHTTPHandlerClass(master):
                     self.send_header("Location", "/graphs")
 
                 else:
-
                     self.process_save_graphs(objIni, objEnd)
                     self.send_response(302)
                     self.send_header("Location", "/graphsP")
@@ -974,7 +967,6 @@ def CreateHTTPHandlerClass(master):
                 return
 
             if self.url.path == "/teslaAccount/saveToken":
-
                 # Check if we are skipping Tesla Login submission
                 later = False
                 try:
@@ -990,7 +982,6 @@ def CreateHTTPHandlerClass(master):
                     res = "later"
 
                 else:
-
                     res = master.getModuleByName("TeslaAPI").saveApiToken(url)
 
                 self.send_response(302)
@@ -1001,7 +992,6 @@ def CreateHTTPHandlerClass(master):
                 return
 
             if self.url.path == "/vehicle/groupMgmt":
-
                 group = self.getFieldValue("group")
                 op = self.getFieldValue("operation")
                 vin = self.getFieldValue("vin")
@@ -1062,7 +1052,6 @@ def CreateHTTPHandlerClass(master):
             return page
 
         def chargeScheduleDay(self, day):
-
             # Fetch current settings
             sched = master.settings.get("Schedule", {})
             today = sched.get(day, {})
@@ -1147,7 +1136,6 @@ def CreateHTTPHandlerClass(master):
             return page
 
         def process_home_location(self):
-
             # If unset was selected, unset account
             if "unset" in self.fields:
                 del master.settings["homeLat"]
@@ -1170,7 +1158,6 @@ def CreateHTTPHandlerClass(master):
             return
 
         def process_save_schedule(self):
-
             # Check that schedule dict exists within settings.
             # If not, this would indicate that this is the first time
             # we have saved the new schedule settings
@@ -1265,12 +1252,10 @@ def CreateHTTPHandlerClass(master):
             return
 
         def process_save_settings(self, page="settings"):
-
             # This function will write the settings submitted from the settings
             # page to the settings dict, before triggering a write of the settings
             # to file
             for key in self.fields:
-
                 # If the key relates to the car API tokens, we need to pass these
                 # to the appropriate module, rather than directly updating the
                 # configuration file (as it would just be overwritten)
@@ -1287,7 +1272,6 @@ def CreateHTTPHandlerClass(master):
                         carapi.setCarApiTokenExpireTime(time.time() + 45 * 24 * 60 * 60)
 
                 else:
-
                     # Write setting to dictionary
                     master.settings[key] = self.getFieldValue(key)
 

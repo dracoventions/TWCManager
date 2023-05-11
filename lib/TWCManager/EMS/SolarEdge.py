@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class SolarEdge:
-
     import requests
 
     apiKey = None
@@ -94,7 +93,6 @@ class SolarEdge:
             self.cacheTime = 10
 
     def getConsumption(self):
-
         if not self.status:
             logger.debug("SolarEdge EMS Module Disabled. Skipping getConsumption")
             return 0
@@ -106,7 +104,6 @@ class SolarEdge:
         return float(self.consumedW)
 
     def getGeneration(self):
-
         if not self.status:
             logger.debug("SolarEdge EMS Module Disabled. Skipping getGeneration")
             return 0
@@ -118,7 +115,6 @@ class SolarEdge:
         return float(self.generatedW)
 
     def getPortalData(self, request):
-
         # Fetch the specified data from the SolarEdge Portal and return the data
         self.fetchFailed = False
 
@@ -174,7 +170,6 @@ class SolarEdge:
             return r.json()
 
     def updateCloudAPI(self):
-
         # Query for Generation Data, if pollMode is set to 1
         # This is the higher resolution API endpoint, but it is for generation only
         # If the API detects no consumption data, it will step down to this.
@@ -268,7 +263,6 @@ class SolarEdge:
                 self.pollMode = 1
 
     def updateModbusTCP(self):
-
         meteredConsumption = 0
         meteredExport = 0
         exportIsMetered = False
@@ -362,7 +356,6 @@ class SolarEdge:
         inverter.disconnect()
 
     def update(self):
-
         if (int(time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from Portal.
 

@@ -9,7 +9,6 @@ logger = logging.getLogger("\U0001F697 TeslaMate")
 
 
 class TeslaMateVehicle:
-
     __db_host = None
     __db_name = None
     __db_pass = None
@@ -110,7 +109,6 @@ class TeslaMateVehicle:
         # Connect to TeslaMate database and synchronize API tokens
 
         if self.__db_host and self.__db_name and self.__db_user and self.__db_pass:
-
             conn = None
 
             try:
@@ -151,7 +149,6 @@ class TeslaMateVehicle:
                 self.lastSync = time.time()
 
             else:
-
                 logger.log(
                     logging.ERROR,
                     "Failed to connect to TeslaMate database. Disabling Token Sync",
@@ -164,7 +161,6 @@ class TeslaMateVehicle:
                     self.syncTokens = False
 
         else:
-
             logger.log(
                 logging.ERROR,
                 "TeslaMate Database connection settings not specified. Disabling Token Sync",
@@ -180,12 +176,10 @@ class TeslaMateVehicle:
         logger.log(logging.INFO5, "Res: " + str(res))
 
     def mqttMessage(self, client, userdata, message):
-
         topic = str(message.topic).split("/")
         payload = str(message.payload.decode("utf-8"))
 
         if topic[0] == self.__mqtt_prefix and topic[1] == "cars":
-
             if topic[3] == "battery_level":
                 if self.vehicles.get(topic[2], None):
                     self.vehicles[topic[2]].batteryLevel = int(payload)
@@ -204,19 +198,16 @@ class TeslaMateVehicle:
                 self.updateVehicles(topic[2], payload)
 
             elif topic[3] == "latitude":
-
                 if self.vehicles.get(topic[2], None):
                     self.vehicles[topic[2]].syncLat = float(payload)
                     self.vehicles[topic[2]].syncTimestamp = time.time()
 
             elif topic[3] == "longitude":
-
                 if self.vehicles.get(topic[2], None):
                     self.vehicles[topic[2]].syncLon = float(payload)
                     self.vehicles[topic[2]].syncTimestamp = time.time()
 
             elif topic[3] == "state":
-
                 if self.vehicles.get(topic[2], None):
                     self.vehicles[topic[2]].syncState = payload
                     self.vehicles[topic[2]].syncTimestamp = time.time()

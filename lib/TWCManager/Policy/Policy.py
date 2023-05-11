@@ -6,7 +6,6 @@ logger = logging.getLogger("\u26FD Policy")
 
 
 class Policy:
-
     active_policy = None
 
     # This is the default charge policy.  It can be overridden or extended.
@@ -96,15 +95,13 @@ class Policy:
                 config_extend = config_policy.get("extend", {})
 
                 # Get additional restrictions
-                for (name, restrictions) in config_extend.get(
-                    "restrictions", {}
-                ).items():
+                for name, restrictions in config_extend.get("restrictions", {}).items():
                     restricted = self.getPolicyByName(name)
                     for key in ("match", "condition", "value"):
                         restricted[key] += restrictions.get(key, [])
 
                 # Get webhooks
-                for (name, hooks) in config_extend.get("webhooks", {}).items():
+                for name, hooks in config_extend.get("webhooks", {}).items():
                     hooked = self.getPolicyByName(name)
                     hooked["webhooks"] = hooks
 
@@ -118,7 +115,7 @@ class Policy:
                 #   After - Inserted before Non-Scheduled Charging
                 #   Before - Inserted after Charge Now
                 #   Emergency - Inserted at the beginning
-                for (name, position) in [("after", 3), ("before", 1), ("emergency", 0)]:
+                for name, position in [("after", 3), ("before", 1), ("emergency", 0)]:
                     self.charge_policy[position:position] = config_extend.get(name, [])
 
             if config_policy.get("alwaysPollEMS", False):
@@ -153,7 +150,6 @@ class Policy:
             self.lastPolicyCheck = time.time()
 
         for policy in self.charge_policy:
-
             # Check if the policy is within its latching period
             latched = False
             if "__latchTime" in policy:

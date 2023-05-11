@@ -5,7 +5,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class Dummy:
-
     enabled = False
     master = None
     msgBuffer = bytes()

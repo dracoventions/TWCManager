@@ -4,7 +4,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class MQTT:
-
     # MQTT EMS Module
     # Subscribes to Consumption and Generation details from MQTT Publisher
 
@@ -90,7 +89,6 @@ class MQTT:
             logger.log(logging.INFO5, "Res: " + str(res))
 
     def mqttMessage(self, client, userdata, message):
-
         # Takes an MQTT message, and update the associated Generation/Consumption value
         payload = str(message.payload.decode("utf-8"))
 
@@ -106,7 +104,6 @@ class MQTT:
         logger.info("Subscribe operation completed with mid " + str(mid))
 
     def getConsumption(self):
-
         if not self.status:
             logger.debug("Module Disabled. Skipping getConsumption")
             return 0
@@ -115,7 +112,6 @@ class MQTT:
         return self.consumedW
 
     def getGeneration(self):
-
         if not self.status:
             logger.debug("Module Disabled. Skipping getGeneration")
             return 0

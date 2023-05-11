@@ -7,7 +7,6 @@ logger = logging.getLogger("\U000026C5 Fronius")
 
 
 class Fronius:
-
     cacheTime = 10
     config = None
     configConfig = None
@@ -50,7 +49,6 @@ class Fronius:
             return None
 
     def getConsumption(self):
-
         if not self.status:
             logger.debug("Fronius EMS Module Disabled. Skipping getConsumption")
             return 0
@@ -62,7 +60,6 @@ class Fronius:
         return float(self.consumedW) * -1
 
     def getGeneration(self):
-
         if not self.status:
             logger.debug("Fronius EMS Module Disabled. Skipping getGeneration")
             return 0
@@ -85,7 +82,6 @@ class Fronius:
         return self.getInverterValue(url)
 
     def getInverterValue(self, url):
-
         # Fetch the specified URL from the Fronius Inverter and return the data
         self.fetchFailed = False
 
@@ -111,14 +107,12 @@ class Fronius:
         return self.getInverterValue(url)
 
     def update(self):
-
         if (int(time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from Fronius inverter.
 
             con = 0
             gen = 0
             for inverter in self.serverIP:
-
                 inverterData = self.getInverterData(inverter)
                 if inverterData:
                     try:

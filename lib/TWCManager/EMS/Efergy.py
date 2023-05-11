@@ -3,7 +3,6 @@ import time
 
 
 class Efergy:
-
     import requests
 
     cacheTime = 10
@@ -44,7 +43,6 @@ class Efergy:
             return None
 
     def getConsumption(self):
-
         if not self.status:
             logger.debug("Efergy EMS Module Disabled. Skipping getConsumption")
             return 0
@@ -56,7 +54,6 @@ class Efergy:
         return float(self.consumedW)
 
     def getGeneration(self):
-
         if not self.status:
             logger.debug("Efergy EMS Module Disabled. Skipping getGeneration")
             return 0
@@ -70,7 +67,6 @@ class Efergy:
         return float(self.generatedW)
 
     def getValue(self, url):
-
         # Fetch the specified URL from the Efergy and return the data
         self.fetchFailed = False
 
@@ -97,7 +93,6 @@ class Efergy:
         return self.getValue(url)
 
     def update(self):
-
         if (int(time.time()) - self.lastFetch) > self.cacheTime:
             # Cache has expired. Fetch values from Efergy.
 

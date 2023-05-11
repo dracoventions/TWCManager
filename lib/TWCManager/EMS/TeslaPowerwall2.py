@@ -6,7 +6,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class TeslaPowerwall2:
-
     import requests
     import urllib3
     import json as json
@@ -161,7 +160,6 @@ class TeslaPowerwall2:
                 )
 
     def getConsumption(self):
-
         if not self.status:
             logger.debug("Powerwall2 EMS Module Disabled. Skipping getConsumption")
             return 0
@@ -170,7 +168,6 @@ class TeslaPowerwall2:
         return float(self.consumedW)
 
     def getGeneration(self):
-
         if not self.status:
             logger.debug("Powerwall2 EMS Module Disabled. Skipping getGeneration")
             return 0
@@ -190,13 +187,11 @@ class TeslaPowerwall2:
         return float(self.generatedW)
 
     def getPWJson(self, path):
-
         (lastTime, lastData) = (
             self.lastFetch[path] if path in self.lastFetch else (0, dict())
         )
 
         if (int(time.time()) - lastTime) > self.cacheTime:
-
             # Fetch the specified URL from Powerwall and return the data
 
             # Get a login token, if password authentication is enabled
@@ -251,7 +246,6 @@ class TeslaPowerwall2:
         )
 
         if (int(time.time()) - lastTime) > self.cloudCacheTime:
-
             if token and now < expiry:
                 headers = {
                     "Authorization": "Bearer " + token,
@@ -282,7 +276,7 @@ class TeslaPowerwall2:
                         logger.info(
                             "Multiple Powerwall sites linked to your Tesla account.  Please specify the correct site ID in your config.json."
                         )
-                        for (site, name) in products:
+                        for site, name in products:
                             logger.info(f"   {site}: {name}")
                     else:
                         logger.info("Couldn't find a Powerwall on your Tesla account.")

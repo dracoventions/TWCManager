@@ -4,7 +4,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class SmartMe:
-
     # SmartMe EMS Module
     # Fetches Consumption and Generation details from SmartMe API
 
@@ -45,7 +44,6 @@ class SmartMe:
             return None
 
     def getConsumption(self):
-
         if not self.status:
             logger.debug("EMS Module Disabled. Skipping getConsumption")
             return 0
@@ -58,7 +56,6 @@ class SmartMe:
             return 0
 
     def getGeneration(self):
-
         if not self.status:
             logger.debug("EMS Module Disabled. Skipping getGeneration")
             return 0

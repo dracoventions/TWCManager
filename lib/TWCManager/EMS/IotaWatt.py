@@ -4,7 +4,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class IotaWatt:
-
     # IotaWatt EMS Module
     # Fetches Consumption and Generation details from IotaWatt
 
@@ -53,7 +52,6 @@ class IotaWatt:
             return None
 
     def getConsumption(self):
-
         if not self.status:
             logger.debug("Module Disabled. Skipping getConsumption")
             return 0
@@ -65,7 +63,6 @@ class IotaWatt:
         return self.consumedW
 
     def getGeneration(self):
-
         if not self.status:
             logger.debug("Module Disabled. Skipping getGeneration")
             return 0

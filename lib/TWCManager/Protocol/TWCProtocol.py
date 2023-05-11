@@ -5,7 +5,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class TWCProtocol:
-
     # To avoid a situation where we would have to re-implement TWCManager logic to parse the
     # same messages both for the Dummy interface and for the Slave TWCManager mode, we break out
     # parsing of the protocol to this module.
@@ -24,7 +23,6 @@ class TWCProtocol:
         classname = self.__class__.__name__
 
     def createMessage(self, packet):
-
         # We take some steps to be as autonomous as possible. One of these
         # steps is to automatically fill in fields where we can likely
         # determine the correct value
@@ -103,7 +101,6 @@ class TWCProtocol:
             return msg
 
     def parseMessage(self, msg):
-
         # Define protocol packet format
         packet = {"Command": None, "Errors": [], "SenderID": None, "Match": False}
 

@@ -9,7 +9,6 @@ logger = logging.getLogger("\U0001F4CA HASS")
 
 
 class HASSStatus:
-
     import threading
     import requests
 
@@ -195,7 +194,6 @@ class HASSStatus:
 
 
 class HASSMessage:
-
     elapsingTime = 0
     sensor = ""
     twcid = ""

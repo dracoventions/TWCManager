@@ -360,7 +360,6 @@ def check_green_energy():
 
 
 def update_statuses():
-
     # Print a status update if we are on track green energy showing the
     # generation and consumption figures
     maxamps = master.getMaxAmpsToDivideAmongSlaves()
@@ -389,7 +388,6 @@ def update_statuses():
         }
 
         if (genwatts or conwatts) and (not conoffset and not othwatts):
-
             logger.info(
                 "Green energy Generates %s, Consumption %s (Charger Load %s)",
                 f"{genwatts:.0f}W",
@@ -399,7 +397,6 @@ def update_statuses():
             )
 
         elif (genwatts or conwatts) and othwatts and not conoffset:
-
             logger.info(
                 "Green energy Generates %s, Consumption %s (Charger Load %s, Other Load %s)",
                 f"{genwatts:.0f}W",
@@ -410,7 +407,6 @@ def update_statuses():
             )
 
         elif (genwatts or conwatts) and othwatts and conoffset > 0:
-
             logger.info(
                 "Green energy Generates %s, Consumption %s (Charger Load %s, Other Load %s, Offset %s)",
                 f"{genwatts:.0f}W",
@@ -422,7 +418,6 @@ def update_statuses():
             )
 
         elif (genwatts or conwatts) and othwatts and conoffset < 0:
-
             logger.info(
                 "Green energy Generates %s (Offset %s), Consumption %s (Charger Load %s, Other Load %s)",
                 f"{genwatts:.0f}W",
@@ -496,7 +491,6 @@ def update_statuses():
 
 
 def update_sunrise_sunset():
-
     ltNow = time.localtime()
     latlong = master.getHomeLatLon()
     if latlong[0] == 10000:

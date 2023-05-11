@@ -21,7 +21,6 @@ class ColorFormatter(logging.Formatter):
 
 
 class ConsoleLogging:
-
     capabilities = {"queryGreenEnergy": False}
     config = None
     configConfig = None

@@ -5,7 +5,6 @@ logger = logging.getLogger("\U0001F50C RS485")
 
 
 class RS485:
-
     import serial
 
     baud = 9600

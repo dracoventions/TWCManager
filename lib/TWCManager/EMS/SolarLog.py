@@ -5,7 +5,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class SolarLog:
-
     # SolarLog EMS Module
     # Fetches Consumption and Generation details from SolarLog
 
@@ -44,7 +43,6 @@ class SolarLog:
             return None
 
     def getConsumption(self):
-
         if not self.status:
             logger.debug("SolarLog EMS Module Disabled. Skipping getConsumption")
             return 0
@@ -56,7 +54,6 @@ class SolarLog:
         return self.consumedW - self.excludeConsumedW
 
     def getGeneration(self):
-
         if not self.status:
             logger.debug("SolarLog EMS Module Disabled. Skipping getGeneration")
             return 0

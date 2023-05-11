@@ -2,7 +2,6 @@
 
 
 class DSMR:
-
     import time
 
     baudrate = 115200

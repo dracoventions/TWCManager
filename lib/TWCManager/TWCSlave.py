@@ -8,7 +8,6 @@ logger = logging.getLogger("\u26FD Slave")
 
 
 class TWCSlave:
-
     config = None
     configConfig = None
     TWCID = None
@@ -85,7 +84,6 @@ class TWCSlave:
         self.startStopDelay = self.configConfig.get("startStopDelay", 60)
 
     def print_status(self, heartbeatData):
-
         try:
             debugOutput = "SHB %02X%02X: %02X %05.2f/%05.2fA %02X%02X" % (
                 self.TWCID[0],

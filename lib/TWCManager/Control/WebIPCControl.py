@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class WebIPCControl:
-
     config = None
     configConfig = None
     configIPC = None
@@ -98,7 +97,6 @@ class WebIPCControl:
         return s
 
     def processIPC(self):
-
         ########################################################################
         # See if there's any message from the web interface.
         # If the message is longer than msgMaxSize, MSG_NOERROR tells it to

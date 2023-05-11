@@ -9,7 +9,6 @@ logger = logging.getLogger("\U0001F4CA MQTT")
 
 
 class MQTTStatus:
-
     import paho.mqtt.client as mqtt
 
     brokerIP = None
@@ -63,7 +62,6 @@ class MQTTStatus:
 
     def setStatus(self, twcid, key_underscore, key_camelcase, value, unit):
         if self.status:
-
             # Format TWCID nicely
             twident = None
             if len(twcid) == 2:

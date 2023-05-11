@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class Volkszahler:
-
     # Volkszahler EMS Module
     # Fetches Consumption and Generation details from Volkszahler API
 
@@ -44,7 +43,6 @@ class Volkszahler:
             return None
 
     def getConsumption(self):
-
         if not self.status:
             logger.debug("EMS Module Disabled. Skipping getConsumption")
             return 0
@@ -60,7 +58,6 @@ class Volkszahler:
             return 0
 
     def getGeneration(self):
-
         if not self.status:
             logger.debug("EMS Module Disabled. Skipping getGeneration")
             return 0
@@ -119,7 +116,6 @@ class Volkszahler:
             return False
 
         else:
-
             msgMatch = re.search("^(.+) W$", httpResponse.text, re.DOTALL)
 
             if msgMatch:
@@ -175,7 +171,6 @@ class Volkszahler:
             return False
 
         else:
-
             msgMatch = re.search("^(.+) W$", httpResponse.text, re.DOTALL)
 
             if msgMatch:

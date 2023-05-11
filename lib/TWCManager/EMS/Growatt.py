@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class Growatt:
-
     # Growatt EMS Module
     # Fetches Consumption and Generation details from Growatt API
 
@@ -58,7 +57,6 @@ class Growatt:
             return None
 
     def getConsumption(self):  # gets called by TWCManager.py
-
         if not self.status:
             logger.debug("EMS Module Disabled. Skipping getConsumption")
             return 0
@@ -70,7 +68,6 @@ class Growatt:
         return self.consumedW
 
     def getGeneration(self):  # gets called by TWCManager.py
-
         if not self.status:
             logger.debug("EMS Module Disabled. Skipping getGeneration")
             return 0
@@ -82,7 +79,6 @@ class Growatt:
         return self.generatedW
 
     def getGenerationValues(self):
-
         if not self.status:
             logger.debug("EMS Module Disabled. Skipping getGeneration")
             return 0

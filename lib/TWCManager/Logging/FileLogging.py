@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__.rsplit(".")[-1])
 
 
 class FileLogging:
-
     capabilities = {"queryGreenEnergy": False}
     config = None
     configConfig = None
