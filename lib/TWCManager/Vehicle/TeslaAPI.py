@@ -1214,8 +1214,7 @@ class CarApiVehicle:
 
     errorCount = 0
     lastErrorTime = 0
-    lastDriveStatusTime = 0
-    lastChargeStatusTime = 0
+    lastVehicleStatusTime = 0
     stopAskingToStartCharging = False
     stopTryingToApplyLimit = False
 
@@ -1382,27 +1381,7 @@ class CarApiVehicle:
     def update_location(self, cacheTime=60):
 
         if self.syncSource == "TeslaAPI":
-            url = "https://owner-api.teslamotors.com/api/1/vehicles/"
-            url = url + str(self.ID) + "/data_request/drive_state"
-
-            now = time.time()
-
-            if now - self.lastDriveStatusTime < cacheTime:
-                return True
-
-            try:
-                (result, response) = self.get_car_api(url)
-            except TypeError:
-                logger.log(logging.error, "Got None response from get_car_api()")
-                return False
-
-            if result:
-                self.lastDriveStatusTime = now
-                self.lat = response["latitude"]
-                self.lon = response["longitude"]
-                self.atHome = self.carapi.is_location_home(self.lat, self.lon)
-
-            return result
+            return self.update_vehicle_data(cacheTime)
 
         else:
 
@@ -1412,34 +1391,42 @@ class CarApiVehicle:
 
             return True
 
+    def update_vehicle_data(self, cacheTime=60):
+        url = "https://owner-api.teslamotors.com/api/1/vehicles/"
+        url = url + str(self.ID) + "/vehicle_data"
+
+        now = time.time()
+
+        if now - self.lastVehicleStatusTime < cacheTime:
+            return True
+
+        try:
+            (result, response) = self.get_car_api(url)
+        except TypeError:
+            logger.log(logging.error, "Got None response from get_car_api()")
+            return False
+
+        if result:
+            drive = response["drive_state"]
+            self.lat = drive["latitude"]
+            self.lon = drive["longitude"]
+            self.atHome = self.carapi.is_location_home(self.lat, self.lon)
+
+            charge = response["charge_state"]
+            self.chargeLimit = charge["charge_limit_soc"]
+            self.batteryLevel = charge["battery_level"]
+            self.timeToFullCharge = charge["time_to_full_charge"]
+
+            self.lastVehicleStatusTime = now
+
+        return result
+
     def update_charge(self):
 
         if self.syncSource == "TeslaAPI":
-
-            url = "https://owner-api.teslamotors.com/api/1/vehicles/"
-            url = url + str(self.ID) + "/data_request/charge_state"
-
-            now = time.time()
-
-            if now - self.lastChargeStatusTime < 60:
-                return True
-
-            try:
-                (result, response) = self.get_car_api(url)
-            except TypeError:
-                logger.log(logging.error, "Got None response from get_car_api()")
-                return False
-
-            if result:
-                self.lastChargeStatusTime = time.time()
-                self.chargeLimit = response["charge_limit_soc"]
-                self.batteryLevel = response["battery_level"]
-                self.timeToFullCharge = response["time_to_full_charge"]
-
-            return result
+            return self.update_vehicle_data()
 
         else:
-
             return True
 
     def apply_charge_limit(self, limit):
