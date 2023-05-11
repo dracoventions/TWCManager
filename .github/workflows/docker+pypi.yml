@@ -51,12 +51,12 @@ jobs:
 
     steps:
     - name: Check out Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         path: ./pypi-dev
 
     - name: Set up Python 3.7
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: 3.7
 
@@ -105,12 +105,12 @@ jobs:
 
     steps:
     - name: Check out Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         path: ./pypi
 
     - name: Set up Python 3.7
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: 3.7
 
@@ -152,7 +152,7 @@ jobs:
 
     steps:
     - name: Check out Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         path: ./docker-latest
 
@@ -193,7 +193,7 @@ jobs:
 
     steps:
     - name: Check out Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
@@ -226,7 +226,7 @@ jobs:
     steps:
 
     - name: Check out Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
@@ -260,7 +260,7 @@ jobs:
     steps:
 
     - name: Check out Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         path: ./docker-release
 
@@ -310,7 +310,7 @@ jobs:
     steps:
 
     - name: Check out Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1

@@ -11,7 +11,7 @@ jobs:
       options: --user root
     steps:
       - name: "Checkout Repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: "Upgrade setuptools"
         run: pip3 install --upgrade setuptools
@@ -40,7 +40,7 @@ jobs:
       options: --user root
     steps:
       - name: "Checkout Repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: "Upgrade setuptools"
         run: pip3 install --upgrade setuptools
@@ -69,7 +69,7 @@ jobs:
       options: --user root
     steps:
       - name: "Checkout Repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: "Build Project"
         run: CI=1 make webbuild
@@ -95,7 +95,7 @@ jobs:
       options: --user root
     steps:
       - name: "Checkout Repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: "Build Project"
         run: CI=1 make webbuild
@@ -121,7 +121,7 @@ jobs:
       options: --user root
     steps:
       - name: "Checkout Repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: "Upgrade setuptools"
         run: pip3 install --upgrade setuptools
@@ -150,7 +150,7 @@ jobs:
       options: --user root
     steps:
       - name: "Checkout Repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: "Upgrade setuptools"
         run: pip3 install --upgrade setuptools
